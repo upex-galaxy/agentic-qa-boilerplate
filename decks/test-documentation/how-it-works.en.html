@@ -1,0 +1,2174 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="tokyo-night">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test Documentation · How it works</title>
+<style>
+/* ============================================================
+   Self-contained deck — html-ppt assets inlined (fonts, base,
+   tokyo-night theme, animations) + deck-local styles.
+   ============================================================ */
+/* html-ppt :: shared webfonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@200;300;400;500;600;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,800;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap');
+/* html-ppt :: base.css — reset + shared tokens + layout primitives */
+/* Default tokens. Themes in assets/themes/*.css override the :root block. */
+:root {
+  --bg: #ffffff;
+  --bg-soft: #f7f7f8;
+  --surface: #ffffff;
+  --surface-2: #f2f2f4;
+  --border: rgba(0,0,0,.08);
+  --border-strong: rgba(0,0,0,.16);
+  --text-1: #111216;
+  --text-2: #55596a;
+  --text-3: #8a8f9e;
+  --accent: #3b6cff;
+  --accent-2: #7a5cff;
+  --accent-3: #ff5c8a;
+  --good: #1aaf6c;
+  --warn: #f5a524;
+  --bad:  #e0445a;
+  --grad: linear-gradient(135deg,#3b6cff,#7a5cff 55%,#ff5c8a);
+  --grad-soft: linear-gradient(135deg,#eef2ff,#f5ecff 55%,#ffeef5);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --radius-lg: 26px;
+  --shadow: 0 10px 30px rgba(18,24,40,.08), 0 2px 6px rgba(18,24,40,.04);
+  --shadow-lg: 0 24px 60px rgba(18,24,40,.14), 0 6px 16px rgba(18,24,40,.06);
+  --font-sans: 'Inter','Noto Sans SC',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
+  --font-serif: 'Playfair Display','Noto Serif SC',Georgia,serif;
+  --font-mono: 'JetBrains Mono','IBM Plex Mono',SFMono-Regular,Menlo,monospace;
+  --font-display: var(--font-sans);
+  --letter-tight: -.03em;
+  --letter-normal: -.01em;
+  --ease: cubic-bezier(.4,0,.2,1);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);
+  font-family:var(--font-sans);font-weight:400;line-height:1.6;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  letter-spacing:var(--letter-normal)}
+img,svg,video{max-width:100%;display:block}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code,kbd,pre,samp{font-family:var(--font-mono)}
+
+/* ================= SLIDE SYSTEM ================= */
+.deck{position:relative;width:100vw;height:100vh;overflow:hidden;background:var(--bg)}
+.slide{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:72px 96px;
+  box-sizing:border-box;
+  opacity:0;pointer-events:none;
+  transition:opacity .5s var(--ease), transform .5s var(--ease);
+  transform:translateX(30px);
+  overflow:hidden;
+}
+.slide.is-active{opacity:1;pointer-events:auto;transform:translateX(0);z-index:2}
+.slide.is-prev{transform:translateX(-30px)}
+
+/* single-page standalone (used when a layout file is opened directly) */
+body.single .slide{position:relative;width:100vw;height:100vh;opacity:1;transform:none;pointer-events:auto}
+
+/* ================= TYPOGRAPHY ================= */
+.eyebrow{font-size:13px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--text-3)}
+.kicker{font-size:14px;font-weight:600;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+h1.title,.h1{font-family:var(--font-display);font-size:72px;line-height:1.05;font-weight:800;letter-spacing:var(--letter-tight);margin:0 0 18px;color:var(--text-1)}
+h2.title,.h2{font-family:var(--font-display);font-size:54px;line-height:1.1;font-weight:700;letter-spacing:var(--letter-tight);margin:0 0 14px}
+h3,.h3{font-size:32px;line-height:1.2;font-weight:600;letter-spacing:var(--letter-normal);margin:0 0 10px}
+h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
+.lede{font-size:22px;line-height:1.55;color:var(--text-2);font-weight:300;max-width:62ch}
+.dim{color:var(--text-2)}
+.dim2{color:var(--text-3)}
+.mono{font-family:var(--font-mono)}
+.serif{font-family:var(--font-serif)}
+.gradient-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+
+/* ================= LAYOUT PRIMITIVES ================= */
+.stack>*+*{margin-top:14px}
+.row{display:flex;gap:24px;align-items:center}
+.row.wrap{flex-wrap:wrap}
+.grid{display:grid;gap:24px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.center{display:flex;align-items:center;justify-content:center;text-align:center}
+.fill{flex:1}
+.sp-t{padding-top:24px}.sp-b{padding-bottom:24px}
+.mt-s{margin-top:8px}.mt-m{margin-top:18px}.mt-l{margin-top:32px}
+.mb-s{margin-bottom:8px}.mb-m{margin-bottom:18px}.mb-l{margin-bottom:32px}
+
+/* ================= CARDS ================= */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:26px 28px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.card-soft{background:var(--surface-2);border:1px solid var(--border)}
+.card-outline{background:transparent;border:1.5px solid var(--border-strong);box-shadow:none}
+.card-accent{background:var(--surface);border-top:3px solid var(--accent)}
+.card-hover{transition:transform .3s var(--ease),box-shadow .3s var(--ease)}
+.card-hover:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+
+.pill{display:inline-block;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:500;
+  background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
+.pill-accent{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 28%,transparent)}
+
+/* ================= BARS / DIVIDERS ================= */
+.divider{height:1px;background:var(--border);width:100%}
+.divider-accent{height:3px;width:72px;background:var(--accent);border-radius:2px}
+
+/* ================= CHROME (header/footer/progress) ================= */
+.deck-header{position:absolute;top:24px;left:40px;right:40px;display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--text-3);letter-spacing:.12em;text-transform:uppercase;z-index:10;pointer-events:none}
+.deck-footer{position:absolute;bottom:24px;left:40px;right:40px;display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--text-3);z-index:10;pointer-events:none}
+.slide-number::before{content:attr(data-current)}
+.slide-number::after{content:" / " attr(data-total)}
+.progress-bar{position:fixed;left:0;right:0;bottom:0;height:3px;background:transparent;z-index:20}
+.progress-bar > span{display:block;height:100%;width:0;background:var(--accent);transition:width .3s var(--ease)}
+
+/* ================= PRESENTER / OVERVIEW ================= */
+.notes{display:none!important}
+.notes-overlay{position:fixed;inset:auto 0 0 0;max-height:42vh;background:rgba(20,22,30,.95);color:#e8ebf4;
+  padding:20px 32px;font-size:16px;line-height:1.6;border-top:1px solid rgba(255,255,255,.1);transform:translateY(100%);
+  transition:transform .3s var(--ease);z-index:40;overflow:auto;font-family:var(--font-sans)}
+.notes-overlay.open{transform:translateY(0)}
+.overview{position:fixed;inset:0;background:rgba(10,12,18,.92);backdrop-filter:blur(12px);z-index:50;
+  display:none;padding:40px;overflow:auto}
+.overview.open{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;align-content:start}
+.overview .thumb{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  aspect-ratio:16/9;overflow:hidden;cursor:pointer;position:relative;color:var(--text-1);padding:16px;
+  font-size:11px;transition:transform .2s var(--ease)}
+.overview .thumb:hover{transform:scale(1.04)}
+.overview .thumb .n{position:absolute;top:8px;left:10px;font-weight:700;font-size:14px;color:var(--text-3)}
+.overview .thumb .t{position:absolute;bottom:10px;left:14px;right:14px;font-weight:600;color:var(--text-1)}
+
+/* ================= PRESENTER VIEW ================= */
+/* Presenter view opens in a separate popup window (S key).
+ * All presenter styles are self-contained in the popup HTML generated by runtime.js.
+ * The audience window (this file) is NOT affected — it stays as normal deck view.
+ * Only the .notes class below is needed to hide speaker notes from audience. */
+
+/* ================= UTILITY ================= */
+.hidden{display:none!important}
+.nowrap{white-space:nowrap}
+.tr{text-align:right}.tc{text-align:center}.tl{text-align:left}
+.uppercase{text-transform:uppercase;letter-spacing:.12em}
+
+/* ================= PRINT ================= */
+@media print{
+  .slide{position:relative;opacity:1!important;transform:none!important;page-break-after:always;height:100vh}
+  .deck-header,.deck-footer,.progress-bar,.notes-overlay,.overview{display:none!important}
+}
+/* html-ppt :: animations.css
+ * Apply by adding class="anim-<name>" or data-anim="<name>".
+ * Durations are deliberately snappy; tweak --anim-dur per element.
+ */
+:root{--anim-dur:.7s;--anim-ease:cubic-bezier(.4,0,.2,1)}
+
+/* ---------- FADE DIRECTIONALS ---------- */
+@keyframes kf-fade-up{from{opacity:0;transform:translateY(32px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-down{from{opacity:0;transform:translateY(-32px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-left{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-right{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+.anim-fade-up{animation:kf-fade-up var(--anim-dur) var(--anim-ease) both}
+.anim-fade-down{animation:kf-fade-down var(--anim-dur) var(--anim-ease) both}
+.anim-fade-left{animation:kf-fade-left var(--anim-dur) var(--anim-ease) both}
+.anim-fade-right{animation:kf-fade-right var(--anim-dur) var(--anim-ease) both}
+
+/* ---------- RISE / DROP / ZOOM / BLUR / GLITCH ---------- */
+@keyframes kf-rise{from{opacity:0;transform:translateY(60px) scale(.97);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+@keyframes kf-drop{from{opacity:0;transform:translateY(-60px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes kf-zoom{0%{opacity:0;transform:scale(.6)}60%{transform:scale(1.04)}100%{opacity:1;transform:scale(1)}}
+@keyframes kf-blur{from{opacity:0;filter:blur(18px)}to{opacity:1;filter:none}}
+@keyframes kf-glitch{0%{opacity:0;transform:translateX(0);clip-path:inset(0 0 0 0)}
+  20%{opacity:1;transform:translateX(-6px);clip-path:inset(20% 0 30% 0)}
+  40%{transform:translateX(4px);clip-path:inset(50% 0 10% 0)}
+  60%{transform:translateX(-3px);clip-path:inset(10% 0 60% 0)}
+  80%{transform:translateX(2px);clip-path:inset(0 0 0 0)}
+  100%{opacity:1;transform:none}}
+.anim-rise-in{animation:kf-rise .9s var(--anim-ease) both}
+.anim-drop-in{animation:kf-drop .8s var(--anim-ease) both}
+.anim-zoom-pop{animation:kf-zoom .7s cubic-bezier(.22,1.3,.36,1) both}
+.anim-blur-in{animation:kf-blur .8s var(--anim-ease) both}
+.anim-glitch-in{animation:kf-glitch .8s steps(5,end) both}
+
+/* ---------- TYPEWRITER ---------- */
+.anim-typewriter{display:inline-block;overflow:hidden;white-space:nowrap;border-right:2px solid currentColor;
+  width:0;animation:kf-type 2.4s steps(40,end) forwards, kf-caret 1s step-end infinite}
+@keyframes kf-type{to{width:100%}}
+@keyframes kf-caret{50%{border-color:transparent}}
+
+/* ---------- GLOW / SHIMMER / GRADIENT-FLOW ---------- */
+@keyframes kf-neon{0%,100%{text-shadow:0 0 8px var(--accent),0 0 20px var(--accent)}
+  50%{text-shadow:0 0 16px var(--accent),0 0 40px var(--accent),0 0 80px var(--accent)}}
+.anim-neon-glow{animation:kf-neon 2s ease-in-out infinite}
+
+.anim-shimmer-sweep{position:relative;overflow:hidden}
+.anim-shimmer-sweep::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(110deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%);
+  transform:translateX(-100%);animation:kf-shimmer 2.4s var(--anim-ease) infinite}
+@keyframes kf-shimmer{to{transform:translateX(100%)}}
+
+.anim-gradient-flow{background:linear-gradient(90deg,var(--accent),var(--accent-2,var(--accent)),var(--accent-3,var(--accent)),var(--accent));
+  background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+  animation:kf-gradflow 4s linear infinite}
+@keyframes kf-gradflow{to{background-position:300% 0}}
+
+/* ---------- STAGGER LIST ---------- */
+.anim-stagger-list > *{opacity:0;animation:kf-rise .65s var(--anim-ease) both}
+.anim-stagger-list > *:nth-child(1){animation-delay:.05s}
+.anim-stagger-list > *:nth-child(2){animation-delay:.15s}
+.anim-stagger-list > *:nth-child(3){animation-delay:.25s}
+.anim-stagger-list > *:nth-child(4){animation-delay:.35s}
+.anim-stagger-list > *:nth-child(5){animation-delay:.45s}
+.anim-stagger-list > *:nth-child(6){animation-delay:.55s}
+.anim-stagger-list > *:nth-child(7){animation-delay:.65s}
+.anim-stagger-list > *:nth-child(8){animation-delay:.75s}
+.anim-stagger-list > *:nth-child(n+9){animation-delay:.85s}
+
+/* ---------- COUNTER-UP (JS-driven, marker class only) ---------- */
+.counter{font-variant-numeric:tabular-nums}
+
+/* ---------- SVG PATH DRAW ---------- */
+.anim-path-draw path,.anim-path-draw line,.anim-path-draw polyline,.anim-path-draw circle,.anim-path-draw rect{
+  stroke-dasharray:1000;stroke-dashoffset:1000;animation:kf-draw 2s var(--anim-ease) forwards}
+@keyframes kf-draw{to{stroke-dashoffset:0}}
+
+/* ---------- PARALLAX TILT (hover) ---------- */
+.anim-parallax-tilt{transform-style:preserve-3d;transition:transform .4s var(--anim-ease)}
+.anim-parallax-tilt:hover{transform:perspective(900px) rotateX(6deg) rotateY(-8deg) translateZ(10px)}
+
+/* ---------- CARD FLIP 3D ---------- */
+@keyframes kf-flip{from{transform:perspective(1200px) rotateY(-90deg);opacity:0}
+  to{transform:perspective(1200px) rotateY(0);opacity:1}}
+.anim-card-flip-3d{animation:kf-flip .9s var(--anim-ease) both;transform-style:preserve-3d;backface-visibility:hidden}
+
+/* ---------- CUBE ROTATE 3D ---------- */
+@keyframes kf-cube{from{transform:perspective(1200px) rotateX(20deg) rotateY(-90deg) translateZ(-200px);opacity:0}
+  to{transform:perspective(1200px) rotateX(0) rotateY(0) translateZ(0);opacity:1}}
+.anim-cube-rotate-3d{animation:kf-cube 1s var(--anim-ease) both}
+
+/* ---------- PAGE TURN 3D ---------- */
+@keyframes kf-pageturn{from{transform:perspective(1600px) rotateY(-85deg);transform-origin:left center;opacity:0}
+  to{transform:perspective(1600px) rotateY(0);opacity:1}}
+.anim-page-turn-3d{animation:kf-pageturn 1s var(--anim-ease) both;transform-origin:left center}
+
+/* ---------- PERSPECTIVE ZOOM ---------- */
+@keyframes kf-pzoom{from{opacity:0;transform:perspective(1400px) translateZ(-400px) rotateX(12deg)}
+  to{opacity:1;transform:none}}
+.anim-perspective-zoom{animation:kf-pzoom 1s var(--anim-ease) both}
+
+/* ---------- MARQUEE SCROLL ---------- */
+.anim-marquee-scroll{display:flex;gap:48px;white-space:nowrap;animation:kf-marquee 20s linear infinite}
+@keyframes kf-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ---------- KEN BURNS ---------- */
+@keyframes kf-kenburns{0%{transform:scale(1) translate(0,0)}100%{transform:scale(1.15) translate(-2%,-1%)}}
+.anim-kenburns{animation:kf-kenburns 14s ease-in-out infinite alternate}
+
+/* ---------- CONFETTI BURST (pseudo — pure CSS sparkles) ---------- */
+.anim-confetti-burst{position:relative}
+.anim-confetti-burst::before,.anim-confetti-burst::after{
+  content:"";position:absolute;top:50%;left:50%;width:8px;height:8px;border-radius:50%;
+  background:var(--accent);box-shadow:
+    20px -30px 0 var(--accent-2,var(--accent)),-25px -20px 0 var(--accent-3,var(--accent)),
+    30px 20px 0 var(--good,#1aaf6c),-30px 25px 0 var(--warn,#f5a524),
+    40px -10px 0 var(--bad,#e0445a),-45px 0 0 var(--accent),
+    10px 40px 0 var(--accent-2,var(--accent)),-15px -40px 0 var(--accent-3,var(--accent));
+  opacity:0;animation:kf-confetti 1.2s var(--anim-ease) forwards}
+.anim-confetti-burst::after{animation-delay:.15s;transform:rotate(45deg)}
+@keyframes kf-confetti{0%{opacity:0;transform:scale(.2)}30%{opacity:1}100%{opacity:0;transform:scale(2.2)}}
+
+/* ---------- SPOTLIGHT ---------- */
+@keyframes kf-spot{0%{clip-path:circle(0% at 50% 50%)}100%{clip-path:circle(140% at 50% 50%)}}
+.anim-spotlight{animation:kf-spot 1.1s var(--anim-ease) both}
+
+/* ---------- MORPH SHAPE (SVG) ---------- */
+.anim-morph-shape path{animation:kf-morph 6s ease-in-out infinite alternate}
+@keyframes kf-morph{0%{d:path("M60,120 Q120,20 180,120 T300,120")}
+  100%{d:path("M60,120 Q120,220 180,120 T300,120")}}
+
+/* ---------- RIPPLE REVEAL ---------- */
+@keyframes kf-ripple{0%{clip-path:circle(0% at 20% 80%);opacity:.4}
+  100%{clip-path:circle(160% at 20% 80%);opacity:1}}
+.anim-ripple-reveal{animation:kf-ripple 1.2s var(--anim-ease) both}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce){
+  [class*="anim-"]{animation:none!important;transition:none!important}
+}
+
+/* ---- themes/tokyo-night.css ---- */
+/* theme: tokyo-night */
+:root{
+  --bg:#1a1b26;--bg-soft:#16161e;--surface:#24283b;--surface-2:#2f334d;
+  --border:rgba(192,202,245,.12);--border-strong:rgba(192,202,245,.24);
+  --text-1:#c0caf5;--text-2:#a9b1d6;--text-3:#565f89;
+  --accent:#7aa2f7;--accent-2:#bb9af7;--accent-3:#7dcfff;
+  --good:#9ece6a;--warn:#e0af68;--bad:#f7768e;
+  --grad:linear-gradient(135deg,#7aa2f7,#bb9af7 55%,#f7768e);
+  --grad-soft:linear-gradient(135deg,#24283b,#2f334d);
+  --radius:12px;--radius-sm:8px;--radius-lg:20px;
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+  --shadow-lg:0 24px 62px rgba(0,0,0,.6);
+  --font-sans:'Inter','Noto Sans SC',sans-serif;
+}
+
+
+/* ---- deck-local: /test-documentation workflow (tokyo-night) ---- */
+.slide{padding:50px 72px 64px}
+.eyebrow{font-family:var(--font-mono);letter-spacing:.22em;font-size:12px;color:var(--text-3)}
+.kicker{font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--accent);letter-spacing:.02em;text-transform:none}
+.kicker::before{content:"// ";opacity:.7}
+.h1{font-size:72px}
+.h2{font-size:38px;line-height:1.12;margin:0 0 8px;color:#e6ebff}
+.grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.lede{font-size:18px;line-height:1.5}
+.small{font-size:14px;line-height:1.55}
+
+/* cover */
+.cover-cmd{font-family:var(--font-mono);font-size:74px;font-weight:700;letter-spacing:-.02em;color:#e6ebff;margin:16px 0 14px;line-height:1.05}
+.chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:26px}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:10px;font-size:13.5px;font-weight:600;background:var(--surface);border:1px solid var(--border-strong);color:var(--text-2)}
+.chip b{color:var(--text-1)}
+.chip .dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+.chip.s{padding:5px 11px;font-size:12.5px;font-weight:500}
+
+/* workflow map */
+.lane{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.lane-tag{font-family:var(--font-mono);font-size:10.5px;font-weight:700;letter-spacing:.14em;padding:4px 9px;border-radius:6px;flex:none}
+.lane-tag.in{background:rgba(158,206,106,.14);color:var(--good);border:1px solid rgba(158,206,106,.4)}
+.lane-tag.out{background:rgba(122,162,247,.14);color:var(--accent);border:1px solid rgba(122,162,247,.4)}
+.mainpath{display:flex;align-items:stretch;gap:5px;margin:16px 0 12px}
+.node{flex:1;min-width:0;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:10px 10px 8px;display:flex;flex-direction:column;gap:5px}
+.node h5{margin:0;font-size:12.5px;font-weight:700;color:#e6ebff;line-height:1.2}
+.node p{margin:0;font-size:10.5px;color:var(--text-2);line-height:1.35;overflow-wrap:anywhere}
+.node p .mono{font-size:9.5px}
+.node .nb{width:22px;height:22px;border-radius:6px;background:var(--grad);color:#101223;display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:800;font-size:12px;flex:none}
+.node .br{margin-top:auto;font-family:var(--font-mono);font-size:9.5px;color:var(--text-3);border-top:1px dashed var(--border);padding-top:4px;line-height:1.3}
+.node .br.bad{color:var(--bad)}
+.node .br.warn{color:var(--warn)}
+.node .br.ok{color:var(--good)}
+.arr{align-self:center;color:var(--accent);font-weight:800;font-size:14px;flex:none}
+.adjacent{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:2px 0 10px}
+.mini{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-size:11.5px;line-height:1.45;color:var(--text-2)}
+.mini b{color:var(--text-1)}
+
+/* tables */
+.dtable{width:100%;border-collapse:collapse;margin-top:14px;font-size:13.5px}
+.dtable th{text-align:left;padding:8px 12px;color:var(--accent-2);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--border-strong)}
+.dtable td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text-2);vertical-align:top;line-height:1.45}
+.dtable tr:last-child td{border-bottom:none}
+.dtable td b{color:var(--text-1);font-weight:600}
+.dtable.tight{font-size:12.5px}
+.dtable.tight td{padding:7px 10px}
+
+/* callouts */
+.callout{border-left:3px solid var(--accent);background:rgba(122,162,247,.08);padding:11px 16px;border-radius:0 10px 10px 0;margin-top:14px}
+.callout h4{font-size:14px;margin:0 0 3px;color:var(--accent)}
+.callout p{font-size:13px;color:var(--text-2);line-height:1.5;margin:0}
+.callout.warn{border-left-color:var(--warn);background:rgba(224,175,104,.08)}
+.callout.warn h4{color:var(--warn)}
+.callout.ok{border-left-color:var(--good);background:rgba(158,206,106,.08)}
+.callout.ok h4{color:var(--good)}
+
+/* numbered step cards */
+.steps{display:grid;gap:14px;margin-top:24px}
+.steps.s3{grid-template-columns:repeat(3,1fr)}
+.steps.s4{grid-template-columns:repeat(4,1fr)}
+.step{position:relative;padding:20px 16px 13px;border:1px solid var(--border-strong);border-radius:10px;background:var(--surface)}
+.step .num{position:absolute;top:-14px;left:14px;width:30px;height:30px;border-radius:8px;background:var(--grad);color:#101223;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;font-family:var(--font-mono)}
+.step h4{margin:5px 0 5px;font-size:14.5px;color:#e6ebff}
+.step p{font-size:12.5px;color:var(--text-2);line-height:1.45;margin:0}
+
+/* vertical stage flow */
+.flow{display:flex;flex-direction:column;margin-top:10px}
+.flow .stage{display:grid;grid-template-columns:38px 1fr;gap:14px;padding:9px 0;align-items:start}
+.flow .stage+.stage{border-top:1px dashed var(--border)}
+.flow .sx{width:38px;height:38px;border-radius:10px;background:rgba(122,162,247,.14);border:1px solid rgba(122,162,247,.35);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;font-family:var(--font-mono);font-size:12px}
+.flow h4{font-size:15px;margin:0 0 2px;color:#e6ebff}
+.flow p{font-size:13px;color:var(--text-2);line-height:1.45;margin:0}
+
+/* comparison */
+.vs{display:grid;grid-template-columns:1fr 46px 1fr;gap:14px;align-items:stretch;margin-top:16px}
+.vs .side{background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:15px 18px}
+.vs .mid{font-size:26px;font-weight:800;color:var(--text-3);display:flex;align-items:center;justify-content:center}
+.vs h3{font-size:16.5px;margin:0 0 8px;color:#e6ebff}
+.vs ul{padding-left:16px;margin:0;font-size:13px;line-height:1.6;color:var(--text-2)}
+.vs li b{color:var(--text-1)}
+.vs .good-side{border-top:3px solid var(--good)}
+.vs .bad-side{border-top:3px solid var(--bad)}
+.vs .alt-side{border-top:3px solid var(--accent-2)}
+.vs .good-side li::marker{color:var(--good)}
+.vs .bad-side li::marker{color:var(--bad)}
+.vs .alt-side li::marker{color:var(--accent-2)}
+
+/* bullet list */
+.blist{list-style:none;padding:0;margin:14px 0 0}
+.blist li{position:relative;padding:7px 0 7px 24px;font-size:14px;color:var(--text-2);line-height:1.5;border-bottom:1px solid var(--border)}
+.blist li:last-child{border-bottom:none}
+.blist li::before{content:"\25B8";position:absolute;left:2px;top:7px;color:var(--accent);font-weight:700}
+.blist li b{color:var(--text-1)}
+
+/* tags / kbd */
+.tag{display:inline-flex;align-items:center;padding:3px 9px;border-radius:6px;font-family:var(--font-mono);font-size:11.5px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-2)}
+.tag.ok{color:var(--good);border-color:rgba(158,206,106,.4);background:rgba(158,206,106,.1)}
+.tag.no{color:var(--bad);border-color:rgba(247,118,142,.4);background:rgba(247,118,142,.1)}
+.tag.warn{color:var(--warn);border-color:rgba(224,175,104,.4);background:rgba(224,175,104,.1)}
+kbd,.kbd{font-family:var(--font-mono);font-size:12.5px;padding:2px 8px;border-radius:6px;background:rgba(122,162,247,.12);color:var(--accent);border:1px solid rgba(122,162,247,.32);white-space:nowrap}
+
+/* terminal */
+.terminal{background:#12131f;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;font-family:var(--font-mono);font-size:12.5px;line-height:1.6;box-shadow:var(--shadow)}
+.terminal .bar{display:flex;align-items:center;gap:7px;padding:8px 14px;background:#16161e;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-3)}
+.terminal .td{width:10px;height:10px;border-radius:50%;background:#f7768e;flex:none}
+.terminal .td:nth-child(2){background:#e0af68}
+.terminal .td:nth-child(3){background:#9ece6a}
+.terminal pre{margin:0;padding:13px 18px;color:var(--text-1);overflow:auto;white-space:pre-wrap}
+.terminal .p{color:var(--good);font-weight:700}
+.terminal .c{color:#e6ebff}
+.terminal .o{color:var(--text-2)}
+.kw{color:#f7768e}
+.str{color:#9ece6a}
+.cmt{color:#565f89;font-style:italic}
+.numlit{color:#ff9e64}
+
+/* mono schematic block */
+.mk{font-family:var(--font-mono);font-size:12.5px;line-height:1.55;white-space:pre;background:#16161e;border:1px solid var(--border-strong);border-radius:12px;padding:14px 18px;color:var(--text-1);overflow:auto}
+
+/* cards (density overrides on base) */
+.card{padding:18px 20px;box-shadow:none;border-color:var(--border-strong)}
+.card h4{font-size:16.5px;margin:0 0 6px;color:#e6ebff}
+.card .small{font-size:13px}
+.grid{gap:16px}
+.mt-s{margin-top:8px}
+
+/* misc */
+.fx-host{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.5}
+.above{position:relative;z-index:1}
+.foot-note{font-size:12px;color:var(--text-3);margin-top:12px}
+.g2t{grid-template-columns:1.05fr .95fr}
+.deck-footer{z-index:12}
+</style>
+</head>
+<body>
+<div class="deck">
+
+<!-- 1 · COVER -->
+<section class="slide is-active center tc" data-title="Cover">
+  <div class="fx-host" data-fx="constellation"></div>
+  <div class="above">
+    <p class="eyebrow">AGENTIC QA · WORKFLOW SKILL</p>
+    <h1 class="cover-cmd anim-rise-in" data-anim="rise-in"><span class="grad">/</span>test-documentation</h1>
+    <p class="lede" style="margin:0 auto;max-width:64ch">The bridge between manual QA and automation: it analyzes, prioritizes with ROI and documents test cases in the TMS with full traceability.</p>
+    <div class="chips">
+      <span class="chip"><span class="dot" style="background:var(--accent)"></span>Documentation <span class="dim">(historically Stage 4)</span>: TMS docs + ROI</span>
+      <span class="chip"><span class="dot" style="background:var(--good)"></span>Analyze → Prioritize → Document</span>
+      <span class="chip"><span class="dot" style="background:var(--accent-2)"></span>US↔ATS↔ATP↔ATR↔TC</span>
+      <span class="chip"><span class="dot" style="background:var(--warn)"></span>Candidate · Manual · Deferred</span>
+    </div>
+  </div>
+  <div class="notes">Workflow deck for the /test-documentation skill. House rule: most scenarios are NOT automated; the default verdict is Deferred. Navigation: → next, S presenter, O overview, N notes.</div>
+</section>
+
+<!-- 2 · WORKFLOW MAP -->
+<section class="slide" data-title="Workflow map">
+  <p class="kicker">the full map: a mental index of the deck</p>
+  <h2 class="h2" data-anim="fade-up">From validated behavior to the <span class="grad">regression</span> repository</h2>
+  <div class="lane">
+    <span class="lane-tag in">INPUT</span>
+    <span class="chip s">Story <b>QA Approved</b> (from /sprint-testing)</span>
+    <span class="chip s">Bug <b>closed</b> with a verified fix</span>
+    <span class="chip s">Module explored end to end</span>
+    <span class="chip s">Exploratory session finished (ad-hoc)</span>
+  </div>
+  <div class="mainpath anim-stagger-list">
+    <div class="node"><span class="nb">G</span><h5>Preflight Gate</h5><p>/acli + [TMS_TOOL] operational</p><span class="br bad">blocking RED → STOP</span></div>
+    <span class="arr">→</span>
+    <div class="node"><span class="nb">-1</span><h5>Resume check</h5><p><span class="mono">.session/…/progress.md</span></p><span class="br">resume · restart · abort</span></div>
+    <span class="arr">→</span>
+    <div class="node"><span class="nb">0</span><h5>TMS modality</h5><p>gate: licensed Xray? + <span class="mono">{{TC_CREATION_STAGE}}</span></p><span class="br warn">jira-xray | jira-native</span></div>
+    <span class="arr">→</span>
+    <div class="node"><span class="nb">S</span><h5>Scope</h5><p>module · ticket · bug · discovery · ad-hoc</p><span class="br">plan.md written</span></div>
+    <span class="arr">→</span>
+    <div class="node"><span class="nb">1</span><h5>Analyze</h5><p>real scenarios + code</p><span class="br">1 (pre+action) = 1 TC</span></div>
+    <span class="arr">→</span>
+    <div class="node"><span class="nb">2</span><h5>Prioritize</h5><p>3 filters + ROI formula</p><span class="br warn">C · M · D</span></div>
+    <span class="arr">→</span>
+    <div class="node"><span class="nb">3</span><h5>Document</h5><p>create / promote + link + RTP</p><span class="br">&gt;10 TCs → parallel</span></div>
+    <span class="arr">→</span>
+    <div class="node"><span class="nb">✓</span><h5>Close</h5><p>reports, Deferred to Jira, verifier, footer</p><span class="br ok">archive + mem_session_summary</span></div>
+  </div>
+  <div class="adjacent">
+    <div class="mini"><b>Gates.</b> Preflight with a blocking RED → STOP; the modality resolves itself from config and evidence, and asks only when neither decides.</div>
+    <div class="mini"><b>Fallbacks.</b> No <span class="mono">Test Plan</span>/<span class="mono">Test Execution</span> work type → ATP/ATR as Story fields; missing field → structured comment.</div>
+    <div class="mini"><b>Loops.</b> Interrupted bulk create → resume dispatches only the missing chunks; TC rework via <span class="mono">back_from_&lt;state&gt;</span>.</div>
+    <div class="mini"><b>Handoffs.</b> Candidate → <span class="mono">/test-automation</span> · Manual → manual suite · Deferred → report + Jira comment (terminal).</div>
+  </div>
+  <div class="lane">
+    <span class="lane-tag out">OUTPUT</span>
+    <span class="chip s">Traceable TCs <b>US↔ATS↔ATP↔ATR↔TC</b></span>
+    <span class="chip s">Candidates in the <b>RTP</b>, grouped into e2e flows</span>
+    <span class="chip s"><b>Deferred</b> comment in Jira</span>
+    <span class="chip s">verdict per TC: C / M / D</span>
+  </div>
+  <div class="notes">This map is the deck's index: each node on the main path is a section that follows. Main path: Gate → Resume → Modality → Scope → Analyze → Prioritize → Document → Close. The adjacent paths (gates, fallbacks, loops, handoffs) are in the lower strip. This is document mode (the default); repair-traceability mode does not walk this path and has its own slide.</div>
+</section>
+
+<!-- 3 · MODES + INVOCATION -->
+<section class="slide" data-title="Modes and invocation">
+  <p class="kicker">mode routing: resolved before the preflight</p>
+  <h2 class="h2" data-anim="fade-up"><span class="mono">document</span> by default · <span class="grad">repair-traceability</span> and <span class="grad">post-promotion</span> sealed</h2>
+  <div class="grid g3 mt-m">
+    <div class="card"><h4><span class="mono">document</span> (default)</h4><p class="small dim">Normal documentation in the TMS: Analyze → Prioritize (ROI) → Document, with a Candidate / Manual / Deferred verdict. This is the path on the map and in the rest of the deck.</p><span class="tag mt-s">full workflow</span></div>
+    <div class="card"><h4><span class="mono">repair-traceability</span></h4><p class="small dim">Only with the first token <span class="mono">repair-traceability</span>, the phrase "fix-traceability" or an explicit request to repair a ticket's traceability. Loads only <span class="mono">references/repair-traceability.md</span>. Without a ticket key, it asks before touching the TMS. It does not start Analyze → Prioritize → Document, does not create unrelated TCs and does not widen the scope.</p><span class="tag warn mt-s">audit → plan → explicit approval → apply → verify</span></div>
+    <div class="card"><h4><span class="mono">post-promotion</span></h4><p class="small dim">With the first token <span class="mono">post-promotion</span> or with the notice from <span class="mono">/git-flow-master</span> when a promotion reaches the production branch. Loads only <span class="mono">references/post-promotion-pass.md</span>. Moves to <b>AUTOMATED</b> (<span class="mono">merged</span>) the TCs in Pull Request whose ATC and spec are already on the production branch with CI green, and re-reads each status. It does not analyze, score ROI or create TCs.</p><span class="tag mt-s">ATC + spec by path + CI → merged → re-read</span></div>
+  </div>
+  <table class="dtable tight">
+    <thead><tr><th>Host</th><th>How it is invoked</th></tr></thead>
+    <tbody>
+      <tr><td><b>Claude Code</b></td><td><span class="mono">/test-documentation UPEX-101</span> · <span class="mono">/test-documentation repair-traceability UPEX-101</span> · <span class="mono">/test-documentation post-promotion</span></td></tr>
+      <tr><td><b>OpenCode · Codex</b></td><td>in prose: "load the <span class="mono">test-documentation</span> skill, <span class="mono">repair-traceability</span> mode, ticket UPEX-101" · "<span class="mono">post-promotion</span> mode"</td></tr>
+      <tr><td><b>Pi</b></td><td><span class="mono">/skill:test-documentation repair-traceability UPEX-101</span> · <span class="mono">/skill:test-documentation post-promotion</span></td></tr>
+      <tr><td><b>Rule</b></td><td>the first token that matches a mode IS the mode and the rest is forwarded; no mode → <span class="mono">document</span> for documentation work; if the request could be more than one, it <b>asks</b></td></tr>
+    </tbody>
+  </table>
+  <div class="callout warn"><h4>A single ticket can't see the failure that matters most</h4><p>An inverted coverage link is invisible on its Story: the link exists and the panel stays empty. That's why, when auditing a ticket, the mode <b>also offers the project-wide sweep</b> for mixed direction (several keys or a JQL → a single worklist). Fixing direction means <b>delete before recreate</b>: Jira deduplicates pair + type, so adding the corrected link without deleting is a silent no-op. The plan you approve says which links get deleted, by id, and repairs toward the ATS path, never with direct TC→Story links in bulk.</p></div>
+  <div class="notes">Mode routing from SKILL.md. repair-traceability walks the cascade in order: ① TC in ATS and ATS→Story (fills the panel) ② TC only via ATP (placed, no coverage) ③ direct TC→Story (valid last resort) ④ no path (orphan). Direction canon, delete-before-recreate and the sweep: agentic-qa-core/references/traceability-linking.md §4 and §10. Missing credentials remain a hard STOP (Critical Rule #10).</div>
+</section>
+
+<!-- 4 · ENTRY GATES -->
+<section class="slide" data-title="Entry gates">
+  <p class="kicker">before phase 1: three locks</p>
+  <h2 class="h2" data-anim="fade-up">Nothing gets documented without passing the gates</h2>
+  <div class="grid g3 mt-m anim-stagger-list">
+    <div class="card"><h4>Hard prerequisite</h4><p class="small dim">Only behavior that is <b>already validated</b>: Story QA Approved, closed bug, or finished exploratory session. The TMS documents and protects regression, it is <b>not an exploration tool</b> (exploring belongs to <span class="mono">/sprint-testing</span>).</p></div>
+    <div class="card"><h4>Preflight Gate</h4><p class="small dim"><b>REQUIRED:</b> working issue tracker (<span class="mono">/acli</span>, validate with <span class="mono">bun run jira:check</span>) + a resolvable TMS modality (jira-xray → <span class="mono">/xray-cli</span> + <span class="mono">XRAY_*</span> creds). <b>OPTIONAL:</b> readable source repos. It never touches a live environment → no DB/API/browser probes. Gaps → ONE checklist; blocking RED → STOP.</p></div>
+    <div class="card"><h4>Phase -1 · Resume check</h4><p class="small dim">Reads <span class="mono">.session/test-documentation/&lt;scope&gt;/progress.md</span>. If it exists: shows scope, modality, last completed phase and pending chunks → offers <b>resume / restart / abort</b> (restart archives first). With nobody at the keyboard, it resumes by default; restart or abort need the word from the brief.</p></div>
+  </div>
+  <div class="callout warn"><h4>The resume case that matters most</h4><p>A Phase 3 bulk create interrupted mid-batch: <span class="mono">progress.md</span> records every completed chunk (one per subagent), so resume skips the TCs already created and dispatches <b>only the missing chunks</b>. With nobody at the keyboard, reversible work runs and every TMS write waits for a brief that covers it; an ambiguous mode or a repair-traceability without a ticket stops and reports.</p></div>
+  <div class="notes">The three locks run in order: the validated-behavior prerequisite (conceptual), the capability preflight (mechanical: acli + TMS), and session resume. The skill does not run against a live system; its gate focuses on being able to WRITE to the TMS.</div>
+</section>
+
+<!-- 5 · PHASE 0 MODALITY -->
+<section class="slide" data-title="Phase 0 · TMS modality">
+  <p class="kicker">phase 0: mandatory gate, resolved ONCE</p>
+  <h2 class="h2" data-anim="fade-up">Licensed Xray? Same concepts, different <span class="grad">containers</span></h2>
+  <div class="steps s3 anim-stagger-list">
+    <div class="step"><div class="num">1</div><h4>Config</h4><p><span class="mono">{{TMS_CLI}}</span> = <span class="mono">bun xray</span> → jira-xray <b>candidate</b>, confirmed in step 2; <span class="mono">acli</span>-only or undefined → jira-native.</p></div>
+    <div class="step"><div class="num">2</div><h4>Evidence</h4><p>The Xray API answers via <span class="mono">/xray-cli</span> (auth status and a project read) → jira-xray. Work types alone never decide: they also exist natively in jira-native. No answer is never jira-xray: if the config named Xray, STOP per Rule #10 and name the <span class="mono">XRAY_*</span> variables.</p></div>
+    <div class="step"><div class="num">3</div><h4>Ask</h4><p>Only if neither config nor evidence decides. Persist in <span class="mono">plan.md</span>; sticky; mid-session drift → STOP and ask.</p></div>
+  </div>
+  <table class="dtable tight">
+    <thead><tr><th>Artifact</th><th>jira-xray</th><th>jira-native (no Xray)</th></tr></thead>
+    <tbody>
+      <tr><td><b>ATP</b></td><td><b>Test Plan</b> issue "ATP: {STORY}: {title}"</td><td>Same Test Plan issue <b>by default</b>; fallback: Story field → comment</td></tr>
+      <tr><td><b>ATR</b></td><td><b>Test Execution</b> issue with Test Runs per TC</td><td>Same Test Execution issue; fallback: Story field → comment</td></tr>
+      <tr><td><b>TC</b></td><td>Xray <b>Test</b> (Manual / Cucumber / Generic)</td><td>Native <b>Test</b> issue type; the Description carries the full template</td></tr>
+      <tr><td><b>ATS (Test Set) / Pre-Condition</b></td><td>First-class; membership = <span class="mono">TC→ATS</span> link <b>+</b> the Xray-internal membership (GraphQL), never instead of the link</td><td>Work type present → same item, membership = the same <span class="mono">TC→ATS</span> links; absent → no ATS, direct TC→Story links</td></tr>
+      <tr><td><b>Result sync (CI)</b></td><td><span class="mono">Import Results</span> JUnit/Cucumber → automatic runs</td><td>Script updates Test Status + a comment per build</td></tr>
+    </tbody>
+  </table>
+  <div class="notes">Items-first in BOTH modalities: Test Plan and Test Execution are native Jira work types, independent of Xray; the Story field is a degraded fallback only when the work type does not exist in the instance. Never mix modalities inside a single Story (anti-pattern D5). A TC in an ATS is always a TC→ATS link in both modalities (canon: traceability-linking.md §9).</div>
+</section>
+
+<!-- 6 · PHASE 0 TC_CREATION_STAGE -->
+<section class="slide" data-title="Phase 0 · who creates the TCs">
+  <p class="kicker">phase 0: the same gate resolves a second value</p>
+  <h2 class="h2" data-anim="fade-up"><span class="mono">{{TC_CREATION_STAGE}}</span> picks the <span class="grad">verb</span> of Phase 3</h2>
+  <p class="lede">The modality says which TMS tool is alive. <span class="mono">testing.tc_creation_stage</span> in <span class="mono">.agents/project.yaml</span> says whether this skill <b>creates</b> the Candidate / Manual Tests or <b>refines and promotes</b> the ones <span class="mono">/sprint-testing</span> already made. Undefined or unrecognized → <span class="mono">auto</span>.</p>
+  <table class="dtable">
+    <thead><tr><th>Resolved value</th><th>Phase 3 verb for a Candidate / Manual scenario</th></tr></thead>
+    <tbody>
+      <tr><td><b><span class="mono">auto</span></b> (default)</td><td>jira-xray → <b>promote + enrich</b> an existing sprint Test · jira-native → <b>create</b> the Test here</td></tr>
+      <tr><td><b><span class="mono">sprint-testing</span></b></td><td><b>promote + enrich</b> in BOTH modalities: the items already exist and creating another duplicates the repository</td></tr>
+      <tr><td><b><span class="mono">test-documentation</span></b></td><td><b>create</b> in BOTH modalities: there are no sprint items to promote</td></tr>
+    </tbody>
+  </table>
+  <div class="grid g2 mt-m">
+    <div class="callout warn" style="margin-top:0"><h4>Promote without a sprint Test → create</h4><p>If the verb says promote but the scenario has no sprint Test (Story tested before the value was set, or a scenario derived only now), the Test is <b>created</b> for that scenario and noted in <span class="mono">progress.md</span>. The TC is never skipped.</p></div>
+    <div class="callout" style="margin-top:0"><h4>Sprint TCs are drafts</h4><p>They were written to run once. Before entering regression they get refined: canonical title, repeatable steps, preconditions buildable from a cold environment, variables instead of ids, split or merge by identity. Each refined TC carries a <b>Refinement Notes</b> line.</p></div>
+  </div>
+  <div class="notes">Modality and {{TC_CREATION_STAGE}} are persisted together in plan.md §Inputs and are sticky. The full table for the knob lives in sprint-testing/SKILL.md §"Which stage creates the TCs"; test-documentation only consumes it. Whatever the verb, the canonical title rule is the same (see the RTP promotion slide).</div>
+</section>
+
+<!-- 7 · SCOPES -->
+<section class="slide" data-title="Scopes">
+  <p class="kicker">pick the scope by the INPUT, not by the output</p>
+  <h2 class="h2" data-anim="fade-up">The scopes, one pipeline</h2>
+  <table class="dtable">
+    <thead><tr><th>Scope</th><th>Input</th><th>Typical volume</th><th>Default bias</th></tr></thead>
+    <tbody>
+      <tr><td><b>Module-driven</b></td><td>a module explored end to end</td><td>20-100+ scenarios</td><td>most will end up Deferred</td></tr>
+      <tr><td><b>Ticket-driven</b></td><td>a QA Approved Story from the sprint</td><td>3-8 scenarios</td><td>ATP/ATR per Story</td></tr>
+      <tr><td><b>Bug-driven</b></td><td>a closed bug with a verified fix</td><td>0-2 scenarios</td><td>ROI biased UP, "it failed once, it can fail again"</td></tr>
+      <tr><td><b>Ad-hoc / Exploratory</b></td><td>new scenarios from exploration</td><td>1-10 scenarios</td><td>applies the 3 filters hard</td></tr>
+      <tr><td><b>Discovery-driven</b></td><td>a gap with no Story, anchored to a coverage Tech Story</td><td>1-10 per gap, 20-100+ per module</td><td>nothing marked "observed" reaches Candidate until a person confirms it is intentional; it enters from the gap list or from an exploratory round: COVERED is dropped with one line, WEAK is a proposal to strengthen the existing test, and the 50% alarm runs per chunk of a Tech Story</td></tr>
+    </tbody>
+  </table>
+  <div class="callout"><h4>Once the scope is confirmed, the AI writes the plan</h4><p><span class="mono">&lt;scope&gt;</span> = <span class="mono">&lt;JIRA-KEY&gt;</span> (ticket/bug) · <span class="mono">&lt;module-slug&gt;</span> · <span class="mono">&lt;YYYY-MM-DD&gt;-adhoc</span>. It writes <span class="mono">.session/test-documentation/&lt;scope&gt;/plan.md</span>: goal (scope + modality + expected number of TCs), inputs (PBI, ATP, prior bugs), phases, risks and a verification checklist, and records the checkpoint in <span class="mono">progress.md</span>.</p></div>
+  <p class="foot-note">A Story ID → ticket-driven · a bug ID → bug-driven · a coverage Tech Story → discovery-driven · a module name → module-driven · session notes → ad-hoc.</p>
+  <div class="notes">The scopes share the Analyze → Prioritize → Document pipeline; only the input source and the defaults change. Plan-first is mandatory (session contract): nothing is created in the TMS without a written plan.md.</div>
+</section>
+
+<!-- 8 · BUG-DRIVEN GOLDEN RULE -->
+<section class="slide" data-title="Bug-driven · golden rule">
+  <p class="kicker">bug-driven scope: the rule worth its weight in gold</p>
+  <h2 class="h2" data-anim="fade-up">An important bug MUST end with a <span class="grad">Test</span></h2>
+  <div class="flow anim-stagger-list">
+    <div class="stage"><div class="sx">1</div><div><h4>Is it a regression candidate?</h4><p>Apply the Phase 0 filters + ROI (the prior bug biases it upward). <b>NO</b> → treat it as a failed test: the fix was already verified in sprint-testing → <b>Deferred, no new Test</b>. <b>YES</b> → step 2.</p></div></div>
+    <div class="stage"><div class="sx">2</div><div><h4>Did it come from an already executed Test that failed?</h4><p><b>YES</b> → <b>REUSE</b> that Test: link it to the bug (<span class="mono">tests / is tested by</span>) and promote it to regression, <b>never duplicate</b>. <b>NO</b> → <b>CREATE</b> + design the Test (native: <span class="mono">Test</span> issue; xray: Xray <span class="mono">Test</span> + Test Plan / Test Set).</p></div></div>
+  </div>
+  <div class="grid g2 mt-m">
+    <div class="callout warn" style="margin-top:0"><h4>Overrides "the bug is the test case"</h4><p>That phrase from <span class="mono">/sprint-testing</span> covers only the immediate retest in the sprint, NOT future regression. This rule decides whether a <i>persistent</i> Test must exist so the bug never silently comes back.</p></div>
+    <div class="callout" style="margin-top:0"><h4>Never reopen a closed bug (D8)</h4><p>The bug's history is immutable. Create the new TC and link it via <span class="mono">tests / is tested by</span>; don't attach regression by reopening the issue.</p></div>
+  </div>
+  <div class="notes">A closed bug is strong empirical evidence that the area comes back: most qualify and lean toward Candidate, though not all (a one-off typo in a stable area is deferred). The reuse-or-create decision avoids duplicating Tests that already exist in the set.</div>
+</section>
+
+<!-- 9 · PHASE 1 INPUTS -->
+<section class="slide" data-title="Phase 1 · Analyze: inputs">
+  <p class="kicker">phase 1: analyze · what goes in</p>
+  <h2 class="h2" data-anim="fade-up">Gather the sources, then <span class="grad">read the code</span></h2>
+  <table class="dtable tight">
+    <thead><tr><th>Source</th><th>What is read</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td><b>Story / Epic</b></td><td>the full synced folder: <span class="mono">story.md</span>, <span class="mono">acceptance-criteria.md</span>, scope, business rules, <span class="mono">comments.md</span></td><td>identify scenarios + risk signals</td></tr>
+      <tr><td><b>Linked closed bugs</b></td><td>summary, root cause, fix area</td><td>prior-bug prioritization rule</td></tr>
+      <tr><td><b>Existing ATP / ATR</b></td><td>modality-aware read via <span class="mono">bun run jira:sync-issues get &lt;KEY&gt; --include-comments</span> → read the synced <span class="mono">.md</span></td><td>scenarios and results that already exist, don't reinvent or re-run</td></tr>
+      <tr><td><b>Implementation plan + code</b></td><td>real files, APIs, test IDs</td><td>validate design vs implementation</td></tr>
+      <tr><td><b><span class="mono">business-domain-context</span></b></td><td>canonical entity and process names (<span class="mono">bun run context:map business-domain-context</span>)</td><td>vocabulary for titles, steps and preconditions</td></tr>
+    </tbody>
+  </table>
+  <div class="callout warn"><h4>Validation against source code: mandatory before documenting</h4><p>The ATP was written BEFORE the code existed. Grep for <span class="mono">data-testid=</span>, route handlers, API routes and text formats; every divergence goes into a <b>Refinement Notes</b> section of the TC. Skipping this step is the #1 cause of invalid automated tests later.</p></div>
+  <div class="notes">Detailed reads ALWAYS go through the sync script (acli view returns null on custom fields). Typical discrepancies: an assumed API that is really SSR/direct DB; "based on N reviews" vs the real "(N reviews)"; hardcoded IDs vs a variable pattern.</div>
+</section>
+
+<!-- 10 · PHASE 1 CRAFT: IDENTITY + CROSS-CUTTING -->
+<section class="slide" data-title="Phase 1 · TC identity">
+  <p class="kicker">phase 1: analyze · the two load-bearing rules</p>
+  <h2 class="h2" data-anim="fade-up">One (Precondition + Action) = one TC</h2>
+  <div class="vs">
+    <div class="card side good-side"><h3>✓ SAME TC: 5 assertions</h3><ul>
+      <li>pre <b>valid credentials</b>, action <b>submit login</b></li>
+      <li>redirect + token + profile via <span class="mono">/auth/me</span> + cookie + welcome</li>
+      <li>all the validations live in ONE TC; splitting into "panel A / B / C" is the most diagnosed antipattern</li>
+    </ul></div>
+    <div class="mid">≠</div>
+    <div class="card side alt-side"><h3>✓ DIFFERENT TCs: the precondition differs</h3><ul>
+      <li>valid credentials → success (TC-A)</li>
+      <li>locked account → 423 (TC-B)</li>
+      <li>invalid credentials → 401 (TC-C)</li>
+    </ul></div>
+  </div>
+  <table class="dtable tight">
+    <thead><tr><th>Cross-cutting (NOT a TC)</th><th>Validated…</th></tr></thead>
+    <tbody>
+      <tr><td>Responsive · XSS · performance · a11y · API contract · generic "error handling"</td><td>inside each test (mobile viewport, data with special characters, timing/a11y/schema assertions) or in an <b>app-level suite</b></td></tr>
+      <tr><td><b>Deferral ≠ omission</b></td><td>moving a cross-cutting trait out of scope is an <b>explicit handoff</b>: name the receiving suite or record the gap (Deferred TC or a note in the ATR), it never just evaporates</td></tr>
+    </tbody>
+  </table>
+  <div class="notes">A real scenario is a user flow: a clear business goal, a concrete precondition + action, a verifiable result. Cross-cutting traits are tested INSIDE other tests or in app-level suites; promoting "XSS prevention" to its own TC is a classic mistake.</div>
+</section>
+
+<!-- 11 · PHASE 1 1:N DERIVATION -->
+<section class="slide" data-title="Phase 1 · 1:N derivation">
+  <p class="kicker">phase 1: analyze · design doctrine (test-design-doctrine.md)</p>
+  <h2 class="h2" data-anim="fade-up">One AC → N candidates, chosen by the <span class="grad">shape</span> of the AC</h2>
+  <table class="dtable tight">
+    <thead><tr><th>Trigger in the AC</th><th>Technique (mandatory)</th><th>What it produces</th></tr></thead>
+    <tbody>
+      <tr><td>Any input (always)</td><td><b>Equivalence Partitioning</b></td><td>same output → ONE parameterized TC (Scenario Outline + Examples); different output → separate TCs</td></tr>
+      <tr><td>Range / limit / length / date window</td><td><b>Boundary Value Analysis</b></td><td><span class="mono">min-1 · min · min+1 … max-1 · max · max+1</span> + zero / empty / null / overflow</td></tr>
+      <tr><td>State / lifecycle field</td><td><b>State-Transition</b></td><td>one TC per valid transition + per invalid transition</td></tr>
+      <tr><td>2+ interacting conditions</td><td><b>Decision Table</b></td><td>enumerate combos, collapse equivalents, one TC per surviving rule</td></tr>
+      <tr><td>3+ combinable factors</td><td><b>Pairwise</b></td><td>all-pairs set (record the reduction)</td></tr>
+    </tbody>
+  </table>
+  <div class="grid g2 mt-m">
+    <div class="callout" style="margin-top:0"><h4>Candidates ≠ TMS items</h4><p>Deriving broadly is free; <b>persisting is gated by ROI</b> (Phase 2). Collapsing an AC into a single TC requires a written "trivially atomic" justification. The AC→TC map is the <b>floor</b>, not the coverage.</p></div>
+    <div class="callout ok" style="margin-top:0"><h4>Improvement bridge</h4><p>A test-beyond-AC exposes a gap because the AC was <b>under-specified</b> → the right artifact is an <b>Improvement</b> issue (defect-management doctrine), NOT a regression TC and NOT widening the Story's ACs after the fact.</p></div>
+  </div>
+  <div class="notes">EP without BVA misses the off-by-one. The identity rule (pre+action) only merges WITHIN a partition, never across partitions, boundaries or states. Canon: agentic-qa-core/references/test-design-doctrine.md.</div>
+</section>
+
+<!-- 12 · PHASE 2 ROI -->
+<section class="slide" data-title="Phase 2 · ROI">
+  <p class="kicker">phase 2: prioritize · the gate that is never skipped</p>
+  <h2 class="h2" data-anim="fade-up">Three filters, then the <span class="grad">formula</span></h2>
+  <div class="grid g2t mt-m">
+    <div>
+      <div class="flow anim-stagger-list" style="margin-top:0">
+        <div class="stage"><div class="sx">F1</div><div><h4>Does it protect against future regressions?</h4><p>One-off typo in a stable area → No → Deferred.</p></div></div>
+        <div class="stage"><div class="sx">F2</div><div><h4>Prior bugs in this area?</h4><p>Yes → prioritize even with moderate ROI: "it failed once, it can fail again".</p></div></div>
+        <div class="stage"><div class="sx">F3</div><div><h4>App level or feature level?</h4><p>XSS / a11y / perf / responsive → APP-level suites → Deferred from this scope.</p></div></div>
+      </div>
+      <div class="callout warn"><h4>Fail any filter → Deferred</h4><p>The three filters kill most scenarios before any arithmetic.</p></div>
+    </div>
+    <div>
+      <div class="mk">ROI = (Frequency × Impact × Stability)
+      ─────────────────────────────────  / 10
+           (Effort × Dependencies)
+
+  / 10 = normalization constant
+  everything at 3 → 0.3 → Deferred (the default)
+
+Component Value = ROI × (1 + 0.2 × N)
+  N = E2E flows that reuse the TC
+  estimated, capped at N = 3 (max ×1.6)</div>
+      <table class="dtable tight" style="margin-top:10px">
+        <thead><tr><th>Factor (1-5)</th><th>1</th><th>5</th></tr></thead>
+        <tbody>
+          <tr><td><b>Frequency</b></td><td>yearly</td><td>every PR / commit</td></tr>
+          <tr><td><b>Impact</b></td><td>cosmetic</td><td>revenue / core</td></tr>
+          <tr><td><b>Stability</b></td><td>very volatile</td><td>months without changes</td></tr>
+          <tr><td><b>Effort</b> (÷)</td><td>trivial</td><td>a week+</td></tr>
+          <tr><td><b>Dependencies</b> (÷)</td><td>none</td><td>complex external ones</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="notes">Effort and Dependencies are DIVISORS: an expensive, coupled "critical flow" MUST score low, and that is the formula working. The "/ 10" is not a sixth factor: it brings the raw quotient (0.04 to 125) down to the scale of the thresholds (0.004 to 12.5). Component Value rescues reusable atoms: authenticateSuccessfully with ROI 2.0 reused in 3 flows → 2.0 × 1.6 = 3.2 → Candidate. N is a qualitative estimate (nobody counts call-sites), capped at 3; it is noted in the ROI comment. Authoritative bands: references/tms-conventions.md §9.</div>
+</section>
+
+<!-- 13 · PHASE 2 VERDICTS -->
+<section class="slide" data-title="Phase 2 · verdicts">
+  <p class="kicker">phase 2: prioritize · exactly one of three, there is no fourth</p>
+  <h2 class="h2" data-anim="fade-up">Candidate · Manual · Deferred: the modality changes the <span class="grad">verb</span></h2>
+  <table class="dtable tight">
+    <thead><tr><th>Verdict</th><th>Triggered by</th><th>Where it goes</th><th>Phase 3 (<span class="mono">auto</span>): jira-native</th><th>Phase 3 (<span class="mono">auto</span>): jira-xray</th></tr></thead>
+    <tbody>
+      <tr><td><b>Candidate</b></td><td>ROI &gt; 3.0 · OR 1.5-3.0 + prior bug · OR critical happy path</td><td>feeds <span class="mono">/test-automation</span></td><td rowspan="2">the <span class="mono">Test</span> work item is <b>CREATED</b> (C + M only)</td><td rowspan="2">the <span class="mono">Test</span> already exists (sprint-testing Planning) → it is <b>PROMOTED</b> to the <b>Regression Test Plan (RTP)</b> (+ optional feature <span class="mono">TS:</span>), label <span class="mono">regression-candidate</span>, and <b>ENRICHED</b> (rich Gherkin, parameterization, edge cases)</td></tr>
+      <tr><td><b>Manual</b></td><td>ROI 0.5-1.5 and not automatable, or explicitly manual-only</td><td>manual regression suite (terminal)</td></tr>
+      <tr><td><b>Deferred</b></td><td>ROI &lt; 0.5 · OR failed a filter · OR one-time validation · OR fits none of the rows above (it is the default bucket)</td><td>out of regression (terminal, revisitable)</td><td><b>NOT created</b>: stays in the report and in the Jira comment</td><td>the sprint Test stays <b>unpromoted</b>; it is not deleted</td></tr>
+    </tbody>
+  </table>
+  <div class="callout ok"><h4>Three layers, three counts: the healthy shape</h4><p><span class="grad"><b>analyzed 80 → documented 12 → automated 8</b></span>. A test enters the repository because it will be re-run, never to reach a count. If &gt;50% end up Candidate/Manual → reapply the filters more strictly: <b>most should be Deferred</b>.</p></div>
+  <div class="callout"><h4>The agent scores. The person signs.</h4><p>The agent derives scenarios by technique, computes the ROI and <b>proposes</b> the verdict. <b>Every verdict is signed by the person</b>, same as the regression epic and the Test Set. CSA autonomy <b>2</b>, separate verifier <b>recommended</b>: a second agent re-reads the verdicts against the ATR. The &gt;50% Candidate/Manual alarm gets answered, not ignored.</p></div>
+  <div class="notes">The verdict (arithmetic) is identical in both modalities; what changes is the Phase 3 verb: with {{TC_CREATION_STAGE}} = auto, CREATE (native) vs PROMOTE + ENRICH (xray); the other two values fix the verb in both. Deferred is never a deletion. Anti-pattern D4: never skip ROI scoring. Agentic contract of the stage: agentic-qa-core/references/stage-gates.md.</div>
+</section>
+
+<!-- 14 · PHASE 3 CONTAINERS -->
+<section class="slide" data-title="Phase 3 · containers">
+  <p class="kicker">phase 3: document · container preflight</p>
+  <h2 class="h2" data-anim="fade-up">Epic · Test Set · Test Plan: three different things</h2>
+  <div class="grid g3 mt-m anim-stagger-list">
+    <div class="card"><h4>Regression Epic</h4><p class="small dim">= the <b>"QA Test Repository"</b> process epic. Resolved <i>found-or-created</i> by JQL (<span class="mono">type = Epic AND summary ~ "QA Test Repository"</span>); if missing, <b>ask before creating</b> and cache the key in <span class="mono">.agents/project.yaml</span>. Every documented TC is parented here, never to a product epic.</p><span class="tag mt-s">repository umbrella</span></div>
+    <div class="card"><h4>Test Set, two altitudes</h4><p class="small dim"><b>Per-Story ATS (mandatory)</b>: <span class="mono">ATS: {US_ID}: {story title}</span>, third artifact of the ATP/ATR/ATS family, parent "QA Test Artifacts", components inherited from the Story. Its <span class="mono">is tested by</span> link to the Story is what fills the coverage panel. <b>Feature-level <span class="mono">TS:</span> (optional)</b>: <span class="mono">TS: {EPIC|module}: Validate {feature}</span>, groups smoke/regression, components optional. Native without a Test Set work type → direct TC↔Story links.</p><span class="tag mt-s">coverage</span></div>
+    <div class="card"><h4>Test Plan</h4><p class="small dim"><b>Execution / regression scope</b>, the set of Tests that runs for a release or cycle. In jira-xray the ATP IS a Test Plan issue (parent: "QA Master Test Plan" epic). The <b>RTP</b> (<span class="mono">RTP: {PROJECT_KEY|module}: Regression Test Plan</span>) is the long-lived regression Test Plan under that same epic: destination of every TC promoted with the <span class="mono">regression-candidate</span> label, and it is never completed: each regular <span class="mono">/regression-testing</span> run writes its <b>RTR</b> (Test Execution <span class="mono">RTR: {scope-id}: Regression Testing</span>) against it; the STR is left for sprint close.</p><span class="tag mt-s">execution</span></div>
+  </div>
+  <div class="callout"><h4>Three-axis model (defect-management-doctrine.md)</h4><p><b>Parent</b> = QA process bucket (Test → "QA Test Repository" · ATP → "QA Master Test Plan" · ATR and ATS → "QA Test Artifacts") · <b>issue-link</b> = the originating Story · <b>components</b> = the affected product module. Three separate axes; the parent never carries the product trace.</p></div>
+  <div class="notes">People routinely merge these containers. Epic = the whole repository; ATS = the per-Story Set that gives coverage (optional TS: groups by feature); Test Plan = execution scope. In jira-native with the Test Set work type the ATS exists anyway (membership = TC→ATS links); without the work type, direct TC↔Story links + Regression Epic + label.</div>
+</section>
+
+<!-- 15 · PHASE 3 LINKING + NAMING -->
+<section class="slide" data-title="Phase 3 · linking + naming">
+  <p class="kicker">phase 3: document · the order is not optional</p>
+  <h2 class="h2" data-anim="fade-up">Set-first: ATS → ATP → ATR → <span class="grad">only then</span> each TC</h2>
+  <div class="grid g2t mt-m">
+    <div class="mk">1  Find-or-create ATS → link to the US
+     ("is tested by") ← THIS link fills
+     the coverage panel
+2  ATP (item born in sprint-testing Planning;
+     find-or-create here ONLY in module-driven)
+     → link to the US (administrative, no coverage)
+3  ATR → link to the US (administrative)
+     + ATP↔ATR link (plan/results, 1:1)
+4  for each TC:
+     TC→ATS link (both modalities)
+     + xray: Xray-internal membership
+     ATP/ATR lists derived from the ATS
+     direct TC→Story = valid last resort
+5  for each PROMOTED TC:
+     FIRST title re-derived and verified
+     xray  → feature TS: (optional) + RTP
+             + regression-candidate label
+     native→ feature/Epic label</div>
+    <div>
+      <table class="dtable tight" style="margin-top:0">
+        <thead><tr><th>Entity</th><th>Naming</th></tr></thead>
+        <tbody>
+          <tr><td><b>ATP</b></td><td><span class="mono">ATP: {STORY-KEY}: {story title}</span></td></tr>
+          <tr><td><b>ATR</b></td><td><span class="mono">ATR: {STORY-KEY}: Story Testing</span></td></tr>
+          <tr><td><b>ATS</b></td><td><span class="mono">ATS: {US_ID}: {story title}</span>, mandatory per Story, even with 1 TC</td></tr>
+          <tr><td><b>RTP</b></td><td><span class="mono">RTP: {PROJECT_KEY|module}: Regression Test Plan</span>, long-lived regression plan, one per project: destination of every promoted TC</td></tr>
+          <tr><td><b>TC</b></td><td><span class="mono">{US_ID}: TC#: should &lt;outcome&gt; [when &lt;condition&gt;] [given &lt;pre&gt;]</span>, prefix ALWAYS the US key, in every modality</td></tr>
+          <tr><td><b>Grouping</b></td><td><span class="mono">TS: {EPIC|module}: Validate {feature}</span>, optional feature-level grouper (Test Set / <span class="mono">describe()</span>)</td></tr>
+        </tbody>
+      </table>
+      <div class="callout warn" style="margin-top:12px"><h4>Orphan = a TC with NO path to the Story</h4><p>No ATS, no ATP, no direct link → <span class="mono">test-documentation</span> in <span class="mono">repair-traceability</span> mode verifies the cascade <span class="mono">TC→ATS→Story → TC→ATP→Story → TC→Story</span>. D7: an ATR is never linked to two ATPs (1:1). It rejects titles like "Login test", "Login - error", "TC1: Test form".</p></div>
+    </div>
+  </div>
+  <div class="notes">Coverage verified live: ONLY the ATS→Story link (or direct Test↔Story links) fills the panel; ATP→Story and ATR→Story links are administrative traceability. Resolution cascade: TC→ATS→Story (primary) → TC→ATP→Story (placement, does not cover the panel) → direct TC→Story (valid last resort; the defect is having no path at all). TC membership in an ATS is always a TC→ATS link in both modalities; jira-xray also writes the Xray-internal membership (GraphQL via /xray-cli), never instead of the link. TC in ATP / ATR stays Xray-internal. Canon: traceability-linking.md §9.</div>
+</section>
+
+<!-- 16 · PHASE 3 CREATE TCs -->
+<section class="slide" data-title="Phase 3 · create the TCs">
+  <p class="kicker">phase 3: document · the verb per modality, TC by TC</p>
+  <h2 class="h2" data-anim="fade-up">Creating the TCs: a matrix by modality</h2>
+  <table class="dtable tight">
+    <thead><tr><th>Stack</th><th>Manual test</th><th>Candidate (automatable)</th></tr></thead>
+    <tbody>
+      <tr><td><b>Xray on Jira</b></td><td><b>Two steps</b>: (1) <span class="mono">Create Test type=Manual</span> <b>WITHOUT</b> inline steps (Xray Cloud silently drops them), (2) <span class="mono">Add Test Step</span> one by one (verify with <span class="mono">Get Test</span>), then <span class="mono">Update Issue</span> with the full Description</td><td><span class="mono">Create Test type=Cucumber gherkin=…</span> + <span class="mono">Update Issue</span> with the Description template</td></tr>
+      <tr><td><b>Jira native</b></td><td><span class="mono">Create Issue issueType=Test</span>, Description = steps table</td><td><span class="mono">Create Issue issueType=Test</span>, Description = Gherkin + full template</td></tr>
+    </tbody>
+  </table>
+  <div class="grid g2 mt-m">
+    <div class="callout warn" style="margin-top:0"><h4>The Xray two-call rule</h4><p>One <span class="mono">Create Test</span> (registers in Xray) + one <span class="mono">Update Issue</span> (pastes the Description). Skipping the second leaves a TC with no readable documentation in Jira: the most common silent failure.</p></div>
+    <div class="callout" style="margin-top:0"><h4>Anti-patterns D1 · D6</h4><p><b>Never</b> hand-write ADF JSON: rich-text bodies (ATP, ATR, Test description) are written in Markdown, converted and validated with the <span class="mono">.agents/skills/acli/scripts/md-to-adf.ts</span> converter, and what gets published is the resulting ADF JSON; through the CLI, <span class="mono">acli</span> never converts Markdown on its own. <b>Never</b> invent a <span class="mono">customfield_NNNNN</span>: run <span class="mono">bun run jira:sync-fields --force</span> and resolve by <span class="mono">{{jira.&lt;slug&gt;}}</span>.</p></div>
+  </div>
+  <p class="foot-note">Description always with the full template: Related Story · Priority · ROI · Prior bugs · Test Design (gherkin/steps) · Variables · Implementation Code · Architecture · Test IDs · Preconditions · Expected Results. Every TC created: parent "QA Test Repository", <b>components</b> = the affected product module, <b>assignee</b> = the session user, set at creation.</p>
+  <div class="notes">This phase's dispatch is the only parallel one: N &gt; 10 TCs → subagents in chunks of 5-10 (see the orchestration slide). Each subagent loads /xray-cli or /acli depending on modality and runs this serial flow for its chunk.</div>
+</section>
+
+<!-- 17 · PHASE 3 GHERKIN -->
+<section class="slide" data-title="Phase 3 · quality Gherkin">
+  <p class="kicker">phase 3: document · the artifact that travels to automation</p>
+  <h2 class="h2" data-anim="fade-up">High-quality Gherkin: <span class="grad">variables, never hard data</span></h2>
+  <div class="grid g2t mt-m">
+    <div class="terminal">
+      <div class="bar"><span class="td"></span><span class="td"></span><span class="td"></span><span>TC · UPEX-101.feature</span></div>
+<pre><span class="cmt">@critical @regression @automation-candidate @UPEX-101</span>
+<span class="kw">Scenario Outline:</span> should show auth error when password is incorrect
+  <span class="cmt">"""  Bugs covered: UPEX-202 · Related Story: UPEX-101 · ROI: 4.0  """</span>
+  <span class="cmt"># === PRECONDITIONS ===</span>
+  <span class="kw">Given</span> a verified user exists with <span class="str">{email}</span>
+  <span class="cmt"># === ACTION ===</span>
+  <span class="kw">When</span> the user submits login with <span class="str">{email}</span> and <span class="str">{wrong_password}</span>
+  <span class="cmt"># === VALIDATIONS ===</span>
+  <span class="kw">Then</span> a <span class="numlit">401</span> error is returned with <span class="str">"&lt;message&gt;"</span>
+  <span class="cmt"># === EQUIVALENT PARTITIONS ===</span>
+  <span class="kw">Examples:</span> Wrong password | Empty password | Unknown email</pre>
+    </div>
+    <ul class="blist" style="margin-top:0">
+      <li><b>Variables, never hardcode.</b> <span class="mono">{mentor_id}</span>, not <span class="mono">550e8400-…</span>. A Variables table with how to obtain each value at runtime.</li>
+      <li><b>Tags always:</b> priority (<span class="mono">@critical…@low</span>) + suite (<span class="mono">@regression</span>, <span class="mono">@smoke</span> if critical path) + <span class="mono">@automation-candidate</span> + <span class="mono">@{US_ID}</span>.</li>
+      <li><b>Structured comments:</b> PRECONDITIONS / ACTION / VALIDATIONS / EQUIVALENT PARTITIONS.</li>
+      <li><b>Docstring with metadata:</b> story, bugs covered, ROI.</li>
+      <li><b>Parameterize per partition:</b> variants of the same behavior → ONE Test with <span class="mono">Examples</span>, not N Tests.</li>
+    </ul>
+  </div>
+  <div class="notes">Staging data changes over the years: a literal UUID or email rots the test. Each variable carries its retrieval query ({email} → SELECT email FROM users WHERE active=true LIMIT 1). This Gherkin is exactly what /test-automation will consume.</div>
+</section>
+
+<!-- 18 · PHASE 3 STATES -->
+<section class="slide" data-title="Phase 3 · verdict → state">
+  <p class="kicker">phase 3: the verdict decides the workflow branch</p>
+  <h2 class="h2" data-anim="fade-up">Every verdict is a <span class="grad">state</span>, none is "leave it wherever it is"</h2>
+  <div class="mk">Draft ──start_design──▶ In Design ──ready_to_run──▶ Ready ──┬── for_manual ─────────────────▶ Manual     (terminal)
+                                                            └── automation_review_from_ready ▶ In Review ──approve_to_automate──▶ Candidate → /test-automation</div>
+  <table class="dtable tight">
+    <thead><tr><th>Verdict</th><th>Transitions to fire</th><th>The TC ends in</th></tr></thead>
+    <tbody>
+      <tr><td><b>Candidate</b></td><td><span class="mono">automation_review_from_ready</span> and then <span class="mono">approve_to_automate</span></td><td><span class="mono">candidate</span>: what <span class="mono">/test-automation</span> picks up</td></tr>
+      <tr><td><b>Manual</b></td><td><span class="mono">for_manual</span>, <b>from <span class="mono">ready</span></b>, never via <span class="mono">in_review</span>: that edge does not exist in the catalog. A TC already in <span class="mono">candidate</span> goes down with <span class="mono">manual_execution_from_candidate</span></td><td><span class="mono">manual</span></td></tr>
+      <tr><td><b>Deferred</b></td><td>none</td><td><span class="mono">ready</span> (jira-xray: the unpromoted sprint Test · jira-native: no TC was created)</td></tr>
+    </tbody>
+  </table>
+  <ul class="blist anim-stagger-list">
+    <li><b>Never skip states.</b> Rework only via <span class="mono">back_from_&lt;state&gt;</span>. Slugs come from <span class="mono">.agents/jira-workflows.json</span> (<span class="mono">{{jira.transition.test_case.&lt;slug&gt;}}</span>), never hardcoded literal names.</li>
+    <li><b>Unmapped slug</b> (renamed states or an old catalog): fallback from <span class="mono">artifact-lifecycle.md</span> §4. List the live transitions, propose the closest synonym in ONE question, fire the live id if you say yes and recommend <span class="mono">bun run jira:sync-workflows</span>. A TC never stays in <span class="mono">draft</span> because of a slug that didn't resolve.</li>
+    <li><b>Base labels per TC.</b> scope: <span class="mono">regression</span> almost always, <span class="mono">smoke</span> only for the critical path (10-20% of the suite), + <span class="mono">e2e</span>/<span class="mono">integration</span>/<span class="mono">functional</span> · state: <span class="mono">automation-candidate</span> ↔ <span class="mono">manual-only</span> mutually exclusive; on merge → <span class="mono">automated</span>.</li>
+  </ul>
+  <div class="notes">Two independent fields: Test Status (workflow: where it is in its life) vs Execution Status (the last run). "Candidate" with a last run of FAIL is a valid combination. Canon for the verdict → state map: agentic-qa-core/references/artifact-lifecycle.md §1 and §1.1.</div>
+</section>
+
+<!-- 19 · PHASE 3 PROMOTION TO THE RTP -->
+<section class="slide" data-title="Phase 3 · promotion to the RTP">
+  <p class="kicker">phase 3: the last step, where Candidates go</p>
+  <h2 class="h2" data-anim="fade-up">Promote: title first, label and membership <span class="grad">last</span></h2>
+  <div class="steps s4 anim-stagger-list">
+    <div class="step"><div class="num">1</div><h4>Re-derive</h4><p>The title comes from the TC's Precondition + Action + verifiable result, never from the wording of the sprint outline.</p></div>
+    <div class="step"><div class="num">2</div><h4>Keep the prefix</h4><p><span class="mono">{US_ID}: TC#:</span> does not change. <span class="mono">#</span> is a stable index within the Story: if a sibling ended up Deferred, the gap stays.</p></div>
+    <div class="step"><div class="num">3</div><h4>Rewrite</h4><p>If the live summary differs, <span class="mono">[ISSUE_TRACKER_TOOL] Update Issue</span>: the summary is a Jira field, it never goes through <span class="mono">[TMS_TOOL]</span>.</p></div>
+    <div class="step"><div class="num">4</div><h4>Verify, only then promote</h4><p>Valid title → <span class="mono">regression-candidate</span> label + RTP. The old → new change is recorded in <span class="mono">progress.md</span>.</p></div>
+  </div>
+  <div class="grid g2 mt-l">
+    <div class="card"><h4>The RTP, one per project</h4><p class="small dim"><span class="mono">RTP: {PROJECT_KEY|module}: Regression Test Plan</span>, parent "QA Master Test Plan", find-or-create (ask before creating). <b>Assignee = you at creation</b>: Xray rejects membership edits on a Test Plan that isn't yours; if you find someone else's, ask before reassigning. It moves to <span class="mono">ready</span> with the first promotion and <b>stays there</b>, never <span class="mono">complete</span>. Manual enters the same RTP with <span class="mono">manual-only</span>; Deferred never does. <span class="mono">/test-automation</span> and <span class="mono">/regression-testing</span> read from there: a Candidate outside the RTP does not exist downstream.</p></div>
+    <div class="card"><h4>Group into e2e flows</h4><p class="small dim">A group = one journey that a spec runs end to end, named as a journey ("Checkout, guest purchase", not "Checkout tests"). A TC used by 2+ flows is an atomic component (a Steps module in KATA): it is listed under each flow and its count is the <span class="mono">N</span> of the Component value. It is written in the <b>RTP description, <span class="mono">## Regression flows</span> section</b> (the durable copy) and as a column in <span class="mono">COVERAGE-MATRIX</span>. A Candidate with no flow is an alarm, not a category.</p></div>
+  </div>
+  <div class="notes">"Title on promotion" and RTP handoff sections in SKILL.md. The title rule holds for every write path: jira-xray (a sprint Test selected into the RTP) and jira-native (a Stage 4 Test created from a sprint outline). In jira-native the promotion also travels in the Test's labels; /regression-testing describes how it reads that. Lifecycle: the RTP is born in planning, designed → ready, never complete; a feature TS stays in designing until its Epic closes; Preconditions stay in active.</div>
+</section>
+
+<!-- 20 · PHASE 3 REPORTS + DURABLE RECORD -->
+<section class="slide" data-title="Phase 3 · reports and durable record">
+  <p class="kicker">phase 3: two local files and a record that survives</p>
+  <h2 class="h2" data-anim="fade-up">The reports are <span class="mono">[LOCAL]</span>; what remains is the <span class="grad">TMS</span></h2>
+  <table class="dtable tight">
+    <thead><tr><th>File (<span class="mono">.context/reports/</span>, gitignored)</th><th>Contains</th></tr></thead>
+    <tbody>
+      <tr><td><b><span class="mono">COVERAGE-MATRIX-&lt;scope&gt;.md</span></b></td><td>AC → scenario → TC key → verdict, plus each Candidate's e2e flow; the uncovered ACs</td></tr>
+      <tr><td><b><span class="mono">PRIORITIZATION-&lt;scope&gt;.md</span></b></td><td>each scenario with its five factors, the score and the verdict</td></tr>
+    </tbody>
+  </table>
+  <div class="grid g2t mt-m">
+    <div>
+      <div class="mk">[ISSUE_TRACKER_TOOL] Add comment:
+  issue: {SCOPE_KEY}
+  body: |
+    ## Prioritization — Deferred scenarios
+
+    | Scenario | ROI | Why deferred |
+    |---|---|---|
+    | &lt;scenario&gt; | &lt;score&gt; | &lt;gate / band / one-time&gt; |</div>
+      <p class="foot-note">Read-before-write: if the comment already exists from a previous run on the same scope, it is <b>replaced</b>, not stacked with another. A module scope with no owning issue → goes to the Regression Epic.</p>
+    </div>
+    <ul class="blist" style="margin-top:0">
+      <li><b>Neither report is a deliverable.</b> They exist only on the machine that ran the session; nothing downstream depends on them. A re-run on the same <span class="mono">&lt;scope&gt;</span> overwrites its own pair.</li>
+      <li><b>Durable record.</b> Candidate and Manual: the Tests with their ROI comment. Deferred creates no item, so its list is mirrored in the comment on the left.</li>
+      <li><b><span class="mono">test-cases/</span> is a <span class="mono">[SYNC]</span> cache.</b> The skill runs <span class="mono">bun run jira:sync-issues get &lt;STORY_KEY&gt;</span> and READS <span class="mono">test-cases/TEST-&lt;KEY&gt;-&lt;slug&gt;.md</span>; it never writes there. It is recovered with <span class="mono">bun run context:hydrate</span>. What is Xray-internal (Preconditions, Test Set membership) is completed by <span class="mono">bun xray test enrich</span>.</li>
+      <li><b>Checkpoint + Archive.</b> Each phase and each parallel chunk is appended to <span class="mono">progress.md</span>; with both reports and the Deferred comment ready, the session is archived in <span class="mono">.session/.archive/…</span> + <span class="mono">mem_session_summary</span>. Partial failure (429s) → not archived: resume picks the chunks back up.</li>
+    </ul>
+  </div>
+  <div class="notes">&lt;scope&gt; is the same value as the session folder: &lt;JIRA-KEY&gt;, &lt;module-slug&gt; or &lt;YYYY-MM-DD&gt;-adhoc. .context/reports/README.md explains why the folder is ignored. bun xray test enrich is a /xray-cli command: load that skill before invoking it.</div>
+</section>
+
+<!-- 21 · STAGE CLOSE -->
+<section class="slide" data-title="Stage close · verifier + footer">
+  <p class="kicker">closing the Documentation stage: two things before saying "done"</p>
+  <h2 class="h2" data-anim="fade-up">Light verifier + <span class="grad">session footer</span></h2>
+  <div class="grid g2t mt-m">
+    <div>
+      <div class="mk">Light stage verifier: Documentation (own lines)
+[ ] every TC exists by KEY · parent QA Test Repository
+    · components · assignee = self
+[ ] every TC left draft: Candidate in candidate,
+    Manual in manual, Deferred left in ready on purpose
+[ ] canonical title verified BEFORE label and RTP
+[ ] RTP in ready · assignee = self · NOT completed
+[ ] promoted ones in the RTP (and TS: optional), membership ok
+[ ] every Candidate in a named e2e flow, written
+    in ## Regression flows of the RTP
+[ ] Preconditions in active (no transition: N/A)
+[ ] unmapped slug → fallback §4 asked</div>
+      <p class="foot-note">Plus the eight common lines from <span class="mono">artifact-lifecycle.md</span> §5. Each line is YES or an N/A with a reason; a single NO leaves the stage at <b>NEEDS REVISION</b>.</p>
+    </div>
+    <div>
+      <div class="terminal">
+        <div class="bar"><span class="td"></span><span class="td"></span><span class="td"></span><span>footer, in the chat only</span></div>
+<pre><span class="o">Skills loaded: test-documentation, acli, xray-cli
+MCPs used: none
+CLIs used: acli, bun (xray, jira:sync-issues)
+Testing levels touched:
+- API: 6 Candidates
+- UI/E2E: 2 Candidates, 1 Manual
+- Unit: none
+Refinements proposed: 0</span></pre>
+      </div>
+      <ul class="blist">
+        <li><b>Framing: curation.</b> "Testing levels" says how the TCs processed in the session split by level; a level that was expected but not touched says <b>none</b>.</li>
+        <li><b>Screenshots</b>, if any: relative path, captured as they happen and consolidated at close. Footer and screenshots go <b>to the chat only</b>, never to a Jira comment or the ATR.</li>
+        <li><b>Lessons</b> are proposed in <span class="mono">.session/test-documentation/&lt;scope&gt;/refinements.md</span>; they are never applied to the live skill.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="notes">Canon: agentic-qa-core/references/artifact-lifecycle.md §5 (verifier) and session-footer-contract.md (footer). In sessions with subagents, each stage report carries the five footer fields and the orchestrator compiles it once at close.</div>
+</section>
+
+<!-- 22 · ORCHESTRATION + TOOLS -->
+<section class="slide" data-title="Orchestration + tools">
+  <p class="kicker">who does what: command center + subagents</p>
+  <h2 class="h2" data-anim="fade-up">The main thread decides; the subagents write</h2>
+  <div class="grid g3 mt-m anim-stagger-list">
+    <div class="card"><h4>Inline (orchestrator)</h4><p class="small dim">Phases -1, 0, 1 and 2: resume, modality, analysis and verdicts live in the main thread; planning and deciding are not delegated.</p><span class="tag mt-s">judgment</span></div>
+    <div class="card"><h4>Parallel (Phase 3, N &gt; 10)</h4><p class="small dim">Chunks of ~5-10 TCs per subagent, <b>cap = 10 subagents</b> (Jira/Xray throttle and return 429; the cap is in SKILL.md §Subagent Dispatch). Each subagent loads <span class="mono">/xray-cli</span> or <span class="mono">/acli</span>. N ≤ 10 → inline.</p><span class="tag mt-s">fan-out</span></div>
+    <div class="card"><h4>Error protocol</h4><p class="small dim">Subagent failure → <b>STOP</b>, report the partial state (which TCs landed, which didn't, with keys/errors) and offer <b>retry / skip / abort</b>. No auto-fix, no rollback.</p><span class="tag mt-s">safety</span></div>
+  </div>
+  <table class="dtable tight">
+    <thead><tr><th>Need</th><th>Tool</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td>Detailed reads (custom fields, ACs, ATP/ATR, comments)</td><td><span class="mono">bun run jira:sync-issues get &lt;KEY&gt; --include-comments</span></td><td>read the synced <span class="mono">.md</span>, <span class="mono">acli view</span> returns null on custom fields</td></tr>
+      <tr><td>TMS writes (Test / Plan / Execution / link / transition)</td><td><span class="mono">/xray-cli</span> (jira-xray) · <span class="mono">/acli</span> (jira-native + generic Jira)</td><td>load the skill BEFORE invoking the binary</td></tr>
+      <tr><td>Field / workflow IDs</td><td><span class="mono">bun run jira:sync-fields</span> + <span class="mono">{{jira.&lt;slug&gt;}}</span></td><td>anti-pattern D6</td></tr>
+      <tr><td>Source code validation</td><td>Grep / Read on the repo</td><td>no live environment, code reading only</td></tr>
+    </tbody>
+  </table>
+  <div class="notes">The split is deliberate: judgment stays in the command center; raw API writes are spread out with a concurrency cap. Traceability linking and the coverage matrix run inline at the end because they need the aggregated state of everything created.</div>
+</section>
+
+<!-- 23 · A REALISTIC RUN -->
+<section class="slide" data-title="A realistic run">
+  <p class="kicker">the whole map, in one bug-driven invocation</p>
+  <h2 class="h2" data-anim="fade-up">A documentation run, end to end</h2>
+  <div class="terminal mt-m">
+    <div class="bar"><span class="td"></span><span class="td"></span><span class="td"></span><span>claude-code</span></div>
+<pre><span class="p">&gt; </span><span class="c">/test-documentation UPEX-202 (turn this closed bug into a regression test)</span>
+
+<span class="o">[Mode]       document (default). [Preflight] acli + xray-cli OK → GREEN.</span>
+<span class="o">[Phase -1]   No previous session for UPEX-202. [Phase 0] jira-xray ({{TMS_CLI}} = bun xray, the Xray API answers)</span>
+<span class="o">            · TC_CREATION_STAGE auto → verb: promote. Both sticky in plan.md.</span>
+<span class="o">[Phase 1]    jira:sync-issues get UPEX-202 + Story UPEX-101 (--include-comments).</span>
+<span class="o">            Grep: data-testid="login-error" confirmed · route /api/auth/login.</span>
+<span class="o">[Phase 2]    F2 prior bug = YES. ROI = (4×5×4)/(2×1)/10 = 4.0 → CANDIDATE.</span>
+<span class="o">            Golden rule: it did not come from a failed Test → CREATE (noted in progress.md).</span>
+<span class="o">[Phase 3]    Plan: Cucumber Test "UPEX-101: TC2: should show auth error when password</span>
+<span class="o">            is incorrect" · parent QA Test Repository · components Auth · assignee me</span>
+<span class="o">            · TC→ATS link UPEX-410 + Xray membership · tests → UPEX-202</span>
+<span class="o">            · RTP UPEX-12 + regression-candidate · flow "Login, registered user". Proceed?</span>
+<span class="p">&gt; </span><span class="c">y</span>
+<span class="o">  UPEX-540 created (Create Test + Update Issue) · draft → … → candidate · RTP in ready.</span>
+<span class="o">  sync get UPEX-101 → test-cases/TEST-UPEX-540-….md read. [LOCAL] reports written;</span>
+<span class="o">  Deferred: none. Verifier: all YES or N/A · footer printed in the chat.</span></pre>
+  </div>
+  <div class="notes">Every rule in the deck is visible here: mode, preflight, resume, modality gate + {{TC_CREATION_STAGE}}, plan-first, read via the sync script, code grep, the prior-bug rule, ROI with its /10, the reuse-or-create golden rule (and the promote-to-create fallback when there is no sprint Test), naming, parent + components + assignee, TC→ATS link plus the Xray membership, promotion to the RTP with an e2e flow, reading the synced cache, local reports, verifier and footer. All behind one confirmation before writing. ATS UPEX-410 already existed from /sprint-testing Planning.</div>
+</section>
+
+<!-- 24 · CLOSE -->
+<section class="slide" data-title="Close">
+  <p class="kicker">close: where it fits and how it is invoked</p>
+  <h2 class="h2" data-anim="fade-up">Derive broadly · document what repeats · <span class="grad">automate the few</span></h2>
+  <div class="grid g3 mt-m anim-stagger-list">
+    <div class="card"><h4>How to invoke it</h4><p class="small dim">Claude Code: <kbd>/test-documentation &lt;KEY&gt;</kbd>, <kbd>/test-documentation repair-traceability &lt;KEY&gt;</kbd> or <kbd>/test-documentation post-promotion</kbd>. OpenCode and Codex: "load the <span class="mono">test-documentation</span> skill, <span class="mono">&lt;mode&gt;</span> mode". Pi: <kbd>/skill:test-documentation &lt;mode&gt;</kbd>. Also by phrases: "document tests", "ROI analysis", "which tests to automate", "fix-traceability".</p></div>
+    <div class="card"><h4>Handoffs in the pipeline</h4><p class="small dim"><b>Comes in</b> from <span class="mono">/sprint-testing</span> (Story QA Approved, closed bug). <b>Goes out</b> to <span class="mono">/test-automation</span>, which re-scopes the Candidates: module → Macro · ticket → Medium · bug → Micro (ad-hoc enters wherever it fits). Manual and Deferred are terminal.</p></div>
+    <div class="card"><h4>Artifacts it leaves</h4><p class="small dim"><b>Durable, in the TMS:</b> TCs linked US↔ATS↔ATP↔ATR↔TC with their ROI comment · Candidates in the RTP with <span class="mono">## Regression flows</span> · <span class="mono">Prioritization</span> comment with the Deferred ones. <b>Local:</b> the two <span class="mono">[LOCAL]</span> reports in <span class="mono">.context/reports/</span>, the <span class="mono">[SYNC]</span> cache in <span class="mono">test-cases/</span> (read, not written) and the archived session in <span class="mono">.session/.archive/</span>.</p></div>
+  </div>
+  <div class="callout ok"><h4>The three rules to take away</h4><p><b>1.</b> Deferred by default: 3 filters + ROI = (F×I×S)/(E×D)/10. <b>2.</b> One (precondition + action) = one TC; cross-cutting traits live inside the tests. <b>3.</b> Set-first: ATS → ATP → ATR → TC, and an important bug always ends with a Test.</p></div>
+  <div class="notes">Close: Documentation is the bridge between manual QA (Planning · Execution · Reporting) and automation (Automation). The AI speeds up the craft; judgment and confirmations remain the human's.</div>
+</section>
+
+<div class="deck-footer"><span class="mono">/test-documentation · Documentation · TMS + ROI</span><span class="slide-number" data-current="1" data-total="24"></span></div>
+</div>
+<!-- keyboard-nav hint -->
+<div id="help-hint">← → navigate · O overview · S presenter · N notes · F fullscreen</div>
+<style id="upex-hint-style">
+#help-hint{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:60;pointer-events:none;
+  font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;color:var(--text-3)}
+@media (max-width:768px){#help-hint{display:none}}
+@media (pointer:coarse){#help-hint{display:none}}
+@media print{#help-hint{display:none!important}}
+</style>
+<script>
+/* html-ppt :: runtime.js
+ * Keyboard-driven deck runtime. Zero dependencies.
+ *
+ * Features:
+ *   ← → / space / PgUp PgDn / Home End  navigation
+ *   F  fullscreen
+ *   S  presenter mode (opens a NEW WINDOW with current/next slide preview + notes + timer)
+ *       The original window stays as audience view, synced via BroadcastChannel.
+ *       Slide previews use CSS transform:scale() at design resolution for pixel-perfect layout.
+ *   N  quick notes overlay (bottom drawer)
+ *   O  slide overview grid
+ *   T  cycle themes (reads data-themes on <html> or <body>)
+ *   A  cycle demo animation on current slide
+ *   URL hash #/N  deep-link to slide N (1-based)
+ *   Progress bar auto-managed
+ */
+(function () {
+  'use strict';
+
+  const ANIMS = ['fade-up','fade-down','fade-left','fade-right','rise-in','drop-in',
+    'zoom-pop','blur-in','glitch-in','typewriter','neon-glow','shimmer-sweep',
+    'gradient-flow','stagger-list','counter-up','path-draw','parallax-tilt',
+    'card-flip-3d','cube-rotate-3d','page-turn-3d','perspective-zoom',
+    'marquee-scroll','kenburns','confetti-burst','spotlight','morph-shape','ripple-reveal'];
+
+  function ready(fn){ if(document.readyState!='loading')fn(); else document.addEventListener('DOMContentLoaded',fn);}
+
+  /* ========== Parse URL for preview-only mode ==========
+   * When loaded as iframe.src = "index.html?preview=3", runtime enters a
+   * locked single-slide mode: only slide N is visible, no chrome, no keys,
+   * no hash updates. This is how the presenter window shows pixel-perfect
+   * previews — by loading the actual deck file in an iframe and telling it
+   * to display only a specific slide.
+   */
+  function getPreviewIdx() {
+    const m = /[?&]preview=(\d+)/.exec(location.search || '');
+    return m ? parseInt(m[1], 10) - 1 : -1;
+  }
+
+  ready(function () {
+    const deck = document.querySelector('.deck');
+    if (!deck) return;
+    const slides = Array.from(deck.querySelectorAll('.slide'));
+    if (!slides.length) return;
+
+    const previewOnlyIdx = getPreviewIdx();
+    const isPreviewMode = previewOnlyIdx >= 0 && previewOnlyIdx < slides.length;
+
+    /* ===== Preview-only mode: show one slide, hide everything else ===== */
+    if (isPreviewMode) {
+      function showSlide(i) {
+        slides.forEach((s, j) => {
+          const active = (j === i);
+          s.classList.toggle('is-active', active);
+          s.style.display = active ? '' : 'none';
+          if (active) {
+            s.style.opacity = '1';
+            s.style.transform = 'none';
+            s.style.pointerEvents = 'auto';
+          }
+        });
+      }
+      showSlide(previewOnlyIdx);
+      /* Hide chrome that the presenter shouldn't see in preview */
+      const hideSel = '.progress-bar, .notes-overlay, .overview, .notes, aside.notes, .speaker-notes';
+      document.querySelectorAll(hideSel).forEach(el => { el.style.display = 'none'; });
+      document.documentElement.setAttribute('data-preview', '1');
+      document.body.setAttribute('data-preview', '1');
+      /* Auto-detect theme base path for theme switching in preview mode */
+      function getPreviewThemeBase() {
+        const base = document.documentElement.getAttribute('data-theme-base');
+        if (base) return base;
+        const tl = document.getElementById('theme-link');
+        if (tl) {
+          const raw = tl.getAttribute('href') || '';
+          const ls = raw.lastIndexOf('/');
+          if (ls >= 0) return raw.substring(0, ls + 1);
+        }
+        return 'assets/themes/';
+      }
+      const previewThemeBase = getPreviewThemeBase();
+
+      /* Listen for postMessage from parent presenter window:
+       *  - preview-goto: switch visible slide WITHOUT reloading
+       *  - preview-theme: switch theme CSS link to match audience window */
+      window.addEventListener('message', function(e) {
+        if (!e.data) return;
+        if (e.data.type === 'preview-goto') {
+          const n = parseInt(e.data.idx, 10);
+          if (n >= 0 && n < slides.length) showSlide(n);
+        } else if (e.data.type === 'preview-theme' && e.data.name) {
+          let link = document.getElementById('theme-link');
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.id = 'theme-link';
+            document.head.appendChild(link);
+          }
+          link.href = previewThemeBase + e.data.name + '.css';
+          document.documentElement.setAttribute('data-theme', e.data.name);
+        }
+      });
+      /* Signal to parent that preview iframe is ready */
+      try { window.parent && window.parent.postMessage({ type: 'preview-ready' }, '*'); } catch(e) {}
+      return;
+    }
+
+    let idx = 0;
+    const total = slides.length;
+
+    /* ===== BroadcastChannel for presenter sync ===== */
+    const CHANNEL_NAME = 'html-ppt-presenter-' + location.pathname;
+    let bc;
+    try { bc = new BroadcastChannel(CHANNEL_NAME); } catch(e) { bc = null; }
+
+    // Are we running inside the presenter popup? (legacy flag, now unused)
+    const isPresenterWindow = false;
+
+    /* ===== progress bar ===== */
+    let bar = document.querySelector('.progress-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'progress-bar';
+      bar.innerHTML = '<span></span>';
+      document.body.appendChild(bar);
+    }
+    const barFill = bar.querySelector('span');
+
+    /* ===== notes overlay (N key) ===== */
+    let notes = document.querySelector('.notes-overlay');
+    if (!notes) {
+      notes = document.createElement('div');
+      notes.className = 'notes-overlay';
+      document.body.appendChild(notes);
+    }
+
+    /* ===== overview grid (O key) ===== */
+    let overview = document.querySelector('.overview');
+    if (!overview) {
+      overview = document.createElement('div');
+      overview.className = 'overview';
+      slides.forEach((s, i) => {
+        const t = document.createElement('div');
+        t.className = 'thumb';
+        // Force 16:9 aspect ratio robustly
+        t.style.padding = '0 0 56.25% 0';
+        t.style.height = '0';
+        t.style.position = 'relative';
+        t.style.overflow = 'hidden';
+
+        const title = s.getAttribute('data-title') ||
+          (s.querySelector('h1,h2,h3')||{}).textContent || ('Slide '+(i+1));
+        
+        // Create a container for the mini-slide
+        const mini = document.createElement('div');
+        mini.className = 'mini-slide';
+        mini.style.position = 'absolute';
+        mini.style.top = '0';
+        mini.style.left = '0';
+        mini.style.width = '1920px';
+        mini.style.height = '1080px';
+        mini.style.transformOrigin = 'top left';
+        mini.style.pointerEvents = 'none';
+        mini.style.background = 'var(--bg)';
+        
+        // Clone the slide content
+        const clone = s.cloneNode(true);
+        clone.className = 'slide is-active'; // force active styles
+        clone.style.position = 'absolute';
+        clone.style.inset = '0';
+        clone.style.transform = 'none';
+        clone.style.opacity = '1';
+        clone.style.padding = '72px 96px'; // ensure padding is kept
+        
+        mini.appendChild(clone);
+        t.appendChild(mini);
+
+        // Add the number and title overlay
+        const overlay = document.createElement('div');
+        overlay.style.position = 'absolute';
+        overlay.style.inset = '0';
+        overlay.style.background = 'linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, transparent 40%, transparent 60%, rgba(0,0,0,0.8) 100%)';
+        overlay.style.color = '#fff';
+        overlay.style.zIndex = '10';
+        overlay.style.pointerEvents = 'none';
+        
+        const n = document.createElement('div');
+        n.className = 'n';
+        n.textContent = i + 1;
+        n.style.position = 'absolute';
+        n.style.top = '12px';
+        n.style.left = '16px';
+        n.style.fontWeight = '700';
+        n.style.fontSize = '16px';
+        n.style.color = '#fff';
+        n.style.textShadow = '0 1px 4px rgba(0,0,0,0.8)';
+        
+        const text = document.createElement('div');
+        text.className = 't';
+        text.textContent = title.trim().slice(0,80);
+        text.style.position = 'absolute';
+        text.style.bottom = '12px';
+        text.style.left = '16px';
+        text.style.right = '16px';
+        text.style.fontWeight = '600';
+        text.style.fontSize = '14px';
+        text.style.color = '#fff';
+        text.style.textShadow = '0 1px 4px rgba(0,0,0,0.8)';
+        
+        overlay.appendChild(n);
+        overlay.appendChild(text);
+        t.appendChild(overlay);
+
+        t.addEventListener('click', () => { go(i); toggleOverview(false); });
+        overview.appendChild(t);
+      });
+      document.body.appendChild(overview);
+    }
+
+    /* ===== navigation ===== */
+    function go(n, fromRemote){
+      n = Math.max(0, Math.min(total-1, n));
+      slides.forEach((s,i) => {
+        s.classList.toggle('is-active', i===n);
+        s.classList.toggle('is-prev', i<n);
+      });
+      idx = n;
+      barFill.style.width = ((n+1)/total*100)+'%';
+      const numEl = document.querySelector('.slide-number');
+      if (numEl) { numEl.setAttribute('data-current', n+1); numEl.setAttribute('data-total', total); }
+
+      // notes (bottom overlay)
+      const note = slides[n].querySelector('.notes, aside.notes, .speaker-notes');
+      notes.innerHTML = note ? note.innerHTML : '';
+
+      // hash
+      const hashTarget = '#/'+(n+1);
+      if (location.hash !== hashTarget && !isPresenterWindow) {
+        history.replaceState(null,'', hashTarget);
+      }
+
+      // re-trigger entry animations
+      slides[n].querySelectorAll('[data-anim]').forEach(el => {
+        const a = el.getAttribute('data-anim');
+        el.classList.remove('anim-'+a);
+        void el.offsetWidth;
+        el.classList.add('anim-'+a);
+      });
+
+      // counter-up
+      slides[n].querySelectorAll('.counter').forEach(el => {
+        const target = parseFloat(el.getAttribute('data-to')||el.textContent);
+        const dur = parseInt(el.getAttribute('data-dur')||'1200',10);
+        const start = performance.now();
+        const from = 0;
+        function tick(now){
+          const t = Math.min(1,(now-start)/dur);
+          const v = from + (target-from)*(1-Math.pow(1-t,3));
+          el.textContent = (target % 1 === 0) ? Math.round(v) : v.toFixed(1);
+          if (t<1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      });
+
+      // Broadcast to other window (audience ↔ presenter)
+      if (!fromRemote && bc) {
+        bc.postMessage({ type: 'go', idx: n });
+      }
+    }
+
+    /* ===== listen for remote navigation / theme changes ===== */
+    if (bc) {
+      bc.onmessage = function(e) {
+        if (!e.data) return;
+        if (e.data.type === 'go' && typeof e.data.idx === 'number') {
+          go(e.data.idx, true);
+        } else if (e.data.type === 'theme' && e.data.name) {
+          /* Sync theme across windows */
+          const i = themes.indexOf(e.data.name);
+          if (i >= 0) themeIdx = i;
+          applyTheme(e.data.name);
+        }
+      };
+    }
+
+    function toggleNotes(force){ notes.classList.toggle('open', force!==undefined?force:!notes.classList.contains('open')); }
+    function toggleOverview(force){
+      const isOpen = force!==undefined ? force : !overview.classList.contains('open');
+      overview.classList.toggle('open', isOpen);
+      if (isOpen) {
+        requestAnimationFrame(() => {
+          const thumbs = overview.querySelectorAll('.thumb');
+          if (thumbs.length) {
+            const scale = thumbs[0].clientWidth / 1920;
+            overview.querySelectorAll('.mini-slide').forEach(m => {
+              m.style.transform = 'scale(' + scale + ')';
+            });
+          }
+        });
+      }
+    }
+
+    /* ========== PRESENTER MODE — Magnetic-card popup window ========== */
+    /* Opens a new window with 4 draggable, resizable cards:
+     *   CURRENT  — iframe(?preview=N)   pixel-perfect preview of current slide
+     *   NEXT     — iframe(?preview=N+1) pixel-perfect preview of next slide
+     *   SCRIPT   — large speaker notes (Guion)
+     *   TIMER    — elapsed timer + page counter + controls
+     * Cards remember position/size in localStorage.
+     * Two windows sync via BroadcastChannel.
+     */
+    let presenterWin = null;
+
+    function openPresenterWindow() {
+      if (presenterWin && !presenterWin.closed) {
+        presenterWin.focus();
+        return;
+      }
+
+      // Build absolute URL of THIS deck file (without hash/query)
+      const deckUrl = location.protocol + '//' + location.host + location.pathname;
+
+      // Collect slide titles + notes (HTML strings)
+      const slideMeta = slides.map((s, i) => {
+        const note = s.querySelector('.notes, aside.notes, .speaker-notes');
+        return {
+          title: s.getAttribute('data-title') ||
+            (s.querySelector('h1,h2,h3')||{}).textContent || ('Slide '+(i+1)),
+          notes: note ? note.innerHTML : ''
+        };
+      });
+
+      /* Capture current theme so presenter previews match the audience */
+      const currentTheme = root.getAttribute('data-theme') || (themes[themeIdx] || '');
+      const presenterHTML = buildPresenterHTML(deckUrl, slideMeta, total, idx, CHANNEL_NAME, currentTheme);
+
+      presenterWin = window.open('', 'html-ppt-presenter', 'width=1280,height=820,menubar=no,toolbar=no');
+      if (!presenterWin) {
+        alert('Allow pop-ups to use the presenter view');
+        return;
+      }
+      presenterWin.document.open();
+      presenterWin.document.write(presenterHTML);
+      presenterWin.document.close();
+    }
+
+    function buildPresenterHTML(deckUrl, slideMeta, total, startIdx, channelName, currentTheme) {
+      const metaJSON = JSON.stringify(slideMeta);
+      const deckUrlJSON = JSON.stringify(deckUrl);
+      const channelJSON = JSON.stringify(channelName);
+      const themeJSON = JSON.stringify(currentTheme || '');
+      const storageKey = 'html-ppt-presenter:' + location.pathname;
+
+      // Build the document as a single template string for clarity
+      return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Presenter View</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #1a1d24;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(88,166,255,.04), transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(188,140,255,.04), transparent 50%);
+    color: #e6edf3;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+  }
+  /* Stage: positioned area where cards live */
+  #stage { position: absolute; inset: 0; overflow: hidden; }
+
+  /* Magnetic card */
+  .pcard {
+    position: absolute;
+    background: #0d1117;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.02);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    min-width: 180px; min-height: 100px;
+    transition: box-shadow .2s, border-color .2s;
+  }
+  .pcard.dragging { box-shadow: 0 16px 48px rgba(0,0,0,.6), 0 0 0 2px rgba(88,166,255,.5); border-color: #58a6ff; transition: none; z-index: 9999; }
+  .pcard.resizing { box-shadow: 0 16px 48px rgba(0,0,0,.6), 0 0 0 2px rgba(63,185,80,.5); border-color: #3fb950; transition: none; z-index: 9999; }
+  .pcard:hover { border-color: rgba(88,166,255,.3); }
+
+  /* Card header (drag handle) */
+  .pcard-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,.04);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    cursor: move;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .pcard-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dot-color, #58a6ff); flex-shrink: 0; }
+  .pcard-title {
+    font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    font-weight: 700; color: #8b949e; flex: 1;
+  }
+  .pcard-meta { font-size: 11px; color: #6e7681; }
+
+  /* Card body */
+  .pcard-body { flex: 1; position: relative; overflow: hidden; min-height: 0; }
+
+  /* Preview cards (CURRENT/NEXT) — iframe-based pixel-perfect render */
+  .pcard-preview .pcard-body { background: #000; }
+  .pcard-preview iframe {
+    position: absolute; top: 0; left: 0;
+    width: 1920px; height: 1080px;
+    border: none;
+    transform-origin: top left;
+    pointer-events: none;
+    background: transparent;
+  }
+  .pcard-preview .preview-end {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #484f58; font-size: 14px; letter-spacing: .12em;
+  }
+
+  /* Notes card */
+  .pcard-notes .pcard-body {
+    padding: 14px 18px;
+    overflow-y: auto;
+    font-size: 18px; line-height: 1.75;
+    color: #d0d7de;
+    font-family: "Noto Sans SC", -apple-system, sans-serif;
+  }
+  .pcard-notes .pcard-body p { margin: 0 0 .7em 0; }
+  .pcard-notes .pcard-body strong { color: #f0883e; }
+  .pcard-notes .pcard-body em { color: #58a6ff; font-style: normal; }
+  .pcard-notes .pcard-body code {
+    font-family: "SF Mono", monospace; font-size: .9em;
+    background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px;
+  }
+  .pcard-notes .empty { color: #484f58; font-style: italic; }
+
+  /* Timer card */
+  .pcard-timer .pcard-body {
+    display: flex; flex-direction: column; gap: 14px;
+    padding: 18px 20px; justify-content: center;
+  }
+  .timer-display {
+    font-family: "SF Mono", "JetBrains Mono", monospace;
+    font-size: 42px; font-weight: 700;
+    color: #3fb950;
+    letter-spacing: .04em;
+    line-height: 1;
+  }
+  .timer-row {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 14px; color: #8b949e;
+  }
+  .timer-row .label { font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: #6e7681; }
+  .timer-row .val { color: #e6edf3; font-weight: 600; font-family: "SF Mono", monospace; }
+  .timer-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  .timer-btn {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    color: #e6edf3;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .timer-btn:hover { background: rgba(88,166,255,.15); border-color: #58a6ff; }
+  .timer-btn:active { transform: translateY(1px); }
+
+  /* Resize handle */
+  .pcard-resize {
+    position: absolute; right: 0; bottom: 0;
+    width: 18px; height: 18px;
+    cursor: nwse-resize;
+    background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,.25) 50%, rgba(255,255,255,.25) 60%, transparent 60%, transparent 70%, rgba(255,255,255,.25) 70%, rgba(255,255,255,.25) 80%, transparent 80%);
+    z-index: 5;
+  }
+  .pcard-resize:hover { background: linear-gradient(135deg, transparent 50%, #58a6ff 50%, #58a6ff 60%, transparent 60%, transparent 70%, #58a6ff 70%, #58a6ff 80%, transparent 80%); }
+
+  /* Bottom hint bar */
+  .hint-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,.6);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255,255,255,.08);
+    padding: 6px 16px;
+    font-size: 11px; color: #8b949e;
+    display: flex; gap: 18px; align-items: center;
+    z-index: 1000;
+  }
+  .hint-bar kbd {
+    background: rgba(255,255,255,.08);
+    padding: 1px 6px; border-radius: 3px;
+    font-family: "SF Mono", monospace;
+    font-size: 10px;
+    border: 1px solid rgba(255,255,255,.1);
+    color: #e6edf3;
+  }
+  .hint-bar .reset-layout {
+    margin-left: auto;
+    background: transparent; border: 1px solid rgba(255,255,255,.15);
+    color: #8b949e; padding: 3px 10px; border-radius: 4px;
+    font-size: 11px; cursor: pointer; font-family: inherit;
+  }
+  .hint-bar .reset-layout:hover { background: rgba(248,81,73,.15); border-color: #f85149; color: #f85149; }
+
+  body.is-dragging-card * { user-select: none !important; }
+  body.is-dragging-card iframe { pointer-events: none !important; }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="pcard pcard-preview" id="card-cur" style="--dot-color:#58a6ff">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">CURRENT</span>
+      <span class="pcard-meta" id="cur-meta">—</span>
+    </div>
+    <div class="pcard-body"><iframe id="iframe-cur"></iframe></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-preview" id="card-nxt" style="--dot-color:#bc8cff">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">NEXT</span>
+      <span class="pcard-meta" id="nxt-meta">—</span>
+    </div>
+    <div class="pcard-body"><iframe id="iframe-nxt"></iframe></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-notes" id="card-notes" style="--dot-color:#f0883e">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">SPEAKER SCRIPT</span>
+    </div>
+    <div class="pcard-body" id="notes-body"></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-timer" id="card-timer" style="--dot-color:#3fb950">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">TIMER</span>
+    </div>
+    <div class="pcard-body">
+      <div class="timer-display" id="timer-display">00:00</div>
+      <div class="timer-row">
+        <span class="label">Slide</span>
+        <span class="val" id="timer-count">1 / ${total}</span>
+      </div>
+      <div class="timer-controls">
+        <button class="timer-btn" id="btn-prev">← Prev</button>
+        <button class="timer-btn" id="btn-next">Next →</button>
+        <button class="timer-btn" id="btn-reset">⏱ Reset</button>
+      </div>
+    </div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+</div>
+
+<div class="hint-bar">
+  <span><kbd>← →</kbd> Change slide</span>
+  <span><kbd>R</kbd> Reset timer</span>
+  <span><kbd>Esc</kbd> Cerrar</span>
+  <span style="color:#6e7681">Drag the header to move · Drag the bottom-right corner to resize</span>
+  <button class="reset-layout" id="reset-layout">Reset layout</button>
+</div>
+
+<script>
+(function(){
+  var slideMeta = ${metaJSON};
+  var total = ${total};
+  var idx = ${startIdx};
+  var deckUrl = ${deckUrlJSON};
+  var STORAGE_KEY = ${JSON.stringify(storageKey)};
+  var bc;
+  try { bc = new BroadcastChannel(${channelJSON}); } catch(e) {}
+
+  var iframeCur = document.getElementById('iframe-cur');
+  var iframeNxt = document.getElementById('iframe-nxt');
+  var notesBody = document.getElementById('notes-body');
+  var curMeta = document.getElementById('cur-meta');
+  var nxtMeta = document.getElementById('nxt-meta');
+  var timerDisplay = document.getElementById('timer-display');
+  var timerCount = document.getElementById('timer-count');
+
+  /* ===== Default card layout ===== */
+  function defaultLayout() {
+    var w = window.innerWidth;
+    var h = window.innerHeight - 36; /* leave room for hint bar */
+    return {
+      'card-cur':   { x: 16,        y: 16,            w: Math.round(w*0.55) - 24, h: Math.round(h*0.62) - 16 },
+      'card-nxt':   { x: Math.round(w*0.55) + 8, y: 16, w: w - Math.round(w*0.55) - 24, h: Math.round(h*0.42) - 16 },
+      'card-notes': { x: Math.round(w*0.55) + 8, y: Math.round(h*0.42) + 8, w: w - Math.round(w*0.55) - 24, h: h - Math.round(h*0.42) - 16 },
+      'card-timer': { x: 16,        y: Math.round(h*0.62) + 8, w: Math.round(w*0.55) - 24, h: h - Math.round(h*0.62) - 16 }
+    };
+  }
+
+  /* ===== Apply / save / restore layout ===== */
+  function applyLayout(layout) {
+    Object.keys(layout).forEach(function(id){
+      var el = document.getElementById(id);
+      var l = layout[id];
+      if (el && l) {
+        el.style.left = l.x + 'px';
+        el.style.top = l.y + 'px';
+        el.style.width = l.w + 'px';
+        el.style.height = l.h + 'px';
+      }
+    });
+    rescaleAll();
+  }
+  function readLayout() {
+    try {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return defaultLayout();
+  }
+  function saveLayout() {
+    var layout = {};
+    ['card-cur','card-nxt','card-notes','card-timer'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) {
+        layout[id] = {
+          x: parseInt(el.style.left,10) || 0,
+          y: parseInt(el.style.top,10) || 0,
+          w: parseInt(el.style.width,10) || 300,
+          h: parseInt(el.style.height,10) || 200
+        };
+      }
+    });
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(layout)); } catch(e) {}
+  }
+
+  /* ===== iframe rescale to fit card body ===== */
+  function rescaleIframe(iframe) {
+    if (!iframe || iframe.style.display === 'none') return;
+    var body = iframe.parentElement;
+    var cw = body.clientWidth, ch = body.clientHeight;
+    if (!cw || !ch) return;
+    var s = Math.min(cw / 1920, ch / 1080);
+    iframe.style.transform = 'scale(' + s + ')';
+    /* Center the scaled iframe in the body */
+    var sw = 1920 * s, sh = 1080 * s;
+    iframe.style.left = Math.max(0, (cw - sw) / 2) + 'px';
+    iframe.style.top = Math.max(0, (ch - sh) / 2) + 'px';
+  }
+  function rescaleAll() {
+    rescaleIframe(iframeCur);
+    rescaleIframe(iframeNxt);
+  }
+  window.addEventListener('resize', rescaleAll);
+
+  /* ===== Drag (move card by header) ===== */
+  document.querySelectorAll('[data-drag]').forEach(function(handle){
+    handle.addEventListener('mousedown', function(e){
+      if (e.button !== 0) return;
+      var card = handle.closest('.pcard');
+      if (!card) return;
+      e.preventDefault();
+      card.classList.add('dragging');
+      document.body.classList.add('is-dragging-card');
+      var startX = e.clientX, startY = e.clientY;
+      var startL = parseInt(card.style.left,10) || 0;
+      var startT = parseInt(card.style.top,10)  || 0;
+      function onMove(ev){
+        var nx = Math.max(0, Math.min(window.innerWidth - 100, startL + ev.clientX - startX));
+        var ny = Math.max(0, Math.min(window.innerHeight - 50, startT + ev.clientY - startY));
+        card.style.left = nx + 'px';
+        card.style.top = ny + 'px';
+      }
+      function onUp(){
+        card.classList.remove('dragging');
+        document.body.classList.remove('is-dragging-card');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        saveLayout();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+
+  /* ===== Resize (drag bottom-right corner) ===== */
+  document.querySelectorAll('[data-resize]').forEach(function(handle){
+    handle.addEventListener('mousedown', function(e){
+      if (e.button !== 0) return;
+      var card = handle.closest('.pcard');
+      if (!card) return;
+      e.preventDefault(); e.stopPropagation();
+      card.classList.add('resizing');
+      document.body.classList.add('is-dragging-card');
+      var startX = e.clientX, startY = e.clientY;
+      var startW = parseInt(card.style.width,10)  || card.offsetWidth;
+      var startH = parseInt(card.style.height,10) || card.offsetHeight;
+      function onMove(ev){
+        var nw = Math.max(180, startW + ev.clientX - startX);
+        var nh = Math.max(100, startH + ev.clientY - startY);
+        card.style.width = nw + 'px';
+        card.style.height = nh + 'px';
+        if (card.querySelector('iframe')) rescaleIframe(card.querySelector('iframe'));
+      }
+      function onUp(){
+        card.classList.remove('resizing');
+        document.body.classList.remove('is-dragging-card');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        rescaleAll();
+        saveLayout();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+
+  /* ===== Preview iframe ready tracking =====
+   * Each iframe loads the deck ONCE with ?preview=1 on init. Subsequent
+   * slide changes are sent via postMessage('preview-goto') so the iframe
+   * just toggles visibility of a different .slide — no reload, no flicker.
+   */
+  var iframeReady = { cur: false, nxt: false };
+  var currentTheme = ${themeJSON};
+  window.addEventListener('message', function(e) {
+    if (!e.data || e.data.type !== 'preview-ready') return;
+    var iframe = null;
+    if (e.source === iframeCur.contentWindow) {
+      iframeReady.cur = true;
+      iframe = iframeCur;
+      postPreviewGoto(iframeCur, idx);
+    } else if (e.source === iframeNxt.contentWindow) {
+      iframeReady.nxt = true;
+      iframe = iframeNxt;
+      postPreviewGoto(iframeNxt, idx + 1 < total ? idx + 1 : idx);
+    }
+    /* Sync current theme to the iframe */
+    if (iframe && currentTheme) {
+      try { iframe.contentWindow.postMessage({ type: 'preview-theme', name: currentTheme }, '*'); } catch(err) {}
+    }
+    if (iframe) rescaleIframe(iframe);
+  });
+
+  function postPreviewGoto(iframe, n) {
+    try {
+      iframe.contentWindow.postMessage({ type: 'preview-goto', idx: n }, '*');
+    } catch(e) {}
+  }
+
+  /* ===== Update content =====
+   * Smooth (no-reload) navigation: send postMessage to iframes instead of
+   * resetting src. Iframes stay loaded, just switch visible .slide.
+   */
+  function update(n) {
+    n = Math.max(0, Math.min(total - 1, n));
+    idx = n;
+
+    /* Current preview — postMessage (smooth) */
+    if (iframeReady.cur) postPreviewGoto(iframeCur, n);
+    curMeta.textContent = (n + 1) + '/' + total;
+
+    /* Next preview */
+    if (n + 1 < total) {
+      iframeNxt.style.display = '';
+      var endEl = document.querySelector('#card-nxt .preview-end');
+      if (endEl) endEl.remove();
+      if (iframeReady.nxt) postPreviewGoto(iframeNxt, n + 1);
+      nxtMeta.textContent = (n + 2) + '/' + total;
+    } else {
+      iframeNxt.style.display = 'none';
+      var body = document.querySelector('#card-nxt .pcard-body');
+      if (body && !body.querySelector('.preview-end')) {
+        var end = document.createElement('div');
+        end.className = 'preview-end';
+        end.textContent = '— END OF DECK —';
+        body.appendChild(end);
+      }
+      nxtMeta.textContent = 'END';
+    }
+
+    /* Notes */
+    var note = slideMeta[n].notes;
+    notesBody.innerHTML = note || '<span class="empty">(This slide has no script yet)</span>';
+
+    /* Timer count */
+    timerCount.textContent = (n + 1) + ' / ' + total;
+  }
+
+  /* ===== Timer ===== */
+  var tStart = Date.now();
+  setInterval(function(){
+    var s = Math.floor((Date.now() - tStart) / 1000);
+    var mm = String(Math.floor(s/60)).padStart(2,'0');
+    var ss = String(s%60).padStart(2,'0');
+    timerDisplay.textContent = mm + ':' + ss;
+  }, 1000);
+  function resetTimer(){ tStart = Date.now(); timerDisplay.textContent = '00:00'; }
+
+  /* ===== BroadcastChannel sync ===== */
+  if (bc) {
+    bc.onmessage = function(e){
+      if (!e.data) return;
+      if (e.data.type === 'go') update(e.data.idx);
+      else if (e.data.type === 'theme' && e.data.name) {
+        currentTheme = e.data.name;
+        /* Forward theme change to preview iframes */
+        [iframeCur, iframeNxt].forEach(function(iframe){
+          try {
+            iframe.contentWindow.postMessage({ type: 'preview-theme', name: e.data.name }, '*');
+          } catch(err) {}
+        });
+      }
+    };
+  }
+  function go(n) {
+    update(n);
+    if (bc) bc.postMessage({ type: 'go', idx: idx });
+  }
+
+  /* ===== Buttons ===== */
+  document.getElementById('btn-prev').addEventListener('click', function(){ go(idx - 1); });
+  document.getElementById('btn-next').addEventListener('click', function(){ go(idx + 1); });
+  document.getElementById('btn-reset').addEventListener('click', resetTimer);
+  document.getElementById('reset-layout').addEventListener('click', function(){
+    if (confirm('Restore the default layout?')) {
+      try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+      applyLayout(defaultLayout());
+    }
+  });
+
+  /* ===== Keyboard ===== */
+  document.addEventListener('keydown', function(e){
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    switch(e.key) {
+      case 'ArrowRight': case ' ': case 'PageDown': go(idx + 1); e.preventDefault(); break;
+      case 'ArrowLeft':  case 'PageUp':   go(idx - 1); e.preventDefault(); break;
+      case 'Home': go(0); break;
+      case 'End':  go(total - 1); break;
+      case 'r': case 'R': resetTimer(); break;
+      case 'Escape': window.close(); break;
+    }
+  });
+
+  /* ===== Iframe load → rescale (catches initial size) ===== */
+  iframeCur.addEventListener('load', function(){ rescaleIframe(iframeCur); });
+  iframeNxt.addEventListener('load', function(){ rescaleIframe(iframeNxt); });
+
+  /* ===== Init =====
+   * Load each iframe ONCE with the deck file. After they post
+   * 'preview-ready', all subsequent navigation is via postMessage
+   * (smooth, no reload, no flicker).
+   */
+  applyLayout(readLayout());
+  iframeCur.src = deckUrl + '?preview=' + (idx + 1);
+  if (idx + 1 < total) iframeNxt.src = deckUrl + '?preview=' + (idx + 2);
+  /* Initialize notes/timer/count without touching iframes */
+  notesBody.innerHTML = slideMeta[idx].notes || '<span class="empty">(This slide has no script yet)</span>';
+  curMeta.textContent = (idx + 1) + '/' + total;
+  nxtMeta.textContent = (idx + 2) + '/' + total;
+  timerCount.textContent = (idx + 1) + ' / ' + total;
+})();
+</` + `script>
+</body></html>`;
+    }
+
+    function fullscreen(){ const el=document.documentElement;
+      if (!document.fullscreenElement) el.requestFullscreen&&el.requestFullscreen();
+      else document.exitFullscreen&&document.exitFullscreen();
+    }
+
+    // theme cycling
+    const root = document.documentElement;
+    const themesAttr = root.getAttribute('data-themes') || document.body.getAttribute('data-themes');
+    const themes = themesAttr ? themesAttr.split(',').map(s=>s.trim()).filter(Boolean) : [];
+    let themeIdx = 0;
+
+    // Auto-detect theme base path from existing <link id="theme-link">
+    let themeBase = root.getAttribute('data-theme-base');
+    if (!themeBase) {
+      const existingLink = document.getElementById('theme-link');
+      if (existingLink) {
+        // el.getAttribute('href') gives the raw relative path written in HTML
+        const rawHref = existingLink.getAttribute('href') || '';
+        const lastSlash = rawHref.lastIndexOf('/');
+        themeBase = lastSlash >= 0 ? rawHref.substring(0, lastSlash + 1) : 'assets/themes/';
+      } else {
+        themeBase = 'assets/themes/';
+      }
+    }
+
+    function applyTheme(name) {
+      let link = document.getElementById('theme-link');
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.id = 'theme-link';
+        document.head.appendChild(link);
+      }
+      link.href = themeBase + name + '.css';
+      root.setAttribute('data-theme', name);
+      const ind = document.querySelector('.theme-indicator');
+      if (ind) ind.textContent = name;
+    }
+    function cycleTheme(fromRemote){
+      if (!themes.length) return;
+      themeIdx = (themeIdx+1) % themes.length;
+      const name = themes[themeIdx];
+      applyTheme(name);
+      /* Broadcast to other window (audience ↔ presenter) */
+      if (!fromRemote && bc) bc.postMessage({ type: 'theme', name: name });
+    }
+
+    // animation cycling on current slide
+    let animIdx = 0;
+    function cycleAnim(){
+      animIdx = (animIdx+1) % ANIMS.length;
+      const a = ANIMS[animIdx];
+      const target = slides[idx].querySelector('[data-anim-target]') || slides[idx];
+      ANIMS.forEach(x => target.classList.remove('anim-'+x));
+      void target.offsetWidth;
+      target.classList.add('anim-'+a);
+      target.setAttribute('data-anim', a);
+      const ind = document.querySelector('.anim-indicator');
+      if (ind) ind.textContent = a;
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if (e.metaKey||e.ctrlKey||e.altKey) return;
+      switch (e.key) {
+        case 'ArrowRight': case ' ': case 'PageDown': case 'Enter': go(idx+1); e.preventDefault(); break;
+        case 'ArrowLeft': case 'PageUp': case 'Backspace': go(idx-1); e.preventDefault(); break;
+        case 'Home': go(0); break;
+        case 'End': go(total-1); break;
+        case 'f': case 'F': fullscreen(); break;
+        case 's': case 'S': openPresenterWindow(); break;
+        case 'n': case 'N': toggleNotes(); break;
+        case 'o': case 'O': toggleOverview(); break;
+        case 't': case 'T': cycleTheme(); break;
+        case 'a': case 'A': cycleAnim(); break;
+        case 'Escape': toggleOverview(false); toggleNotes(false); break;
+      }
+    });
+
+    // hash deep-link
+    function fromHash(){
+      const m = /^#\/(\d+)/.exec(location.hash||'');
+      if (m) go(Math.max(0, parseInt(m[1],10)-1));
+    }
+    window.addEventListener('hashchange', fromHash);
+    fromHash();
+    go(idx);
+  });
+})();
+
+</script>
+
+<script>
+/* deck :: fx-runtime (self-contained) — constellation canvas + lifecycle via MutationObserver.
+   No external loads: the effect lives inline and starts/stops when its slide enters/leaves. */
+(function(){
+'use strict';
+function constellation(host){
+  var c = document.createElement('canvas');
+  c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%';
+  host.appendChild(c);
+  var ctx = c.getContext('2d'), raf = null, pts = [], W = 0, H = 0;
+  function size(){ W = c.width = host.clientWidth || 1280; H = c.height = host.clientHeight || 720; }
+  size();
+  for (var i = 0; i < 64; i++) pts.push({
+    x: Math.random()*W, y: Math.random()*H,
+    vx: (Math.random()-.5)*.3, vy: (Math.random()-.5)*.3
+  });
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    var i, j, p, q, dx, dy, d;
+    for (i = 0; i < pts.length; i++){
+      p = pts[i];
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x += W; if (p.x > W) p.x -= W;
+      if (p.y < 0) p.y += H; if (p.y > H) p.y -= H;
+      ctx.fillStyle = 'rgba(122,162,247,.55)';
+      ctx.beginPath(); ctx.arc(p.x, p.y, 1.6, 0, 6.2832); ctx.fill();
+    }
+    for (i = 0; i < pts.length; i++) for (j = i+1; j < pts.length; j++){
+      p = pts[i]; q = pts[j];
+      dx = p.x-q.x; dy = p.y-q.y; d = dx*dx + dy*dy;
+      if (d < 16900){
+        ctx.strokeStyle = 'rgba(122,162,247,' + (0.16*(1 - d/16900)).toFixed(3) + ')';
+        ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y); ctx.stroke();
+      }
+    }
+    raf = requestAnimationFrame(frame);
+  }
+  frame();
+  var onR = function(){ size(); };
+  window.addEventListener('resize', onR);
+  return { stop: function(){
+    if (raf) cancelAnimationFrame(raf);
+    window.removeEventListener('resize', onR);
+    c.remove();
+  }};
+}
+var FX = { constellation: constellation };
+var active = new Map();
+function initIn(root){
+  root.querySelectorAll('[data-fx]').forEach(function(el){
+    if (active.has(el)) return;
+    var fn = FX[el.getAttribute('data-fx')];
+    if (typeof fn !== 'function') return;
+    try { active.set(el, fn(el) || { stop: function(){} }); } catch(e){}
+  });
+}
+function stopIn(root){
+  root.querySelectorAll('[data-fx]').forEach(function(el){
+    var h = active.get(el);
+    if (h && typeof h.stop === 'function'){ try { h.stop(); } catch(e){} }
+    active.delete(el);
+  });
+}
+function boot(){
+  var first = document.querySelector('.slide.is-active');
+  if (first) initIn(first);
+  document.querySelectorAll('.slide').forEach(function(sl){
+    new MutationObserver(function(muts){
+      for (var k = 0; k < muts.length; k++){
+        if (muts[k].attributeName === 'class'){
+          if (sl.classList.contains('is-active')) initIn(sl); else stopIn(sl);
+        }
+      }
+    }).observe(sl, { attributes: true, attributeFilter: ['class'] });
+  });
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();
+</script>
+
+<script>
+/* deck :: scale-to-fit: fixed BASE_W x BASE_H layout scaled into any smaller viewport, laptops included (1366x768, 1280x800).
+   Viewports of at least BASE_W x BASE_H are left untouched (native fluid). Preview iframes skipped. */
+(function(){
+  try{
+    if (new URLSearchParams(location.search).has('preview')) return;
+    var BASE_W = 1440, BASE_H = 900;
+    var deck = document.querySelector('.deck');
+    if (!deck) return;
+    function fit(){
+      var vw = window.innerWidth, vh = window.innerHeight;
+      if (vw >= BASE_W && vh >= BASE_H){
+        deck.style.transform = '';
+        deck.style.width = ''; deck.style.height = '';
+        deck.style.position = ''; deck.style.left = ''; deck.style.top = '';
+        document.documentElement.style.overflow = ''; document.body.style.overflow = '';
+        document.documentElement.style.background = '';
+        return;
+      }
+      var scale = Math.min(vw / BASE_W, vh / BASE_H);
+      deck.style.width = BASE_W + 'px';
+      deck.style.height = BASE_H + 'px';
+      deck.style.transformOrigin = 'top left';
+      deck.style.transform = 'scale(' + scale + ')';
+      deck.style.position = 'absolute';
+      deck.style.left = ((vw - BASE_W * scale) / 2) + 'px';
+      deck.style.top = ((vh - BASE_H * scale) / 2) + 'px';
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.background = (function(){var d=getComputedStyle(deck).backgroundColor;if(d&&d!=='rgba(0, 0, 0, 0)'&&d!=='transparent')return d;var b=getComputedStyle(document.body).backgroundColor;return (b&&b!=='rgba(0, 0, 0, 0)'&&b!=='transparent')?b:'#0d1117';})();
+    }
+    fit();
+    window.addEventListener('resize', fit);
+    window.addEventListener('orientationchange', function(){ setTimeout(fit, 60); });
+  }catch(e){ /* never break the deck over a fit error */ }
+})();
+</script>
+
+<!-- ============ MOBILE NAV (UPEX) — swipe → arrows + once-only hint. scale-to-fit lives in the source deck ============ -->
+<style id="upex-navhint-style">
+#upex-navhint{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:120;
+  display:flex;align-items:center;gap:.4rem;background:rgba(20,22,34,.94);
+  border:1px solid rgba(255,255,255,.18);border-radius:999px;
+  padding:.5rem .95rem;font:600 13px/1.2 system-ui,-apple-system,sans-serif;color:#c0caf5;
+  box-shadow:0 6px 20px rgba(0,0,0,.45);animation:upexHintIn .35s ease both;cursor:pointer}
+@keyframes upexHintIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%)}}
+#upex-navhint.out{opacity:0;transition:opacity .4s}
+</style>
+<script id="upex-mobile-nav">
+(function(){
+'use strict';
+/* Swipe navigation: the deck runtime listens for keydown ArrowLeft/Right. */
+var send=function(key){document.dispatchEvent(new KeyboardEvent('keydown',{key:key,bubbles:true}))};
+var x0=null,y0=null,skip=false;
+document.addEventListener('touchstart',function(e){
+  var t=e.target;
+  skip=!!(t&&t.closest&&t.closest('textarea,input,button,pre,table,a,.quiz'));
+  var p=e.changedTouches[0]; x0=p.clientX; y0=p.clientY;
+},{passive:true});
+document.addEventListener('touchend',function(e){
+  if(x0===null||skip) return;
+  var p=e.changedTouches[0], dx=p.clientX-x0, dy=p.clientY-y0;
+  x0=y0=null;
+  if(Math.abs(dx)>60&&Math.abs(dx)>2*Math.abs(dy)) send(dx<0?'ArrowRight':'ArrowLeft');
+},{passive:true});
+/* Navigation hint: mobile only (deck chrome hidden by scale-to-fit),
+   once per domain (localStorage). ?hint=1 forces it for QA. */
+var KEY='upex-deck-navhint-v1';
+var isMobile=matchMedia('(pointer:coarse)').matches&&matchMedia('(max-width:768px)').matches;
+var force=/[?&]hint=1/.test(location.search);
+var seen=false; try{seen=localStorage.getItem(KEY)==='1'}catch(_e){}
+if(force||(isMobile&&!seen)){
+  var h=document.createElement('div'); h.id='upex-navhint';
+  h.textContent='👆 Swipe to advance →';
+  var close=function(){ if(!h.isConnected)return; h.classList.add('out'); setTimeout(function(){h.remove();},400); try{localStorage.setItem(KEY,'1')}catch(_e){} };
+  h.addEventListener('click',close);
+  document.body.appendChild(h);
+  setTimeout(close,5000);
+}
+})();
+</script>
+
+</body></html>

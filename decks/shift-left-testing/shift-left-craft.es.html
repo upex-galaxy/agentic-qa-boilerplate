@@ -990,8 +990,9 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <ul class="blist mt-m">
     <li><b>Story clara → dilo</b>. "Calidad de la Story: buena, sin gaps significativos" supera a inventar preguntas. Lista vacía es un resultado válido.</li>
     <li><b>Rúbrica, no guion</b>. Si la Story ya es explícita en un tema, no lo re-preguntes.</li>
-    <li><b>Cita el contexto en vez de preguntar</b>. Si el mapa de datos (<span class="mono">business-data-context</span>) ya define la moneda o la máquina de estados, cítalo. PO tiene paciencia finita.</li>
+    <li><b>Cita el contexto en vez de preguntar</b>. Si el mapa de datos (<span class="mono">business-data-context</span>) ya define la moneda o la máquina de estados, o el glosario (<span class="mono">business-domain-context</span>) ya define el término, cítalo. PO tiene paciencia finita.</li>
     <li><b>Clasifica con juicio</b>. Meter una pregunta de texto-de-éxito junto a una de bypass de auth señala falta de criterio.</li>
+    <li><b>Cuando sí toca preguntar, pregunta bien</b>. Con el PO en la sala, la skill <span class="mono">grilling</span> las lleva en rondas, cada una con su respuesta recomendada. Si responde después, <span class="mono">to-questionnaire</span> junta las Critical en un solo cuestionario.</li>
   </ul>
   <div class="callout warn mt-m"><h4>Anti-patrón L1 (el más importante)</h4><p>NUNCA fuerces preguntas para llenar un checklist. Shift-left aporta valor <b>destapando riesgo real</b>, no inflando conteos de preguntas.</p></div>
   <div class="notes">El usuario valora esto: la regla #4 de AGENTS.md. No forzar preguntas. Calidad sobre cantidad. Una Story limpia sale con lista vacía y está bien.</div>
@@ -1208,7 +1209,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <ul class="blist">
       <li><b>Veto antes que score</b> — dinero/auth/datos/integraciones se fuerzan a full.</li>
       <li><b>Recorre arquetipos</b>, no preguntes al azar — cada Story toca 2-3.</li>
-      <li><b>Cita el contexto</b> en vez de preguntar lo ya documentado.</li>
+      <li><b>Cita el contexto</b> (mapas y glosario) en vez de preguntar lo ya documentado; un término nuevo se propone a <span class="mono">business-domain-context</span>.</li>
       <li><b>Etiqueta cada gap a su técnica</b> (BVA/State/Decision/Pairwise).</li>
     </ul>
     <ul class="blist">

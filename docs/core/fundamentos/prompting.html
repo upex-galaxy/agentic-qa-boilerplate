@@ -408,11 +408,12 @@
       <p>
         Cada <code>SKILL.md</code> abre con un frontmatter YAML. El campo
         <code>description</code> es lo que el agente lee para decidir si la skill aplica, así que
-        funciona como un prompt de clasificación. La de <code>sprint-testing</code> dice qué hace,
-        enumera frases disparadoras después de <code>Triggers on:</code> («test this ticket»,
-        «retest this bug») y termina con <code>Do NOT use for:</code>, que manda la documentación en
-        TMS a <code>test-documentation</code> y la automatización a <code>test-automation</code>.
-        Los contraejemplos son tan explícitos como los ejemplos.
+        funciona como un prompt de clasificación. La de <code>sprint-testing</code> es corta: la
+        primera oración dice qué hace, <code>Use when</code> enumera una situación por rama (probar
+        una historia de usuario, reprobar un fix, explorar la feature de un ticket, trabajar el
+        backlog del sprint) y <code>Not for</code> manda la exploración sin ticket a
+        <code>exploratory-testing</code>. Las demás skills tienen su propia descripción, así que
+        solo se nombra la que suele ganar por error.
       </p>
       <p>
         Algunas skills agregan <code>compact_rules</code>: reglas cortas que

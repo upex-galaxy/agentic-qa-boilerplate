@@ -776,12 +776,12 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <div class="lv l4"><span class="nm">build</span><span class="ds">el framework mismo, en cada PR</span></div>
         </div>
         <div>
-          <div class="callout"><h4>La regla que nace de la tabla</h4><p>Smoke habla del <b>build de la app</b>; sanity habla del <b>cambio</b>; regression habla del <b>producto entero</b>. Tres pass-rates distintos con tres SLOs distintos: nunca los sumes en un número (regla R6 de <code class="k">/regression-testing</code>). Y build no habla de la app en absoluto: habla de nosotros.</p></div>
+          <div class="callout"><h4>La regla que nace de la tabla</h4><p>Smoke habla del <b>build de la app</b>; sanity habla del <b>cambio</b>; regression habla del <b>producto entero</b>. Tres pass-rates distintos con tres SLOs distintos: nunca los sumes en un número (regla compacta de <code class="k">/regression-testing</code>). Y build no habla de la app en absoluto: habla de nosotros.</p></div>
           <p class="small dim mt-s">La secuencia clásica de la industria es <b>smoke → sanity → regression</b> como gates sucesivos: si smoke falla, no gastás la regresión. En este repo los gates son temporales (cron) y manuales; conectarlos al deploy de la app es el Capítulo 9.</p>
         </div>
       </div>
     </div>
-    <div class="notes">Tabla maestra. Pirámide de suites. Regla R6: no mezclar pass-rates. Referencia a la secuencia smoke→sanity→regression de la industria.</div>
+    <div class="notes">Tabla maestra. Pirámide de suites. Regla compacta: no mezclar pass-rates. Referencia a la secuencia smoke→sanity→regression de la industria.</div>
   </section>
 
   <!-- 5. BUILD.YML -->
@@ -972,7 +972,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
           <div class="opt" data-correct="1"><span class="mk">B</span><span>Son suites con preguntas y SLOs distintos: se reportan por separado; el veredicto de release sale solo de regression</span></div>
           <div class="opt"><span class="mk">C</span><span>98%: smoke es la que importa para el release</span></div>
         </div>
-        <div class="qexp"><b>Por separado.</b> Smoke mide «está viva?» sobre 5% de los tests; regression mide «se rompió algo?» sobre todo. Promediar esconde el 91%, que es el que decide (regla R6: never mix smoke + regression into one pass-rate). El deck how-it-works cuenta cómo el 91% se convierte en CAUTION.</div>
+        <div class="qexp"><b>Por separado.</b> Smoke mide «está viva?» sobre 5% de los tests; regression mide «se rompió algo?» sobre todo. Promediar esconde el 91%, que es el que decide (regla compacta de la skill: nunca mezclar smoke y regression en un solo pass-rate). El deck how-it-works cuenta cómo el 91% se convierte en CAUTION.</div>
       </div>
       <div class="qitem">
         <div class="qq"><span class="qn">Q2</span><span>Por qué build.yml corre <code class="k">playwright test --list</code> en vez de <code class="k">playwright test</code>?</span></div>
@@ -985,7 +985,7 @@ select.sel:focus,input.inp:focus{border-color:var(--accent)}
       </div>
     </div>
     </div>
-    <div class="notes">Q1: no mezclar pass-rates (R6). Q2: --list = compilar sin ejecutar; separación de preguntas.</div>
+    <div class="notes">Q1: no mezclar pass-rates. Q2: --list = compilar sin ejecutar; separación de preguntas.</div>
   </section>
 
   <!-- 10. DIVIDER CAP 7 -->

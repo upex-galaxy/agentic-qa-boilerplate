@@ -1,0 +1,2114 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="tokyo-night">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shift-Left Testing · How it works</title>
+<style>
+/* ============================================================
+   Self-contained deck — html-ppt assets inlined (fonts, base,
+   tokyo-night theme, animations) + deck-local styles.
+   Source: ~/.agents/skills/html-ppt (tokyo-night harness).
+   ============================================================ */
+
+/* ---- fonts.css ---- */
+/* html-ppt :: shared webfonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@200;300;400;500;600;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,800;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap');
+
+
+/* ---- base.css ---- */
+/* html-ppt :: base.css — reset + shared tokens + layout primitives */
+/* Default tokens. Themes in assets/themes/*.css override the :root block. */
+:root {
+  --bg: #ffffff;
+  --bg-soft: #f7f7f8;
+  --surface: #ffffff;
+  --surface-2: #f2f2f4;
+  --border: rgba(0,0,0,.08);
+  --border-strong: rgba(0,0,0,.16);
+  --text-1: #111216;
+  --text-2: #55596a;
+  --text-3: #8a8f9e;
+  --accent: #3b6cff;
+  --accent-2: #7a5cff;
+  --accent-3: #ff5c8a;
+  --good: #1aaf6c;
+  --warn: #f5a524;
+  --bad:  #e0445a;
+  --grad: linear-gradient(135deg,#3b6cff,#7a5cff 55%,#ff5c8a);
+  --grad-soft: linear-gradient(135deg,#eef2ff,#f5ecff 55%,#ffeef5);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --radius-lg: 26px;
+  --shadow: 0 10px 30px rgba(18,24,40,.08), 0 2px 6px rgba(18,24,40,.04);
+  --shadow-lg: 0 24px 60px rgba(18,24,40,.14), 0 6px 16px rgba(18,24,40,.06);
+  --font-sans: 'Inter','Noto Sans SC',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
+  --font-serif: 'Playfair Display','Noto Serif SC',Georgia,serif;
+  --font-mono: 'JetBrains Mono','IBM Plex Mono',SFMono-Regular,Menlo,monospace;
+  --font-display: var(--font-sans);
+  --letter-tight: -.03em;
+  --letter-normal: -.01em;
+  --ease: cubic-bezier(.4,0,.2,1);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);
+  font-family:var(--font-sans);font-weight:400;line-height:1.6;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  letter-spacing:var(--letter-normal)}
+img,svg,video{max-width:100%;display:block}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code,kbd,pre,samp{font-family:var(--font-mono)}
+
+/* ================= SLIDE SYSTEM ================= */
+.deck{position:relative;width:100vw;height:100vh;overflow:hidden;background:var(--bg)}
+.slide{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:72px 96px;
+  box-sizing:border-box;
+  opacity:0;pointer-events:none;
+  transition:opacity .5s var(--ease), transform .5s var(--ease);
+  transform:translateX(30px);
+  overflow:hidden;
+}
+.slide.is-active{opacity:1;pointer-events:auto;transform:translateX(0);z-index:2}
+.slide.is-prev{transform:translateX(-30px)}
+
+/* single-page standalone (used when a layout file is opened directly) */
+body.single .slide{position:relative;width:100vw;height:100vh;opacity:1;transform:none;pointer-events:auto}
+
+/* ================= TYPOGRAPHY ================= */
+.eyebrow{font-size:13px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--text-3)}
+.kicker{font-size:14px;font-weight:600;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+h1.title,.h1{font-family:var(--font-display);font-size:72px;line-height:1.05;font-weight:800;letter-spacing:var(--letter-tight);margin:0 0 18px;color:var(--text-1)}
+h2.title,.h2{font-family:var(--font-display);font-size:54px;line-height:1.1;font-weight:700;letter-spacing:var(--letter-tight);margin:0 0 14px}
+h3,.h3{font-size:32px;line-height:1.2;font-weight:600;letter-spacing:var(--letter-normal);margin:0 0 10px}
+h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
+.lede{font-size:22px;line-height:1.55;color:var(--text-2);font-weight:300;max-width:62ch}
+.dim{color:var(--text-2)}
+.dim2{color:var(--text-3)}
+.mono{font-family:var(--font-mono)}
+.serif{font-family:var(--font-serif)}
+.gradient-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+
+/* ================= LAYOUT PRIMITIVES ================= */
+.stack>*+*{margin-top:14px}
+.row{display:flex;gap:24px;align-items:center}
+.row.wrap{flex-wrap:wrap}
+.grid{display:grid;gap:24px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.center{display:flex;align-items:center;justify-content:center;text-align:center}
+.fill{flex:1}
+.sp-t{padding-top:24px}.sp-b{padding-bottom:24px}
+.mt-s{margin-top:8px}.mt-m{margin-top:18px}.mt-l{margin-top:32px}
+.mb-s{margin-bottom:8px}.mb-m{margin-bottom:18px}.mb-l{margin-bottom:32px}
+
+/* ================= CARDS ================= */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:26px 28px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.card-soft{background:var(--surface-2);border:1px solid var(--border)}
+.card-outline{background:transparent;border:1.5px solid var(--border-strong);box-shadow:none}
+.card-accent{background:var(--surface);border-top:3px solid var(--accent)}
+.card-hover{transition:transform .3s var(--ease),box-shadow .3s var(--ease)}
+.card-hover:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+
+.pill{display:inline-block;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:500;
+  background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
+.pill-accent{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 28%,transparent)}
+
+/* ================= BARS / DIVIDERS ================= */
+.divider{height:1px;background:var(--border);width:100%}
+.divider-accent{height:3px;width:72px;background:var(--accent);border-radius:2px}
+
+/* ================= CHROME (header/footer/progress) ================= */
+.deck-header{position:absolute;top:24px;left:40px;right:40px;display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--text-3);letter-spacing:.12em;text-transform:uppercase;z-index:10;pointer-events:none}
+.deck-footer{position:absolute;bottom:24px;left:40px;right:40px;display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--text-3);z-index:10;pointer-events:none}
+.slide-number::before{content:attr(data-current)}
+.slide-number::after{content:" / " attr(data-total)}
+.progress-bar{position:fixed;left:0;right:0;bottom:0;height:3px;background:transparent;z-index:20}
+.progress-bar > span{display:block;height:100%;width:0;background:var(--accent);transition:width .3s var(--ease)}
+
+/* ================= PRESENTER / OVERVIEW ================= */
+.notes{display:none!important}
+.notes-overlay{position:fixed;inset:auto 0 0 0;max-height:42vh;background:rgba(20,22,30,.95);color:#e8ebf4;
+  padding:20px 32px;font-size:16px;line-height:1.6;border-top:1px solid rgba(255,255,255,.1);transform:translateY(100%);
+  transition:transform .3s var(--ease);z-index:40;overflow:auto;font-family:var(--font-sans)}
+.notes-overlay.open{transform:translateY(0)}
+.overview{position:fixed;inset:0;background:rgba(10,12,18,.92);backdrop-filter:blur(12px);z-index:50;
+  display:none;padding:40px;overflow:auto}
+.overview.open{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;align-content:start}
+.overview .thumb{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  aspect-ratio:16/9;overflow:hidden;cursor:pointer;position:relative;color:var(--text-1);padding:16px;
+  font-size:11px;transition:transform .2s var(--ease)}
+.overview .thumb:hover{transform:scale(1.04)}
+.overview .thumb .n{position:absolute;top:8px;left:10px;font-weight:700;font-size:14px;color:var(--text-3)}
+.overview .thumb .t{position:absolute;bottom:10px;left:14px;right:14px;font-weight:600;color:var(--text-1)}
+
+/* ================= PRESENTER VIEW ================= */
+/* Presenter view opens in a separate popup window (S key).
+ * All presenter styles are self-contained in the popup HTML generated by runtime.js.
+ * The audience window (this file) is NOT affected — it stays as normal deck view.
+ * Only the .notes class below is needed to hide speaker notes from audience. */
+
+/* ================= UTILITY ================= */
+.hidden{display:none!important}
+.nowrap{white-space:nowrap}
+.tr{text-align:right}.tc{text-align:center}.tl{text-align:left}
+.uppercase{text-transform:uppercase;letter-spacing:.12em}
+
+/* ================= PRINT ================= */
+@media print{
+  .slide{position:relative;opacity:1!important;transform:none!important;page-break-after:always;height:100vh}
+  .deck-header,.deck-footer,.progress-bar,.notes-overlay,.overview{display:none!important}
+}
+
+
+/* ---- themes/tokyo-night.css ---- */
+/* theme: tokyo-night */
+:root{
+  --bg:#1a1b26;--bg-soft:#16161e;--surface:#24283b;--surface-2:#2f334d;
+  --border:rgba(192,202,245,.12);--border-strong:rgba(192,202,245,.24);
+  --text-1:#c0caf5;--text-2:#a9b1d6;--text-3:#565f89;
+  --accent:#7aa2f7;--accent-2:#bb9af7;--accent-3:#7dcfff;
+  --good:#9ece6a;--warn:#e0af68;--bad:#f7768e;
+  --grad:linear-gradient(135deg,#7aa2f7,#bb9af7 55%,#f7768e);
+  --grad-soft:linear-gradient(135deg,#24283b,#2f334d);
+  --radius:12px;--radius-sm:8px;--radius-lg:20px;
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+  --shadow-lg:0 24px 62px rgba(0,0,0,.6);
+  --font-sans:'Inter','Noto Sans SC',sans-serif;
+}
+
+
+/* ---- animations/animations.css ---- */
+/* html-ppt :: animations.css
+ * Apply by adding class="anim-<name>" or data-anim="<name>".
+ * Durations are deliberately snappy; tweak --anim-dur per element.
+ */
+:root{--anim-dur:.7s;--anim-ease:cubic-bezier(.4,0,.2,1)}
+
+/* ---------- FADE DIRECTIONALS ---------- */
+@keyframes kf-fade-up{from{opacity:0;transform:translateY(32px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-down{from{opacity:0;transform:translateY(-32px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-left{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-right{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+.anim-fade-up{animation:kf-fade-up var(--anim-dur) var(--anim-ease) both}
+.anim-fade-down{animation:kf-fade-down var(--anim-dur) var(--anim-ease) both}
+.anim-fade-left{animation:kf-fade-left var(--anim-dur) var(--anim-ease) both}
+.anim-fade-right{animation:kf-fade-right var(--anim-dur) var(--anim-ease) both}
+
+/* ---------- RISE / DROP / ZOOM / BLUR / GLITCH ---------- */
+@keyframes kf-rise{from{opacity:0;transform:translateY(60px) scale(.97);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+@keyframes kf-drop{from{opacity:0;transform:translateY(-60px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes kf-zoom{0%{opacity:0;transform:scale(.6)}60%{transform:scale(1.04)}100%{opacity:1;transform:scale(1)}}
+@keyframes kf-blur{from{opacity:0;filter:blur(18px)}to{opacity:1;filter:none}}
+@keyframes kf-glitch{0%{opacity:0;transform:translateX(0);clip-path:inset(0 0 0 0)}
+  20%{opacity:1;transform:translateX(-6px);clip-path:inset(20% 0 30% 0)}
+  40%{transform:translateX(4px);clip-path:inset(50% 0 10% 0)}
+  60%{transform:translateX(-3px);clip-path:inset(10% 0 60% 0)}
+  80%{transform:translateX(2px);clip-path:inset(0 0 0 0)}
+  100%{opacity:1;transform:none}}
+.anim-rise-in{animation:kf-rise .9s var(--anim-ease) both}
+.anim-drop-in{animation:kf-drop .8s var(--anim-ease) both}
+.anim-zoom-pop{animation:kf-zoom .7s cubic-bezier(.22,1.3,.36,1) both}
+.anim-blur-in{animation:kf-blur .8s var(--anim-ease) both}
+.anim-glitch-in{animation:kf-glitch .8s steps(5,end) both}
+
+/* ---------- TYPEWRITER ---------- */
+.anim-typewriter{display:inline-block;overflow:hidden;white-space:nowrap;border-right:2px solid currentColor;
+  width:0;animation:kf-type 2.4s steps(40,end) forwards, kf-caret 1s step-end infinite}
+@keyframes kf-type{to{width:100%}}
+@keyframes kf-caret{50%{border-color:transparent}}
+
+/* ---------- GLOW / SHIMMER / GRADIENT-FLOW ---------- */
+@keyframes kf-neon{0%,100%{text-shadow:0 0 8px var(--accent),0 0 20px var(--accent)}
+  50%{text-shadow:0 0 16px var(--accent),0 0 40px var(--accent),0 0 80px var(--accent)}}
+.anim-neon-glow{animation:kf-neon 2s ease-in-out infinite}
+
+.anim-shimmer-sweep{position:relative;overflow:hidden}
+.anim-shimmer-sweep::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(110deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%);
+  transform:translateX(-100%);animation:kf-shimmer 2.4s var(--anim-ease) infinite}
+@keyframes kf-shimmer{to{transform:translateX(100%)}}
+
+.anim-gradient-flow{background:linear-gradient(90deg,var(--accent),var(--accent-2,var(--accent)),var(--accent-3,var(--accent)),var(--accent));
+  background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+  animation:kf-gradflow 4s linear infinite}
+@keyframes kf-gradflow{to{background-position:300% 0}}
+
+/* ---------- STAGGER LIST ---------- */
+.anim-stagger-list > *{opacity:0;animation:kf-rise .65s var(--anim-ease) both}
+.anim-stagger-list > *:nth-child(1){animation-delay:.05s}
+.anim-stagger-list > *:nth-child(2){animation-delay:.15s}
+.anim-stagger-list > *:nth-child(3){animation-delay:.25s}
+.anim-stagger-list > *:nth-child(4){animation-delay:.35s}
+.anim-stagger-list > *:nth-child(5){animation-delay:.45s}
+.anim-stagger-list > *:nth-child(6){animation-delay:.55s}
+.anim-stagger-list > *:nth-child(7){animation-delay:.65s}
+.anim-stagger-list > *:nth-child(8){animation-delay:.75s}
+.anim-stagger-list > *:nth-child(n+9){animation-delay:.85s}
+
+/* ---------- COUNTER-UP (JS-driven, marker class only) ---------- */
+.counter{font-variant-numeric:tabular-nums}
+
+/* ---------- SVG PATH DRAW ---------- */
+.anim-path-draw path,.anim-path-draw line,.anim-path-draw polyline,.anim-path-draw circle,.anim-path-draw rect{
+  stroke-dasharray:1000;stroke-dashoffset:1000;animation:kf-draw 2s var(--anim-ease) forwards}
+@keyframes kf-draw{to{stroke-dashoffset:0}}
+
+/* ---------- PARALLAX TILT (hover) ---------- */
+.anim-parallax-tilt{transform-style:preserve-3d;transition:transform .4s var(--anim-ease)}
+.anim-parallax-tilt:hover{transform:perspective(900px) rotateX(6deg) rotateY(-8deg) translateZ(10px)}
+
+/* ---------- CARD FLIP 3D ---------- */
+@keyframes kf-flip{from{transform:perspective(1200px) rotateY(-90deg);opacity:0}
+  to{transform:perspective(1200px) rotateY(0);opacity:1}}
+.anim-card-flip-3d{animation:kf-flip .9s var(--anim-ease) both;transform-style:preserve-3d;backface-visibility:hidden}
+
+/* ---------- CUBE ROTATE 3D ---------- */
+@keyframes kf-cube{from{transform:perspective(1200px) rotateX(20deg) rotateY(-90deg) translateZ(-200px);opacity:0}
+  to{transform:perspective(1200px) rotateX(0) rotateY(0) translateZ(0);opacity:1}}
+.anim-cube-rotate-3d{animation:kf-cube 1s var(--anim-ease) both}
+
+/* ---------- PAGE TURN 3D ---------- */
+@keyframes kf-pageturn{from{transform:perspective(1600px) rotateY(-85deg);transform-origin:left center;opacity:0}
+  to{transform:perspective(1600px) rotateY(0);opacity:1}}
+.anim-page-turn-3d{animation:kf-pageturn 1s var(--anim-ease) both;transform-origin:left center}
+
+/* ---------- PERSPECTIVE ZOOM ---------- */
+@keyframes kf-pzoom{from{opacity:0;transform:perspective(1400px) translateZ(-400px) rotateX(12deg)}
+  to{opacity:1;transform:none}}
+.anim-perspective-zoom{animation:kf-pzoom 1s var(--anim-ease) both}
+
+/* ---------- MARQUEE SCROLL ---------- */
+.anim-marquee-scroll{display:flex;gap:48px;white-space:nowrap;animation:kf-marquee 20s linear infinite}
+@keyframes kf-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ---------- KEN BURNS ---------- */
+@keyframes kf-kenburns{0%{transform:scale(1) translate(0,0)}100%{transform:scale(1.15) translate(-2%,-1%)}}
+.anim-kenburns{animation:kf-kenburns 14s ease-in-out infinite alternate}
+
+/* ---------- CONFETTI BURST (pseudo — pure CSS sparkles) ---------- */
+.anim-confetti-burst{position:relative}
+.anim-confetti-burst::before,.anim-confetti-burst::after{
+  content:"";position:absolute;top:50%;left:50%;width:8px;height:8px;border-radius:50%;
+  background:var(--accent);box-shadow:
+    20px -30px 0 var(--accent-2,var(--accent)),-25px -20px 0 var(--accent-3,var(--accent)),
+    30px 20px 0 var(--good,#1aaf6c),-30px 25px 0 var(--warn,#f5a524),
+    40px -10px 0 var(--bad,#e0445a),-45px 0 0 var(--accent),
+    10px 40px 0 var(--accent-2,var(--accent)),-15px -40px 0 var(--accent-3,var(--accent));
+  opacity:0;animation:kf-confetti 1.2s var(--anim-ease) forwards}
+.anim-confetti-burst::after{animation-delay:.15s;transform:rotate(45deg)}
+@keyframes kf-confetti{0%{opacity:0;transform:scale(.2)}30%{opacity:1}100%{opacity:0;transform:scale(2.2)}}
+
+/* ---------- SPOTLIGHT ---------- */
+@keyframes kf-spot{0%{clip-path:circle(0% at 50% 50%)}100%{clip-path:circle(140% at 50% 50%)}}
+.anim-spotlight{animation:kf-spot 1.1s var(--anim-ease) both}
+
+/* ---------- MORPH SHAPE (SVG) ---------- */
+.anim-morph-shape path{animation:kf-morph 6s ease-in-out infinite alternate}
+@keyframes kf-morph{0%{d:path("M60,120 Q120,20 180,120 T300,120")}
+  100%{d:path("M60,120 Q120,220 180,120 T300,120")}}
+
+/* ---------- RIPPLE REVEAL ---------- */
+@keyframes kf-ripple{0%{clip-path:circle(0% at 20% 80%);opacity:.4}
+  100%{clip-path:circle(160% at 20% 80%);opacity:1}}
+.anim-ripple-reveal{animation:kf-ripple 1.2s var(--anim-ease) both}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce){
+  [class*="anim-"]{animation:none!important;transition:none!important}
+}
+
+
+/* ---- deck-local (shift-left-testing · step-by-step workflow) ---- */
+.slide{padding:52px 80px}
+.h1{font-size:72px;line-height:1.04;color:var(--text-1)}
+.h2{font-size:40px;line-height:1.1;margin-bottom:8px;color:var(--text-1)}
+h4,.h4{font-size:17px;color:var(--text-1)}
+.mono-title{font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-weight:700;letter-spacing:-.03em}
+.kicker{font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:14px;font-weight:600;text-transform:none;letter-spacing:.02em}
+.kicker::before{content:"// ";opacity:.7}
+.grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.lede{font-size:21px;max-width:66ch}
+.sm{font-size:14px;line-height:1.55;color:var(--text-2);margin:0}
+.sm b,.sm strong{color:var(--text-1)}
+.above{position:relative;z-index:1}
+.fx-host{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.45}
+.slide code,.slide kbd{font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:.9em;
+  background:rgba(122,162,247,.12);border:1px solid rgba(122,162,247,.25);border-radius:6px;
+  padding:1px 6px;color:#9cc2ff;white-space:nowrap}
+
+/* ---- chips ---- */
+.chip{display:inline-flex;align-items:center;gap:9px;padding:9px 15px;border-radius:10px;font-size:14.5px;
+  font-weight:600;background:var(--surface);border:1px solid var(--border-strong);color:var(--text-1)}
+.cdot{display:inline-block;width:10px;height:10px;border-radius:50%;flex:none}
+
+/* ---- cards ---- */
+.card{padding:20px 22px;border:1px solid var(--border-strong)}
+.card h4{margin:0 0 8px}
+.card-accent{border-top:3px solid var(--accent)}
+
+/* ---- bullet list ---- */
+.blist{list-style:none;padding:0;margin:14px 0 0}
+.blist li{position:relative;padding:8px 0 8px 26px;font-size:14.5px;color:var(--text-2);line-height:1.5;border-bottom:1px solid var(--border)}
+.blist li:last-child{border-bottom:none}
+.blist li::before{content:"\25B8";position:absolute;left:2px;top:8px;color:var(--accent);font-weight:700}
+.blist li b{color:var(--text-1);font-weight:600}
+.blist.tight li{padding:6px 0 6px 26px;font-size:13.5px}
+
+/* ---- data table ---- */
+.dtable{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}
+.dtable th{text-align:left;padding:9px 12px;color:var(--accent-2);font-weight:700;font-size:12px;
+  text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border-strong)}
+.dtable td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text-2);vertical-align:top;line-height:1.45}
+.dtable tr:last-child td{border-bottom:none}
+.dtable td b{color:var(--text-1);font-weight:600}
+.dtable td.ok{color:var(--good);font-weight:700;white-space:nowrap}
+.dtable td.opt{color:var(--warn);font-weight:700;white-space:nowrap}
+
+/* ---- terminal ---- */
+.term{background:#16161e;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;
+  font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:13.5px;line-height:1.62;box-shadow:var(--shadow)}
+.term .bar{display:flex;align-items:center;gap:7px;padding:9px 14px;background:#1f2335;
+  border-bottom:1px solid var(--border);font-size:11.5px;color:var(--text-3)}
+.term .tdot{width:10px;height:10px;border-radius:50%;background:#f7768e;flex:none}
+.term .tdot:nth-child(2){background:#e0af68}
+.term .tdot:nth-child(3){background:#9ece6a}
+.term pre{margin:0;padding:16px 20px;color:#c0caf5;overflow:auto;white-space:pre}
+.term .p{color:#9ece6a;font-weight:700}
+.term .c{color:#c0caf5}
+.term .o{color:#a9b1d6}
+.term .cmt{color:#565f89;font-style:italic}
+.term .kw{color:#f7768e}
+.term .str{color:#9ece6a}
+.term .fn{color:#bb9af7}
+.term .num{color:#ff9e64}
+
+/* ---- callout ---- */
+.callout{border-left:3px solid var(--accent);background:rgba(122,162,247,.08);padding:13px 18px;
+  border-radius:0 10px 10px 0;margin-top:14px}
+.callout h4{font-size:14.5px;margin:0 0 4px;color:var(--accent)}
+.callout p{font-size:13.5px;color:var(--text-2);line-height:1.55;margin:0}
+.callout.warn{border-left-color:var(--warn);background:rgba(224,175,104,.09)}
+.callout.warn h4{color:var(--warn)}
+
+/* ---- numbered step cards ---- */
+.steps{display:grid;gap:24px 18px;margin-top:30px}
+.steps.s3{grid-template-columns:repeat(3,1fr)}
+.steps.s4{grid-template-columns:repeat(4,1fr)}
+.step{position:relative;padding:22px 18px 16px;border:1px solid var(--border-strong);border-radius:12px;background:var(--surface)}
+.step .num{position:absolute;top:-15px;left:16px;width:32px;height:32px;border-radius:9px;background:var(--grad);
+  color:#16161e;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;
+  font-family:'JetBrains Mono',monospace}
+.step h4{margin:8px 0 6px;font-size:15px}
+.step p{font-size:13px;color:var(--text-2);line-height:1.5;margin:0}
+
+/* ---- do / don't comparison ---- */
+.vs{display:grid;grid-template-columns:1fr 52px 1fr;gap:16px;align-items:stretch;margin-top:18px}
+.vs .mid{font-size:34px;font-weight:800;color:var(--text-3);display:flex;align-items:center;justify-content:center}
+.vs .bad-side{border-top:3px solid var(--bad)}
+.vs .good-side{border-top:3px solid var(--good)}
+.vs h3{font-size:17px;margin:0 0 10px;color:var(--text-1)}
+.vs ul{padding-left:17px;margin:0;font-size:13.5px;line-height:1.7;color:var(--text-2)}
+.vs .bad-side li::marker{color:var(--bad)}
+.vs .good-side li::marker{color:var(--good)}
+
+/* ---- workflow map (slide 2) ---- */
+.wf{position:relative;margin-top:16px}
+.wf::before{content:"";position:absolute;left:17px;top:16px;bottom:16px;width:2px;
+  background:linear-gradient(180deg,var(--warn),var(--accent) 30%,var(--accent-2) 70%,var(--good));opacity:.45}
+.wf-row{display:grid;grid-template-columns:216px 1fr 270px;gap:14px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--border)}
+.wf-row:last-child{border-bottom:none}
+.wf-node{display:flex;align-items:center;gap:11px;font-weight:700;font-size:15px;color:var(--text-1);position:relative;z-index:1}
+.wf-num{flex:none;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-weight:800;font-size:15px;background:var(--surface);
+  border:1px solid var(--accent);color:var(--accent);box-shadow:0 0 0 4px var(--bg)}
+.wf-node.gatey .wf-num{border-color:var(--warn);color:var(--warn)}
+.wf-node.okey .wf-num{border-color:var(--good);color:var(--good)}
+.wf-what{font-size:13.5px;color:var(--text-2);line-height:1.45}
+.wf-what b{color:var(--text-1);font-weight:600}
+.wf-side{display:flex;flex-direction:column;gap:5px;align-items:flex-end}
+.gate,.fb,.hand{display:inline-block;padding:3px 10px;border-radius:7px;font-family:'JetBrains Mono',monospace;font-size:11.5px;white-space:nowrap}
+.gate{background:rgba(224,175,104,.14);border:1px solid rgba(224,175,104,.5);color:var(--warn)}
+.fb{background:transparent;border:1px dashed var(--border-strong);color:var(--text-3)}
+.hand{background:rgba(158,206,106,.13);border:1px solid rgba(158,206,106,.5);color:var(--good)}
+</style>
+</head>
+<body>
+
+<div class="deck">
+
+<!-- 1. COVER -->
+<section class="slide is-active" data-title="Cover">
+  <div class="fx-host" data-fx="constellation"></div>
+  <div class="above">
+    <p class="eyebrow">AGENTIC QA · WORKFLOW SKILL · SHIFT-LEFT</p>
+    <h1 class="h1 mono-title anim-rise-in" data-anim="rise-in"><span class="grad">/</span>shift-left-testing</h1>
+    <p class="lede mt-m">Pre-sprint QA on a batch of backlog Stories: it refines the Acceptance Criteria, surfaces gaps and ambiguities, and leaves the real ATP of each Story drafted at outline maturity. Defects are <b>prevented in the requirements</b>, before anyone writes a line of the feature.</p>
+    <div class="row wrap mt-l" style="gap:10px">
+      <span class="chip"><span class="cdot" style="background:var(--accent)"></span>Shift-Left <span class="dim">(historically Stage 0)</span> · Pre-sprint</span>
+      <span class="chip"><span class="cdot" style="background:var(--accent-2)"></span>Batch of 1-12 Stories</span>
+      <span class="chip"><span class="cdot" style="background:var(--warn)"></span>No execution: the feature doesn't exist yet</span>
+      <span class="chip"><span class="cdot" style="background:var(--good)"></span>Jira is canonical</span>
+    </div>
+  </div>
+  <div class="notes">Welcome. This deck walks through the real workflow of the /shift-left-testing skill step by step: what goes in, what the AI does, which gates wait for your approval and which artifacts come out. Rule of thumb: fixing a defect in the requirements costs 1; in development, 10; in production, 100.</div>
+</section>
+
+<!-- 2. WORKFLOW MAP -->
+<section class="slide" data-title="Workflow map">
+  <p class="kicker">the full map: a mental index of the deck</p>
+  <h2 class="h2" data-anim="fade-up">One pipeline, three phases <span class="grad">+ human gates</span></h2>
+  <div class="wf anim-stagger-list">
+    <div class="wf-row">
+      <div class="wf-node gatey"><span class="wf-num">!</span>Preflight Gate</div>
+      <div class="wf-what">Tooling + context readiness: the maps have to be <b>generated</b>, not just present. <b>Args-as-answers</b> · <b>probe, don't assume</b>. One gap checklist; a blocking RED → STOP.</div>
+      <div class="wf-side"><span class="fb">RED → fix .env + restart</span><span class="fb">placeholder → project-context</span></div>
+    </div>
+    <div class="wf-row">
+      <div class="wf-node"><span class="wf-num">0</span>Session Init</div>
+      <div class="wf-what">Resume check · TMS modality A/B · load <b>/acli</b> · verify <b>context</b> · resolve candidates · create <b>.session/&lt;batch-id&gt;/</b></div>
+      <div class="wf-side"><span class="fb">missing context → STOP + handoff</span></div>
+    </div>
+    <div class="wf-row">
+      <div class="wf-node"><span class="wf-num">1</span>Selection</div>
+      <div class="wf-what">Sync-read per candidate → type filter → label freshness → <b>veto</b> → <b>risk score</b> → ranked table · after the OK, a <b>[QA] Shift-Left Review</b> subtask per Story</div>
+      <div class="wf-side"><span class="gate">GATE · user OK</span><span class="fb">non-Story → rejected out loud</span></div>
+    </div>
+    <div class="wf-row">
+      <div class="wf-node"><span class="wf-num">2</span>Refinement ×N</div>
+      <div class="wf-what">1 subagent per Story, <b>SEQUENTIAL</b> · playbook at outline scope → <b>shift-left-refinement.md</b> buffer + per-Story summary</div>
+      <div class="wf-side"><span class="gate">GATE · OK per Story</span><span class="fb">optional fleet: 1 worker/Story</span></div>
+    </div>
+    <div class="wf-row">
+      <div class="wf-node"><span class="wf-num">3</span>Handoff ×N</div>
+      <div class="wf-what">Jira mutations per Story · labels · qa_assignee · AI Effort · transition <b>Backlog → Shift-Left QA → Ready For Dev</b> and STOP · <b>light stage verifier</b></div>
+      <div class="wf-side"><span class="fb">missing field → comment fallback</span><span class="fb">subtask → Close via complete</span></div>
+    </div>
+    <div class="wf-row">
+      <div class="wf-node okey"><span class="wf-num">✓</span>Batch report</div>
+      <div class="wf-what">Aggregates PO/Dev questions (deduped) → <b>batch-report.md</b> → comment on the parent epic if they share one · archives the session · <b>session footer</b> in the chat</div>
+      <div class="wf-side"><span class="hand">→ /sprint-testing · short-circuit</span></div>
+    </div>
+  </div>
+  <p class="dim2 mt-s" style="font-size:13px"><span class="gate">GATE</span> waits for human approval &nbsp;·&nbsp; <span class="fb">dashed box</span> fallback / adjacent path &nbsp;·&nbsp; <span class="hand">→</span> handoff to another skill</p>
+  <div class="callout mt-m"><h4>The agentic contract of Shift-Left</h4><p>The <b>agent</b> rewrites the ACs as Given/When/Then with concrete data, surfaces gaps and ambiguities, drafts the pre-sprint ATP in the Story's field, assigns the AI Effort (Low, Medium or High) and applies the Test-Design Checklist. The <b>person</b> signs off on the batch of candidate Stories and on the per-Story summary, and never lets a Story move to <span class="mono">Ready For Dev</span> without that. <b>Evidence that survives</b>: the rewritten ACs, the gaps as open questions to PO/Dev, the dated label and the review subtask. CSA autonomy <b>2</b> and <b>no separate verifier</b>: the PO or dev refining the Story is the natural reviewer.</p></div>
+  <div class="notes">Memorize this column: Preflight → Init → Selection → Refinement → Handoff → Batch report. Each row is a section of the deck; the stage verifier, the session footer and the optional fleet come at the end. The adjacent paths live on the right: approval gates, fallbacks and handoffs to other skills.</div>
+</section>
+
+<!-- 3. PREFLIGHT GATE -->
+<section class="slide" data-title="Preflight Gate">
+  <p class="kicker">before Phase 0: readiness gate</p>
+  <h2 class="h2" data-anim="fade-up">Preflight: <span class="grad">probe, don't assume</span></h2>
+  <div class="grid g2 mt-m anim-stagger-list">
+    <div class="card card-accent"><h4>Law 1 · Args-as-answers</h4><p class="sm">What the user already said (the Story IDs, the modality, "groom the backlog") counts as an answer already given. Only the real gaps get asked, all together, in ONE checklist.</p></div>
+    <div class="card card-accent"><h4>Law 2 · Probe, don't assume</h4><p class="sm">Every capability is checked with a real probe. A blocking RED stops the session: the skill names the exact env var, points to <code>.env</code> and asks you to restart the agent session.</p></div>
+  </div>
+  <table class="dtable">
+    <thead><tr><th>Capability</th><th>Need</th><th>Probe / why</th></tr></thead>
+    <tbody>
+      <tr><td><b>/acli</b> (issue tracker)</td><td class="ok">REQUIRED</td><td><code>bun run jira:check</code>: all the refinement output lands in Jira</td></tr>
+      <tr><td><b>Resolved TMS modality</b></td><td class="ok">REQUIRED</td><td>A: Xray · B: Jira-native. It is persisted for <code>/sprint-testing</code>; the pre-sprint ATP lives in the field in BOTH</td></tr>
+      <tr><td><b>/xray-cli</b> + <code>XRAY_*</code> creds</td><td class="opt">N/A</td><td>Not used pre-sprint: the ATP is field-first and the Test Plan item is created by <code>/sprint-testing</code> Planning from the field</td></tr>
+      <tr><td><b>Business maps + MTP</b></td><td class="ok">REQUIRED</td><td><code>business-data-context</code>, <code>business-api-context</code> and <code>business-e2e-context</code> exist AND are generated: <code>bun run context:map &lt;slug&gt; --list</code> lists sections, with no placeholder warning. Plus <code>master-test-plan.md</code>. Skill missing → <code>bun sync</code> · placeholder → the <code>project-context</code> mode · MTP missing → <code>bun run context:hydrate</code> (and if the Epic has no plan, <code>test-plan</code> mode)</td></tr>
+      <tr><td><b>Candidate list</b></td><td class="ok">REQUIRED</td><td>Explicit IDs or a backlog JQL, size confirmed with the user</td></tr>
+    </tbody>
+  </table>
+  <div class="callout"><h4>A light gate by design</h4><p>Shift-left never runs against a live system: the app env, test-user credentials, DBHub, OpenAPI, Playwright and resend are all N/A here. Feasibility is established by READING code, APIs and schema, never by running the app.</p></div>
+  <div class="notes">Preflight runs before everything, even before the resume check. Its two laws prevent the two classic failures: quizzing the user about things they already said, and assuming a CLI is authenticated without testing it. And a placeholder map passes an "is the file there" check while carrying nothing, which is why the probe is --list.</div>
+</section>
+
+<!-- 4. PHASE 0 -->
+<section class="slide" data-title="Phase 0 · Session Init">
+  <p class="kicker">phase 0: session resume check + init</p>
+  <h2 class="h2" data-anim="fade-up">Phase 0 · Start <span class="grad">or resume</span> the session</h2>
+  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
+    <ul class="blist tight anim-stagger-list" style="margin-top:0">
+      <li><b>0.0 Resume check.</b> Is there a <code>progress.md</code> for the batch? → offer <b>resume / restart / abort</b>. Restart archives the previous one as <code>-aborted</code>.</li>
+      <li><b>0.1 TMS modality.</b> The same automatic probe as <code>test-documentation</code> §Phase 0 (A: Xray · B: Jira-native); it only asks if the checks fail. Persisted in <code>plan.md</code> §Inputs.</li>
+      <li><b>0.2 Tool skills.</b> <code>/acli</code> always (writes + trivial search). Detail reads → <code>bun run jira:sync-issues</code>, never <code>acli view</code>.</li>
+      <li><b>0.3 Generated context.</b> <code>bun run context:map &lt;slug&gt; --list</code> for each business map + the master test plan. A file that exists is not enough: a placeholder passes that check empty. Placeholder warning or missing plan → STOP → <b>/project-discovery</b> or the <code>project-context</code> mode. The <code>business-domain-context</code> glossary is still read, but it doesn't stop you: a placeholder only means there's no glossary yet, and you refine with the words of the Story.</li>
+      <li><b>0.4 Candidates.</b> Explicit IDs (UPEX-100,101,102) or a backlog JQL. Sweet spot 1-12; &gt;12 gets split across sessions.</li>
+      <li><b>0.5 Session folder</b> + <code>plan.md</code> (Goal · Inputs · phases · risks) + first entry in <code>progress.md</code>.</li>
+    </ul>
+    <div class="term">
+      <div class="bar"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span><span>session state: where everything lives</span></div>
+<pre><span class="fn">.session/shift-left-testing/2026-07-06-payments/</span>
+├─ plan.md          <span class="cmt"># canonical: modality + candidates + phases</span>
+├─ progress.md      <span class="cmt"># append-only, 1 entry per phase → resume</span>
+├─ candidates.md    <span class="cmt"># Phase 1 output</span>
+└─ batch-report.md  <span class="cmt"># Phase 3 output</span>
+
+<span class="cmt"># [LOCAL] buffer per Story (gitignored, disposable</span>
+<span class="cmt"># once Phase 3 publishes it to the ATP field):</span>
+<span class="fn">.context/PBI/epics/EPIC-&lt;KEY&gt;-&lt;slug&gt;/stories/</span>
+<span class="fn">  STORY-&lt;KEY&gt;-&lt;slug&gt;/</span>shift-left-refinement.md
+
+<span class="cmt"># on close: mv → .session/.archive/&lt;date&gt;-...-&lt;batch-id&gt;/</span></pre>
+    </div>
+  </div>
+  <div class="notes">The session is resumable by design: plan.md is the canonical record of decisions and progress.md lets you pick up mid-batch without repeating Stories that are already refined. The kebab-case descriptor allows two sessions on the same day.</div>
+</section>
+
+<!-- 5. PHASE 1 · FUNNEL -->
+<section class="slide" data-title="Phase 1 · Selection">
+  <p class="kicker">phase 1: selection · the triage funnel</p>
+  <h2 class="h2" data-anim="fade-up">Selection: read carefully, <span class="grad">filter out loud</span></h2>
+  <div class="term mt-s">
+    <div class="bar"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span><span>detail read: the reads-vs-writes rule</span></div>
+<pre><span class="p">$ </span><span class="c">bun run jira:sync-issues get UPEX-100 --include-comments</span>   <span class="cmt"># 1 Story: ACs + custom fields + comments</span>
+<span class="p">$ </span><span class="c">bun run jira:sync-issues jql "project = UPEX AND issueType = Story AND status in (Backlog, ...)"</span>
+<span class="cmt"># NEVER `acli view` for custom fields: it returns null. `acli search` only for the trivial list.</span></pre>
+  </div>
+  <div class="steps s4 anim-stagger-list">
+    <div class="step"><div class="num">1</div><h4>Type filter</h4><p>Stories only. Bug / Spike / Sub-task / Tech-debt → rejected WITH a one-line reason, never silently.</p></div>
+    <div class="step"><div class="num">2</div><h4>Label freshness</h4><p>Already <code>shift-left-reviewed</code> with a dated label under 30 days old? It is shown separately: the user decides skip or refresh.</p></div>
+    <div class="step"><div class="num">3</div><h4>Veto table</h4><p>Money / auth / data-integrity / integration / state machine → FORCE FULL. Pure CSS / copy / docs → SKIP.</p></div>
+    <div class="step"><div class="num">4</div><h4>Risk score</h4><p>Only without a veto. New feature +3 · dynamic data +3 · AC-light +2 · effort +2 · &gt;5 comments +1…</p></div>
+  </div>
+  <div class="callout"><h4>5 · Data feasibility scan (HIGH only)</h4><p>Reads the data and API maps (<code>bun run context:map</code>) and the <code>master-test-plan</code>, with no queries or API calls. If the data model doesn't support the ACs → <code>DATA-FEASIBILITY-RISK</code> flag (soft: it doesn't block, it becomes a critical question for the PO).</p></div>
+  <div class="notes">The funnel runs in strict order: type before label, label before veto, veto before score. Loud rejection IS value: it often reveals that the board is mislabeled. Freshness comes from the dated label, never from the issue's updated timestamp (any comment resets it).</div>
+</section>
+
+<!-- 6. PHASE 1 · VETO vs SCORE + GATE -->
+<section class="slide" data-title="Phase 1 · Veto and gate">
+  <p class="kicker">phase 1: veto beats score · candidate gate</p>
+  <h2 class="h2" data-anim="fade-up">Judgment overrides arithmetic, <span class="grad">and you approve the set</span></h2>
+  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
+    <div>
+      <table class="dtable" style="margin-top:0">
+        <thead><tr><th>Score</th><th>Level</th><th>Refinement depth</th></tr></thead>
+        <tbody>
+          <tr><td><b>0-3</b></td><td>LOW</td><td>SKIP: PO/Dev write the ACs without QA</td></tr>
+          <tr><td><b>4-7</b></td><td>MEDIUM</td><td>Standard refinement (Phases 1-3 + outlines)</td></tr>
+          <tr><td><b>8+</b></td><td>HIGH</td><td>Extended: more ambiguity and edge-case hunting; expanded question set</td></tr>
+        </tbody>
+      </table>
+      <div class="callout" style="margin-top:12px"><h4>The score is a guide</h4><p>The user can rescue a LOW if they smell hidden complexity. And the VETO short-circuits: a refunds Story is mandatory refinement even if it scores 2; a CSS tweak is a skip even if it touches five files.</p></div>
+    </div>
+    <div class="card" style="border-top:3px solid var(--warn)">
+      <h4 style="color:var(--warn)">GATE: it presents the table and WAITS for the OK</h4>
+      <p class="sm mt-s">Phase 1 ends with a ranked table: <b>Accepted</b> (risk · score · veto override · data-feasibility), <b>Rejected</b> (non-Story, with reason), <b>Skipped</b> (LOW), <b>Already Reviewed</b> (skip/refresh?), recommended order and open questions.</p>
+      <p class="sm mt-s"><b>Nothing gets refined</b> until the human confirms the set. They can veto Stories, rescue LOWs or change the order. The final accepted list is persisted in <code>progress.md</code>, inside the Phase 1 entry.</p>
+      <p class="sm mt-s"><b>After the OK</b>, for each accepted Story: find-or-create the <code>[QA] Shift-Left Review</code> subtask with <b>assignee = self</b> from the create. It is born in <code>{{jira.status.subtask.active}}</code> (status <code>ACTIVE</code>) and stays there until Phase 3; if it already existed closed, it is reopened with <code>reactive</code>. No subtask work type in the catalog → skip with a warning, never blocks.</p>
+      <p class="sm mt-s"><b>Optional, with a person at the keyboard</b>: if reading the Stories already shows gaps that don't need code to answer (an AC with no failure path, an undefined term, a number with no unit), they are collected and deduplicated, and the <code>to-questionnaire</code> skill builds <b>one</b> questionnaire for the PO. It is written to <code>.session/shift-left-testing/&lt;batch-id&gt;/</code>, so answers can arrive while the batch is being refined.</p>
+    </div>
+  </div>
+  <div class="notes">Selection is a proposal and the human decides. This gate keeps the human steering the batch, with the same pattern as the Story Explanation gate in sprint-testing. The subtask makes the pre-sprint QA work visible on the board and later receives the long annotations, so the Story stays clean.</div>
+</section>
+
+<!-- 7. PHASE 2 · THE OUTLINE LOOP -->
+<section class="slide" data-title="Phase 2 · Outline loop">
+  <p class="kicker">phase 2: refinement · one subagent per story, sequential</p>
+  <h2 class="h2" data-anim="fade-up">Refinement: the playbook, at <span class="grad">outline scope</span></h2>
+  <p class="sm" style="max-width:100ch">Deliberate reuse: most of the logic lives in <code>sprint-testing/references/acceptance-test-planning.md</code> §Phases 1-3; the subagent cites it and applies the <b>shift-left delta</b>. Sequential by design: you present each summary to the user before dispatching the next Story.</p>
+  <div class="vs">
+    <div class="card good-side">
+      <h3>It runs (outline scope)</h3>
+      <ul>
+        <li><b>Phase 1 · Critical Analysis</b>: business + technical context; LIGHT code reads (is it feasible?), no reproduction</li>
+        <li><b>Phase 2 · Story Quality Analysis</b>: the heart (next slide)</li>
+        <li><b>Phase 3 · Refined ACs</b>: Given/When/Then with specific data</li>
+        <li><b>Phase 4 · outlines</b>: NAMES + coverage count only (feeds the AI Effort and the split decision)</li>
+        <li><b>Phase 5 · edge cases</b>: names + criticality only</li>
+      </ul>
+    </div>
+    <div class="mid">vs</div>
+    <div class="card bad-side">
+      <h3>It defers or forbids</h3>
+      <ul>
+        <li>Parameterization tables, test-data JSON, Faker recipes → in-sprint (<code>/sprint-testing</code>)</li>
+        <li>TC creation → <code>/sprint-testing</code> or Documentation (<code>/test-documentation</code>), depending on the modality</li>
+        <li>Jira mutations → done by Phase 3, never by the subagent</li>
+        <li>Execution: smoke, DB queries, API calls → NOTHING runs</li>
+        <li>Git: no branch or commit, Jira is canonical</li>
+        <li><code>evidence/</code> folder: there's nothing to capture</li>
+      </ul>
+    </div>
+  </div>
+  <div class="notes">The outline discipline separates shift-left from executable test design: outline titles and coverage count, never the data. The ATP that gets written is already the real one, at outline maturity. Generating Faker recipes now would be wasted work that gets redone in-sprint.</div>
+</section>
+
+<!-- 8. PHASE 2 · THE HEART -->
+<section class="slide" data-title="Phase 2 · The heart">
+  <p class="kicker">phase 2: story quality analysis + design doctrine</p>
+  <h2 class="h2" data-anim="fade-up">The heart: <span class="grad">what the Story leaves unsaid</span></h2>
+  <div class="grid g2 mt-m anim-stagger-list" style="align-items:start">
+    <div class="card card-accent">
+      <h4>What you hunt (playbook Phase 2)</h4>
+      <ul class="blist tight">
+        <li><b>Ambiguities</b>: location + question for PO/Dev + testing impact + suggested clarification</li>
+        <li><b>Gaps</b>: missing AC / business rule, why it's critical, risk if omitted</li>
+        <li><b>Unwritten edge cases</b>: scenario + likely behavior + criticality</li>
+        <li><b>Contradictions</b>: "the description says X but AC3 says Y", stated explicitly</li>
+        <li><b>Testability</b>: Yes / Partial / No, listing each vague AC or non-isolable dependency</li>
+      </ul>
+      <p class="sm mt-s">Toolkit: <code>refinement-questions.md</code>, a catalog by archetype (auth, money, search, state machine, integration, RBAC).</p>
+    </div>
+    <div class="card card-accent">
+      <h4>Design doctrine (binding)</h4>
+      <ul class="blist tight">
+        <li><b>The ACs are the FLOOR</b>: refinement pushes past the happy path</li>
+        <li><b>1:N by default</b>: a non-trivial AC implies several outlines; collapsing to 1 requires a written "trivially atomic" justification</li>
+        <li><b>Technique by trigger</b>: ranges → BVA · states → State-Transition · interacting conditions → Decision Table · 3+ factors → Pairwise</li>
+        <li><b>Every inferred scenario</b> carries the <code>NEEDS PO/DEV CONFIRMATION</code> marker, verbatim, all the way to Jira</li>
+        <li><b>A clean Story is a valid result</b>: zero forced questions; padding and under-derivation are BOTH failures</li>
+      </ul>
+    </div>
+  </div>
+  <div class="notes">This is where shift-left creates value: the PO can still act. Every ambiguity caught is a production defect erased before it is born, and every gap is also a missing outline.</div>
+</section>
+
+<!-- 9. PHASE 2 · BUFFER + GATE -->
+<section class="slide" data-title="Phase 2 · Buffer and gate">
+  <p class="kicker">phase 2: the staging buffer + per-story gate</p>
+  <h2 class="h2" data-anim="fade-up">shift-left-refinement.md <span class="grad">and your OK per Story</span></h2>
+  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
+    <div class="term" style="font-size:12.5px">
+      <div class="bar"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span><span>shift-left-refinement.md: skeleton + example</span></div>
+<pre>├─ Phase 1 · Critical Analysis
+├─ Phase 2 · Story Quality Analysis   <span class="cmt">← the heart</span>
+├─ Phase 3 · Refined ACs
+│   <span class="kw">Given</span> user with active OTP &lt;5 min
+│   <span class="kw">When</span>  submits code <span class="str">"000000"</span> (wrong)
+│   <span class="kw">Then</span>  UI <span class="str">"Invalid code"</span> · API <span class="num">401</span> · DB no session
+│   <span class="fn">NEEDS PO/DEV CONFIRMATION</span> <span class="cmt">← if inferred</span>
+├─ Phase 4 · Test Outlines (pre-sprint) <span class="cmt">← names + coverage</span>
+├─ Phase 5 · Edge Cases (pre-sprint)    <span class="cmt">← names + criticality</span>
+├─ Story Quality Assessment · Critical Questions for PO
+├─ Technical Questions for Dev · Suggested Improvements
+└─ Data feasibility flags · Recommended testing strategy</pre>
+    </div>
+    <div>
+      <ul class="blist tight" style="margin-top:0">
+        <li><b>[LOCAL] buffer, not a deliverable.</b> Written by hand in the Story's PBI folder, under <code>.context/PBI/**</code> (gitignored): it exists only on the machine that ran the batch. Phase 3 publishes its full body into the ATP field, and from then on the canonical copy is the one in Jira.</li>
+        <li><b>Nothing depends on it being on disk.</b> <code>/sprint-testing</code> short-circuits by reading the SYNCED <code>acceptance-test-plan.md</code>, never this file. The Jira mirrors (<code>story.md</code>, <code>acceptance-criteria.md</code>) are generated only by the sync.</li>
+        <li><b>Bootstrap</b>: if the PBI folder doesn't exist, the subagent creates it with a minimal <code>context.md</code>. No <code>evidence/</code>.</li>
+        <li><b>Outline convention</b>: <code>Should &lt;behavior&gt; &lt;condition&gt;</code>, grouped by type with a coverage table (Positive / Negative / Boundary / Integration).</li>
+        <li><b>Return to the orchestrator</b>: compact JSON with quality, #gaps, #PO/Dev questions, outlines by type, flags.</li>
+        <li><b>Interview</b>: if the summary carries real doubts and a person is at the keyboard, the orchestrator calls the <code>grilling</code> skill: numbered rounds, each question with a recommended answer, and it doesn't ask what the Story already answers. The <code>NEEDS PO/DEV CONFIRMATION</code> marker only comes off with the answer from whoever owns it (PO or BA for behavior, Dev for feasibility).</li>
+        <li><b>Glossary</b>: if an answer pins down a term that <code>business-domain-context</code> doesn't have, <code>domain-modeling</code> proposes it as a new section with evidence, and it is applied only if the person says yes. The skill never edits the map on its own.</li>
+        <li><b>GATE</b>: the orchestrator presents the summary, waits for your OK, records the <code>Phase 2.&lt;n&gt;</code> checkpoint in <code>progress.md</code> and only then dispatches the next Story.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="notes">The section order is structural: it becomes the block the PO reads in Jira. The per-Story checkpoint lets you resume a batch halfway without repeating work. If the sprint-testing short-circuit depended on this local file, on any other machine it would silently degrade into a full re-run.</div>
+</section>
+
+<!-- 10. PHASE 3 · 6 MUTATIONS -->
+<section class="slide" data-title="Phase 3 · Handoff">
+  <p class="kicker">phase 3: handoff · 6 jira mutations per story (via /acli)</p>
+  <h2 class="h2" data-anim="fade-up">Handoff: <span class="grad">six mutations</span>, in order</h2>
+  <div class="steps s3 anim-stagger-list">
+    <div class="step"><div class="num">1</div><h4>ACs → field</h4><p>Refined ACs go to the <code>acceptance_criteria</code> field. Fallback if it doesn't exist: a "## Acceptance Criteria" comment. Verified with a re-sync.</p></div>
+    <div class="step"><div class="num">2</div><h4>Description</h4><p>Append "QA Refinements (Shift-Left Analysis)": edge cases + clarified rules + questions. Read first, NEVER overwrite.</p></div>
+    <div class="step"><div class="num">3</div><h4>ATP</h4><p>Fills the <code>acceptance_test_plan</code> field with the pre-sprint ATP (outline maturity), <b>field-first</b>: the Test Plan item <b>"ATP: {STORY-KEY}: {title}"</b> is NOT created here; <code>/sprint-testing</code> Planning creates it from this SAME field, with no title variant. Fallback if the field doesn't exist: a "## Acceptance Test Plan (ATP)" comment.</p></div>
+    <div class="step"><div class="num">4</div><h4>Comment</h4><p>ONE handoff comment: a pointer to the field (@PO / @Dev-lead only if they are in <code>project.yaml</code>). Full body inline ONLY if the field doesn't exist.</p></div>
+    <div class="step"><div class="num">5</div><h4>Labels + QA Assignee</h4><p><code>shift-left-reviewed</code> + <code>shift-left-{YYYY-MM-DD}</code>. <code>qa_assignee</code> = the record of the QA who followed the story: filled in here, kept for its whole life, and the dev reads it to know who to assign at Ready For QA. Read-before-write, via REST PUT (acli doesn't write customfields).</p></div>
+    <div class="step"><div class="num">6</div><h4>Transition + subtask + trace</h4><p>analyze → refined and STOP at Ready For Dev, with the AI Effort already assigned. The <b>[QA] Shift-Left Review</b> subtask receives the exhaustive session notes and is closed with <code>complete</code> → <code>Close</code> (the Story stays clean). Re-sync: the ATP landed in the field and the comment is a POINTER; the inline body only applies in fallback mode. <code>test-documentation</code> <code>repair-traceability</code> mode audits it afterwards.</p></div>
+  </div>
+  <div class="callout" style="margin-top:24px"><h4>No hand-built ADF and no raw Markdown</h4><p>Rich-text bodies (ATP, ATR, Test description) are written in Markdown, converted and validated with the <code>.agents/skills/acli/scripts/md-to-adf.ts</code> converter, and what gets published is the resulting ADF JSON; through the CLI, <code>acli</code> never converts Markdown on its own. Raw Markdown shows up in Jira with literal <code>#</code> and <code>**</code>; hand-crafted ADF drifts from the content that <code>repair-traceability</code> audits.</p></div>
+  <div class="notes">Sequential, one Story at a time, so you check the Jira state before the next mutation. The subagent returns a log per Story: atp_container (field or fallback comment), subtask, labels, transitions, light_verifier and trace_status.</div>
+</section>
+
+<!-- 11. PHASE 3 · GUARDRAILS -->
+<section class="slide" data-title="Phase 3 · Guardrails">
+  <p class="kicker">phase 3: transition guardrails + resume</p>
+  <h2 class="h2" data-anim="fade-up">STOP at Ready For Dev, <span class="grad">and everything re-runnable</span></h2>
+  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
+    <div>
+      <table class="dtable" style="margin-top:0">
+        <thead><tr><th>Current status</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td><b>Backlog</b></td><td><code>analyze</code> → Shift-Left QA, then <code>refined</code> → Ready For Dev</td></tr>
+          <tr><td><b>Shift-Left QA</b></td><td><code>refined</code> only</td></tr>
+          <tr><td><b>Ready For Dev</b></td><td>nothing: it's already on target</td></tr>
+          <tr><td><b>Beyond</b> (In Progress…)</td><td>SKIP + warning: the refinement still lands, the workflow isn't touched</td></tr>
+        </tbody>
+      </table>
+      <div class="callout warn" style="margin-top:12px"><h4>Splitting a Story is optional, never a barrier</h4><p>QA never commits the Story to a sprint. If the AI Effort comes out High, QA leaves a note that it may be too big and need splitting, but the Story still goes to Ready For Dev and the dev works on it. A PO can clone or split it and refine again if they want shorter stories. And it is NEVER transitioned to Ready For Dev without the pre-sprint ATP filled in and the AI Effort assigned: without an ATP there is nothing to judge the verification effort by (anti-pattern L5).</p></div>
+    </div>
+    <div class="card">
+      <h4>Safe resume: every step is idempotent</h4>
+      <ul class="blist tight">
+        <li>Section already in the description → skip · ATP field → overwrite OK · comment already exists → skip</li>
+        <li>Labels are set-based · the transition reads the status before applying</li>
+        <li><b>[QA] Shift-Left Review</b> subtask: looked up by exact title, never duplicated; if it is already in <code>Close</code> it isn't re-transitioned and the notes go in as a new comment (no subtasks in the project → skip with a warning)</li>
+        <li><b>Subagent error</b> → STOP, partial state reported, options retry / skip / abort. No auto-rollback: the mutations are recorded in the batch report so you can pick up where you left off.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="notes">Two non-negotiables: stop at Ready For Dev (splitting a Story is the PO's decision) and always apply both labels; without them the /sprint-testing short-circuit breaks next sprint.</div>
+</section>
+
+<!-- 12. PHASE 3 · LIGHT STAGE VERIFIER + DoD -->
+<section class="slide" data-title="Phase 3 · Light verifier">
+  <p class="kicker">phase 3: closing each story · light stage verifier + definition of done</p>
+  <h2 class="h2" data-anim="fade-up">Every closed Story <span class="grad">is checked line by line</span></h2>
+  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
+    <div>
+      <div class="term" style="font-size:12.5px">
+        <div class="bar"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span><span>light stage verifier: Shift-Left's own lines</span></div>
+<pre>[ ] Story in <span class="fn">{{jira.status.story.ready_for_dev}}</span>
+    via analyze → refined, and STOP there
+    <span class="cmt">(already beyond: refinement yes, transition no)</span>
+[ ] Subtask [QA] Shift-Left Review in <span class="fn">Close</span>
+    via complete
+    <span class="cmt">(N/A declared if there is no subtask work type)</span>
+[ ] Subtask assignee = self, from the create
+[ ] Every unmapped slug went through the §4 fallback
+    <span class="cmt">(it was asked; never a silent skip)</span>
+<span class="cmt"># + the common template lines:</span>
+<span class="cmt"># artifact-lifecycle.md §5</span></pre>
+      </div>
+      <p class="sm mt-m">Each line is <b>YES</b> or a <b>declared N/A</b> with its reason; a blank line counts as a failure. A <b>NO</b> leaves the stage at <b>NEEDS REVISION</b>: fix it or report it, never move on. "Light" means what the agent already did, plus at most ONE read of the Story.</p>
+    </div>
+    <div class="card card-accent">
+      <h4>The stage's Definition of Done (<code>stage-gates.md</code>)</h4>
+      <p class="sm">The orchestrator checks it against the subagent's report and what is in Jira BEFORE writing the <code>status: completed</code> checkpoint:</p>
+      <ul class="blist tight">
+        <li>ACs refined in Given/When/Then with concrete data</li>
+        <li>Gaps, ambiguities and edge cases as questions to PO/Dev</li>
+        <li>Test-Design Checklist applied: every non-trivial AC exploded by technique, or a <code>trivially atomic</code> justification</li>
+        <li>Coverage count with the real 1:N, no minimized count</li>
+        <li>Inferred items marked <code>NEEDS PO/DEV CONFIRMATION</code></li>
+        <li>No TMS entity created; label + transition applied</li>
+        <li>Statuses per the lifecycle; light verifier run</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout warn"><h4>Unmapped status: you ask, you never skip</h4><p>If the project renamed the statuses and a slug is missing (for example the subtask's <code>complete</code>), the skill lists the issue's LIVE transitions, asks ONE question with the best candidate, fires the live id with your OK and recommends <code>bun run jira:sync-workflows</code>. <code>.agents/jira-workflows.json</code> is generated: it is never edited by hand.</p></div>
+  <div class="notes">A stage doesn't end when the subagent returns: it ends when its Definition of Done is met. The light verifier exists to catch what was silently skipped, without re-auditing everything that was just created.</div>
+</section>
+
+<!-- 13. BATCH REPORT + ARCHIVE -->
+<section class="slide" data-title="Batch report">
+  <p class="kicker">phase 3: session close · batch report + archive</p>
+  <h2 class="h2" data-anim="fade-up">The batch report: <span class="grad">the only thing grooming reads</span></h2>
+  <div class="grid g2 mt-m anim-stagger-list" style="align-items:start">
+    <div class="card card-accent">
+      <h4>What it aggregates</h4>
+      <ul class="blist tight">
+        <li>Session metadata: candidates / accepted / rejected / skipped / refined</li>
+        <li>One line per Story: risk · #gaps · #PO questions · #tech Qs · #outlines · final status · trace</li>
+        <li><b>Deduplicated PO questions</b>, ranked by how many Stories each one blocks</li>
+        <li>Risk distribution + <code>DATA-FEASIBILITY</code> blockers with the pre-work required</li>
+        <li>Recommended sprint planning order (risk + dependencies)</li>
+      </ul>
+    </div>
+    <div class="card card-accent">
+      <h4>Where it goes, and the close</h4>
+      <ul class="blist tight">
+        <li>Always: <code>.session/shift-left-testing/&lt;batch-id&gt;/batch-report.md</code></li>
+        <li>If ALL the Stories share a parent epic → it is published as a comment on that epic; otherwise it is delivered inline to the user</li>
+        <li>Never published on each Story: the per-Story comment already exists (step 4)</li>
+        <li>Final entry in <code>progress.md</code> → <b>Archive</b>: the session folder moves to <code>.session/.archive/</code></li>
+        <li>Memory close: <code>mem_session_summary</code> with the summary + archive path</li>
+      </ul>
+    </div>
+  </div>
+  <div class="notes">"This question blocks three Stories" is exactly how a PO wants to triage. If publishing to the epic fails, it doesn't abort: the local report is authoritative.</div>
+</section>
+
+<!-- 14. SESSION FOOTER -->
+<section class="slide" data-title="Close · Session footer">
+  <p class="kicker">session close: session footer + proposed improvements</p>
+  <h2 class="h2" data-anim="fade-up">What was used, <span class="grad">said in the chat</span></h2>
+  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
+    <div class="term" style="font-size:12.5px">
+      <div class="bar"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span><span>session footer · Execution framing (example)</span></div>
+<pre><span class="fn">### Session Footer: Tools &amp; Testing Levels</span>
+Skills loaded: shift-left-testing, acli
+MCPs used: none
+CLIs used: acli, bun (jira:sync-issues, context:map)
+Testing levels touched:
+- UI/E2E: none <span class="cmt">(pre-sprint, the feature doesn't exist)</span>
+- API/Integration: none
+- Database: none
+- Unit: none
+Refinements proposed: 1 →
+  .session/shift-left-testing/&lt;batch-id&gt;/refinements.md</pre>
+    </div>
+    <ul class="blist tight" style="margin-top:0">
+      <li><b>Screenshots</b>: each path is shown as soon as the capture exists, and at close a consolidated list goes out with relative paths verified on disk. In shift-left the normal case is to have none, because there is no <code>evidence/</code>.</li>
+      <li><b>Execution framing</b>: pyramid levels exercised, with an explicit "none" on every expected level that wasn't touched. Coverage that didn't happen is never padded in.</li>
+      <li><b>The orchestrator compiles it ONCE</b>: each subagent reports its fields (skills, MCPs, CLIs, levels, captures) and the footer is assembled at the end.</li>
+      <li><b>Chat only</b>: never in a Jira comment or an ATR.</li>
+      <li><b>Refinements proposed</b>: the session's lessons are PROPOSED in <code>refinements.md</code> and never applied to the live skill (<code>skill-refinement-protocol.md</code>).</li>
+    </ul>
+  </div>
+  <div class="callout"><h4>If the skill is what failed</h4><p>A wrong step, a missing verifier or an outdated rule is reported upstream per <code>agentic-qa-core/references/upstream-feedback.md</code>: a draft written locally, published only with your explicit OK and verified with <code>gh issue view</code>.</p></div>
+  <div class="notes">The footer is the last line of the light verifier: without it, the stage isn't closed. It's where you see which pyramid levels stayed at "none" and whether the session left proposed improvements to review.</div>
+</section>
+
+<!-- 15. FLEET SEAM -->
+<section class="slide" data-title="Fleet seam (optional)">
+  <p class="kicker">optional · big batches · fleet seam</p>
+  <h2 class="h2" data-anim="fade-up">One worker per Story, <span class="grad">the same gate</span></h2>
+  <p class="sm" style="max-width:100ch">Refinement is sequential by default and stays that way. The fleet (one persistent worker session per Story and a conductor that gathers their reports) only comes in when the user explicitly asks for it on a big batch.</p>
+  <div class="grid g2 mt-m anim-stagger-list">
+    <div class="card card-accent"><h4>Topology: the same checkout</h4><p class="sm">The skill only writes to Jira: no code, no branch, no contested git index. A worktree per Story would be pure cost.</p></div>
+    <div class="card card-accent"><h4><code>launch.txt</code>, always</h4><p class="sm">The conductor writes <code>.session/shift-left-testing/&lt;batch-id&gt;/launch.txt</code>, one self-contained line per Story, whether or not the machine has an orchestration transport. Launching, supervising and closing those sessions belongs to <code>orca-orchestration</code>; if nothing can launch them, a person pastes those lines.</p></div>
+    <div class="card card-accent"><h4>The per-Story OK moves to the conductor</h4><p class="sm">The conductor presents each worker's summary as it arrives and waits for the same approve / veto before that Story's Phase 3 handoff. A fleet that skips this is no longer running this skill.</p></div>
+    <div class="card card-accent"><h4>One writer per Story</h4><p class="sm">Two workers never refine the same Story, and every Jira write for a Story belongs to its worker. The batch report and the epic comment stay with the conductor.</p></div>
+  </div>
+  <div class="callout warn" style="margin-bottom:12px"><h4>With no human at the keyboard, nothing waits</h4><p>A worker or a routine can't answer: the interview follows the autonomous path of <code>grilling</code> (each doubt with its recommended answer under <code>## Open Questions</code>, inferred items stay marked and the report says what was assumed), new terms go in as "Proposed glossary terms" and the map isn't edited, and <code>to-questionnaire</code> writes the file and the run moves on. What gets written to Jira (subtask and handoff) only runs if the brief authorizes it; without that authorization the routine leaves the batch ready for handoff.</p></div>
+  <div class="callout"><h4>Silence rule</h4><p>When the machine has no orchestration transport, the skill doesn't mention it: not in the preflight, not in the batch report, not in the chat. The <code>launch.txt</code> still gets written.</p></div>
+  <div class="notes">Parallelizing doesn't buy speed at the human's expense: the per-Story gate still exists, only who presents it changes. By default the skill runs sequentially, which is the pace of a team grooming session.</div>
+</section>
+
+<!-- 16. CLOSE -->
+<section class="slide" data-title="Close">
+  <p class="kicker">how to invoke · what comes next in the pipeline</p>
+  <h2 class="h2" data-anim="fade-up">Trigger the skill, <span class="grad">and what comes after</span></h2>
+  <div class="grid g2 mt-m" style="align-items:start;gap:30px">
+    <div>
+      <div class="term">
+        <div class="bar"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span><span>invocation · each host</span></div>
+<pre><span class="cmt"># Claude Code: slash + the Story list as args</span>
+<span class="p">&gt; </span><span class="c">/shift-left-testing UPEX-100,101,102</span>
+<span class="cmt"># OpenCode and Codex: the skill is named in prose</span>
+<span class="p">&gt; </span><span class="c">load the shift-left-testing skill for UPEX-100,101,102</span>
+<span class="cmt"># Pi: skill slash</span>
+<span class="p">&gt; </span><span class="c">/skill:shift-left-testing UPEX-100,101,102</span>
+<span class="cmt"># with no IDs, it builds the backlog JQL:</span>
+<span class="p">&gt; </span><span class="c">groom the backlog</span></pre>
+      </div>
+      <p class="sm mt-s">No modes: the skill has no <code>## Mode routing</code> and no single-issue mode. The args are the list of Stories; for an urgent one, a list of length 1.</p>
+      <div class="row wrap mt-m" style="gap:8px">
+        <span class="chip" style="font-size:12.5px">Refined ACs in Jira</span>
+        <span class="chip" style="font-size:12.5px">Pre-sprint ATP in the field</span>
+        <span class="chip" style="font-size:12.5px">2 labels</span>
+        <span class="chip" style="font-size:12.5px">AI Effort assigned</span>
+        <span class="chip" style="font-size:12.5px">Status: Ready For Dev</span>
+        <span class="chip" style="font-size:12.5px">Subtask in Close</span>
+        <span class="chip" style="font-size:12.5px">batch-report.md</span>
+      </div>
+    </div>
+    <table class="dtable" style="margin-top:0">
+      <thead><tr><th>Next you need…</th><th>Skill</th></tr></thead>
+      <tbody>
+        <tr><td>The Story reaches <b>Ready For QA</b></td><td><code>/sprint-testing</code>: reads the labels (&lt;30 days) and the ATP published in the field, and only with both does it short-circuit its planning phases</td></tr>
+        <tr><td>Formal TCs + ROI, when the Story ships</td><td><code>/test-documentation</code> (Documentation)</td></tr>
+        <tr><td>Automated test code</td><td><code>/test-automation</code> (Automation) · then <code>/regression-testing</code> (Regression)</td></tr>
+        <tr><td>Business context is missing</td><td><code>/project-discovery</code> + <code>/project-context</code> (<code>data</code> / <code>e2e</code> / <code>api</code> and <code>test-plan</code> modes)</td></tr>
+        <tr><td>Adversarial review of the refinement (optional)</td><td><code>/judgment-day</code>, never auto-invoked</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="dim2 mt-m" style="font-size:13px">← → navigate · O overview · S presenter · N notes · F fullscreen</p>
+  <div class="notes">Remember three things: prevent before you detect; the veto beats the score and signal beats volume; one command drives the three phases with a human gate at every consequential step. The label you set during refinement saves the team work next sprint.</div>
+</section>
+
+  <div class="deck-footer"><span class="mono">/shift-left-testing · Shift-Left · Pre-sprint QA</span><span class="slide-number" data-current="1" data-total="16"></span></div>
+</div>
+<!-- keyboard-nav hint (ported from defect-management deck) -->
+<div id="help-hint">← → navigate · O overview · S presenter · N notes · F fullscreen</div>
+<style id="upex-hint-style">
+#help-hint{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:60;pointer-events:none;
+  font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;color:var(--text-3)}
+@media (max-width:768px){#help-hint{display:none}}
+@media (pointer:coarse){#help-hint{display:none}}
+@media print{#help-hint{display:none!important}}
+</style>
+<script>
+/* ---- runtime.js ---- */
+/* html-ppt :: runtime.js
+ * Keyboard-driven deck runtime. Zero dependencies.
+ *
+ * Features:
+ *   ← → / space / PgUp PgDn / Home End  navigation
+ *   F  fullscreen
+ *   S  presenter mode (opens a NEW WINDOW with current/next slide preview + notes + timer)
+ *       The original window stays as audience view, synced via BroadcastChannel.
+ *       Slide previews use CSS transform:scale() at design resolution for pixel-perfect layout.
+ *   N  quick notes overlay (bottom drawer)
+ *   O  slide overview grid
+ *   T  cycle themes (reads data-themes on <html> or <body>)
+ *   A  cycle demo animation on current slide
+ *   URL hash #/N  deep-link to slide N (1-based)
+ *   Progress bar auto-managed
+ */
+(function () {
+  'use strict';
+
+  const ANIMS = ['fade-up','fade-down','fade-left','fade-right','rise-in','drop-in',
+    'zoom-pop','blur-in','glitch-in','typewriter','neon-glow','shimmer-sweep',
+    'gradient-flow','stagger-list','counter-up','path-draw','parallax-tilt',
+    'card-flip-3d','cube-rotate-3d','page-turn-3d','perspective-zoom',
+    'marquee-scroll','kenburns','confetti-burst','spotlight','morph-shape','ripple-reveal'];
+
+  function ready(fn){ if(document.readyState!='loading')fn(); else document.addEventListener('DOMContentLoaded',fn);}
+
+  /* ========== Parse URL for preview-only mode ==========
+   * When loaded as iframe.src = "index.html?preview=3", runtime enters a
+   * locked single-slide mode: only slide N is visible, no chrome, no keys,
+   * no hash updates. This is how the presenter window shows pixel-perfect
+   * previews — by loading the actual deck file in an iframe and telling it
+   * to display only a specific slide.
+   */
+  function getPreviewIdx() {
+    const m = /[?&]preview=(\d+)/.exec(location.search || '');
+    return m ? parseInt(m[1], 10) - 1 : -1;
+  }
+
+  ready(function () {
+    const deck = document.querySelector('.deck');
+    if (!deck) return;
+    const slides = Array.from(deck.querySelectorAll('.slide'));
+    if (!slides.length) return;
+
+    const previewOnlyIdx = getPreviewIdx();
+    const isPreviewMode = previewOnlyIdx >= 0 && previewOnlyIdx < slides.length;
+
+    /* ===== Preview-only mode: show one slide, hide everything else ===== */
+    if (isPreviewMode) {
+      function showSlide(i) {
+        slides.forEach((s, j) => {
+          const active = (j === i);
+          s.classList.toggle('is-active', active);
+          s.style.display = active ? '' : 'none';
+          if (active) {
+            s.style.opacity = '1';
+            s.style.transform = 'none';
+            s.style.pointerEvents = 'auto';
+          }
+        });
+      }
+      showSlide(previewOnlyIdx);
+      /* Hide chrome that the presenter shouldn't see in preview */
+      const hideSel = '.progress-bar, .notes-overlay, .overview, .notes, aside.notes, .speaker-notes';
+      document.querySelectorAll(hideSel).forEach(el => { el.style.display = 'none'; });
+      document.documentElement.setAttribute('data-preview', '1');
+      document.body.setAttribute('data-preview', '1');
+      /* Auto-detect theme base path for theme switching in preview mode */
+      function getPreviewThemeBase() {
+        const base = document.documentElement.getAttribute('data-theme-base');
+        if (base) return base;
+        const tl = document.getElementById('theme-link');
+        if (tl) {
+          const raw = tl.getAttribute('href') || '';
+          const ls = raw.lastIndexOf('/');
+          if (ls >= 0) return raw.substring(0, ls + 1);
+        }
+        return 'assets/themes/';
+      }
+      const previewThemeBase = getPreviewThemeBase();
+
+      /* Listen for postMessage from parent presenter window:
+       *  - preview-goto: switch visible slide WITHOUT reloading
+       *  - preview-theme: switch theme CSS link to match audience window */
+      window.addEventListener('message', function(e) {
+        if (!e.data) return;
+        if (e.data.type === 'preview-goto') {
+          const n = parseInt(e.data.idx, 10);
+          if (n >= 0 && n < slides.length) showSlide(n);
+        } else if (e.data.type === 'preview-theme' && e.data.name) {
+          let link = document.getElementById('theme-link');
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.id = 'theme-link';
+            document.head.appendChild(link);
+          }
+          link.href = previewThemeBase + e.data.name + '.css';
+          document.documentElement.setAttribute('data-theme', e.data.name);
+        }
+      });
+      /* Signal to parent that preview iframe is ready */
+      try { window.parent && window.parent.postMessage({ type: 'preview-ready' }, '*'); } catch(e) {}
+      return;
+    }
+
+    let idx = 0;
+    const total = slides.length;
+
+    /* ===== BroadcastChannel for presenter sync ===== */
+    const CHANNEL_NAME = 'html-ppt-presenter-' + location.pathname;
+    let bc;
+    try { bc = new BroadcastChannel(CHANNEL_NAME); } catch(e) { bc = null; }
+
+    // Are we running inside the presenter popup? (legacy flag, now unused)
+    const isPresenterWindow = false;
+
+    /* ===== progress bar ===== */
+    let bar = document.querySelector('.progress-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'progress-bar';
+      bar.innerHTML = '<span></span>';
+      document.body.appendChild(bar);
+    }
+    const barFill = bar.querySelector('span');
+
+    /* ===== notes overlay (N key) ===== */
+    let notes = document.querySelector('.notes-overlay');
+    if (!notes) {
+      notes = document.createElement('div');
+      notes.className = 'notes-overlay';
+      document.body.appendChild(notes);
+    }
+
+    /* ===== overview grid (O key) ===== */
+    let overview = document.querySelector('.overview');
+    if (!overview) {
+      overview = document.createElement('div');
+      overview.className = 'overview';
+      slides.forEach((s, i) => {
+        const t = document.createElement('div');
+        t.className = 'thumb';
+        // Force 16:9 aspect ratio robustly
+        t.style.padding = '0 0 56.25% 0';
+        t.style.height = '0';
+        t.style.position = 'relative';
+        t.style.overflow = 'hidden';
+
+        const title = s.getAttribute('data-title') ||
+          (s.querySelector('h1,h2,h3')||{}).textContent || ('Slide '+(i+1));
+        
+        // Create a container for the mini-slide
+        const mini = document.createElement('div');
+        mini.className = 'mini-slide';
+        mini.style.position = 'absolute';
+        mini.style.top = '0';
+        mini.style.left = '0';
+        mini.style.width = '1920px';
+        mini.style.height = '1080px';
+        mini.style.transformOrigin = 'top left';
+        mini.style.pointerEvents = 'none';
+        mini.style.background = 'var(--bg)';
+        
+        // Clone the slide content
+        const clone = s.cloneNode(true);
+        clone.className = 'slide is-active'; // force active styles
+        clone.style.position = 'absolute';
+        clone.style.inset = '0';
+        clone.style.transform = 'none';
+        clone.style.opacity = '1';
+        clone.style.padding = '72px 96px'; // ensure padding is kept
+        
+        mini.appendChild(clone);
+        t.appendChild(mini);
+
+        // Add the number and title overlay
+        const overlay = document.createElement('div');
+        overlay.style.position = 'absolute';
+        overlay.style.inset = '0';
+        overlay.style.background = 'linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, transparent 40%, transparent 60%, rgba(0,0,0,0.8) 100%)';
+        overlay.style.color = '#fff';
+        overlay.style.zIndex = '10';
+        overlay.style.pointerEvents = 'none';
+        
+        const n = document.createElement('div');
+        n.className = 'n';
+        n.textContent = i + 1;
+        n.style.position = 'absolute';
+        n.style.top = '12px';
+        n.style.left = '16px';
+        n.style.fontWeight = '700';
+        n.style.fontSize = '16px';
+        n.style.color = '#fff';
+        n.style.textShadow = '0 1px 4px rgba(0,0,0,0.8)';
+        
+        const text = document.createElement('div');
+        text.className = 't';
+        text.textContent = title.trim().slice(0,80);
+        text.style.position = 'absolute';
+        text.style.bottom = '12px';
+        text.style.left = '16px';
+        text.style.right = '16px';
+        text.style.fontWeight = '600';
+        text.style.fontSize = '14px';
+        text.style.color = '#fff';
+        text.style.textShadow = '0 1px 4px rgba(0,0,0,0.8)';
+        
+        overlay.appendChild(n);
+        overlay.appendChild(text);
+        t.appendChild(overlay);
+
+        t.addEventListener('click', () => { go(i); toggleOverview(false); });
+        overview.appendChild(t);
+      });
+      document.body.appendChild(overview);
+    }
+
+    /* ===== navigation ===== */
+    function go(n, fromRemote){
+      n = Math.max(0, Math.min(total-1, n));
+      slides.forEach((s,i) => {
+        s.classList.toggle('is-active', i===n);
+        s.classList.toggle('is-prev', i<n);
+      });
+      idx = n;
+      barFill.style.width = ((n+1)/total*100)+'%';
+      const numEl = document.querySelector('.slide-number');
+      if (numEl) { numEl.setAttribute('data-current', n+1); numEl.setAttribute('data-total', total); }
+
+      // notes (bottom overlay)
+      const note = slides[n].querySelector('.notes, aside.notes, .speaker-notes');
+      notes.innerHTML = note ? note.innerHTML : '';
+
+      // hash
+      const hashTarget = '#/'+(n+1);
+      if (location.hash !== hashTarget && !isPresenterWindow) {
+        history.replaceState(null,'', hashTarget);
+      }
+
+      // re-trigger entry animations
+      slides[n].querySelectorAll('[data-anim]').forEach(el => {
+        const a = el.getAttribute('data-anim');
+        el.classList.remove('anim-'+a);
+        void el.offsetWidth;
+        el.classList.add('anim-'+a);
+      });
+
+      // counter-up
+      slides[n].querySelectorAll('.counter').forEach(el => {
+        const target = parseFloat(el.getAttribute('data-to')||el.textContent);
+        const dur = parseInt(el.getAttribute('data-dur')||'1200',10);
+        const start = performance.now();
+        const from = 0;
+        function tick(now){
+          const t = Math.min(1,(now-start)/dur);
+          const v = from + (target-from)*(1-Math.pow(1-t,3));
+          el.textContent = (target % 1 === 0) ? Math.round(v) : v.toFixed(1);
+          if (t<1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      });
+
+      // Broadcast to other window (audience ↔ presenter)
+      if (!fromRemote && bc) {
+        bc.postMessage({ type: 'go', idx: n });
+      }
+    }
+
+    /* ===== listen for remote navigation / theme changes ===== */
+    if (bc) {
+      bc.onmessage = function(e) {
+        if (!e.data) return;
+        if (e.data.type === 'go' && typeof e.data.idx === 'number') {
+          go(e.data.idx, true);
+        } else if (e.data.type === 'theme' && e.data.name) {
+          /* Sync theme across windows */
+          const i = themes.indexOf(e.data.name);
+          if (i >= 0) themeIdx = i;
+          applyTheme(e.data.name);
+        }
+      };
+    }
+
+    function toggleNotes(force){ notes.classList.toggle('open', force!==undefined?force:!notes.classList.contains('open')); }
+    function toggleOverview(force){
+      const isOpen = force!==undefined ? force : !overview.classList.contains('open');
+      overview.classList.toggle('open', isOpen);
+      if (isOpen) {
+        requestAnimationFrame(() => {
+          const thumbs = overview.querySelectorAll('.thumb');
+          if (thumbs.length) {
+            const scale = thumbs[0].clientWidth / 1920;
+            overview.querySelectorAll('.mini-slide').forEach(m => {
+              m.style.transform = 'scale(' + scale + ')';
+            });
+          }
+        });
+      }
+    }
+
+    /* ========== PRESENTER MODE — Magnetic-card popup window ========== */
+    /* Opens a new window with 4 draggable, resizable cards:
+     *   CURRENT  — iframe(?preview=N)   pixel-perfect preview of current slide
+     *   NEXT     — iframe(?preview=N+1) pixel-perfect preview of next slide
+     *   SCRIPT   — large speaker notes (script)
+     *   TIMER    — elapsed timer + page counter + controls
+     * Cards remember position/size in localStorage.
+     * Two windows sync via BroadcastChannel.
+     */
+    let presenterWin = null;
+
+    function openPresenterWindow() {
+      if (presenterWin && !presenterWin.closed) {
+        presenterWin.focus();
+        return;
+      }
+
+      // Build absolute URL of THIS deck file (without hash/query)
+      const deckUrl = location.protocol + '//' + location.host + location.pathname;
+
+      // Collect slide titles + notes (HTML strings)
+      const slideMeta = slides.map((s, i) => {
+        const note = s.querySelector('.notes, aside.notes, .speaker-notes');
+        return {
+          title: s.getAttribute('data-title') ||
+            (s.querySelector('h1,h2,h3')||{}).textContent || ('Slide '+(i+1)),
+          notes: note ? note.innerHTML : ''
+        };
+      });
+
+      /* Capture current theme so presenter previews match the audience */
+      const currentTheme = root.getAttribute('data-theme') || (themes[themeIdx] || '');
+      const presenterHTML = buildPresenterHTML(deckUrl, slideMeta, total, idx, CHANNEL_NAME, currentTheme);
+
+      presenterWin = window.open('', 'html-ppt-presenter', 'width=1280,height=820,menubar=no,toolbar=no');
+      if (!presenterWin) {
+        alert('Allow pop-ups to use the presenter view');
+        return;
+      }
+      presenterWin.document.open();
+      presenterWin.document.write(presenterHTML);
+      presenterWin.document.close();
+    }
+
+    function buildPresenterHTML(deckUrl, slideMeta, total, startIdx, channelName, currentTheme) {
+      const metaJSON = JSON.stringify(slideMeta);
+      const deckUrlJSON = JSON.stringify(deckUrl);
+      const channelJSON = JSON.stringify(channelName);
+      const themeJSON = JSON.stringify(currentTheme || '');
+      const storageKey = 'html-ppt-presenter:' + location.pathname;
+
+      // Build the document as a single template string for clarity
+      return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Presenter View</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #1a1d24;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(88,166,255,.04), transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(188,140,255,.04), transparent 50%);
+    color: #e6edf3;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+  }
+  /* Stage: positioned area where cards live */
+  #stage { position: absolute; inset: 0; overflow: hidden; }
+
+  /* Magnetic card */
+  .pcard {
+    position: absolute;
+    background: #0d1117;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.02);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    min-width: 180px; min-height: 100px;
+    transition: box-shadow .2s, border-color .2s;
+  }
+  .pcard.dragging { box-shadow: 0 16px 48px rgba(0,0,0,.6), 0 0 0 2px rgba(88,166,255,.5); border-color: #58a6ff; transition: none; z-index: 9999; }
+  .pcard.resizing { box-shadow: 0 16px 48px rgba(0,0,0,.6), 0 0 0 2px rgba(63,185,80,.5); border-color: #3fb950; transition: none; z-index: 9999; }
+  .pcard:hover { border-color: rgba(88,166,255,.3); }
+
+  /* Card header (drag handle) */
+  .pcard-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,.04);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    cursor: move;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .pcard-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dot-color, #58a6ff); flex-shrink: 0; }
+  .pcard-title {
+    font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    font-weight: 700; color: #8b949e; flex: 1;
+  }
+  .pcard-meta { font-size: 11px; color: #6e7681; }
+
+  /* Card body */
+  .pcard-body { flex: 1; position: relative; overflow: hidden; min-height: 0; }
+
+  /* Preview cards (CURRENT/NEXT) — iframe-based pixel-perfect render */
+  .pcard-preview .pcard-body { background: #000; }
+  .pcard-preview iframe {
+    position: absolute; top: 0; left: 0;
+    width: 1920px; height: 1080px;
+    border: none;
+    transform-origin: top left;
+    pointer-events: none;
+    background: transparent;
+  }
+  .pcard-preview .preview-end {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #484f58; font-size: 14px; letter-spacing: .12em;
+  }
+
+  /* Notes card */
+  .pcard-notes .pcard-body {
+    padding: 14px 18px;
+    overflow-y: auto;
+    font-size: 18px; line-height: 1.75;
+    color: #d0d7de;
+    font-family: "Noto Sans SC", -apple-system, sans-serif;
+  }
+  .pcard-notes .pcard-body p { margin: 0 0 .7em 0; }
+  .pcard-notes .pcard-body strong { color: #f0883e; }
+  .pcard-notes .pcard-body em { color: #58a6ff; font-style: normal; }
+  .pcard-notes .pcard-body code {
+    font-family: "SF Mono", monospace; font-size: .9em;
+    background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px;
+  }
+  .pcard-notes .empty { color: #484f58; font-style: italic; }
+
+  /* Timer card */
+  .pcard-timer .pcard-body {
+    display: flex; flex-direction: column; gap: 14px;
+    padding: 18px 20px; justify-content: center;
+  }
+  .timer-display {
+    font-family: "SF Mono", "JetBrains Mono", monospace;
+    font-size: 42px; font-weight: 700;
+    color: #3fb950;
+    letter-spacing: .04em;
+    line-height: 1;
+  }
+  .timer-row {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 14px; color: #8b949e;
+  }
+  .timer-row .label { font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: #6e7681; }
+  .timer-row .val { color: #e6edf3; font-weight: 600; font-family: "SF Mono", monospace; }
+  .timer-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  .timer-btn {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    color: #e6edf3;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .timer-btn:hover { background: rgba(88,166,255,.15); border-color: #58a6ff; }
+  .timer-btn:active { transform: translateY(1px); }
+
+  /* Resize handle */
+  .pcard-resize {
+    position: absolute; right: 0; bottom: 0;
+    width: 18px; height: 18px;
+    cursor: nwse-resize;
+    background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,.25) 50%, rgba(255,255,255,.25) 60%, transparent 60%, transparent 70%, rgba(255,255,255,.25) 70%, rgba(255,255,255,.25) 80%, transparent 80%);
+    z-index: 5;
+  }
+  .pcard-resize:hover { background: linear-gradient(135deg, transparent 50%, #58a6ff 50%, #58a6ff 60%, transparent 60%, transparent 70%, #58a6ff 70%, #58a6ff 80%, transparent 80%); }
+
+  /* Bottom hint bar */
+  .hint-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,.6);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255,255,255,.08);
+    padding: 6px 16px;
+    font-size: 11px; color: #8b949e;
+    display: flex; gap: 18px; align-items: center;
+    z-index: 1000;
+  }
+  .hint-bar kbd {
+    background: rgba(255,255,255,.08);
+    padding: 1px 6px; border-radius: 3px;
+    font-family: "SF Mono", monospace;
+    font-size: 10px;
+    border: 1px solid rgba(255,255,255,.1);
+    color: #e6edf3;
+  }
+  .hint-bar .reset-layout {
+    margin-left: auto;
+    background: transparent; border: 1px solid rgba(255,255,255,.15);
+    color: #8b949e; padding: 3px 10px; border-radius: 4px;
+    font-size: 11px; cursor: pointer; font-family: inherit;
+  }
+  .hint-bar .reset-layout:hover { background: rgba(248,81,73,.15); border-color: #f85149; color: #f85149; }
+
+  body.is-dragging-card * { user-select: none !important; }
+  body.is-dragging-card iframe { pointer-events: none !important; }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="pcard pcard-preview" id="card-cur" style="--dot-color:#58a6ff">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">CURRENT</span>
+      <span class="pcard-meta" id="cur-meta">—</span>
+    </div>
+    <div class="pcard-body"><iframe id="iframe-cur"></iframe></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-preview" id="card-nxt" style="--dot-color:#bc8cff">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">NEXT</span>
+      <span class="pcard-meta" id="nxt-meta">—</span>
+    </div>
+    <div class="pcard-body"><iframe id="iframe-nxt"></iframe></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-notes" id="card-notes" style="--dot-color:#f0883e">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">SPEAKER SCRIPT</span>
+    </div>
+    <div class="pcard-body" id="notes-body"></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-timer" id="card-timer" style="--dot-color:#3fb950">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">TIMER</span>
+    </div>
+    <div class="pcard-body">
+      <div class="timer-display" id="timer-display">00:00</div>
+      <div class="timer-row">
+        <span class="label">Slide</span>
+        <span class="val" id="timer-count">1 / ${total}</span>
+      </div>
+      <div class="timer-controls">
+        <button class="timer-btn" id="btn-prev">← Prev</button>
+        <button class="timer-btn" id="btn-next">Next →</button>
+        <button class="timer-btn" id="btn-reset">⏱ Reset</button>
+      </div>
+    </div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+</div>
+
+<div class="hint-bar">
+  <span><kbd>← →</kbd> Change slide</span>
+  <span><kbd>R</kbd> Reset timer</span>
+  <span><kbd>Esc</kbd> Close</span>
+  <span style="color:#6e7681">Drag the header to move · Drag the bottom-right corner to resize</span>
+  <button class="reset-layout" id="reset-layout">Reset layout</button>
+</div>
+
+<script>
+(function(){
+  var slideMeta = ${metaJSON};
+  var total = ${total};
+  var idx = ${startIdx};
+  var deckUrl = ${deckUrlJSON};
+  var STORAGE_KEY = ${JSON.stringify(storageKey)};
+  var bc;
+  try { bc = new BroadcastChannel(${channelJSON}); } catch(e) {}
+
+  var iframeCur = document.getElementById('iframe-cur');
+  var iframeNxt = document.getElementById('iframe-nxt');
+  var notesBody = document.getElementById('notes-body');
+  var curMeta = document.getElementById('cur-meta');
+  var nxtMeta = document.getElementById('nxt-meta');
+  var timerDisplay = document.getElementById('timer-display');
+  var timerCount = document.getElementById('timer-count');
+
+  /* ===== Default card layout ===== */
+  function defaultLayout() {
+    var w = window.innerWidth;
+    var h = window.innerHeight - 36; /* leave room for hint bar */
+    return {
+      'card-cur':   { x: 16,        y: 16,            w: Math.round(w*0.55) - 24, h: Math.round(h*0.62) - 16 },
+      'card-nxt':   { x: Math.round(w*0.55) + 8, y: 16, w: w - Math.round(w*0.55) - 24, h: Math.round(h*0.42) - 16 },
+      'card-notes': { x: Math.round(w*0.55) + 8, y: Math.round(h*0.42) + 8, w: w - Math.round(w*0.55) - 24, h: h - Math.round(h*0.42) - 16 },
+      'card-timer': { x: 16,        y: Math.round(h*0.62) + 8, w: Math.round(w*0.55) - 24, h: h - Math.round(h*0.62) - 16 }
+    };
+  }
+
+  /* ===== Apply / save / restore layout ===== */
+  function applyLayout(layout) {
+    Object.keys(layout).forEach(function(id){
+      var el = document.getElementById(id);
+      var l = layout[id];
+      if (el && l) {
+        el.style.left = l.x + 'px';
+        el.style.top = l.y + 'px';
+        el.style.width = l.w + 'px';
+        el.style.height = l.h + 'px';
+      }
+    });
+    rescaleAll();
+  }
+  function readLayout() {
+    try {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return defaultLayout();
+  }
+  function saveLayout() {
+    var layout = {};
+    ['card-cur','card-nxt','card-notes','card-timer'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) {
+        layout[id] = {
+          x: parseInt(el.style.left,10) || 0,
+          y: parseInt(el.style.top,10) || 0,
+          w: parseInt(el.style.width,10) || 300,
+          h: parseInt(el.style.height,10) || 200
+        };
+      }
+    });
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(layout)); } catch(e) {}
+  }
+
+  /* ===== iframe rescale to fit card body ===== */
+  function rescaleIframe(iframe) {
+    if (!iframe || iframe.style.display === 'none') return;
+    var body = iframe.parentElement;
+    var cw = body.clientWidth, ch = body.clientHeight;
+    if (!cw || !ch) return;
+    var s = Math.min(cw / 1920, ch / 1080);
+    iframe.style.transform = 'scale(' + s + ')';
+    /* Center the scaled iframe in the body */
+    var sw = 1920 * s, sh = 1080 * s;
+    iframe.style.left = Math.max(0, (cw - sw) / 2) + 'px';
+    iframe.style.top = Math.max(0, (ch - sh) / 2) + 'px';
+  }
+  function rescaleAll() {
+    rescaleIframe(iframeCur);
+    rescaleIframe(iframeNxt);
+  }
+  window.addEventListener('resize', rescaleAll);
+
+  /* ===== Drag (move card by header) ===== */
+  document.querySelectorAll('[data-drag]').forEach(function(handle){
+    handle.addEventListener('mousedown', function(e){
+      if (e.button !== 0) return;
+      var card = handle.closest('.pcard');
+      if (!card) return;
+      e.preventDefault();
+      card.classList.add('dragging');
+      document.body.classList.add('is-dragging-card');
+      var startX = e.clientX, startY = e.clientY;
+      var startL = parseInt(card.style.left,10) || 0;
+      var startT = parseInt(card.style.top,10)  || 0;
+      function onMove(ev){
+        var nx = Math.max(0, Math.min(window.innerWidth - 100, startL + ev.clientX - startX));
+        var ny = Math.max(0, Math.min(window.innerHeight - 50, startT + ev.clientY - startY));
+        card.style.left = nx + 'px';
+        card.style.top = ny + 'px';
+      }
+      function onUp(){
+        card.classList.remove('dragging');
+        document.body.classList.remove('is-dragging-card');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        saveLayout();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+
+  /* ===== Resize (drag bottom-right corner) ===== */
+  document.querySelectorAll('[data-resize]').forEach(function(handle){
+    handle.addEventListener('mousedown', function(e){
+      if (e.button !== 0) return;
+      var card = handle.closest('.pcard');
+      if (!card) return;
+      e.preventDefault(); e.stopPropagation();
+      card.classList.add('resizing');
+      document.body.classList.add('is-dragging-card');
+      var startX = e.clientX, startY = e.clientY;
+      var startW = parseInt(card.style.width,10)  || card.offsetWidth;
+      var startH = parseInt(card.style.height,10) || card.offsetHeight;
+      function onMove(ev){
+        var nw = Math.max(180, startW + ev.clientX - startX);
+        var nh = Math.max(100, startH + ev.clientY - startY);
+        card.style.width = nw + 'px';
+        card.style.height = nh + 'px';
+        if (card.querySelector('iframe')) rescaleIframe(card.querySelector('iframe'));
+      }
+      function onUp(){
+        card.classList.remove('resizing');
+        document.body.classList.remove('is-dragging-card');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        rescaleAll();
+        saveLayout();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+
+  /* ===== Preview iframe ready tracking =====
+   * Each iframe loads the deck ONCE with ?preview=1 on init. Subsequent
+   * slide changes are sent via postMessage('preview-goto') so the iframe
+   * just toggles visibility of a different .slide — no reload, no flicker.
+   */
+  var iframeReady = { cur: false, nxt: false };
+  var currentTheme = ${themeJSON};
+  window.addEventListener('message', function(e) {
+    if (!e.data || e.data.type !== 'preview-ready') return;
+    var iframe = null;
+    if (e.source === iframeCur.contentWindow) {
+      iframeReady.cur = true;
+      iframe = iframeCur;
+      postPreviewGoto(iframeCur, idx);
+    } else if (e.source === iframeNxt.contentWindow) {
+      iframeReady.nxt = true;
+      iframe = iframeNxt;
+      postPreviewGoto(iframeNxt, idx + 1 < total ? idx + 1 : idx);
+    }
+    /* Sync current theme to the iframe */
+    if (iframe && currentTheme) {
+      try { iframe.contentWindow.postMessage({ type: 'preview-theme', name: currentTheme }, '*'); } catch(err) {}
+    }
+    if (iframe) rescaleIframe(iframe);
+  });
+
+  function postPreviewGoto(iframe, n) {
+    try {
+      iframe.contentWindow.postMessage({ type: 'preview-goto', idx: n }, '*');
+    } catch(e) {}
+  }
+
+  /* ===== Update content =====
+   * Smooth (no-reload) navigation: send postMessage to iframes instead of
+   * resetting src. Iframes stay loaded, just switch visible .slide.
+   */
+  function update(n) {
+    n = Math.max(0, Math.min(total - 1, n));
+    idx = n;
+
+    /* Current preview — postMessage (smooth) */
+    if (iframeReady.cur) postPreviewGoto(iframeCur, n);
+    curMeta.textContent = (n + 1) + '/' + total;
+
+    /* Next preview */
+    if (n + 1 < total) {
+      iframeNxt.style.display = '';
+      var endEl = document.querySelector('#card-nxt .preview-end');
+      if (endEl) endEl.remove();
+      if (iframeReady.nxt) postPreviewGoto(iframeNxt, n + 1);
+      nxtMeta.textContent = (n + 2) + '/' + total;
+    } else {
+      iframeNxt.style.display = 'none';
+      var body = document.querySelector('#card-nxt .pcard-body');
+      if (body && !body.querySelector('.preview-end')) {
+        var end = document.createElement('div');
+        end.className = 'preview-end';
+        end.textContent = '— END OF DECK —';
+        body.appendChild(end);
+      }
+      nxtMeta.textContent = 'END';
+    }
+
+    /* Notes */
+    var note = slideMeta[n].notes;
+    notesBody.innerHTML = note || '<span class="empty">(This slide has no script yet)</span>';
+
+    /* Timer count */
+    timerCount.textContent = (n + 1) + ' / ' + total;
+  }
+
+  /* ===== Timer ===== */
+  var tStart = Date.now();
+  setInterval(function(){
+    var s = Math.floor((Date.now() - tStart) / 1000);
+    var mm = String(Math.floor(s/60)).padStart(2,'0');
+    var ss = String(s%60).padStart(2,'0');
+    timerDisplay.textContent = mm + ':' + ss;
+  }, 1000);
+  function resetTimer(){ tStart = Date.now(); timerDisplay.textContent = '00:00'; }
+
+  /* ===== BroadcastChannel sync ===== */
+  if (bc) {
+    bc.onmessage = function(e){
+      if (!e.data) return;
+      if (e.data.type === 'go') update(e.data.idx);
+      else if (e.data.type === 'theme' && e.data.name) {
+        currentTheme = e.data.name;
+        /* Forward theme change to preview iframes */
+        [iframeCur, iframeNxt].forEach(function(iframe){
+          try {
+            iframe.contentWindow.postMessage({ type: 'preview-theme', name: e.data.name }, '*');
+          } catch(err) {}
+        });
+      }
+    };
+  }
+  function go(n) {
+    update(n);
+    if (bc) bc.postMessage({ type: 'go', idx: idx });
+  }
+
+  /* ===== Buttons ===== */
+  document.getElementById('btn-prev').addEventListener('click', function(){ go(idx - 1); });
+  document.getElementById('btn-next').addEventListener('click', function(){ go(idx + 1); });
+  document.getElementById('btn-reset').addEventListener('click', resetTimer);
+  document.getElementById('reset-layout').addEventListener('click', function(){
+    if (confirm('Restore the default layout?')) {
+      try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+      applyLayout(defaultLayout());
+    }
+  });
+
+  /* ===== Keyboard ===== */
+  document.addEventListener('keydown', function(e){
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    switch(e.key) {
+      case 'ArrowRight': case ' ': case 'PageDown': go(idx + 1); e.preventDefault(); break;
+      case 'ArrowLeft':  case 'PageUp':   go(idx - 1); e.preventDefault(); break;
+      case 'Home': go(0); break;
+      case 'End':  go(total - 1); break;
+      case 'r': case 'R': resetTimer(); break;
+      case 'Escape': window.close(); break;
+    }
+  });
+
+  /* ===== Iframe load → rescale (catches initial size) ===== */
+  iframeCur.addEventListener('load', function(){ rescaleIframe(iframeCur); });
+  iframeNxt.addEventListener('load', function(){ rescaleIframe(iframeNxt); });
+
+  /* ===== Init =====
+   * Load each iframe ONCE with the deck file. After they post
+   * 'preview-ready', all subsequent navigation is via postMessage
+   * (smooth, no reload, no flicker).
+   */
+  applyLayout(readLayout());
+  iframeCur.src = deckUrl + '?preview=' + (idx + 1);
+  if (idx + 1 < total) iframeNxt.src = deckUrl + '?preview=' + (idx + 2);
+  /* Initialize notes/timer/count without touching iframes */
+  notesBody.innerHTML = slideMeta[idx].notes || '<span class="empty">(This slide has no script yet)</span>';
+  curMeta.textContent = (idx + 1) + '/' + total;
+  nxtMeta.textContent = (idx + 2) + '/' + total;
+  timerCount.textContent = (idx + 1) + ' / ' + total;
+})();
+</` + `script>
+</body></html>`;
+    }
+
+    function fullscreen(){ const el=document.documentElement;
+      if (!document.fullscreenElement) el.requestFullscreen&&el.requestFullscreen();
+      else document.exitFullscreen&&document.exitFullscreen();
+    }
+
+    // theme cycling
+    const root = document.documentElement;
+    const themesAttr = root.getAttribute('data-themes') || document.body.getAttribute('data-themes');
+    const themes = themesAttr ? themesAttr.split(',').map(s=>s.trim()).filter(Boolean) : [];
+    let themeIdx = 0;
+
+    // Auto-detect theme base path from existing <link id="theme-link">
+    let themeBase = root.getAttribute('data-theme-base');
+    if (!themeBase) {
+      const existingLink = document.getElementById('theme-link');
+      if (existingLink) {
+        // el.getAttribute('href') gives the raw relative path written in HTML
+        const rawHref = existingLink.getAttribute('href') || '';
+        const lastSlash = rawHref.lastIndexOf('/');
+        themeBase = lastSlash >= 0 ? rawHref.substring(0, lastSlash + 1) : 'assets/themes/';
+      } else {
+        themeBase = 'assets/themes/';
+      }
+    }
+
+    function applyTheme(name) {
+      let link = document.getElementById('theme-link');
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.id = 'theme-link';
+        document.head.appendChild(link);
+      }
+      link.href = themeBase + name + '.css';
+      root.setAttribute('data-theme', name);
+      const ind = document.querySelector('.theme-indicator');
+      if (ind) ind.textContent = name;
+    }
+    function cycleTheme(fromRemote){
+      if (!themes.length) return;
+      themeIdx = (themeIdx+1) % themes.length;
+      const name = themes[themeIdx];
+      applyTheme(name);
+      /* Broadcast to other window (audience ↔ presenter) */
+      if (!fromRemote && bc) bc.postMessage({ type: 'theme', name: name });
+    }
+
+    // animation cycling on current slide
+    let animIdx = 0;
+    function cycleAnim(){
+      animIdx = (animIdx+1) % ANIMS.length;
+      const a = ANIMS[animIdx];
+      const target = slides[idx].querySelector('[data-anim-target]') || slides[idx];
+      ANIMS.forEach(x => target.classList.remove('anim-'+x));
+      void target.offsetWidth;
+      target.classList.add('anim-'+a);
+      target.setAttribute('data-anim', a);
+      const ind = document.querySelector('.anim-indicator');
+      if (ind) ind.textContent = a;
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if (e.metaKey||e.ctrlKey||e.altKey) return;
+      switch (e.key) {
+        case 'ArrowRight': case ' ': case 'PageDown': case 'Enter': go(idx+1); e.preventDefault(); break;
+        case 'ArrowLeft': case 'PageUp': case 'Backspace': go(idx-1); e.preventDefault(); break;
+        case 'Home': go(0); break;
+        case 'End': go(total-1); break;
+        case 'f': case 'F': fullscreen(); break;
+        case 's': case 'S': openPresenterWindow(); break;
+        case 'n': case 'N': toggleNotes(); break;
+        case 'o': case 'O': toggleOverview(); break;
+        case 't': case 'T': cycleTheme(); break;
+        case 'a': case 'A': cycleAnim(); break;
+        case 'Escape': toggleOverview(false); toggleNotes(false); break;
+      }
+    });
+
+    // hash deep-link
+    function fromHash(){
+      const m = /^#\/(\d+)/.exec(location.hash||'');
+      if (m) go(Math.max(0, parseInt(m[1],10)-1));
+    }
+    window.addEventListener('hashchange', fromHash);
+    fromHash();
+    go(idx);
+  });
+})();
+
+</script>
+<script>
+/* ---- animations/fx-runtime.js (self-contained variant) ----
+ * Canvas FX lifecycle manager.
+ * - FX modules are INLINED on window.HPX below (no external fetch — the deck
+ *   is a single self-contained file, so the upstream FX_LIST autoloader would
+ *   404 on every module; here `ready` resolves immediately instead).
+ * - Initializes [data-fx] elements when their slide becomes active
+ * - Calls handle.stop() when the slide leaves (MutationObserver on .slide class)
+ */
+(function(){
+  'use strict';
+
+  /* ===== inlined FX modules ===== */
+  window.HPX = window.HPX || {};
+  window.HPX.constellation = function(host){
+    var canvas = document.createElement('canvas');
+    canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%';
+    host.appendChild(canvas);
+    var ctx = canvas.getContext('2d');
+    var raf = 0, running = true;
+    var N = 70, LINK = 130, pts = [];
+    function size(){
+      canvas.width = host.clientWidth || 1280;
+      canvas.height = host.clientHeight || 720;
+    }
+    size();
+    for (var i = 0; i < N; i++){
+      pts.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - .5) * .35,
+        vy: (Math.random() - .5) * .35,
+        r: Math.random() * 1.8 + .6
+      });
+    }
+    function tick(){
+      if (!running) return;
+      if (canvas.width !== (host.clientWidth || canvas.width) ||
+          canvas.height !== (host.clientHeight || canvas.height)) size();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      var i, a, b, p;
+      for (i = 0; i < N; i++){
+        p = pts[i];
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > canvas.width)  p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, 6.2832);
+        ctx.fillStyle = 'rgba(122,162,247,.8)';
+        ctx.fill();
+      }
+      for (a = 0; a < N; a++) for (b = a + 1; b < N; b++){
+        var dx = pts[a].x - pts[b].x, dy = pts[a].y - pts[b].y, d2 = dx*dx + dy*dy;
+        if (d2 < LINK * LINK){
+          ctx.strokeStyle = 'rgba(187,154,247,' + (0.35 * (1 - Math.sqrt(d2) / LINK)).toFixed(3) + ')';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(pts[a].x, pts[a].y);
+          ctx.lineTo(pts[b].x, pts[b].y);
+          ctx.stroke();
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+    return { stop: function(){
+      running = false;
+      cancelAnimationFrame(raf);
+      if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+    } };
+  };
+
+  /* ===== lifecycle (same contract as upstream fx-runtime.js) ===== */
+  const ready = Promise.resolve();
+
+  window.__hpxActive = window.__hpxActive || new Map();
+
+  function initFxIn(root){
+    if (!window.HPX) return;
+    const els = root.querySelectorAll('[data-fx]');
+    els.forEach((el) => {
+      if (window.__hpxActive.has(el)) return;
+      const name = el.getAttribute('data-fx');
+      const fn = window.HPX[name];
+      if (typeof fn !== 'function') return;
+      try {
+        const handle = fn(el, {}) || { stop(){} };
+        window.__hpxActive.set(el, handle);
+      } catch(e){ console.warn('[hpx-fx]', name, e); }
+    });
+  }
+
+  function stopFxIn(root){
+    const els = root.querySelectorAll('[data-fx]');
+    els.forEach((el) => {
+      const h = window.__hpxActive.get(el);
+      if (h && typeof h.stop === 'function'){
+        try{ h.stop(); }catch(e){}
+      }
+      window.__hpxActive.delete(el);
+    });
+  }
+
+  function reinitFxIn(root){
+    stopFxIn(root);
+    initFxIn(root);
+  }
+  window.__hpxReinit = reinitFxIn;
+
+  function boot(){
+    ready.then(() => {
+      const active = document.querySelector('.slide.is-active') || document.querySelector('.slide');
+      if (active) initFxIn(active);
+
+      // Watch all slides for class changes
+      const slides = document.querySelectorAll('.slide');
+      slides.forEach((sl) => {
+        const mo = new MutationObserver((muts) => {
+          for (const m of muts){
+            if (m.attributeName === 'class'){
+              if (sl.classList.contains('is-active')) initFxIn(sl);
+              else stopFxIn(sl);
+            }
+          }
+        });
+        mo.observe(sl, { attributes: true, attributeFilter: ['class'] });
+      });
+    });
+  }
+
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
+
+</script>
+
+<script>
+/* deck :: scale-to-fit: fixed BASE_W x BASE_H layout scaled into any smaller viewport, laptops included (1366x768, 1280x800).
+   Viewports of at least BASE_W x BASE_H are left untouched (native fluid). Preview iframes skipped. */
+(function(){
+  try{
+    if (new URLSearchParams(location.search).has('preview')) return;
+    var BASE_W = 1440, BASE_H = 900;
+    var deck = document.querySelector('.deck');
+    if (!deck) return;
+    function fit(){
+      var vw = window.innerWidth, vh = window.innerHeight;
+      if (vw >= BASE_W && vh >= BASE_H){
+        deck.style.transform = '';
+        deck.style.width = ''; deck.style.height = '';
+        deck.style.position = ''; deck.style.left = ''; deck.style.top = '';
+        document.documentElement.style.overflow = ''; document.body.style.overflow = '';
+        document.documentElement.style.background = '';
+        return;
+      }
+      var scale = Math.min(vw / BASE_W, vh / BASE_H);
+      deck.style.width = BASE_W + 'px';
+      deck.style.height = BASE_H + 'px';
+      deck.style.transformOrigin = 'top left';
+      deck.style.transform = 'scale(' + scale + ')';
+      deck.style.position = 'absolute';
+      deck.style.left = ((vw - BASE_W * scale) / 2) + 'px';
+      deck.style.top = ((vh - BASE_H * scale) / 2) + 'px';
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.background = (function(){var d=getComputedStyle(deck).backgroundColor;if(d&&d!=='rgba(0, 0, 0, 0)'&&d!=='transparent')return d;var b=getComputedStyle(document.body).backgroundColor;return (b&&b!=='rgba(0, 0, 0, 0)'&&b!=='transparent')?b:'#0d1117';})();
+    }
+    fit();
+    window.addEventListener('resize', fit);
+    window.addEventListener('orientationchange', function(){ setTimeout(fit, 60); });
+  }catch(e){ /* never break the deck over a fit error */ }
+})();
+</script>
+
+<!-- ============ MOBILE NAV (UPEX) — swipe → arrows + one-time hint. scale-to-fit lives in the source deck ============ -->
+<style id="upex-navhint-style">
+#upex-navhint{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:120;
+  display:flex;align-items:center;gap:.4rem;background:rgba(20,22,34,.94);
+  border:1px solid rgba(255,255,255,.18);border-radius:999px;
+  padding:.5rem .95rem;font:600 13px/1.2 system-ui,-apple-system,sans-serif;color:#c0caf5;
+  box-shadow:0 6px 20px rgba(0,0,0,.45);animation:upexHintIn .35s ease both;cursor:pointer}
+@keyframes upexHintIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%)}}
+#upex-navhint.out{opacity:0;transition:opacity .4s}
+</style>
+<script id="upex-mobile-nav">
+(function(){
+'use strict';
+/* Swipe navigation: the deck runtime listens for keydown ArrowLeft/Right. */
+var send=function(key){document.dispatchEvent(new KeyboardEvent('keydown',{key:key,bubbles:true}))};
+var x0=null,y0=null,skip=false;
+document.addEventListener('touchstart',function(e){
+  var t=e.target;
+  skip=!!(t&&t.closest&&t.closest('textarea,input,button,pre,table,a,.quiz'));
+  var p=e.changedTouches[0]; x0=p.clientX; y0=p.clientY;
+},{passive:true});
+document.addEventListener('touchend',function(e){
+  if(x0===null||skip) return;
+  var p=e.changedTouches[0], dx=p.clientX-x0, dy=p.clientY-y0;
+  x0=y0=null;
+  if(Math.abs(dx)>60&&Math.abs(dx)>2*Math.abs(dy)) send(dx<0?'ArrowRight':'ArrowLeft');
+},{passive:true});
+/* Navigation hint: mobile only (deck chrome hidden by scale-to-fit),
+   once per domain (localStorage). ?hint=1 forces it for QA. */
+var KEY='upex-deck-navhint-v1';
+var isMobile=matchMedia('(pointer:coarse)').matches&&matchMedia('(max-width:768px)').matches;
+var force=/[?&]hint=1/.test(location.search);
+var seen=false; try{seen=localStorage.getItem(KEY)==='1'}catch(_e){}
+if(force||(isMobile&&!seen)){
+  var h=document.createElement('div'); h.id='upex-navhint';
+  h.textContent='👆 Swipe to advance →';
+  var close=function(){ if(!h.isConnected)return; h.classList.add('out'); setTimeout(function(){h.remove();},400); try{localStorage.setItem(KEY,'1')}catch(_e){} };
+  h.addEventListener('click',close);
+  document.body.appendChild(h);
+  setTimeout(close,5000);
+}
+})();
+</script>
+
+</body>
+</html>

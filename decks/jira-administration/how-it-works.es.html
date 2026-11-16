@@ -494,7 +494,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <p class="small dim mt-s">Cada modo tiene su propio "no es para esto". Components no toca catálogos ni la instancia; la migración no da de alta un Jira nuevo.</p>
       </div>
     </div>
-    <div class="notes">Fuentes: la descripción del SKILL.md y los "Do NOT use for" de references/components.md y references/instance-migration.md. Que cada skill de testing complete los components de los issues que crea viene de la doctrina de defectos: components es obligatorio en cada bug, defect, improvement y Test.</div>
+    <div class="notes">Fuentes: la descripción del SKILL.md y los "Not for" de las descripciones en references/components.md y references/instance-migration.md. Que cada skill de testing complete los components de los issues que crea viene de la doctrina de defectos: components es obligatorio en cada bug, defect, improvement y Test.</div>
   </section>
 
   <!-- 3. MAPA -->
@@ -788,7 +788,7 @@ chore(jira): refresh field, workflow and link-type catalogs for &lt;target&gt;</
     <h2 class="h2">Lo que <span class="grad">nunca</span> hace</h2>
     <table class="tt mt-m" style="font-size:16px;border-spacing:0 5px">
       <tr><th style="width:64px">#</th><th>Regla</th></tr>
-      <tr><td style="padding:8px 16px"><b class="mono">R1</b></td><td style="padding:8px 16px" class="small">Escribir en Jira, en el repo o en la sesión de <span class="mono">acli</span> sin tu aprobación explícita, dada en la misma corrida.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">R1</b></td><td style="padding:8px 16px" class="small">Escribir en Jira, en el repo o en la sesión de <span class="mono">acli</span> sin tu aprobación explícita, dada en la misma corrida. Una rutina sin nadie solo cuenta el brief como aprobación si nombra el modo, el project key y, en una migración, los dos hosts; si no, hace solo lo de lectura y se detiene antes de escribir.</td></tr>
       <tr><td style="padding:8px 16px"><b class="mono">R2</b></td><td style="padding:8px 16px" class="small">Combinar los dos modos, o adivinar uno a partir de un "arreglá Jira" sin más.</td></tr>
       <tr><td style="padding:8px 16px"><b class="mono">R3</b></td><td style="padding:8px 16px" class="small">Borrar y recrear un component con issues asignados: para eso está el rename.</td></tr>
       <tr><td style="padding:8px 16px"><b class="mono">R4</b></td><td style="padding:8px 16px" class="small">Actualizar un <span class="mono">ATLASSIAN_URL</span> en <span class="mono">.env</span> o en el entorno: se borra, porque una segunda copia es la que se pone vieja.</td></tr>

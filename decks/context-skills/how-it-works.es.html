@@ -711,7 +711,7 @@ apply? (yes / no)</div>
         <p class="small dim mt-s">El mensaje, tal como lo define <span class="mono">references/refresh.md</span>.</p>
       </div>
       <div class="stack" style="gap:14px">
-        <div class="card card-accent"><p class="lbl">El silencio no aprueba</p><p class="small mt-s">Solo un <b>sí</b> aplica la edición. Sin evidencia no hay propuesta. Un subagente de una sola vuelta pone la propuesta en su reporte en lugar de aplicarla.</p></div>
+        <div class="card card-accent"><p class="lbl">El silencio no aprueba</p><p class="small mt-s">Solo un <b>sí</b> aplica la edición. Sin evidencia no hay propuesta. Un subagente de una sola vuelta la pone en su reporte. Un worker supervisado se la manda al conductor, que sostiene el gate. Una rutina sin nadie pone la propuesta en su reporte y no aplica nada, salvo que el brief apruebe esa edición exacta.</p></div>
         <div class="card"><p class="lbl">Dónde escribe</p><p class="small mt-s">Solo bajo su propio <span class="mono">references/</span>. Nunca Jira, nunca <span class="mono">.context/</span>, nunca otra skill, nunca código del producto. Y nunca corre una etapa del proceso.</p></div>
       </div>
     </div>

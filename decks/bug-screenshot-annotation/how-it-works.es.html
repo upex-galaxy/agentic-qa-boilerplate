@@ -464,7 +464,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="card card-soft"><p class="lbl">Parte de una captura que ya existe</p><p class="small mt-s">La skill superpone formas sobre una imagen que está en disco. Nunca genera ni edita una imagen a partir de una descripción en texto.</p></div>
       <div class="card"><p class="lbl">Cómo se dispara</p><p class="small mt-s"><i>"annotate bug screenshot"</i>, <i>"mark up evidence"</i>, <i>"anota este bug"</i>, <i>"marca la captura"</i>, <i>"resalta el bug en la imagen"</i>.</p></div>
     </div>
-    <div class="notes">Fuentes: description y Compact Rules del SKILL.md (cuándo sí, cuándo no, input en disco), sección Scope (Not for), y sprint-testing/references/exploration-patterns.md, "Visual/positional findings: annotate before filing" (el caso textual se saltea).</div>
+    <div class="notes">Fuentes: description y Compact Rules del SKILL.md (cuándo sí, cuándo no, input en disco), sección Scope (Not for), y sprint-testing/references/exploration-patterns.md, "Visual and positional findings get annotated before filing" (el caso textual se saltea).</div>
   </section>
 
   <!-- 3. ANTES Y DESPUÉS -->
@@ -502,7 +502,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <div class="card card-soft"><p class="lbl">Si aparece un caso que no cubre</p><p class="small mt-s">Por ejemplo, una foto de cartelería física: la skill vuelve al humano y conversan cómo anonimizar. Nunca la manda en silencio a un servicio externo.</p></div>
       </div>
     </div>
-    <div class="notes">Sección "Why 100% local: the security rationale (binding)" del SKILL.md y su primera Compact Rule. El servidor atado a loopback cumple dos funciones: es la única forma de que playwright-cli cargue la página (rechaza file://) y es lo que mantiene el enfoque a salvo de la exfiltración.</div>
+    <div class="notes">Sección "Why everything stays local" del SKILL.md y su primera Compact Rule. El servidor atado a loopback cumple dos funciones: es la única forma de que playwright-cli cargue la página (rechaza file://) y es lo que mantiene el enfoque a salvo de la exfiltración.</div>
   </section>
 
   <!-- 5. MAPA -->
@@ -572,7 +572,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <text class="t-s" x="0" y="370">Lo que pasa por el scratchpad son archivos de trabajo: se pueden volver a generar desde la captura cruda.</text>
       <text class="t-s" x="0" y="395">A <tspan class="t-m">evidence/</tspan> entra una sola cosa, el PNG final anotado.</text>
     </svg>
-    <div class="notes">Sección "Process (8 steps + optional embed)" del SKILL.md. Los buckets salen de agentic-qa-core/references/evidence-conventions.md §1: la crop y el HTML son bucket C (scratchpad, descartables), el PNG final es bucket B (evidencia real). La captura cruda de entrada usa el nombre de la familia 1 de §2 ({KEY}-bug-{short-desc}.png).</div>
+    <div class="notes">Sección "Process" del SKILL.md. Los buckets salen de agentic-qa-core/references/evidence-conventions.md §1: la crop y el HTML son bucket C (scratchpad, descartables), el PNG final es bucket B (evidencia real). La captura cruda de entrada usa el nombre de la familia 1 de §2 ({KEY}-bug-{short-desc}.png).</div>
   </section>
 
   <!-- 6. PASOS 1-3 -->
@@ -689,7 +689,7 @@ Bug annotations:
         <p class="small dim mt-s">Sube el archivo como adjunto, resuelve el id de media de Atlassian y publica un comentario con la imagen inline.</p>
       </div>
       <div class="stack" style="gap:14px">
-        <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">Vos confirmás primero</p><p class="small mt-s">La skill ofrece publicar; no publica sola. Y nunca dice que adjuntó algo si el helper no terminó bien de forma verificable.</p></div>
+        <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">Vos confirmás primero</p><p class="small mt-s">La skill ofrece publicar; no publica sola. Sin nadie al teclado, solo publica si el brief que la lanzó lo cubre; si no, se detiene tras la captura y reporta la ruta del PNG, sin tocar Jira. Y nunca dice que adjuntó algo si el helper no terminó bien de forma verificable.</p></div>
         <div class="card card-accent"><p class="lbl">La foto principal</p><p class="small mt-s">Publicada, encabeza la sección Evidence del bug, delante de la captura cruda. Si el bug tiene página de evidencia, va primera en su pack: encabeza la página y es la miniatura del bug en el tracker. El Evidence Handoff del Stage 3 enlaza esa página.</p></div>
         <div class="card card-soft"><p class="lbl">Si el helper no llega</p><p class="small mt-s">Queda el camino de siempre: la ruta está en el chat y la adjuntás vos.</p></div>
       </div>
@@ -713,7 +713,7 @@ Bug annotations:
       <div class="card"><p class="lbl">Sin cierre propio</p><p class="small mt-s">El footer de cierre lo imprime la skill dueña del stage. Esta solo garantiza que su ruta aparezca, y primera.</p></div>
       <div class="card card-soft"><p class="lbl">Las herramientas que usa</p><p class="small mt-s"><span class="mono">/playwright-cli</span> para capturar, Python con PIL para recortar, <span class="mono">http.server</span> en loopback, y <span class="mono">/acli</span> solo si publicás en Jira.</p></div>
     </div>
-    <div class="notes">Fuentes: introducción del SKILL.md (skill de referencia y utilidad cargada dentro del subagente, caller típico sprint-testing Stage 2); sprint-testing/references/exploration-patterns.md, "Visual/positional findings: annotate before filing"; session-footer-contract.md (las skills de referencia y utilidad están exentas porque corren dentro de una sesión que ya cumple el contrato). Deck hermano: ../sprint-testing/how-it-works.es.html, slide "Browser y evidencia".</div>
+    <div class="notes">Fuentes: introducción del SKILL.md (skill de referencia y utilidad cargada dentro del subagente, caller típico sprint-testing Stage 2); sprint-testing/references/exploration-patterns.md, "Visual and positional findings get annotated before filing"; session-footer-contract.md (las skills de referencia y utilidad están exentas porque corren dentro de una sesión que ya cumple el contrato). Deck hermano: ../sprint-testing/how-it-works.es.html, slide "Browser y evidencia".</div>
   </section>
 
   <!-- 12. SALVAGUARDAS -->

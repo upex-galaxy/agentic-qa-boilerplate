@@ -631,11 +631,11 @@ Purchase      | order           | Compra   | orders | prisma/schema.prisma</div>
       <div class="stack" style="gap:14px">
         <div class="card card-accent"><p class="lbl">La API no se documenta acá</p><p class="small mt-s">Solo registra dónde está la spec en <span class="mono">project-config.md</span>. Los tipos son de <span class="mono">bun run api:sync</span>; el ángulo de negocio, de <span class="mono">project-context</span> modo <span class="mono">api</span>.</p></div>
         <div class="card"><p class="lbl" style="color:var(--warn)">Números con evidencia</p><p class="small mt-s">"P95 &lt; 500ms" sin una prueba que lo respalde es un gap, no un requisito.</p></div>
-        <div class="card"><p class="lbl">ADRs</p><p class="small mt-s">Una decisión de arquitectura de tests difícil de revertir (runner, aislamiento, fixtures y datos, auth en tests, contrato de selectores, sharding en CI) se vuelve <span class="mono">.context/ADR/ADR-NNNN-&lt;slug&gt;.md</span>, en <span class="mono">Proposed</span>. La aceptás vos.</p></div>
+        <div class="card"><p class="lbl">ADRs</p><p class="small mt-s">Una decisión que pasa las tres pruebas (difícil de revertir, sorprendente sin contexto, trade-off real) se vuelve <span class="mono">.context/ADR/ADR-NNNN-&lt;slug&gt;.md</span>, en <span class="mono">Proposed</span>. La aceptás vos.</p></div>
       </div>
     </div>
     <p class="small dim mt-s"><b>Gate:</b> <span class="mono">bun run context:map infra-context --list</span> muestra <span class="mono">architecture</span> y al menos una <span class="mono">nfr-</span>, la fuente del contrato de API está en <span class="mono">project-config.md</span>, y vos decís "Phase 2 complete".</p>
-    <div class="notes">Personas, journeys y specs funcionales tampoco son de esta fase: los arma project-context modo e2e. Si no hay spec de OpenAPI, se anota en discovery-gaps y se recomienda correr project-context modo api cuando termine discovery; nunca se escribe un contrato de API a mano.</div>
+    <div class="notes">Ejemplos de decisiones de arquitectura de tests que suelen pasar las tres pruebas: runner, aislamiento, fixtures y datos, auth en tests, contrato de selectores, sharding en CI. Personas, journeys y specs funcionales tampoco son de esta fase: los arma project-context modo e2e. Si no hay spec de OpenAPI, se anota en discovery-gaps y se recomienda correr project-context modo api cuando termine discovery; nunca se escribe un contrato de API a mano.</div>
   </section>
 
   <!-- 9. FASE 3 -->
@@ -734,20 +734,20 @@ Purchase      | order           | Compra   | orders | prisma/schema.prisma</div>
     <h2 class="h2">Lo que <span class="grad">nunca</span> hace</h2>
     <table class="tt mt-m" style="font-size:16px;border-spacing:0 5px">
       <tr><th style="width:64px">#</th><th>Regla</th></tr>
-      <tr><td style="padding:8px 16px"><b class="mono">P1</b></td><td style="padding:8px 16px" class="small">Inventar entidades, flujos o requisitos que no estén en el código o el PRD. Lo no verificado va a <span class="mono">discovery-gaps</span>.</td></tr>
-      <tr><td style="padding:8px 16px"><b class="mono">P2</b></td><td style="padding:8px 16px" class="small">Saltear la Fase 1 en un arranque desde cero: lo que viene después queda sin base.</td></tr>
-      <tr><td style="padding:8px 16px"><b class="mono">P3</b></td><td style="padding:8px 16px" class="small">Llenar los mapas de datos, API o E2E. Solo genera <span class="mono">business-domain-context</span> e <span class="mono">infra-context</span>.</td></tr>
-      <tr><td style="padding:8px 16px"><b class="mono">P4</b></td><td style="padding:8px 16px" class="small">Mezclarse con <span class="mono">test-framework-adaptation</span> en la misma sesión: sus límites de escritura son distintos.</td></tr>
-      <tr><td style="padding:8px 16px"><b class="mono">P5</b></td><td style="padding:8px 16px" class="small">Refrescar los mapas de otra skill. Los suyos, sección por sección, nunca enteros.</td></tr>
-      <tr><td style="padding:8px 16px"><b class="mono">P6</b></td><td style="padding:8px 16px" class="small">Saltear el glosario: <span class="mono">/sprint-testing</span> y <span class="mono">/test-documentation</span> lo cargan como precondición.</td></tr>
-      <tr><td style="padding:8px 16px"><b class="mono">P7</b></td><td style="padding:8px 16px" class="small">Inventar IDs de campos o estados de Jira / Xray: se sincronizan con <span class="mono">bun run jira:sync-fields --force</span> y se citan como <span class="mono">{{jira.&lt;slug&gt;}}</span>.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">1</b></td><td style="padding:8px 16px" class="small">Inventar entidades, flujos o requisitos que no estén en el código o el PRD. Lo no verificado va a <span class="mono">discovery-gaps</span>.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">2</b></td><td style="padding:8px 16px" class="small">Saltear la Fase 1 en un arranque desde cero: lo que viene después queda sin base.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">3</b></td><td style="padding:8px 16px" class="small">Llenar los mapas de datos, API o E2E. Solo genera <span class="mono">business-domain-context</span> e <span class="mono">infra-context</span>.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">4</b></td><td style="padding:8px 16px" class="small">Mezclarse con <span class="mono">test-framework-adaptation</span> en la misma sesión: sus límites de escritura son distintos.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">5</b></td><td style="padding:8px 16px" class="small">Refrescar los mapas de otra skill. Los suyos, sección por sección, nunca enteros.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">6</b></td><td style="padding:8px 16px" class="small">Saltear el glosario: <span class="mono">/sprint-testing</span> y <span class="mono">/test-documentation</span> lo cargan como precondición.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">7</b></td><td style="padding:8px 16px" class="small">Inventar IDs de campos o estados de Jira / Xray: se sincronizan con <span class="mono">bun run jira:sync-fields --force</span> y se citan como <span class="mono">{{jira.&lt;slug&gt;}}</span>.</td></tr>
     </table>
     <div class="grid g3 mt-s" style="gap:16px">
       <p class="small dim"><b>Repo objetivo intacto:</b> no escribe ni instala nada ahí.</p>
       <p class="small dim"><b>Sin secretos:</b> nombra la clave de <span class="mono">.env</span> o la ruta, nunca el valor.</p>
       <p class="small dim"><b>Sin auto-encadenar:</b> cada fase espera tu confirmación.</p>
     </div>
-    <div class="notes">Los anti-patrones del SKILL.md, más tres reglas compactas. Antes de usar una capacidad declarada (db, api-schema, diagrams) corre el chequeo en el punto de uso: si ninguna herramienta disponible la provee, frena y nombra la capacidad y cómo habilitarla, sin caer en silencio a otra herramienta.</div>
+    <div class="notes">Las reglas compactas del SKILL.md. Sin nadie presente (una rutina), la skill hace el trabajo reversible, frena en cada puerta de fase, deja los ADR en Proposed y nunca aplica un diff de UPDATE. Antes de usar una capacidad declarada (db, api-schema, diagrams) corre el chequeo en el punto de uso: si ninguna herramienta disponible la provee, frena y nombra la capacidad y cómo habilitarla, sin caer en silencio a otra herramienta.</div>
   </section>
 
   <!-- 13. LEE / ESCRIBE -->

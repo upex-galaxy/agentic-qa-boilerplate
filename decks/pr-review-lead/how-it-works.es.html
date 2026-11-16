@@ -600,7 +600,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       </svg>
       <div class="stack" style="gap:14px">
         <div class="card card-accent"><p class="lbl">Leída fresca, cada vez</p><p class="small mt-s">Nunca revisa contra convenciones que recuerda de otra sesión ni contra "buenas prácticas" que no verificó que estén documentadas. Leer primero, opinar después.</p></div>
-        <div class="card"><p class="lbl">Se amplía según el PR</p><p class="small mt-s">Si el PR trae un reporte de bug suma <span class="mono">defect-management-doctrine.md</span>; si toca una decisión de arquitectura de test difícil de revertir, <span class="mono">adr-doctrine.md</span>.</p></div>
+        <div class="card"><p class="lbl">Se amplía según el PR</p><p class="small mt-s">Si el PR trae un reporte de bug suma <span class="mono">defect-management-doctrine.md</span>; si toca una decisión de arquitectura de test que pasa las tres puertas del ADR, <span class="mono">adr-doctrine.md</span>.</p></div>
         <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">Fork que no trae una regla</p><p class="small mt-s">Si al repo le falta un archivo esperable pero corre tests con forma KATA, lo dice: <i>"califico contra la versión del boilerplate; avisá si preferís saltear ese chequeo"</i>.</p></div>
       </div>
     </div>
@@ -645,6 +645,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td class="small"><b style="color:var(--good)">Positivo</b></td><td class="small">Lo bien hecho, con la misma evidencia. <b>Siempre</b> tiene algo: una revisión sin positivos en un PR que los tiene está mal calibrada.</td></tr>
     </table>
     <p class="small dim mt-s">Severidad dentro de Real y Patrón: Crítico, Mayor, Menor, Trivial (en el idioma del usuario).</p>
+    <p class="small dim mt-s">En PRs de automatización la revisión corre en dos ejes por separado, <b>Spec</b> (cumple lo que pidieron los criterios de aceptación) y <b>Standards</b> (cumple KATA); sin ticket ni plan corre solo Standards. También busca tests mentirosos (LT-1 tautológico, LT-2 no puede fallar, LT-3 sensible a la estructura): un test verde cuenta como evidencia solo si pudo estar rojo.</p>
     <div class="notes">Fuente: Paso 3 del SKILL.md y "The rule" y "Citation format" de references/evidence-and-doctrine-lookup.md. Disfrazar una opinión de regla del repo erosiona la confianza en todas las demás citas apenas el usuario detecta una. Positivos típicos: buen pensamiento de riesgo más allá de los criterios de aceptación, datos de prueba idempotentes, afirmaciones de estabilidad con evidencia, honestidad del autor sobre sus tradeoffs.</div>
   </section>
 
@@ -742,7 +743,7 @@ Score: X.X / 10 · &lt;justificación en una línea&gt;</div>
     <h2 class="h2">Lo que <span class="grad">nunca</span> hace</h2>
     <table class="tt mt-m" style="font-size:16px;border-spacing:0 5px">
       <tr><th style="width:64px">#</th><th>Regla</th></tr>
-      <tr><td style="padding:8px 16px"><b class="mono">R1</b></td><td style="padding:8px 16px" class="small">Publicar un comentario sin la confirmación explícita del Paso 7. Sin excepciones.</td></tr>
+      <tr><td style="padding:8px 16px"><b class="mono">R1</b></td><td style="padding:8px 16px" class="small">Publicar un comentario sin un OK explícito sobre ese borrador y ese PR (el tuyo, o el del conductor). Una rutina sin nadie solo publica si su brief nombra el PR y pide publicar; si no, guarda el borrador y lo reporta.</td></tr>
       <tr><td style="padding:8px 16px"><b class="mono">R2</b></td><td style="padding:8px 16px" class="small">Presentar una "buena práctica" como regla del repo sin poder señalar el archivo y la sección.</td></tr>
       <tr><td style="padding:8px 16px"><b class="mono">R3</b></td><td style="padding:8px 16px" class="small">Tratar un desvío de patrón como error, o dejar que mueva la nota, en Flexible o Standard.</td></tr>
       <tr><td style="padding:8px 16px"><b class="mono">R4</b></td><td style="padding:8px 16px" class="small">Asumir que un repo externo copia las convenciones de este sin cargar antes su propia doctrina.</td></tr>

@@ -471,7 +471,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
           <tr><td class="small">El instalador y el tooling de <code>cli/</code>, los scripts de <code>scripts/</code></td></tr>
           <tr><td class="small">El pipeline OpenAPI (<code>scripts/sync-openapi.ts</code>), dependencias y scripts de <code>package.json</code></td></tr>
           <tr><td class="small">Doctrina compartida en <code>agentic-qa-core/references/</code> o una skill nueva del repo</td></tr>
-          <tr><td class="small">Editar <code>AGENTS.md</code>, una sección de <code>.agents/instructions/</code>, el ROUTER o sus <code>triggers:</code>: modo <code>instructions</code> (<code>references/instructions-doctrine.md</code>)</td></tr>
+          <tr><td class="small">Editar <code>AGENTS.md</code>, una sección de <code>.agents/instructions/</code>, el ROUTER o sus <code>triggers:</code>: modo <code>instructions</code> (<code>references/instructions-doctrine.md</code>), que redacta con <code>writing-for-agents</code> y <code>humanizer</code></td></tr>
           <tr><td class="small">"Sync AI context": poner los docs al día después de un cambio del boilerplate</td></tr>
         </table>
       </div>
@@ -507,7 +507,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <span class="wf-arr">→</span>
       <div class="wf-node gate"><p class="n">Fase 3 · Parallel</p><p class="t">Verify ×4</p><p class="c">+ docs follow-through</p></div>
       <span class="wf-arr">→</span>
-      <div class="wf-node"><p class="n">Fase 4 · inline</p><p class="t">Archive</p><p class="c">.session/.archive/</p></div>
+      <div class="wf-node"><p class="n">Fase 4 · inline</p><p class="t">Archive</p><p class="c">retro · .session/.archive/</p></div>
     </div>
     <p class="wf-lane">Caminos laterales</p>
     <div class="wf-row">
@@ -593,12 +593,13 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <h2 class="h2">Las decisiones que atan, <span class="grad">por escrito</span></h2>
     <div class="grid g2 mt-m" style="gap:28px;align-items:start">
       <div class="stack" style="gap:10px">
-        <p class="lbl">Cuándo hay ADR: las dos puertas</p>
+        <p class="lbl">Cuándo hay ADR: las tres puertas</p>
         <table class="tt tight">
-          <tr><td class="small"><b>1 · Arquitectura de test.</b> El enfoque rehace capas KATA, una fixture API, el runner, el modelo de aislamiento y paralelismo, o el pipeline OpenAPI y de tipos.</td></tr>
-          <tr><td class="small"><b>2 · Difícil de revertir.</b> Si se puede deshacer barato, no hace falta ADR.</td></tr>
+          <tr><td class="small"><b>1 · Difícil de revertir.</b> Si se puede deshacer barato, no hace falta ADR.</td></tr>
+          <tr><td class="small"><b>2 · Sorprende sin contexto.</b> Quien llegue después se va a preguntar por qué se hizo así.</td></tr>
+          <tr><td class="small"><b>3 · Hay un trade-off real.</b> Había alternativas genuinas y una razón por la que ganó esta.</td></tr>
         </table>
-        <p class="small dim">Test de las dos puertas: <code>agentic-qa-core/references/adr-doctrine.md</code> §1.</p>
+        <p class="small dim">Test de las tres puertas: <code>agentic-qa-core/references/adr-doctrine.md</code> §1.</p>
         <div class="card card-soft"><p class="lbl">Por qué</p><p class="small mt-s">Una decisión de framework ata a cada sesión de test que viene después. Si queda solo en un <code>plan.md</code> archivado, se vuelve a discutir o se viola sin que nadie lo note.</p></div>
       </div>
       <div class="stack" style="gap:14px">
@@ -686,18 +687,19 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <p class="lbl">Lo que hace el orquestador, inline</p>
         <table class="tt tight">
           <tr><td class="small"><b>1.</b> Confirma que el Verification checklist del plan pasa: los cuatro verificadores en 0.</td></tr>
-          <tr><td class="small"><b>2.</b> Mueve el directorio entero a <code>.session/.archive/&lt;YYYY-MM-DD&gt;-framework-development-&lt;change-name&gt;/</code>, con <code>plan.md</code> y <code>progress.md</code> lado a lado.</td></tr>
-          <tr><td class="small"><b>3.</b> Guarda el resumen de sesión en Engram con la ruta del archivo, para que una búsqueda posterior llegue a los artefactos.</td></tr>
-          <tr><td class="small"><b>4.</b> Te da esa ruta para que <a href="../git-flow-master/how-it-works.es.html"><code>/git-flow-master</code></a> la cite en el cuerpo del commit.</td></tr>
+          <tr><td class="small"><b>2.</b> Llama a la skill <code>retro</code> sobre el cambio terminado (plan, progress, resultados de los verificadores, retrabajo) y deja sus candidatos en <code>refinements.md</code>.</td></tr>
+          <tr><td class="small"><b>3.</b> Mueve el directorio entero a <code>.session/.archive/&lt;YYYY-MM-DD&gt;-framework-development-&lt;change-name&gt;/</code>, con <code>plan.md</code>, <code>progress.md</code> y <code>refinements.md</code> lado a lado.</td></tr>
+          <tr><td class="small"><b>4.</b> Guarda el resumen de sesión en Engram con la ruta del archivo, para que una búsqueda posterior llegue a los artefactos.</td></tr>
+          <tr><td class="small"><b>5.</b> Te da esa ruta para que <a href="../git-flow-master/how-it-works.es.html"><code>/git-flow-master</code></a> la cite en el cuerpo del commit.</td></tr>
         </table>
       </div>
       <div class="stack" style="gap:14px">
         <div class="card card-accent"><p class="lbl">Con REJECT no hay Archive</p><p class="small mt-s">El directorio queda donde está para depurar, retomar o abortar.</p></div>
-        <div class="card"><p class="lbl">Cierre de sesión</p><p class="small mt-s">En el chat, nunca en Jira: la lista de capturas con rutas verificadas y el footer con skills, MCPs y CLIs usados y los niveles de testing tocados, con "none" explícito donde no hubo (<code>session-footer-contract.md</code>).</p></div>
-        <div class="card"><p class="lbl">Lecciones</p><p class="small mt-s">Lo aprendido se <b>propone</b> en <code>refinements.md</code> dentro del scope; nunca se aplica a una skill viva sin tu OK (<code>skill-refinement-protocol.md</code>).</p></div>
+        <div class="card"><p class="lbl">Cierre de sesión</p><p class="small mt-s">En el chat, nunca en Jira: capturas con rutas verificadas y el footer de skills, MCPs, CLIs y niveles de testing, con "none" explícito (<code>session-footer-contract.md</code>).</p></div>
+        <div class="card"><p class="lbl">Lecciones</p><p class="small mt-s">Son propuestas, nunca se aplican a una skill viva sin tu OK (<code>skill-refinement-protocol.md</code>). Con una persona, <code>retro</code> también las muestra en el chat; sin nadie, solo escribe <code>refinements.md</code> y Archive sigue.</p></div>
       </div>
     </div>
-    <div class="notes">El código lo publica /git-flow-master a partir del diff de la Fase 2 verificado en la Fase 3. Archive cierra el ciclo; no es el paso de entrega. Se conservan los dos archivos como directorio (no concatenados) para poder rebobinar a una fase completa en el futuro.</div>
+    <div class="notes">El código lo publica /git-flow-master a partir del diff de la Fase 2 verificado en la Fase 3. Archive cierra el ciclo; no es el paso de entrega. Se conservan los archivos (plan, progress y refinements) como directorio, sin concatenar, para poder rebobinar a una fase completa en el futuro.</div>
   </section>
 
   <!-- 12. CUANDO EL CAMBIO ES UNA SKILL -->
@@ -708,7 +710,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="stack" style="gap:14px">
         <div class="card card-accent"><p class="lbl">El constructor: <code>skill-creator</code></p><p class="small mt-s">Siempre. Es una skill de comunidad (T3) que <code>cli/install.ts</code> instala a nivel proyecto. Se carga para el borrador, los prompts de prueba, los evals y la pasada de descripción.</p></div>
         <div class="card"><p class="lbl">El contrato: este repo</p><p class="small mt-s">Frontmatter con <code>metadata.kind</code>, archivos y secciones por tipo, Definition of Done: <code>agentic-qa-core/references/skill-scaffold.md</code>. <code>skill-creator</code> no es dueño de ese contrato.</p></div>
-        <div class="card"><p class="lbl">Si falta en la máquina</p><p class="small mt-s">Se arma desde la plantilla de la referencia y la IA te lo dice.</p></div>
+        <div class="card"><p class="lbl">La redacción: <code>writing-for-agents</code> y <code>humanizer</code></p><p class="small mt-s">La primera fija la estructura, la segunda pule el texto sin tocar código, rutas ni <code>{{VAR}}</code>. Luego <code>skill-creator</code> comprueba que la skill sigue disparándose. Si falta alguna, se arma desde la plantilla y la IA lo dice.</p></div>
       </div>
       <div class="stack" style="gap:10px">
         <p class="lbl">Definition of Done (<code>skill-scaffold.md</code> §5)</p>
@@ -765,7 +767,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <div class="card"><p class="lbl">Quién lo hace cumplir</p><p class="small mt-s">El bloque <code>CLI_IMPORT_CLOSURE</code> de <code>eslint.config.base.js</code>, así que <code>bun run lint:check</code> lo atrapa en CI, en pre-push y en <code>bun run repo:check</code>. Al lado vive <code>KATA_IMPORT_ALIASES</code>, que prohíbe <code>./</code> y <code>../</code> bajo <code>tests/</code>.</p></div>
       </div>
     </div>
-    <div class="notes">Fuentes: .agents/instructions/agent-harnesses.md (cli/ IS IMPORT-CLOSED; root configs ship in halves) y la regla F7 de la skill: refactorizar cli/install.ts exige probar la instalación completa en un clon limpio, porque verificar en un repo ya instalado no prueba nada. Como eslint.config.js es del proyecto y no se sobrescribe, validateEslintBlockWiring hace fallar agents:compat:check cuando un bloque exportado por la base no está cableado en el consumidor.</div>
+    <div class="notes">Fuentes: .agents/instructions/agent-harnesses.md (cli/ is import-closed; root configs ship in halves) y la regla F7 de la skill: refactorizar cli/install.ts exige probar la instalación completa en un clon limpio, porque verificar en un repo ya instalado no prueba nada. Como eslint.config.js es del proyecto y no se sobrescribe, validateEslintBlockWiring hace fallar agents:compat:check cuando un bloque exportado por la base no está cableado en el consumidor.</div>
   </section>
 
   <!-- 15. RIELES -->
@@ -774,16 +776,16 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <h2 class="h2">Los rieles que te <span class="grad">protegen</span></h2>
     <table class="tt tight mt-m">
       <tr><th style="width:110px">Regla</th><th>Nunca</th><th style="width:360px">Por qué te importa</th></tr>
-      <tr><td class="small mono">F1 · F3</td><td class="small">Trabajo por ticket ni componentes de módulo en <code>tests/components/</code></td><td class="small">esa superficie es de <code>/test-automation</code></td></tr>
-      <tr><td class="small mono">F2</td><td class="small">Colapsar las capas KATA</td><td class="small">rompe la cadena que asume cada componente</td></tr>
-      <tr><td class="small mono">F4</td><td class="small">Saltear el pipeline en un "refactor rápido"</td><td class="small">es la vía más segura a una regresión sin detectar</td></tr>
-      <tr><td class="small mono">F5</td><td class="small">Subir de versión mayor Playwright, Bun o TypeScript sin una corrida de regresión E2E</td><td class="small">los upgrades juntos esconden roturas de fixtures, locators y tipos</td></tr>
-      <tr><td class="small mono">F6</td><td class="small">Una fixture API sin su archivo de fixture, <code>kata-manifest.json</code> y un test que la use</td><td class="small">una fixture huérfana se pudre</td></tr>
-      <tr><td class="small mono">F7</td><td class="small">Tocar <code>cli/install.ts</code> sin probar en un clon limpio</td><td class="small">un bug ahí llega en silencio a cada usuario nuevo</td></tr>
-      <tr><td class="small mono">F8</td><td class="small">Una decisión de arquitectura difícil de revertir sin ADR</td><td class="small">se re-discute o se viola sin aviso</td></tr>
+      <tr><td class="small mono">Alcance</td><td class="small">Trabajo por ticket ni componentes de módulo en <code>tests/components/</code></td><td class="small">esa superficie es de <code>/test-automation</code></td></tr>
+      <tr><td class="small mono">Capas</td><td class="small">Colapsar las capas KATA</td><td class="small">rompe la cadena que asume cada componente</td></tr>
+      <tr><td class="small mono">Pipeline</td><td class="small">Saltear el pipeline en un "refactor rápido"</td><td class="small">es la vía más segura a una regresión sin detectar</td></tr>
+      <tr><td class="small mono">Upgrades</td><td class="small">Subir de versión mayor Playwright, Bun o TypeScript sin una corrida de regresión E2E</td><td class="small">los upgrades juntos esconden roturas de fixtures, locators y tipos</td></tr>
+      <tr><td class="small mono">Fixtures</td><td class="small">Una fixture API sin su archivo de fixture, <code>kata-manifest.json</code> y un test que la use</td><td class="small">una fixture huérfana se pudre</td></tr>
+      <tr><td class="small mono">Instalador</td><td class="small">Tocar <code>cli/install.ts</code> sin probar en un clon limpio</td><td class="small">un bug ahí llega en silencio a cada usuario nuevo</td></tr>
+      <tr><td class="small mono">ADR</td><td class="small">Una decisión de arquitectura difícil de revertir sin ADR</td><td class="small">se re-discute o se viola sin aviso</td></tr>
     </table>
     <p class="small dim mt-s">Critical Rules en las que se apoya: #2, #7, #12, #15 y #17. Tampoco edita artefactos generados (<code>api/openapi-types.ts</code>, <code>kata-manifest.json</code>, <code>reports/</code>) ni credenciales.</p>
-    <div class="notes">Critical Rules: #2 plan antes de código, #7 tests → types → lint, #12 manifest como fuente de verdad, #15 sin descartes globales, #17 la prosa nombra al dueño y no copia su valor. Fuente: sección "Anti-patterns" de la SKILL.md (F1 a F8), Compact Rules y kata-invariants.md §9. Ante un fallo de subagente: STOP, reportar, sin re-ejecutar solo; vos decidís retry, skip o abort.</div>
+    <div class="notes">Critical Rules: #2 plan antes de código, #7 tests → types → lint, #12 manifest como fuente de verdad, #15 sin descartes globales, #17 la prosa nombra al dueño y no copia su valor. Fuente: Compact Rules de la SKILL.md (donde se plegaron las reglas F1 a F8) y kata-invariants.md §9. Ante un fallo de subagente: STOP, reportar, sin re-ejecutar solo; vos decidís retry, skip o abort.</div>
   </section>
 
   <!-- 16. ENTRADAS Y SALIDAS -->

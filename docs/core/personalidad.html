@@ -49,7 +49,6 @@
           <li><a href="#decidir">Cuando te pide decidir</a></li>
           <li><a href="#idioma">Idioma</a></li>
           <li><a href="#interactuar">Cómo interactuar y cómo desactivar cosas</a></li>
-          <li><a href="#senales">Señales de que funciona</a></li>
           <li><a href="#donde-vive">Dónde vive la personalidad</a></li>
           <li><a href="#evolucionar">Cómo cambiarla</a></li>
         </ol>
@@ -198,10 +197,9 @@
         </dd>
         <dt>Ejecución guiada por objetivos</dt>
         <dd>
-          Define criterios de éxito y repite hasta verificarlos. Una tarea vaga se convierte en una
-          comprobable: "agrega validación" pasa a ser "escribe tests para entradas inválidas y haz
-          que pasen". En tareas de varios pasos, cada paso lleva su verificación observable: un test
-          que pasa, un archivo que existe, un exit 0, tipos limpios.
+          Define criterios de éxito y repite hasta verificarlos. En tareas de varios pasos, cada
+          paso lleva su verificación observable: un test que pasa, un archivo que existe, un exit 0,
+          tipos limpios.
         </dd>
         <dt>Buscar y editar en lote</dt>
         <dd>
@@ -235,23 +233,22 @@
               <td>Butler, PM Voice y Visual Mapping, en este repo</td>
             </tr>
             <tr>
-              <td>OUTPUT STYLE</td>
+              <td>Reglas de respuesta y <code>humanizer</code></td>
               <td>Cómo se ve en pantalla y la textura del texto</td>
               <td>
                 Las instrucciones de agente activas a nivel de usuario, sección
-                <code>## OUTPUT STYLE</code>
+                <code>## Replies</code>, más la skill <code>humanizer</code>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
       <p>
-        §2 manda sobre el contenido y la estructura de la información. OUTPUT STYLE nunca lo
-        contradice: solo suma disciplina de render (títulos, anclas en negrita, backticks, tablas,
-        espacio entre bloques) y textura humana (sin raya larga, largo de oración variado, sin
-        resumen de cierre). La concisión sale de las dos juntas: Butler mantiene corto el titular y
-        OUTPUT STYLE corta el relleno. El repo no asume ni recomienda ningún plugin de modo de
-        comunicación (regla crítica #13).
+        §2 manda sobre el contenido y la estructura de la información. Las reglas de respuesta nunca
+        lo contradicen: solo suma disciplina de render (títulos, anclas en negrita, backticks,
+        tablas, espacio entre bloques) y textura humana (sin raya larga, largo de oración variado,
+        sin resumen de cierre). El repo no asume ni recomienda ningún plugin de modo de comunicación
+        (regla crítica #13).
       </p>
       <div class="callout tip">
         <span class="callout-title">Los archivos de instrucciones no son un modelo de estilo</span>
@@ -285,10 +282,7 @@
       </ol>
       <p>
         Doce bullets específicos valen más que tres baldes genéricos, porque agrupar esconde justo
-        el ítem que importa. No hay tope: dos temas dan dos bullets y quince dan quince. Por
-        ejemplo, al cerrar un sprint el titular sería "Sprint probado, 8 ATCs agregados, 2 bugs
-        registrados", seguido de un bullet por ATC y por bug, y no de tres baldes "Tests / Bugs /
-        Reportes".
+        el ítem que importa. No hay tope: dos temas dan dos bullets y quince dan quince.
       </p>
 
       <h3 id="pm-voice">PM Voice: el registro por defecto</h3>
@@ -359,12 +353,12 @@
         Unicode.
       </p>
 
-      <h3 id="output-style">OUTPUT STYLE: cómo se ve y cómo suena</h3>
+      <h3 id="output-style">Reglas de respuesta: cómo se ve y cómo suena</h3>
       <p>
         Esta capa no está en el repo: vive en las instrucciones de agente activas a nivel de
-        usuario, sección <code>## OUTPUT STYLE</code>, porque es una preferencia personal que se
-        aplica igual en cualquier repositorio. Tiene dos mitades que tiran en direcciones opuestas a
-        propósito:
+        usuario, sección <code>## Replies</code> y skill <code>humanizer</code>, porque es una
+        preferencia personal que se aplica igual en cualquier repositorio. Tiene dos mitades que
+        tiran en direcciones opuestas a propósito:
       </p>
       <dl class="defs">
         <dt>Estructura: markdown deliberado</dt>
@@ -538,22 +532,10 @@
         </table>
       </div>
 
-      <h2 id="senales">Señales de que funciona</h2>
-      <p>§2 declara cómo se nota que estas reglas están haciendo su trabajo:</p>
-      <ul>
-        <li>Diffs más chicos y menos reescrituras.</li>
-        <li>Preguntas de aclaración antes de implementar, no después.</li>
-        <li>Con PM Voice, menos "y eso qué significa?" de vuelta.</li>
-        <li>
-          Con Visual Mapping, el impacto se entiende de un vistazo y las tablas se pegan tal cual en
-          Confluence o en un ATR.
-        </li>
-      </ul>
-
       <h2 id="donde-vive">Dónde vive la personalidad</h2>
       <p>
-        Está en capas y ninguna es imprescindible para las otras: si cambias tu OUTPUT STYLE,
-        Butler, PM Voice y Visual Mapping siguen intactos.
+        Está en capas y ninguna es imprescindible para las otras: si cambias tus reglas de
+        respuesta, Butler, PM Voice y Visual Mapping siguen intactos.
       </p>
       <div class="table-wrap">
         <table>
@@ -581,7 +563,7 @@
             </tr>
             <tr>
               <td>Instrucciones de agente a nivel de usuario</td>
-              <td>La sección <code>## OUTPUT STYLE</code></td>
+              <td>La sección <code>## Replies</code> y la skill <code>humanizer</code></td>
               <td>En cada sesión, según el harness</td>
             </tr>
             <tr>

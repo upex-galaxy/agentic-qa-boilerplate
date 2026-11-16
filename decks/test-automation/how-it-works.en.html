@@ -1,0 +1,2075 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="tokyo-night">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test Automation · How it works</title>
+<style>
+/* ============================================================
+   Self-contained deck — html-ppt assets inlined (fonts, base,
+   tokyo-night theme, animations) + deck-local styles.
+   Source: ~/.agents/skills/html-ppt (examples/xray-explained-tokyo).
+   ============================================================ */
+
+/* ---- fonts.css ---- */
+/* html-ppt :: shared webfonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@200;300;400;500;600;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,800;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap');
+
+
+/* ---- base.css ---- */
+/* html-ppt :: base.css — reset + shared tokens + layout primitives */
+/* Default tokens. Themes in assets/themes/*.css override the :root block. */
+:root {
+  --bg: #ffffff;
+  --bg-soft: #f7f7f8;
+  --surface: #ffffff;
+  --surface-2: #f2f2f4;
+  --border: rgba(0,0,0,.08);
+  --border-strong: rgba(0,0,0,.16);
+  --text-1: #111216;
+  --text-2: #55596a;
+  --text-3: #8a8f9e;
+  --accent: #3b6cff;
+  --accent-2: #7a5cff;
+  --accent-3: #ff5c8a;
+  --good: #1aaf6c;
+  --warn: #f5a524;
+  --bad:  #e0445a;
+  --grad: linear-gradient(135deg,#3b6cff,#7a5cff 55%,#ff5c8a);
+  --grad-soft: linear-gradient(135deg,#eef2ff,#f5ecff 55%,#ffeef5);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --radius-lg: 26px;
+  --shadow: 0 10px 30px rgba(18,24,40,.08), 0 2px 6px rgba(18,24,40,.04);
+  --shadow-lg: 0 24px 60px rgba(18,24,40,.14), 0 6px 16px rgba(18,24,40,.06);
+  --font-sans: 'Inter','Noto Sans SC',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
+  --font-serif: 'Playfair Display','Noto Serif SC',Georgia,serif;
+  --font-mono: 'JetBrains Mono','IBM Plex Mono',SFMono-Regular,Menlo,monospace;
+  --font-display: var(--font-sans);
+  --letter-tight: -.03em;
+  --letter-normal: -.01em;
+  --ease: cubic-bezier(.4,0,.2,1);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);
+  font-family:var(--font-sans);font-weight:400;line-height:1.6;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  letter-spacing:var(--letter-normal)}
+img,svg,video{max-width:100%;display:block}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code,kbd,pre,samp{font-family:var(--font-mono)}
+
+/* ================= SLIDE SYSTEM ================= */
+.deck{position:relative;width:100vw;height:100vh;overflow:hidden;background:var(--bg)}
+.slide{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:72px 96px;
+  box-sizing:border-box;
+  opacity:0;pointer-events:none;
+  transition:opacity .5s var(--ease), transform .5s var(--ease);
+  transform:translateX(30px);
+  overflow:hidden;
+}
+.slide.is-active{opacity:1;pointer-events:auto;transform:translateX(0);z-index:2}
+.slide.is-prev{transform:translateX(-30px)}
+
+/* single-page standalone (used when a layout file is opened directly) */
+body.single .slide{position:relative;width:100vw;height:100vh;opacity:1;transform:none;pointer-events:auto}
+
+/* ================= TYPOGRAPHY ================= */
+.eyebrow{font-size:13px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--text-3)}
+.kicker{font-size:14px;font-weight:600;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+h1.title,.h1{font-family:var(--font-display);font-size:72px;line-height:1.05;font-weight:800;letter-spacing:var(--letter-tight);margin:0 0 18px;color:var(--text-1)}
+h2.title,.h2{font-family:var(--font-display);font-size:54px;line-height:1.1;font-weight:700;letter-spacing:var(--letter-tight);margin:0 0 14px}
+h3,.h3{font-size:32px;line-height:1.2;font-weight:600;letter-spacing:var(--letter-normal);margin:0 0 10px}
+h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
+.lede{font-size:22px;line-height:1.55;color:var(--text-2);font-weight:300;max-width:62ch}
+.dim{color:var(--text-2)}
+.dim2{color:var(--text-3)}
+.mono{font-family:var(--font-mono)}
+.serif{font-family:var(--font-serif)}
+.gradient-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+
+/* ================= LAYOUT PRIMITIVES ================= */
+.stack>*+*{margin-top:14px}
+.row{display:flex;gap:24px;align-items:center}
+.row.wrap{flex-wrap:wrap}
+.grid{display:grid;gap:24px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.center{display:flex;align-items:center;justify-content:center;text-align:center}
+.fill{flex:1}
+.sp-t{padding-top:24px}.sp-b{padding-bottom:24px}
+.mt-s{margin-top:8px}.mt-m{margin-top:18px}.mt-l{margin-top:32px}
+.mb-s{margin-bottom:8px}.mb-m{margin-bottom:18px}.mb-l{margin-bottom:32px}
+
+/* ================= CARDS ================= */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:26px 28px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.card-soft{background:var(--surface-2);border:1px solid var(--border)}
+.card-outline{background:transparent;border:1.5px solid var(--border-strong);box-shadow:none}
+.card-accent{background:var(--surface);border-top:3px solid var(--accent)}
+.card-hover{transition:transform .3s var(--ease),box-shadow .3s var(--ease)}
+.card-hover:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+
+.pill{display:inline-block;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:500;
+  background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
+.pill-accent{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 28%,transparent)}
+
+/* ================= BARS / DIVIDERS ================= */
+.divider{height:1px;background:var(--border);width:100%}
+.divider-accent{height:3px;width:72px;background:var(--accent);border-radius:2px}
+
+/* ================= CHROME (header/footer/progress) ================= */
+.deck-header{position:absolute;top:24px;left:40px;right:40px;display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--text-3);letter-spacing:.12em;text-transform:uppercase;z-index:10;pointer-events:none}
+.deck-footer{position:absolute;bottom:24px;left:40px;right:40px;display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--text-3);z-index:10;pointer-events:none}
+.slide-number::before{content:attr(data-current)}
+.slide-number::after{content:" / " attr(data-total)}
+.progress-bar{position:fixed;left:0;right:0;bottom:0;height:3px;background:transparent;z-index:20}
+.progress-bar > span{display:block;height:100%;width:0;background:var(--accent);transition:width .3s var(--ease)}
+
+/* ================= PRESENTER / OVERVIEW ================= */
+.notes{display:none!important}
+.notes-overlay{position:fixed;inset:auto 0 0 0;max-height:42vh;background:rgba(20,22,30,.95);color:#e8ebf4;
+  padding:20px 32px;font-size:16px;line-height:1.6;border-top:1px solid rgba(255,255,255,.1);transform:translateY(100%);
+  transition:transform .3s var(--ease);z-index:40;overflow:auto;font-family:var(--font-sans)}
+.notes-overlay.open{transform:translateY(0)}
+.overview{position:fixed;inset:0;background:rgba(10,12,18,.92);backdrop-filter:blur(12px);z-index:50;
+  display:none;padding:40px;overflow:auto}
+.overview.open{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;align-content:start}
+.overview .thumb{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  aspect-ratio:16/9;overflow:hidden;cursor:pointer;position:relative;color:var(--text-1);padding:16px;
+  font-size:11px;transition:transform .2s var(--ease)}
+.overview .thumb:hover{transform:scale(1.04)}
+.overview .thumb .n{position:absolute;top:8px;left:10px;font-weight:700;font-size:14px;color:var(--text-3)}
+.overview .thumb .t{position:absolute;bottom:10px;left:14px;right:14px;font-weight:600;color:var(--text-1)}
+
+/* ================= PRESENTER VIEW ================= */
+/* Presenter view opens in a separate popup window (S key).
+ * All presenter styles are self-contained in the popup HTML generated by runtime.js.
+ * The audience window (this file) is NOT affected — it stays as normal deck view.
+ * Only the .notes class below is needed to hide speaker notes from audience. */
+
+/* ================= UTILITY ================= */
+.hidden{display:none!important}
+.nowrap{white-space:nowrap}
+.tr{text-align:right}.tc{text-align:center}.tl{text-align:left}
+.uppercase{text-transform:uppercase;letter-spacing:.12em}
+
+/* ================= PRINT ================= */
+@media print{
+  .slide{position:relative;opacity:1!important;transform:none!important;page-break-after:always;height:100vh}
+  .deck-header,.deck-footer,.progress-bar,.notes-overlay,.overview{display:none!important}
+}
+
+
+/* ---- themes/tokyo-night.css ---- */
+/* theme: tokyo-night */
+:root{
+  --bg:#1a1b26;--bg-soft:#16161e;--surface:#24283b;--surface-2:#2f334d;
+  --border:rgba(192,202,245,.12);--border-strong:rgba(192,202,245,.24);
+  --text-1:#c0caf5;--text-2:#a9b1d6;--text-3:#565f89;
+  --accent:#7aa2f7;--accent-2:#bb9af7;--accent-3:#7dcfff;
+  --good:#9ece6a;--warn:#e0af68;--bad:#f7768e;
+  --grad:linear-gradient(135deg,#7aa2f7,#bb9af7 55%,#f7768e);
+  --grad-soft:linear-gradient(135deg,#24283b,#2f334d);
+  --radius:12px;--radius-sm:8px;--radius-lg:20px;
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+  --shadow-lg:0 24px 62px rgba(0,0,0,.6);
+  --font-sans:'Inter','Noto Sans SC',sans-serif;
+}
+
+
+/* ---- animations/animations.css ---- */
+/* html-ppt :: animations.css
+ * Apply by adding class="anim-<name>" or data-anim="<name>".
+ * Durations are deliberately snappy; tweak --anim-dur per element.
+ */
+:root{--anim-dur:.7s;--anim-ease:cubic-bezier(.4,0,.2,1)}
+
+/* ---------- FADE DIRECTIONALS ---------- */
+@keyframes kf-fade-up{from{opacity:0;transform:translateY(32px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-down{from{opacity:0;transform:translateY(-32px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-left{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-right{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+.anim-fade-up{animation:kf-fade-up var(--anim-dur) var(--anim-ease) both}
+.anim-fade-down{animation:kf-fade-down var(--anim-dur) var(--anim-ease) both}
+.anim-fade-left{animation:kf-fade-left var(--anim-dur) var(--anim-ease) both}
+.anim-fade-right{animation:kf-fade-right var(--anim-dur) var(--anim-ease) both}
+
+/* ---------- RISE / DROP / ZOOM / BLUR / GLITCH ---------- */
+@keyframes kf-rise{from{opacity:0;transform:translateY(60px) scale(.97);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+@keyframes kf-drop{from{opacity:0;transform:translateY(-60px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes kf-zoom{0%{opacity:0;transform:scale(.6)}60%{transform:scale(1.04)}100%{opacity:1;transform:scale(1)}}
+@keyframes kf-blur{from{opacity:0;filter:blur(18px)}to{opacity:1;filter:none}}
+@keyframes kf-glitch{0%{opacity:0;transform:translateX(0);clip-path:inset(0 0 0 0)}
+  20%{opacity:1;transform:translateX(-6px);clip-path:inset(20% 0 30% 0)}
+  40%{transform:translateX(4px);clip-path:inset(50% 0 10% 0)}
+  60%{transform:translateX(-3px);clip-path:inset(10% 0 60% 0)}
+  80%{transform:translateX(2px);clip-path:inset(0 0 0 0)}
+  100%{opacity:1;transform:none}}
+.anim-rise-in{animation:kf-rise .9s var(--anim-ease) both}
+.anim-drop-in{animation:kf-drop .8s var(--anim-ease) both}
+.anim-zoom-pop{animation:kf-zoom .7s cubic-bezier(.22,1.3,.36,1) both}
+.anim-blur-in{animation:kf-blur .8s var(--anim-ease) both}
+.anim-glitch-in{animation:kf-glitch .8s steps(5,end) both}
+
+/* ---------- TYPEWRITER ---------- */
+.anim-typewriter{display:inline-block;overflow:hidden;white-space:nowrap;border-right:2px solid currentColor;
+  width:0;animation:kf-type 2.4s steps(40,end) forwards, kf-caret 1s step-end infinite}
+@keyframes kf-type{to{width:100%}}
+@keyframes kf-caret{50%{border-color:transparent}}
+
+/* ---------- GLOW / SHIMMER / GRADIENT-FLOW ---------- */
+@keyframes kf-neon{0%,100%{text-shadow:0 0 8px var(--accent),0 0 20px var(--accent)}
+  50%{text-shadow:0 0 16px var(--accent),0 0 40px var(--accent),0 0 80px var(--accent)}}
+.anim-neon-glow{animation:kf-neon 2s ease-in-out infinite}
+
+.anim-shimmer-sweep{position:relative;overflow:hidden}
+.anim-shimmer-sweep::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(110deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%);
+  transform:translateX(-100%);animation:kf-shimmer 2.4s var(--anim-ease) infinite}
+@keyframes kf-shimmer{to{transform:translateX(100%)}}
+
+.anim-gradient-flow{background:linear-gradient(90deg,var(--accent),var(--accent-2,var(--accent)),var(--accent-3,var(--accent)),var(--accent));
+  background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+  animation:kf-gradflow 4s linear infinite}
+@keyframes kf-gradflow{to{background-position:300% 0}}
+
+/* ---------- STAGGER LIST ---------- */
+.anim-stagger-list > *{opacity:0;animation:kf-rise .65s var(--anim-ease) both}
+.anim-stagger-list > *:nth-child(1){animation-delay:.05s}
+.anim-stagger-list > *:nth-child(2){animation-delay:.15s}
+.anim-stagger-list > *:nth-child(3){animation-delay:.25s}
+.anim-stagger-list > *:nth-child(4){animation-delay:.35s}
+.anim-stagger-list > *:nth-child(5){animation-delay:.45s}
+.anim-stagger-list > *:nth-child(6){animation-delay:.55s}
+.anim-stagger-list > *:nth-child(7){animation-delay:.65s}
+.anim-stagger-list > *:nth-child(8){animation-delay:.75s}
+.anim-stagger-list > *:nth-child(n+9){animation-delay:.85s}
+
+/* ---------- COUNTER-UP (JS-driven, marker class only) ---------- */
+.counter{font-variant-numeric:tabular-nums}
+
+/* ---------- SVG PATH DRAW ---------- */
+.anim-path-draw path,.anim-path-draw line,.anim-path-draw polyline,.anim-path-draw circle,.anim-path-draw rect{
+  stroke-dasharray:1000;stroke-dashoffset:1000;animation:kf-draw 2s var(--anim-ease) forwards}
+@keyframes kf-draw{to{stroke-dashoffset:0}}
+
+/* ---------- PARALLAX TILT (hover) ---------- */
+.anim-parallax-tilt{transform-style:preserve-3d;transition:transform .4s var(--anim-ease)}
+.anim-parallax-tilt:hover{transform:perspective(900px) rotateX(6deg) rotateY(-8deg) translateZ(10px)}
+
+/* ---------- CARD FLIP 3D ---------- */
+@keyframes kf-flip{from{transform:perspective(1200px) rotateY(-90deg);opacity:0}
+  to{transform:perspective(1200px) rotateY(0);opacity:1}}
+.anim-card-flip-3d{animation:kf-flip .9s var(--anim-ease) both;transform-style:preserve-3d;backface-visibility:hidden}
+
+/* ---------- CUBE ROTATE 3D ---------- */
+@keyframes kf-cube{from{transform:perspective(1200px) rotateX(20deg) rotateY(-90deg) translateZ(-200px);opacity:0}
+  to{transform:perspective(1200px) rotateX(0) rotateY(0) translateZ(0);opacity:1}}
+.anim-cube-rotate-3d{animation:kf-cube 1s var(--anim-ease) both}
+
+/* ---------- PAGE TURN 3D ---------- */
+@keyframes kf-pageturn{from{transform:perspective(1600px) rotateY(-85deg);transform-origin:left center;opacity:0}
+  to{transform:perspective(1600px) rotateY(0);opacity:1}}
+.anim-page-turn-3d{animation:kf-pageturn 1s var(--anim-ease) both;transform-origin:left center}
+
+/* ---------- PERSPECTIVE ZOOM ---------- */
+@keyframes kf-pzoom{from{opacity:0;transform:perspective(1400px) translateZ(-400px) rotateX(12deg)}
+  to{opacity:1;transform:none}}
+.anim-perspective-zoom{animation:kf-pzoom 1s var(--anim-ease) both}
+
+/* ---------- MARQUEE SCROLL ---------- */
+.anim-marquee-scroll{display:flex;gap:48px;white-space:nowrap;animation:kf-marquee 20s linear infinite}
+@keyframes kf-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ---------- KEN BURNS ---------- */
+@keyframes kf-kenburns{0%{transform:scale(1) translate(0,0)}100%{transform:scale(1.15) translate(-2%,-1%)}}
+.anim-kenburns{animation:kf-kenburns 14s ease-in-out infinite alternate}
+
+/* ---------- CONFETTI BURST (pseudo — pure CSS sparkles) ---------- */
+.anim-confetti-burst{position:relative}
+.anim-confetti-burst::before,.anim-confetti-burst::after{
+  content:"";position:absolute;top:50%;left:50%;width:8px;height:8px;border-radius:50%;
+  background:var(--accent);box-shadow:
+    20px -30px 0 var(--accent-2,var(--accent)),-25px -20px 0 var(--accent-3,var(--accent)),
+    30px 20px 0 var(--good,#1aaf6c),-30px 25px 0 var(--warn,#f5a524),
+    40px -10px 0 var(--bad,#e0445a),-45px 0 0 var(--accent),
+    10px 40px 0 var(--accent-2,var(--accent)),-15px -40px 0 var(--accent-3,var(--accent));
+  opacity:0;animation:kf-confetti 1.2s var(--anim-ease) forwards}
+.anim-confetti-burst::after{animation-delay:.15s;transform:rotate(45deg)}
+@keyframes kf-confetti{0%{opacity:0;transform:scale(.2)}30%{opacity:1}100%{opacity:0;transform:scale(2.2)}}
+
+/* ---------- SPOTLIGHT ---------- */
+@keyframes kf-spot{0%{clip-path:circle(0% at 50% 50%)}100%{clip-path:circle(140% at 50% 50%)}}
+.anim-spotlight{animation:kf-spot 1.1s var(--anim-ease) both}
+
+/* ---------- MORPH SHAPE (SVG) ---------- */
+.anim-morph-shape path{animation:kf-morph 6s ease-in-out infinite alternate}
+@keyframes kf-morph{0%{d:path("M60,120 Q120,20 180,120 T300,120")}
+  100%{d:path("M60,120 Q120,220 180,120 T300,120")}}
+
+/* ---------- RIPPLE REVEAL ---------- */
+@keyframes kf-ripple{0%{clip-path:circle(0% at 20% 80%);opacity:.4}
+  100%{clip-path:circle(160% at 20% 80%);opacity:1}}
+.anim-ripple-reveal{animation:kf-ripple 1.2s var(--anim-ease) both}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce){
+  [class*="anim-"]{animation:none!important;transition:none!important}
+}
+
+
+/* ---- deck-local (test-automation · how-it-works) ---- */
+  .slide{padding:52px 76px}
+  .h1{font-size:80px;line-height:1.04}
+  .h2{font-size:40px;line-height:1.12;margin-bottom:8px}
+  .kicker{font-family:var(--font-mono);font-size:14px;font-weight:600;text-transform:none;letter-spacing:.03em}
+  .kicker::before{content:"// "}
+  .lede{font-size:21px;line-height:1.5;font-weight:400}
+  .small{font-size:15px;line-height:1.55}
+  .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+
+  /* cover */
+  .cover-title{font-family:var(--font-mono);font-size:88px;font-weight:700;letter-spacing:-.045em;line-height:1.04;color:var(--text-1);margin:14px 0 20px}
+  .cover-title .slash{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+  .chips{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+  .chip{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;font-family:var(--font-mono);font-size:14px;background:var(--surface);border:1px solid var(--border-strong);color:var(--text-2)}
+  .chip b{color:var(--accent);font-weight:700}
+
+  /* cards */
+  .card{padding:18px 20px;box-shadow:none;border:1px solid var(--border-strong)}
+  .card h4{font-size:16.5px;margin:0 0 6px}
+  .card p{font-size:14px;line-height:1.5;margin:0;color:var(--text-2)}
+  .card p b{color:var(--text-1)}
+  .card-accent{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+
+  /* bullets */
+  .blist{list-style:none;margin:16px 0 0;padding:0}
+  .blist li{position:relative;padding:8px 0 8px 26px;font-size:15.5px;line-height:1.5;color:var(--text-2);border-bottom:1px dashed var(--border)}
+  .blist li:last-child{border-bottom:none}
+  .blist li::before{content:"▸";position:absolute;left:2px;top:8px;color:var(--accent);font-weight:700}
+  .blist li b{color:var(--text-1);font-weight:600}
+  .blist.numbered{counter-reset:bl}
+  .blist.numbered li{padding-left:36px}
+  .blist.numbered li::before{counter-increment:bl;content:counter(bl);font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--accent);
+    border:1px solid rgba(122,162,247,.4);background:rgba(122,162,247,.1);border-radius:6px;width:22px;height:22px;
+    display:inline-flex;align-items:center;justify-content:center;left:0;top:9px}
+
+  /* tables */
+  table.tt{width:100%;border-collapse:collapse;margin-top:16px;font-size:14.5px}
+  table.tt th{font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-2);
+    text-align:left;padding:6px 12px;border-bottom:1px solid var(--border-strong)}
+  table.tt td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text-2);vertical-align:top;line-height:1.45}
+  table.tt tr:last-child td{border-bottom:none}
+  table.tt td b{color:var(--text-1);font-weight:600}
+  table.tt td .mono,table.tt th .mono{font-size:.92em}
+
+  /* callouts */
+  .callout{border-left:3px solid var(--accent);background:rgba(122,162,247,.08);padding:12px 18px;border-radius:0 10px 10px 0;margin-top:16px}
+  .callout.good{border-left-color:var(--good);background:rgba(158,206,106,.08)}
+  .callout.warn{border-left-color:var(--warn);background:rgba(224,175,104,.08)}
+  .callout.bad{border-left-color:var(--bad);background:rgba(247,118,142,.08)}
+  .callout h4{font-size:14px;margin:0 0 3px;color:var(--accent)}
+  .callout.good h4{color:var(--good)}.callout.warn h4{color:var(--warn)}.callout.bad h4{color:var(--bad)}
+  .callout p{font-size:14px;margin:0;color:var(--text-2);line-height:1.5}
+  .callout p b{color:var(--text-1)}
+
+  /* numbered step grid */
+  .steps{display:grid;gap:22px 18px;margin-top:30px}
+  .steps.s4{grid-template-columns:repeat(4,1fr)}
+  .steps.s5{grid-template-columns:repeat(5,1fr)}
+  .step{position:relative;border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);padding:22px 16px 14px}
+  .step .num{position:absolute;top:-14px;left:14px;width:30px;height:30px;border-radius:9px;background:var(--grad);color:#1a1b26;
+    font-family:var(--font-mono);font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .step h4{font-size:15px;margin:4px 0}
+  .step p{font-size:13px;color:var(--text-2);line-height:1.45;margin:0}
+
+  /* KATA layer flow */
+  .layers{display:flex;flex-direction:column;margin-top:14px}
+  .layer{display:grid;grid-template-columns:84px 1fr;gap:16px;align-items:center;padding:9px 0}
+  .layer+.layer{border-top:1px dashed var(--border)}
+  .layer .lx{font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--accent);background:rgba(122,162,247,.12);
+    border:1px solid rgba(122,162,247,.3);border-radius:8px;padding:6px 0;text-align:center}
+  .layer h4{font-size:16px;margin:0 0 1px}
+  .layer p{font-size:13.5px;color:var(--text-2);margin:0;line-height:1.4}
+  .layer h4 .mono{font-size:.85em;color:var(--accent-3)}
+
+  /* workflow map (slide 2) */
+  .wf{display:grid;grid-template-columns:repeat(6,1fr);gap:20px 22px;margin-top:24px;align-items:stretch}
+  .wf-node{position:relative;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:11px 13px}
+  .wf-node .n{font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.05em;text-transform:uppercase}
+  .wf-node h4{font-size:14px;margin:3px 0;color:var(--text-1);line-height:1.25}
+  .wf-node p{font-size:11.5px;line-height:1.4;color:var(--text-3);margin:0}
+  .wf-node p .mono{font-size:.95em}
+  .wf-node.m:not(.last)::after{content:"→";position:absolute;right:-19px;top:50%;transform:translateY(-50%);color:var(--accent);font-weight:800;font-size:15px}
+  .wf-node.side{border-style:dashed;background:rgba(36,40,59,.55)}
+  .wf-node.side .n{color:var(--accent-2)}
+  .wf-node.side.down::after{content:"↓";position:absolute;left:50%;bottom:-17px;transform:translateX(-50%);color:var(--accent-2);font-weight:800;font-size:14px}
+  .wf-node.side.loop{border-color:rgba(247,118,142,.55)}
+  .wf-node.side.loop .n{color:var(--bad)}
+  .wf-node.side.loop::before{content:"↺";position:absolute;left:50%;top:-18px;transform:translateX(-50%);color:var(--bad);font-weight:800;font-size:15px}
+  .wf-node.side.next{border-color:rgba(158,206,106,.55)}
+  .wf-node.side.next .n{color:var(--good)}
+  .wf-node.side.next::before{content:"↓";position:absolute;left:50%;top:-18px;transform:translateX(-50%);color:var(--good);font-weight:800;font-size:14px}
+
+  /* terminal */
+  .term{background:#16161e;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);
+    font-family:var(--font-mono);font-size:14px;line-height:1.62}
+  .term .bar{display:flex;gap:8px;align-items:center;padding:10px 14px;background:#1f2335;border-bottom:1px solid var(--border);
+    font-size:12px;color:var(--text-3);font-family:var(--font-mono)}
+  .term .dot{width:10px;height:10px;border-radius:50%;background:#f7768e}
+  .term .dot:nth-of-type(2){background:#e0af68}
+  .term .dot:nth-of-type(3){background:#9ece6a}
+  .term pre{margin:0;padding:16px 20px;white-space:pre;overflow:auto;color:#c0caf5}
+  .term .p{color:#9ece6a;font-weight:700}
+  .term .c{color:#c0caf5}
+  .term .o{color:#787c99}
+  .kw{color:#bb9af7}.fn{color:#7aa2f7}.str{color:#9ece6a}.cmt{color:#565f89;font-style:italic}.num{color:#ff9e64}
+
+  .kbd{font-family:var(--font-mono);font-size:13px;padding:3px 10px;border-radius:7px;white-space:nowrap;
+    background:rgba(122,162,247,.12);color:var(--accent);border:1px solid rgba(122,162,247,.3)}
+  .cols{display:grid;gap:20px}
+  .cols.c2{grid-template-columns:repeat(2,1fr)}
+  .cols.c3{grid-template-columns:repeat(3,1fr)}
+</style>
+</head>
+<body>
+
+<div class="deck">
+
+  <!-- 1 · COVER -->
+  <section class="slide is-active" data-title="Cover">
+    <p class="eyebrow">AGENTIC QA · WORKFLOW SKILL</p>
+    <h1 class="cover-title" data-anim="fade-up"><span class="slash">/</span>test-automation</h1>
+    <p class="lede">Plans, writes and reviews KATA automated tests on Playwright + TypeScript. Three phases in strict order, <b>Plan → Code → Review</b>, never straight to code.</p>
+    <div class="chips anim-stagger-list">
+      <span class="chip"><b>Automation</b> <span class="dim">(historically Stage 5)</span></span>
+      <span class="chip">Plan → Code → Review</span>
+      <span class="chip">KATA · Playwright · TypeScript</span>
+    </div>
+    <div class="notes">Framing: this skill turns the Candidate verdicts from test-documentation into atomic, traceable automated tests. KATA rewrites the classic Page Object: if you write tests "the standard way", the review rejects them.</div>
+  </section>
+
+  <!-- 2 · WORKFLOW MAP -->
+  <section class="slide" data-title="Workflow map">
+    <p class="kicker">the map: a mental index of the deck</p>
+    <h2 class="h2" data-anim="fade-up">Plan → Code → Review, with its <span class="grad">gates</span></h2>
+    <div class="wf" data-anim-target>
+      <div class="wf-node side down" style="grid-column:1;grid-row:1"><span class="n">← /test-documentation</span><h4>Candidate verdicts only</h4><p>Manual and Deferred are terminal: they are never automated (Documentation decides).</p></div>
+      <div class="wf-node side down" style="grid-column:3;grid-row:1"><span class="n">anti-duplication gate</span><h4><span class="mono">kata-manifest.json</span></h4><p>Registry of Components + <span class="mono">@atc</span> IDs. Checked BEFORE proposing anything (Critical Rule #12).</p></div>
+      <div class="wf-node side down" style="grid-column:5;grid-row:1"><span class="n">verifier · REQUIRED</span><h4>/pr-review-lead or /judgment-day</h4><p>Automation is the only stage with a mandatory separate verifier before merge. Which of the two is optional; having one is not.</p></div>
+      <div class="wf-node m" style="grid-column:1;grid-row:2"><span class="n">Gate 0 · Preflight</span><h4>Readiness</h4><p>Framework adapted, toolchain, env + creds, browsers. STOP on RED.</p></div>
+      <div class="wf-node m" style="grid-column:2;grid-row:2"><span class="n">Phase 0</span><h4>Resume + scope</h4><p><span class="mono">.session/…</span> → resume / restart / abort. Scope: module · ticket · regression.</p></div>
+      <div class="wf-node m" style="grid-column:3;grid-row:2"><span class="n">Phase 1</span><h4>Plan ✋</h4><p><span class="mono">spec.md</span> + <span class="mono">automation-plan.md</span>. YOU approve before any code.</p></div>
+      <div class="wf-node m" style="grid-column:4;grid-row:2"><span class="n">Phase 2</span><h4>Code</h4><p>TCs to In Automation, then types → component → fixture → test file → <span class="mono">bun run test</span>.</p></div>
+      <div class="wf-node m" style="grid-column:5;grid-row:2"><span class="n">Phase 3</span><h4>Review</h4><p>5 parallel subagents: 3 Verifiers (<span class="mono">test</span> · <span class="mono">types:check</span> · <span class="mono">lint:check</span>) + Spec reviewer + Standards reviewer.</p></div>
+      <div class="wf-node m last" style="grid-column:6;grid-row:2"><span class="n">Accept</span><h4>Handoff</h4><p>Checkpoint + session archive. The skill stops here, no git.</p></div>
+      <div class="wf-node side loop" style="grid-column:4/6;grid-row:3"><span class="n">reject</span><h4>STOP, no auto-fix</h4><p>Failed report verbatim; re-dispatch Code ONLY with your approval. Real bug → confirm and file the bug.</p></div>
+      <div class="wf-node side" style="grid-column:1/4;grid-row:3"><span class="n">explain mode · read-only</span><h4>Explain tests that already exist</h4><p>Reads the code and leaves an HTML with every assertion. No Plan → Code → Review, no session, no Jira.</p></div>
+      <div class="wf-node side next" style="grid-column:6;grid-row:3"><span class="n">→ next</span><h4><span class="mono">/git-flow-master</span></h4><p><span class="mono">test/*</span> branch and a PR against the base that <span class="mono">git_strategy:</span> declares. The person does the merge. Then <span class="mono">/regression-testing</span> (Regression) in CI.</p></div>
+    </div>
+    <p class="small dim2 mt-m">Each phase on the map = one section of this deck, in the same order.</p>
+    <div class="notes">Main path: Preflight → Phase 0 → Plan → Code → Review → Handoff. Side nodes: the entry from test-documentation, the manifest gate in Plan, the mandatory separate verifier in Review, the REJECT loop and the handoff to git-flow-master + regression-testing. Bottom left, explain mode: a separate path that writes no code.</div>
+  </section>
+
+  <!-- 2b · MODES AND INVOCATION -->
+  <section class="slide" data-title="Modes and invocation">
+    <p class="kicker">mode routing: resolved before the preflight</p>
+    <h2 class="h2" data-anim="fade-up">Two modes: <span class="grad">automate</span> writes, <span class="grad">explain</span> only reads</h2>
+    <table class="tt">
+      <thead><tr><th>Mode</th><th>When</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><b class="mono">automate</b> (default)</td><td>Any request to plan, write or review KATA tests</td><td>The rest of this deck: preflight, Phase 0, Plan → Code → Review</td></tr>
+        <tr><td><b class="mono">explain</b></td><td>First token <span class="mono">explain</span>, the phrase <i>"break-down-tests"</i>, or an explicit request to explain existing tests</td><td>Reads only <span class="mono">references/explain-tests.md</span>, traces the code and writes <span class="mono">.context/reports/test-breakdown/&lt;scope&gt;.json</span>; <span class="mono">bun run tests:explain:render</span> generates the <span class="mono">.html</span> next to it. Then it stops</td></tr>
+      </tbody>
+    </table>
+    <div class="cols c2 mt-m">
+      <div class="term" style="margin:0"><div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>Claude Code</span></div>
+<pre><span class="p">&gt;</span> <span class="c">/test-automation &lt;KEY&gt;</span>               <span class="cmt"># automate</span>
+<span class="p">&gt;</span> <span class="c">/test-automation explain &lt;scope&gt;</span>     <span class="cmt"># explain</span></pre></div>
+      <div class="card" style="margin:0"><h4>OpenCode and Codex</h4><p>They have no slash commands, so you ask in prose: <i>"Load the <span class="mono">test-automation</span> skill, <span class="mono">explain</span> mode, on <span class="mono">&lt;scope&gt;</span>"</i>. The <b>first token</b> that matches a mode IS the mode and the rest is forwarded; with no match, <span class="mono">automate</span> applies, and if the request could be either, the skill asks. In Pi: <span class="mono">/skill:test-automation explain &lt;scope&gt;</span>.</p></div>
+    </div>
+    <div class="callout warn"><h4>explain touches nothing else</h4><p>Its only writes are those two report files (gitignored). No session state, no editing tests or product code, no regenerating <span class="mono">kata-manifest.json</span>, no Jira or TMS. Implementation is never inferred from a request to explain.</p></div>
+    <div class="notes">The explain scope can be a test file, an ATC id, a ticket key or a module. In chat it leaves three lines at most: what the scope tests in business terms, the counts and the relative path of the HTML; the detail lives on the page.</div>
+  </section>
+
+  <!-- 3 · INPUT + SCOPE -->
+  <section class="slide" data-title="Input + scope">
+    <p class="kicker">before anything else: what comes in, and how big</p>
+    <h2 class="h2" data-anim="fade-up">Pick the <span class="grad">scope</span> first, once</h2>
+    <div class="callout"><h4>The input comes from /test-documentation (Documentation)</h4><p>Only TCs with a <b>Candidate</b> verdict signed by a person reach automation: before planning, the TC-origin gate reads each TC in the TMS, and if one is missing or unsigned the session stops and sends the scope to /test-documentation. This skill never creates a Test or scores ROI. <b>Manual</b> and <b>Deferred</b> are terminal. Both skills use the same scope names: the name says the ORIGIN, and Macro / Medium / Micro only say the size. module-driven (Macro) · ticket-driven (Medium) · bug-driven (Micro) · discovery-driven (depends on the gap) · ad-hoc → wherever it fits.</p></div>
+    <table class="tt">
+      <thead><tr><th>Scope</th><th>Input</th><th>Output</th><th>Use it when</th></tr></thead>
+      <tbody>
+        <tr><td><b>Module-driven</b> (Macro)</td><td>A module + a list of candidate TCs</td><td>1 module spec + N ATC specs</td><td>A batch of 10+ tests; first pass over a new area</td></tr>
+        <tr><td><b>Ticket-driven</b> (Medium)</td><td>A Story ID with scenarios</td><td>1 ticket implementation plan</td><td>A whole user story: the default for sprint work</td></tr>
+        <tr><td><b>Bug-driven</b> (Micro)</td><td>One specific TC (post-bugfix)</td><td>1 ATC implementation plan</td><td>A regression test after a fix: the smallest unit (it used to be called Regression-driven)</td></tr>
+        <tr><td><b>Discovery-driven</b> (Macro per module; Medium or Micro per gap)</td><td>The signed Candidate TCs of a coverage Tech Story, with no Story behind them (a lone gap is not an input)</td><td>Same as whichever size applies</td><td>Cover behavior that is already in production and that no Story specified</td></tr>
+      </tbody>
+    </table>
+    <p class="small dim mt-m">When in doubt, ASK the user. Never assume "module" just because several TC IDs show up in the briefing.</p>
+    <div class="notes">The scope dictates how much planning ceremony is produced and how many Code subagents get dispatched later. Picking it wrong means coding the wrong scope.</div>
+  </section>
+
+  <!-- 4 · PREFLIGHT GATE -->
+  <section class="slide" data-title="Preflight gate">
+    <p class="kicker">gate 0 · readiness preflight: MANDATORY, runs before everything</p>
+    <h2 class="h2" data-anim="fade-up">Is everything ready to write and <span class="grad">run</span> code?</h2>
+    <table class="tt">
+      <thead><tr><th>Capability</th><th>Level</th><th>Why here</th></tr></thead>
+      <tbody>
+        <tr><td><b>Framework adapted</b></td><td>REQUIRED</td><td>No ATCs against the <span class="mono">Example*</span> scaffolds. Still generic? STOP → the user runs <span class="mono">/project-discovery</span> → <span class="mono">/test-framework-adaptation</span> (the gate never auto-runs them)</td></tr>
+        <tr><td><b>Toolchain + manifest</b></td><td>REQUIRED</td><td><span class="mono">bun run test / types:check / lint:check</span> resolve at t=0; <span class="mono">kata:manifest:check</span> clean before proposing components</td></tr>
+        <tr><td><b>Active env + credentials</b></td><td>REQUIRED</td><td>Tests run live: reachable URL + test users in <span class="mono">.env</span> (per role if applicable) + Playwright browsers (<span class="mono">bun run pw:install</span>)</td></tr>
+        <tr><td><b>OpenAPI MCP + <span class="mono">api/schemas/</span></b></td><td>SCOPE · API</td><td>Needed already at PLAN time: explore endpoints to design ATCs and classify data</td></tr>
+        <tr><td><b>DBHub MCP</b></td><td>SCOPE · data</td><td>PLAN time too: explore the schema to design data fixtures</td></tr>
+        <tr><td><b>Business map per level touched</b></td><td>REQUIRED</td><td>E2E → <span class="mono">business-e2e-context</span>, API → <span class="mono">business-api-context</span>, data → <span class="mono">business-data-context</span>: <span class="mono">bun run context:map &lt;slug&gt; --list</span> must list sections. Placeholder? STOP → <span class="mono">project-context</span> mode <span class="mono">e2e</span> / <span class="mono">api</span> / <span class="mono">data</span></td></tr>
+        <tr><td><b>Issue tracker</b></td><td>SCOPE · ticket</td><td>Reads of the ATP + ACs via <span class="mono">bun run jira:sync-issues</span></td></tr>
+      </tbody>
+    </table>
+    <div class="callout warn"><h4>Two laws</h4><p><b>args-as-answers</b>: what you already gave (scope, ticket, API vs E2E) is not asked again. <b>probe, don't assume</b>: verify, don't suppose. Gaps + REDs → ONE single question checklist; STOP on any blocking RED.</p></div>
+    <div class="notes">Different from the anti-duplication pre-flight in Phase 1 (that one cross-checks the manifest looking for reuse): this gate is about tools and environment being ready. It avoids discovering halfway through Code that a credential was missing or that the framework was still generic.</div>
+  </section>
+
+  <!-- 5 · PHASE 0 -->
+  <section class="slide" data-title="Phase 0 · Resume">
+    <p class="kicker">phase 0 · resume check, inline and with no subagent</p>
+    <h2 class="h2" data-anim="fade-up">Is there a previous session? <span class="grad">Resume it</span>, don't repeat it</h2>
+    <div class="steps s4 anim-stagger-list">
+      <div class="step"><div class="num">1</div><h4>Determine the scope</h4><p>Ticket key, regression TC or module slug, depending on the invocation.</p></div>
+      <div class="step"><div class="num">2</div><h4>Look for the session</h4><p><span class="mono">.session/test-automation/&lt;scope&gt;/progress.md</span>: does it exist?</p></div>
+      <div class="step"><div class="num">3</div><h4>It doesn't exist</h4><p>New session → scope picker + Phase 1 (Plan).</p></div>
+      <div class="step"><div class="num">4</div><h4>It exists</h4><p>Read <span class="mono">plan.md</span> + the tail of <span class="mono">progress.md</span> → report the last completed phase → offer <b>resume / restart / abort</b>.</p></div>
+    </div>
+    <div class="callout mt-l"><h4>The session is an index, not the content</h4><p>The session <span class="mono">plan.md</span> is a THIN index that cites the canonical artifacts (<span class="mono">spec.md</span>, <span class="mono">automation-plan.md</span>, <span class="mono">atc/*.md</span>) under <span class="mono">.context/PBI/epics/EPIC-&lt;KEY&gt;-&lt;slug&gt;/test-specs/&lt;scope&gt;/</span>. The domain lives ONCE, never duplicated. With <b>restart</b>, the old session is archived in <span class="mono">.session/.archive/</span> before starting.</p></div>
+    <div class="notes">Phase 0 runs inline (no subagent). For module-driven, a mid-batch resume reads the checkpoints in progress.md and skips the ATCs that are already coded.</div>
+  </section>
+
+  <!-- 6 · PHASE 1 · PLAN: WHAT IT READS -->
+  <section class="slide" data-title="Plan · reads">
+    <p class="kicker">phase 1 · plan: what gets read, in this order</p>
+    <h2 class="h2" data-anim="fade-up">The manifest <span class="grad">first</span>; the whole Story after</h2>
+    <ul class="blist numbered anim-stagger-list">
+      <li><b><span class="mono">kata-manifest.json</span> (root).</b> Cross-check every TC ID against the existing <span class="mono">@atc</span> and every component name against the registry. Match? Reuse or extend, NEVER duplicate. Husky enforces it at pre-commit.</li>
+      <li><b>KATA doctrine.</b> <span class="mono">references/kata-architecture.md</span> + <span class="mono">typescript-patterns.md</span>: layers, ATC identity, fixtures, aliases.</li>
+      <li><b><span class="mono">tests/components/</span>.</b> The Api / Page / Steps shapes that already exist on disk: naming and patterns to follow.</li>
+      <li><b>The synced Story.</b> <span class="mono">bun run jira:sync-issues get &lt;KEY&gt; --include-comments</span> → read the WHOLE folder: ACs, scope, business rules AND <span class="mono">comments.md</span>. NEVER <span class="mono">acli view</span> for <span class="mono">customfield_*</span> (it returns null).</li>
+      <li><b>The ATP, by TMS modality</b> (<span class="mono">testing.tms_cli</span> in <span class="mono">.agents/project.yaml</span>). <b>jira-native:</b> the Story's <span class="mono">acceptance_test_plan</span> field, synced as <span class="mono">acceptance-test-plan.md</span>. <b>jira-xray:</b> the description of the "ATP: …" Test Plan (created by <span class="mono">/sprint-testing</span> in Planning), via <span class="mono">bun run jira:sync-issues get &lt;ATP_KEY&gt;</span> → <span class="mono">test-plans/ATP-&lt;KEY&gt;-&lt;slug&gt;.md</span>; per-TC results come from the TMS, not from the sync.</li>
+      <li><b><span class="mono">api/schemas/</span> + <span class="mono">.env</span>.</b> OpenAPI types (refresh with <span class="mono">bun run api:sync</span>); credentials via <span class="mono">config.testUser</span>, never hardcoded.</li>
+    </ul>
+    <div class="notes">Skipping the manifest produces duplicate Pages, repeated @atc IDs and lost reuse, all rejected in review. Reading only one field of the Story produces incomplete ATCs: the comments often hold the context that changes the plan.</div>
+  </section>
+
+  <!-- 7 · PHASE 1 · PLAN: WHAT IT WRITES -->
+  <section class="slide" data-title="Plan · writes">
+    <p class="kicker">phase 1 · plan: what gets written, and the human gate</p>
+    <h2 class="h2" data-anim="fade-up">A plan that answers 5 questions, and <span class="grad">waits for your yes</span></h2>
+    <div class="cols c2 mt-m">
+      <div class="card card-accent"><h4>Canonical artifacts (git)</h4><p><span class="mono">.context/PBI/epics/EPIC-&lt;KEY&gt;-&lt;slug&gt;/test-specs/&lt;scope&gt;/</span><br>→ <span class="mono">spec.md</span> · <span class="mono">automation-plan.md</span> · <span class="mono">atc/*.md</span><br>Hand-authored, NO-Jira. Different from the Story's <span class="mono">implementation-plan.md</span> (the DEV plan, synced, read-only).</p></div>
+      <div class="card"><h4>Session index</h4><p><span class="mono">.session/test-automation/&lt;scope&gt;/plan.md</span>: Goal, Inputs, Approach, phases, risks, verification. It cites the canonical files; it doesn't duplicate them. After approval: a checkpoint in <span class="mono">progress.md</span>.</p></div>
+    </div>
+    <ul class="blist mt-m">
+      <li><b>1 · Scenarios:</b> which become tests, which become ATCs, which become shared preconditions (Steps)?</li>
+      <li><b>2 · Components:</b> which <span class="mono">*Api.ts</span> / <span class="mono">*Page.ts</span> already exist and which get created?</li>
+      <li><b>3 · Data:</b> classified Discover / Modify / Generate. Never assume it exists in staging.</li>
+      <li><b>4 · Fixture:</b> <span class="mono">{api}</span>, <span class="mono">{ui}</span> or <span class="mono">{test}</span>. Steps have no fixture: they are instantiated directly.</li>
+      <li><b>5 · Traceability:</b> which TMS ATC ID maps to which component method.</li>
+    </ul>
+    <div class="callout good"><h4>Phase gate</h4><p>A Plan subagent (Single pattern) produces the artifacts; the orchestrator shows you the plan and <b>WAITS for your approval</b>. Phase 2 never starts without it (the Plan is never skipped, not even for a "simple" test).</p></div>
+    <div class="notes">The single Plan subagent protects the orchestrator's context from the heavy KATA reads. The briefing ALWAYS includes kata-manifest.json as a context doc.</div>
+  </section>
+
+  <!-- 8 · CRAFT · TEST DESIGN -->
+  <section class="slide" data-title="Craft · test design">
+    <p class="kicker">plan craft · test-design doctrine: binding</p>
+    <h2 class="h2" data-anim="fade-up">Covering the ACs is the <span class="grad">floor</span>, not the goal</h2>
+    <div class="cols c3 mt-m anim-stagger-list">
+      <div class="card"><h4>1 : N by default</h4><p>One AC → several ATCs. EP-merge collapses ONLY within a partition (same behavior → one parameterized ATC), never across partitions, boundaries or states.</p></div>
+      <div class="card"><h4>EP doesn't replace BVA</h4><p>Wherever there is a range / limit / length / date window: explicit edge cases (min−1 · min · min+1 …). Merging hides the off-by-one.</p></div>
+      <div class="card"><h4>Risk lives outside the AC</h4><p>Invalid inputs, auth/error paths, state transitions and anomalies the AC stays silent about also belong in the ATC set.</p></div>
+    </div>
+    <table class="tt">
+      <thead><tr><th>Trigger in the AC</th><th>Required technique</th><th>Produces</th></tr></thead>
+      <tbody>
+        <tr><td>Any input (always)</td><td><b>Equivalence Partitioning</b></td><td>One parameterized ATC per partition; distinct partitions → separate ATCs</td></tr>
+        <tr><td>Range / limit / length</td><td><b>BVA</b></td><td>Edges + zero / empty / null</td></tr>
+        <tr><td>State field</td><td><b>State-Transition</b></td><td>Every valid transition + every invalid one</td></tr>
+        <tr><td>2+ interacting conditions</td><td><b>Decision Table</b></td><td>One ATC per surviving rule</td></tr>
+        <tr><td>3+ combinable factors</td><td><b>Pairwise</b></td><td>All-pairs set (record the reduction)</td></tr>
+      </tbody>
+    </table>
+    <p class="small dim2 mt-s">Canon: <span class="mono">agentic-qa-core/references/test-design-doctrine.md</span>, loaded MANDATORY before deriving ATCs from ACs. Never report "% of ACs verified" as completeness.</p>
+    <div class="notes">An AC is the business statement; an ATC is its concrete exploration (precondition + action + assertions). Collapsing to 1:1 requires a written "trivially atomic" justification.</div>
+  </section>
+
+  <!-- 9 · CRAFT · DATA -->
+  <section class="slide" data-title="Craft · data">
+    <p class="kicker">plan craft · data strategy: classified when you PLAN</p>
+    <h2 class="h2" data-anim="fade-up">Discover → Modify → Generate <span class="grad">(strict priority)</span></h2>
+    <div class="steps s4 anim-stagger-list">
+      <div class="step"><div class="num">1</div><h4>Discover</h4><p>Find data already in the required state. Zero DB impact. Preferred.</p></div>
+      <div class="step"><div class="num">2</div><h4>Modify</h4><p>Take existing data and mutate it through the API into the required state. One mutation.</p></div>
+      <div class="step"><div class="num">3</div><h4>Generate</h4><p>Create from scratch: faker + POST. Last resort, since it pollutes the environment.</p></div>
+      <div class="step"><div class="num">4</div><h4>Blocker</h4><p>No viable pattern → NOT automatable; document the gap and escalate.</p></div>
+    </div>
+    <div class="callout mt-l"><h4>Override</h4><p>Use <b>Generate</b> even if the data could be discovered IF the test mutates state, which avoids order dependencies. Every test generates its OWN data (<span class="mono">DataFactory</span> / faker): no shared state between tests.</p></div>
+    <div class="callout warn"><h4>The beforeAll trap</h4><p>Never <span class="mono">expect()</span> inside <span class="mono">beforeAll</span>: a failed assertion kills the WHOLE describe and hides the cause. <span class="mono">beforeAll</span> only discovers; each test guards its own precondition: <span class="mono">test.skip(!order, 'No order available')</span>. That way the report tells "skipped: data missing" apart from "failed: real bug".</p></div>
+    <div class="notes">This classification happens in the plan, never deferred to the code. Cleanup: Discover needs none; Modify restores in afterAll; Generate deletes in afterEach.</div>
+  </section>
+
+  <!-- 10 · PHASE 2 · CODE -->
+  <section class="slide" data-title="Code · order">
+    <p class="kicker">phase 2 · code: a non-negotiable build order</p>
+    <h2 class="h2" data-anim="fade-up">Types → component → fixture → test → <span class="grad">verify</span></h2>
+    <div class="steps s5 anim-stagger-list">
+      <div class="step"><div class="num">1</div><h4>Types</h4><p>Payloads, responses and DTOs at the top of the component file.</p></div>
+      <div class="step"><div class="num">2</div><h4>Component</h4><p>Extends <span class="mono">ApiBase</span> / <span class="mono">UiBase</span>. Helpers first (no decorator), ATCs after (<span class="mono">@atc('TICKET-ID')</span>).</p></div>
+      <div class="step"><div class="num">3</div><h4>Register</h4><p>In <span class="mono">ApiFixture</span> / <span class="mono">UiFixture</span>. Unregistered = unreachable. Steps are NOT registered: they are instantiated directly.</p></div>
+      <div class="step"><div class="num">4</div><h4>Test file</h4><p><span class="mono">tests/e2e/{module}/</span> or <span class="mono">tests/integration/{module}/</span>, with the right fixture.</p></div>
+      <div class="step"><div class="num">5</div><h4>Run + verify</h4><p>The three commands, in order. If anything fails, fix it BEFORE the Review.</p></div>
+    </div>
+    <div class="term mt-m">
+      <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>local validation loop</span></div>
+<pre><span class="p">$</span> <span class="c">bun run test tests/e2e/checkout/processCheckout.test.ts</span>   <span class="cmt"># does it pass? (0 retries)</span>
+<span class="p">$</span> <span class="c">bun run types:check</span>                                       <span class="cmt"># tsc --noEmit, no errors</span>
+<span class="p">$</span> <span class="c">bun run lint:check</span>                                        <span class="cmt"># ESLint, no errors</span>
+<span class="p">$</span> <span class="c">bun allure:agent</span>                                          <span class="cmt"># optional: markdown report per @atc block</span></pre>
+    </div>
+    <div class="callout"><h4>Before the first line: open the TC lifecycle</h4><p>Every TC in the scope leaves <b>Candidate</b>: <span class="mono">start_automation</span> → <b>In Automation</b>. A TC that stays in Candidate while its code is being written tells the team nobody picked it up. Unmapped slug? Fallback in <span class="mono">artifact-lifecycle.md</span> §4: you ask, never skip it silently.</p></div>
+    <p class="small dim2 mt-s">Sequential dispatch: one Code subagent per scope unit (module: 1 per TC · ticket: 1 total). Each one loads <span class="mono">/playwright-best-practices</span> alongside this skill and returns changed files + a summary (the orchestrator never reads diffs). If it also needs to drive a real browser (snapshot, trace, record), add <span class="mono">/playwright-cli</span>, the only browser path, with a named session per <span class="mono">agentic-qa-core/references/browser-sessions.md</span>.</p>
+    <div class="notes">Checkpoint in progress.md after each Code subagent, so a mid-batch resume skips what is already coded. Allure lives as a devDep (version in package.json): bunx allure resolves locally, no global install.</div>
+  </section>
+
+  <!-- 11 · CRAFT · KATA LAYERS -->
+  <section class="slide" data-title="Craft · KATA layers">
+    <p class="kicker">code craft · the architecture: never collapse layers (gotcha 19)</p>
+    <h2 class="h2" data-anim="fade-up">The <span class="grad">KATA</span> layers, bottom to top</h2>
+    <div class="layers anim-stagger-list">
+      <div class="layer"><span class="lx">L1</span><div><h4>TestContext</h4><p>Playwright drivers (page, request), config, environment and DataFactory. No HTTP or UI helpers.</p></div></div>
+      <div class="layer"><span class="lx">L2</span><div><h4>ApiBase / UiBase</h4><p>HTTP helpers (typed tuple returns) and Playwright helpers. Everything generic lives here, once.</p></div></div>
+      <div class="layer"><span class="lx">L3</span><div><h4>Domain components: <span class="mono">UsersApi, LoginPage</span></h4><p><span class="mono">@atc</span> lives here. One component per file: <span class="mono">{Resource}Api.ts</span> / <span class="mono">{Page}Page.ts</span>.</p></div></div>
+      <div class="layer"><span class="lx">L3.5</span><div><h4>Steps: <span class="mono">AuthSteps, CheckoutSteps</span></h4><p>Reusable ATC chains for preconditions. NOT decorated with <span class="mono">@atc</span>.</p></div></div>
+      <div class="layer"><span class="lx">L4</span><div><h4>Fixtures: <span class="mono">TestFixture, ApiFixture, UiFixture</span></h4><p>Dependency injection. Tests ask for the fixture and receive the components. Steps have no fixture: they are imported and instantiated directly.</p></div></div>
+    </div>
+    <div class="callout"><h4>Consumers are not a layer</h4><p><span class="mono">tests/e2e/**</span> and <span class="mono">tests/integration/**</span> orchestrate ATCs into scenarios and validate FLOWS: they <b>consume</b> the Fixtures (L4), they are not a fifth layer. That makes <b>four named layers, plus optional Steps</b>.</p></div>
+    <div class="callout"><h4>Two hard rules</h4><p>A higher layer uses a lower one, <b>never the other way around</b>. Imports ALWAYS through aliases (the ones in <span class="mono">tsconfig.base.json</span>, e.g. <span class="mono">@api/ @ui/</span>); lint rejects relative ones (<span class="mono">../../../</span>).</p></div>
+    <div class="notes">Flattening layers is an automatic rejection in Review (gotcha 19 in SKILL.md). The separation gives HTTP helpers, UI helpers and agnostic utilities one home each.</div>
+  </section>
+
+  <!-- 12 · CRAFT · FIXTURES -->
+  <section class="slide" data-title="Craft · fixtures">
+    <p class="kicker">code craft · fixture selection: structural load</p>
+    <h2 class="h2" data-anim="fade-up">The fixture decides whether a <span class="grad">browser</span> opens</h2>
+    <table class="tt">
+      <thead><tr><th>Test type</th><th>Fixture</th><th>Browser?</th><th>Use it when</th></tr></thead>
+      <tbody>
+        <tr><td><b>API only</b> (integration)</td><td class="mono">{ api }</td><td>No (lazy)</td><td>Pure API: the default for <span class="mono">tests/integration/**</span></td></tr>
+        <tr><td><b>UI only</b></td><td class="mono">{ ui }</td><td>Yes</td><td>UI-centered, no backend setup through the API</td></tr>
+        <tr><td><b>Hybrid</b></td><td class="mono">{ test }</td><td>Yes</td><td>Data setup via API, flow via UI, verification via API</td></tr>
+        <tr><td><b>Precondition chains</b></td><td class="mono">Steps (direct import)</td><td>Depends</td><td>3+ ATCs repeated across 3+ files: instantiate the Steps class, never through a fixture</td></tr>
+      </tbody>
+    </table>
+    <div class="callout warn mt-l"><h4>Golden rule</h4><p>Never ask for <span class="mono">{ ui }</span> in a test that never touches the UI: it opens a browser for nothing. E2E uses <span class="mono">{ ui }</span> if it needs no API setup; if it does, <span class="mono">{ test }</span>.</p></div>
+    <div class="notes">Playwright lazily instantiates only what the test asks for. The wrong fixture means a needlessly slow browser or a missing context.</div>
+  </section>
+
+  <!-- 13 · CRAFT · ATC RULES -->
+  <section class="slide" data-title="Craft · ATC rules">
+    <p class="kicker">code craft · the rules that decide the review</p>
+    <h2 class="h2" data-anim="fade-up"><span class="grad">ATC</span> rules: the most common rejections</h2>
+    <div class="cols c2 mt-m anim-stagger-list">
+      <div class="card"><h4>ATC = a complete test case</h4><p><span class="mono">clickLoginButton()</span> is NOT an ATC; <span class="mono">loginWithValidCredentials(data)</span> IS. If it wraps a single <span class="mono">page.click()</span> in one line, delete it.</p></div>
+      <div class="card"><h4>Identity: precondition + action = 1 TC</h4><p>All the expected results of the same precondition + action are assertions of the SAME TC. Don't split it by panels or endpoints.</p></div>
+      <div class="card"><h4>Same output → one parameterized ATC</h4><p>Three ATCs that return 401 are wrong: use a single parameterized <span class="mono">loginWithInvalidCredentials(payload)</span>.</p></div>
+      <div class="card"><h4>An ATC never calls another ATC</h4><p>Reusable chains → Steps module (<span class="mono">tests/components/steps/</span>), with no <span class="mono">@atc</span>.</p></div>
+      <div class="card"><h4>Inline locators · helpers vs ATCs</h4><p>No <span class="mono">locators/*.ts</span>: the selector lives in the ATC; 2+ uses → a <span class="mono">private readonly</span> arrow. An action that mutates state = ATC; a GET whose response IS the result under test (data, 401, 403, 404) is also an ATC; a GET that only prepares data = helper (<span class="mono">@step</span> optional).</p></div>
+      <div class="card"><h4>Anti-flake discipline</h4><p>Max 2 positional params (3+ → an object). No <span class="mono">waitForTimeout</span>: wait on conditions. <span class="mono">retries: 0</span>: a pass on retry is a bug. Ticket ID in every <span class="mono">test()</span>.</p></div>
+    </div>
+    <div class="notes">Fixed assertions (status, fields, redirect) go INSIDE the ATC; flow assertions go in the test file. Once these six cards are internalized, most code passes review on the first try.</div>
+  </section>
+
+  <!-- 14 · CODE · EXAMPLE -->
+  <section class="slide" data-title="Code · example">
+    <p class="kicker">phase 2 · code: the shape of an API component (L3)</p>
+    <h2 class="h2" data-anim="fade-up">A helper with no decorator, an ATC with <span class="grad">@atc</span></h2>
+    <div class="term mt-m">
+      <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>tests/components/api/OrdersApi.ts</span></div>
+<pre><span class="kw">export class</span> <span class="fn">OrdersApi</span> <span class="kw">extends</span> <span class="fn">ApiBase</span> {
+  <span class="kw">private readonly</span> baseEndpoint = <span class="str">'/api/v1/orders'</span>;
+
+  <span class="fn">@step</span>                                  <span class="cmt">// helper: read-only, no @atc</span>
+  <span class="kw">async</span> <span class="fn">getOrderById</span>(id: <span class="kw">string</span>): Promise&lt;[APIResponse, Order]&gt; {
+    <span class="kw">return this</span>.<span class="fn">apiGET</span>&lt;Order&gt;(<span class="str">`${this.baseEndpoint}/${id}`</span>);
+  }
+
+  <span class="fn">@atc</span>(<span class="str">'UPEX-411'</span>)                        <span class="cmt">// ATC: mutates state, traced to the TMS</span>
+  <span class="kw">async</span> <span class="fn">createOrderSuccessfully</span>(payload: CreateOrderRequest) {
+    <span class="kw">const</span> [response, body, sent] = <span class="kw">await this</span>.<span class="fn">apiPOST</span>(<span class="kw">this</span>.baseEndpoint, payload);
+    <span class="fn">expect</span>(response.<span class="fn">status</span>()).<span class="fn">toBe</span>(<span class="num">201</span>);   <span class="cmt">// FIXED assertion: lives in the ATC</span>
+    <span class="fn">expect</span>(body.id).<span class="fn">toBeDefined</span>();
+    <span class="kw">return</span> [response, body, sent];        <span class="cmt">// 3-tuple: allows chaining</span>
+  }
+}</pre>
+    </div>
+    <p class="small dim mt-m">GET / DELETE return 2-tuples; POST / PUT / PATCH return 3-tuples (compare what was sent vs what was received). Test files: <span class="mono">{verb}{Feature}.test.ts</span>, importing from <span class="mono">@TestFixture</span>, never from <span class="mono">@playwright/test</span>.</p>
+    <div class="notes">Internal order of the file: types, baseEndpoint, constructor, helpers, ATCs. In UI the pattern is the same: inline locators with getByTestId as the first rung, fixed assertions inside the ATC, void return.</div>
+  </section>
+
+  <!-- 15 · PHASE 3 · REVIEW -->
+  <section class="slide" data-title="Review">
+    <p class="kicker">phase 3 · review: the merge gate</p>
+    <h2 class="h2" data-anim="fade-up">Five parallel subagents; <span class="grad">zero</span> blockers to accept</h2>
+    <table class="tt">
+      <thead><tr><th>Verifier (parallel)</th><th>Command</th><th>Must give</th></tr></thead>
+      <tbody>
+        <tr><td><b>Tests</b></td><td class="mono">bun run test {path}</td><td>All green, zero retries used</td></tr>
+        <tr><td><b>Types</b></td><td class="mono">bun run types:check</td><td>No errors</td></tr>
+        <tr><td><b>Lint</b></td><td class="mono">bun run lint:check</td><td>No errors</td></tr>
+        <tr><td><b>Spec reviewer</b></td><td class="mono">diff + spec.md + TCs</td><td>Every planned ATC exists, nothing outside the plan, and no test lies: tautological or unable to fail</td></tr>
+        <tr><td><b>Standards reviewer</b></td><td class="mono">references/review-checklists.md</td><td>Fixture registered · <span class="mono">@atc</span> ↔ real TMS TC · naming · tests tied to structure (<span class="mono">nth-child</span>, class chains). Every failed item is a blocker</td></tr>
+      </tbody>
+    </table>
+    <div class="cols c2 mt-m">
+      <div class="callout bad" style="margin-top:0"><h4>REJECT: error protocol</h4><p>STOP: the failed report is shown to you <b>verbatim</b>. No auto-fix, no re-dispatching Code without your approval. The session is NOT archived: it stays for debugging.</p></div>
+      <div class="callout good" style="margin-top:0"><h4>ACCEPT: clean close</h4><p>Final checkpoint in <span class="mono">progress.md</span> → session archived in <span class="mono">.session/.archive/</span> → <span class="mono">bun run kata:manifest</span> + <span class="mono">git add</span> for the husky gate.</p></div>
+    </div>
+    <div class="callout"><h4>Separate verifier: required before merge</h4><p>The Automation contract demands a separate verifier in a clean context, for any change and not only high-risk ones: <span class="mono">/pr-review-lead</span> (a QA lead review anchored in KATA doctrine) or <span class="mono">/judgment-day</span> (two blind judges in parallel, approving only if both agree). You choose the one that fits the change; skipping it is a DoD failure. It is the only stage with this obligation, in exchange for more autonomy at the entry (from 2 to 3 within the approved plan).</p></div>
+    <div class="notes">The two reviewers run in a clean context and each reads only its own material: the Spec reviewer doesn't see the standards, the Standards reviewer doesn't see the spec, so neither covers for the other. Aggregation is inline: the orchestrator reads the 5 reports without merging or reordering them, and decides. With nobody present, the rejection goes to the conductor or the report, and the change stays unmerged. If a test fails on a REAL product bug: look for an existing bug, annotate test.fail('Blocked by {BUG-KEY}') or create the bug with your confirmation. A red test with no bug key is never an acceptable override.</div>
+  </section>
+
+  <!-- 16 · HANDOFF -->
+  <section class="slide" data-title="Handoff">
+    <p class="kicker">after accept: who does the git, and against which base</p>
+    <h2 class="h2" data-anim="fade-up">The skill stops at a <span class="grad">clean</span> local review</h2>
+    <div class="callout good"><h4>The rule</h4><p>In the Automation stage, <span class="mono">/test-automation</span> ends at a green local review (tests, types, lint) and leaves an explicit handoff; the PR is opened by <span class="mono">/git-flow-master</span>, never by <span class="mono">/test-automation</span> on its own, against the base declared in the <span class="mono">git_strategy:</span> block of <span class="mono">.agents/project.yaml</span>.</p></div>
+    <div class="cols c2 mt-m">
+      <div class="card"><h4>Default: whatever <span class="mono">git_strategy:</span> says</h4><p>The repo ships <span class="mono">solo-main</span> as an inherited default; each project declares its own. <span class="mono">/git-flow-master</span> reads it, cuts the <span class="mono">test/*</span> branch, pushes and opens the PR against that base. It stops when the PR is created: the merge is the person's next explicit step.</p></div>
+      <div class="card"><h4><span class="mono">sdet</span> variant (chained suites)</h4><p>Each ticket cuts <span class="mono">test/{KEY}-{slug}</span> from the <b>integration trunk</b>, passes Sanity CI and opens its PR into the trunk; the trunk reaches <span class="mono">main</span> in a single final PR. The local gate passes on <b>local AND staging</b> before the push, and the Git Ledger is appended to <span class="mono">progress.md</span> after every branch action.</p></div>
+    </div>
+    <div class="term mt-m">
+      <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>handoff · sdet variant</span></div>
+<pre><span class="o">Local gate green. Ready for /git-flow-master: cut test/UPEX-411-checkout</span>
+<span class="o">from the integration trunk, push, Sanity-CI, PR into the trunk, merge --no-ff.</span></pre>
+    </div>
+    <p class="small dim2 mt-s">After that, in the pipeline: <span class="mono">/regression-testing</span> (Regression) runs the suites in CI and issues GO / CAUTION / NO-GO.</p>
+    <div class="notes">The skill announces the handoff and invokes no git operation. Sanity CI on the branch belongs to git-flow-master + regression-testing, never to this skill. Test PRs follow the test/* convention with the title {type}({ISSUE-KEY}): {description}. Never mix product code and test code in the same PR (gotcha 21); under sdet, non-test work goes on a Plus Branch into the trunk. sdet runbook: .agents/skills/git-flow-master/references/sdet-integration-trunk.md.</div>
+  </section>
+
+  <!-- 16a · TC LIFECYCLE -->
+  <section class="slide" data-title="TC lifecycle">
+    <p class="kicker">three transitions this skill owns</p>
+    <h2 class="h2" data-anim="fade-up">The TC moves with the code, and reaches <span class="grad">Automated</span> only on the production branch</h2>
+    <table class="tt">
+      <thead><tr><th>Moment</th><th>Transition</th><th>State after</th></tr></thead>
+      <tbody>
+        <tr><td><b>Phase 2 · Code opens</b></td><td class="mono">start_automation</td><td><b>In Automation</b></td></tr>
+        <tr><td><b>The ticket's PR opens</b> (under <span class="mono">sdet</span>, into the trunk)</td><td class="mono">create_pr</td><td><b>Pull Request</b></td></tr>
+        <tr><td><b>The code reaches the production branch</b> (<span class="mono">git_strategy.branches.production</span>; under <span class="mono">sdet</span>, the suite's final PR) with green CI there</td><td class="mono">merged</td><td><b>Automated</b></td></tr>
+      </tbody>
+    </table>
+    <div class="cols c2 mt-m">
+      <div class="card"><h4>Signal 1 · no separate Test</h4><p>There is no separate "automated" Test: <span class="mono">@atc('&lt;TC_KEY&gt;')</span> is the TC's key, and every run is recorded on the TC itself. No second Test is created or linked.</p></div>
+      <div class="card"><h4>Signal 2 · the labels</h4><p><b>+ automated</b> and <b>− automation-candidate</b> on the <span class="mono">Test</span>: they are mutually exclusive. They change at <span class="mono">merged</span>, when the TC truly reaches Automated, never on a merge into the trunk or the integration branch.</p></div>
+    </div>
+    <div class="callout warn"><h4>Merging into the trunk or the integration branch is NOT Automated</h4><p>Transitions go out through <span class="mono">/test-documentation</span> + <span class="mono">[ISSUE_TRACKER_TOOL]</span>, with each slug resolved against <span class="mono">.agents/jira-workflows.json</span>. Unmapped slug? The <span class="mono">artifact-lifecycle.md</span> §4 fallback: list the live transitions, ask once, fire the live id with your OK. Never skipped silently.</p></div>
+    <div class="notes">Canon: agentic-qa-core/references/artifact-lifecycle.md §1, Test row. Before this skill, test-documentation left the TC in Candidate (approve_to_automate). In a batch fleet, these Jira writes belong to the conductor alone: two sessions transitioning the same TC leave a contradictory history.</div>
+  </section>
+
+  <!-- 16c · BATCH FLEET -->
+  <section class="slide" data-title="Batch fleet">
+    <p class="kicker">at scale · batch fleet, an optional second executor</p>
+    <h2 class="h2" data-anim="fade-up">A batch runs in series; in parallel only if the <span class="grad">modules</span> don't touch</h2>
+    <p class="small dim">By default a batch runs in this session, one Work Package at a time, Plan → Code → Review each. The fleet is offered only if you ask for it or the batch has 3+ Work Packages over <b>disjoint modules</b>; it is never entered silently.</p>
+    <div class="cols c2 mt-m anim-stagger-list">
+      <div class="card"><h4>Work Package = one <span class="mono">test-specs/&lt;ID&gt;/</span></h4><p>Its <span class="mono">spec.md</span> + <span class="mono">automation-plan.md</span> + <span class="mono">atc/*.md</span>. A batch is a list of WPs, never of files or TCs. Without a <span class="mono">spec.md</span>, the WP is not dispatched.</p></div>
+      <div class="card"><h4>Partition by module, not by ticket</h4><p>A worker owns a module's components; WPs from the same module run in series inside it. Never two workers in one module: they share Pages, Apis and fixtures.</p></div>
+      <div class="card"><h4>One worktree per worker</h4><p>This skill writes code, and two sessions in one checkout fight over the git index. The conductor creates the worktree and provisions it (<span class="mono">bun run worktree:provision</span>) before launching the worker.</p></div>
+      <div class="card"><h4>What stays with the conductor</h4><p><span class="mono">api:login</span>, <span class="mono">api:sync</span>, the Jira/TMS writes (transitions, labels, links) and <span class="mono">bun run kata:manifest</span> at each integration: the manifest is regenerated, never merged by hand. It integrates one branch at a time and re-runs the suite on the merged state.</p></div>
+    </div>
+    <div class="callout"><h4>With or without an orchestrator, the same payload</h4><p>The conductor always writes <span class="mono">launch.txt</span>: one self-contained line per worker. With an orchestrator those lines launch themselves; without one, the person pastes them into terminals. The absence of the orchestrator is not reported anywhere. With no live conductor, the batch runs here, WP by WP, in the order the partition would give.</p></div>
+    <div class="notes">Full protocol (partition algorithm, collision table, per-worker brief, integration order, git rules per strategy): .agents/skills/test-automation/references/batch-fleet.md. The transport (launching, supervising, closing workers) lives in orca-orchestration, never in this skill. Conflicts in ApiFixture.ts / UiFixture.ts are resolved additively: both registrations are kept.</div>
+  </section>
+
+  <!-- 16d · CLOSING VERIFIER -->
+  <section class="slide" data-title="Closing verifier">
+    <p class="kicker">light stage verifier · closes the Automation stage</p>
+    <h2 class="h2" data-anim="fade-up">Before saying "done", <span class="grad">eight lines</span> in YES or N/A</h2>
+    <div class="cols c2 mt-m">
+      <div class="card"><h4>The common template</h4><p>Artifacts per KEY · links present · expected states (with the transition fired) · assignee on what was created · parent QA epic + components · fields and comments written · checkpoint in <span class="mono">progress.md</span> · session footer in the chat.</p><p style="margin-top:8px"><b>Light</b> = answered from what the stage already did, plus at most ONE extra read. Each line is YES or an N/A with its reason; a blank line is a failure. Any NO = <b>NEEDS REVISION</b>.</p></div>
+      <div class="term" style="margin:0"><div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>Automation's own lines</span></div>
+<pre><span class="c">[ ] Scope TCs in in_automation or beyond</span>
+<span class="o">    (start_automation fired)</span>
+<span class="c">[ ] Every ATC carries its TC's key; no separate automated Test</span>
+<span class="c">[ ] Labels changed in their own state: +automated</span>
+<span class="o">    -automation-candidate at merged, never</span>
+<span class="o">    at the merge into the trunk</span>
+<span class="c">[ ] No TC in candidate with code already written</span>
+<span class="c">[ ] Unmapped slug went through the §4 fallback</span>
+<span class="o">    (it was asked), never a silent skip</span></pre></div>
+    </div>
+    <p class="small dim2 mt-m">Canon: <span class="mono">agentic-qa-core/references/artifact-lifecycle.md</span> §5. It runs after the Phase 3 ACCEPT and the separate verifier; with a REJECT you never get here.</p>
+    <div class="notes">The verifier is not a re-audit: it doesn't walk the links it just created a second time. Its job is to catch what was silently skipped. An unmapped state the user chose to skip in the §4 fallback is a legitimate N/A; one nobody asked about is a NO.</div>
+  </section>
+
+  <!-- 16e · SESSION FOOTER -->
+  <section class="slide" data-title="Session footer">
+    <p class="kicker">session footer · closing quality gate, chat only</p>
+    <h2 class="h2" data-anim="fade-up">The session doesn't end until it prints <span class="grad">two blocks</span></h2>
+    <div class="cols c2 mt-m">
+      <div class="card"><h4>1 · Screenshots (relative paths)</h4><p>Every capture is announced with its repo-relative path <b>in the same turn it appears</b>, and at the close comes the consolidated list: bug annotations first, only files verified on disk. In this skill there are usually few; if there are none, the block carries no empty headings.</p></div>
+      <div class="card"><h4>2 · Tools and levels footer</h4><p>Skills loaded, MCPs actually called, CLIs invoked, testing levels touched with an explicit <b>"none"</b> for each expected level that wasn't touched, and the <span class="mono">Refinements proposed:</span> line.</p></div>
+    </div>
+    <div class="term mt-m">
+      <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>Authoring framing · example</span></div>
+<pre><span class="c">Testing levels touched:</span>
+<span class="o">- API: new automated coverage in OrdersApi (L3 component) + spec</span>
+<span class="o">- E2E/UI: none (outside this ticket's scope)</span>
+<span class="o">- Unit: none</span>
+<span class="c">Refinements proposed: 0</span></pre>
+    </div>
+    <div class="callout"><h4>This skill's framing: Authoring</h4><p>"Levels touched" means which levels received <b>new</b> automated coverage (Unit, API, E2E/UI) and on which KATA layer the code landed (L2 base, L3 component, Steps, fixture, spec). It never goes in a Jira comment or an ATR. Lessons are <b>proposed</b> in <span class="mono">.session/test-automation/&lt;scope&gt;/refinements.md</span>, never applied to the live skill.</p></div>
+    <div class="notes">Canon: agentic-qa-core/references/session-footer-contract.md. With several subagents, each stage report carries the five fields (skills_loaded, mcps_used, clis_used, testing_levels_touched, screenshots_captured) and the orchestrator compiles the footer ONCE, at the end.</div>
+  </section>
+
+  <!-- 16b · AGENTIC CONTRACT -->
+  <section class="slide" data-title="Agentic contract">
+    <p class="kicker">who decides what: the Automation contract</p>
+    <h2 class="h2" data-anim="fade-up">The agent executes. The evidence proves. <span class="grad">The person decides.</span></h2>
+    <ul class="blist anim-stagger-list">
+      <li><b>The agent does:</b> writes <span class="mono">spec.md</span> + <span class="mono">automation-plan.md</span>, then the KATA code with <span class="mono">@atc</span>, runs the three verifiers and leaves the handoff to <span class="mono">/git-flow-master</span>, which opens the PR against the <span class="mono">git_strategy:</span> base. <span class="mono">/test-automation</span> never runs git on its own.</li>
+      <li><b>The person signs:</b> the plan <b>before a line of code</b>, the merge, and the call on the third review loop.</li>
+      <li><b>The evidence that survives:</b> green tests, clean types, clean lint, <span class="mono">@atc</span> ids that resolve to real tickets, a fresh manifest.</li>
+      <li><b>CSA autonomy 2 → 3</b>, and only inside the approved plan. Only Regression can reach 4, on a clean GO.</li>
+      <li><b>Separate verifier: REQUIRED.</b> <span class="mono">/pr-review-lead</span> or <span class="mono">/judgment-day</span>, in a clean context. Automation is the <b>only</b> stage with this obligation, in exchange for more autonomy at the entry.</li>
+    </ul>
+    <div class="callout mt-m"><h4>Why right here</h4><p>Feedforward and feedback balance each other: more slack at the entry is paid for with a harder check at the exit. The plan approved before the code is the feedforward; the separate verifier before the merge is the feedback.</p></div>
+    <div class="notes">Source: agentic-qa-core/references/stage-gates.md, the agentic contract per stage, CSA scale 0-5. The DoD says what has to be true on the way out; the contract says who was allowed to do it while the stage ran. Both are gates.</div>
+  </section>
+
+  <!-- 17 · CLOSING -->
+  <section class="slide" data-title="Closing">
+    <p class="kicker">closing: how to invoke it and what it leaves behind</p>
+    <h2 class="h2" data-anim="fade-up"><span class="mono grad">/test-automation</span>: plan it, code it in layers, get it green</h2>
+    <div class="cols c3 mt-m anim-stagger-list">
+      <div class="card"><h4>How to invoke it</h4><p><span class="kbd">/test-automation</span> (<span class="mono">automate</span> mode) or <span class="kbd">/test-automation explain</span> in Claude Code; in OpenCode and Codex, in prose: <i>"load the test-automation skill, explain mode"</i>; in Pi, <span class="kbd">/skill:test-automation explain</span>. Also through phrases like <i>"automate ticket"</i>, <i>"create API test"</i>, <i>"break-down-tests"</i>. Always loaded BEFORE writing test code.</p></div>
+      <div class="card"><h4>Main artifacts</h4><p><span class="mono">spec.md</span> + <span class="mono">automation-plan.md</span> + <span class="mono">atc/*.md</span> · components and tests in <span class="mono">tests/**</span> · <span class="mono">kata-manifest.json</span> regenerated · session archived.</p></div>
+      <div class="card"><h4>In the pipeline</h4><p>← <span class="mono">/test-documentation</span> (Documentation, Candidate verdicts) · → <span class="mono">/git-flow-master</span> (branch + PR) · → <span class="mono">/regression-testing</span> (Regression, CI).</p></div>
+    </div>
+    <div class="callout good"><h4>The three rules to take with you</h4><p><b>1</b> · One ATC = one atomic test case, traced with <span class="mono">@atc('TICKET-ID')</span>. <b>2</b> · Plan → Code → Review, always in order and with your approval in the middle. <b>3</b> · Stability is discipline: <span class="mono">retries: 0</span>, no fixed waits, each test with its own data.</p></div>
+    <p class="small dim2 mt-m tc">← → navigate · <b>O</b> overview · <b>S</b> presenter · <b>N</b> notes · <b>F</b> fullscreen</p>
+    <div class="notes">Closing: the skill doesn't replace the methodology. It runs exactly this methodology, faster, with the human approving the plan and reviewing the failures.</div>
+  </section>
+
+  <div class="deck-footer"><span class="mono">/test-automation · Plan → Code → Review · KATA</span><span class="slide-number" data-current="1" data-total="23"></span></div>
+
+</div>
+
+<style id="upex-hint-style">
+#help-hint{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:60;pointer-events:none;
+  font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;color:var(--text-3)}
+@media (max-width:768px){#help-hint{display:none}}
+@media (pointer:coarse){#help-hint{display:none}}
+@media print{#help-hint{display:none!important}}
+</style>
+<script>
+/* ---- runtime.js ---- */
+/* html-ppt :: runtime.js
+ * Keyboard-driven deck runtime. Zero dependencies.
+ *
+ * Features:
+ *   ← → / space / PgUp PgDn / Home End  navigation
+ *   F  fullscreen
+ *   S  presenter mode (opens a NEW WINDOW with current/next slide preview + notes + timer)
+ *       The original window stays as audience view, synced via BroadcastChannel.
+ *       Slide previews use CSS transform:scale() at design resolution for pixel-perfect layout.
+ *   N  quick notes overlay (bottom drawer)
+ *   O  slide overview grid
+ *   T  cycle themes (reads data-themes on <html> or <body>)
+ *   A  cycle demo animation on current slide
+ *   URL hash #/N  deep-link to slide N (1-based)
+ *   Progress bar auto-managed
+ */
+(function () {
+  'use strict';
+
+  const ANIMS = ['fade-up','fade-down','fade-left','fade-right','rise-in','drop-in',
+    'zoom-pop','blur-in','glitch-in','typewriter','neon-glow','shimmer-sweep',
+    'gradient-flow','stagger-list','counter-up','path-draw','parallax-tilt',
+    'card-flip-3d','cube-rotate-3d','page-turn-3d','perspective-zoom',
+    'marquee-scroll','kenburns','confetti-burst','spotlight','morph-shape','ripple-reveal'];
+
+  function ready(fn){ if(document.readyState!='loading')fn(); else document.addEventListener('DOMContentLoaded',fn);}
+
+  /* ========== Parse URL for preview-only mode ==========
+   * When loaded as iframe.src = "index.html?preview=3", runtime enters a
+   * locked single-slide mode: only slide N is visible, no chrome, no keys,
+   * no hash updates. This is how the presenter window shows pixel-perfect
+   * previews — by loading the actual deck file in an iframe and telling it
+   * to display only a specific slide.
+   */
+  function getPreviewIdx() {
+    const m = /[?&]preview=(\d+)/.exec(location.search || '');
+    return m ? parseInt(m[1], 10) - 1 : -1;
+  }
+
+  ready(function () {
+    const deck = document.querySelector('.deck');
+    if (!deck) return;
+    const slides = Array.from(deck.querySelectorAll('.slide'));
+    if (!slides.length) return;
+
+    const previewOnlyIdx = getPreviewIdx();
+    const isPreviewMode = previewOnlyIdx >= 0 && previewOnlyIdx < slides.length;
+
+    /* ===== Preview-only mode: show one slide, hide everything else ===== */
+    if (isPreviewMode) {
+      function showSlide(i) {
+        slides.forEach((s, j) => {
+          const active = (j === i);
+          s.classList.toggle('is-active', active);
+          s.style.display = active ? '' : 'none';
+          if (active) {
+            s.style.opacity = '1';
+            s.style.transform = 'none';
+            s.style.pointerEvents = 'auto';
+          }
+        });
+      }
+      showSlide(previewOnlyIdx);
+      /* Hide chrome that the presenter shouldn't see in preview */
+      const hideSel = '.progress-bar, .notes-overlay, .overview, .notes, aside.notes, .speaker-notes';
+      document.querySelectorAll(hideSel).forEach(el => { el.style.display = 'none'; });
+      document.documentElement.setAttribute('data-preview', '1');
+      document.body.setAttribute('data-preview', '1');
+      /* Auto-detect theme base path for theme switching in preview mode */
+      function getPreviewThemeBase() {
+        const base = document.documentElement.getAttribute('data-theme-base');
+        if (base) return base;
+        const tl = document.getElementById('theme-link');
+        if (tl) {
+          const raw = tl.getAttribute('href') || '';
+          const ls = raw.lastIndexOf('/');
+          if (ls >= 0) return raw.substring(0, ls + 1);
+        }
+        return 'assets/themes/';
+      }
+      const previewThemeBase = getPreviewThemeBase();
+
+      /* Listen for postMessage from parent presenter window:
+       *  - preview-goto: switch visible slide WITHOUT reloading
+       *  - preview-theme: switch theme CSS link to match audience window */
+      window.addEventListener('message', function(e) {
+        if (!e.data) return;
+        if (e.data.type === 'preview-goto') {
+          const n = parseInt(e.data.idx, 10);
+          if (n >= 0 && n < slides.length) showSlide(n);
+        } else if (e.data.type === 'preview-theme' && e.data.name) {
+          let link = document.getElementById('theme-link');
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.id = 'theme-link';
+            document.head.appendChild(link);
+          }
+          link.href = previewThemeBase + e.data.name + '.css';
+          document.documentElement.setAttribute('data-theme', e.data.name);
+        }
+      });
+      /* Signal to parent that preview iframe is ready */
+      try { window.parent && window.parent.postMessage({ type: 'preview-ready' }, '*'); } catch(e) {}
+      return;
+    }
+
+    let idx = 0;
+    const total = slides.length;
+
+    /* ===== BroadcastChannel for presenter sync ===== */
+    const CHANNEL_NAME = 'html-ppt-presenter-' + location.pathname;
+    let bc;
+    try { bc = new BroadcastChannel(CHANNEL_NAME); } catch(e) { bc = null; }
+
+    // Are we running inside the presenter popup? (legacy flag, now unused)
+    const isPresenterWindow = false;
+
+    /* ===== progress bar ===== */
+    let bar = document.querySelector('.progress-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'progress-bar';
+      bar.innerHTML = '<span></span>';
+      document.body.appendChild(bar);
+    }
+    const barFill = bar.querySelector('span');
+
+    /* ===== notes overlay (N key) ===== */
+    let notes = document.querySelector('.notes-overlay');
+    if (!notes) {
+      notes = document.createElement('div');
+      notes.className = 'notes-overlay';
+      document.body.appendChild(notes);
+    }
+
+    /* ===== overview grid (O key) ===== */
+    let overview = document.querySelector('.overview');
+    if (!overview) {
+      overview = document.createElement('div');
+      overview.className = 'overview';
+      slides.forEach((s, i) => {
+        const t = document.createElement('div');
+        t.className = 'thumb';
+        // Force 16:9 aspect ratio robustly
+        t.style.padding = '0 0 56.25% 0';
+        t.style.height = '0';
+        t.style.position = 'relative';
+        t.style.overflow = 'hidden';
+
+        const title = s.getAttribute('data-title') ||
+          (s.querySelector('h1,h2,h3')||{}).textContent || ('Slide '+(i+1));
+        
+        // Create a container for the mini-slide
+        const mini = document.createElement('div');
+        mini.className = 'mini-slide';
+        mini.style.position = 'absolute';
+        mini.style.top = '0';
+        mini.style.left = '0';
+        mini.style.width = '1920px';
+        mini.style.height = '1080px';
+        mini.style.transformOrigin = 'top left';
+        mini.style.pointerEvents = 'none';
+        mini.style.background = 'var(--bg)';
+        
+        // Clone the slide content
+        const clone = s.cloneNode(true);
+        clone.className = 'slide is-active'; // force active styles
+        clone.style.position = 'absolute';
+        clone.style.inset = '0';
+        clone.style.transform = 'none';
+        clone.style.opacity = '1';
+        clone.style.padding = '72px 96px'; // ensure padding is kept
+        
+        mini.appendChild(clone);
+        t.appendChild(mini);
+
+        // Add the number and title overlay
+        const overlay = document.createElement('div');
+        overlay.style.position = 'absolute';
+        overlay.style.inset = '0';
+        overlay.style.background = 'linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, transparent 40%, transparent 60%, rgba(0,0,0,0.8) 100%)';
+        overlay.style.color = '#fff';
+        overlay.style.zIndex = '10';
+        overlay.style.pointerEvents = 'none';
+        
+        const n = document.createElement('div');
+        n.className = 'n';
+        n.textContent = i + 1;
+        n.style.position = 'absolute';
+        n.style.top = '12px';
+        n.style.left = '16px';
+        n.style.fontWeight = '700';
+        n.style.fontSize = '16px';
+        n.style.color = '#fff';
+        n.style.textShadow = '0 1px 4px rgba(0,0,0,0.8)';
+        
+        const text = document.createElement('div');
+        text.className = 't';
+        text.textContent = title.trim().slice(0,80);
+        text.style.position = 'absolute';
+        text.style.bottom = '12px';
+        text.style.left = '16px';
+        text.style.right = '16px';
+        text.style.fontWeight = '600';
+        text.style.fontSize = '14px';
+        text.style.color = '#fff';
+        text.style.textShadow = '0 1px 4px rgba(0,0,0,0.8)';
+        
+        overlay.appendChild(n);
+        overlay.appendChild(text);
+        t.appendChild(overlay);
+
+        t.addEventListener('click', () => { go(i); toggleOverview(false); });
+        overview.appendChild(t);
+      });
+      document.body.appendChild(overview);
+    }
+
+    /* ===== navigation ===== */
+    function go(n, fromRemote){
+      n = Math.max(0, Math.min(total-1, n));
+      slides.forEach((s,i) => {
+        s.classList.toggle('is-active', i===n);
+        s.classList.toggle('is-prev', i<n);
+      });
+      idx = n;
+      barFill.style.width = ((n+1)/total*100)+'%';
+      const numEl = document.querySelector('.slide-number');
+      if (numEl) { numEl.setAttribute('data-current', n+1); numEl.setAttribute('data-total', total); }
+
+      // notes (bottom overlay)
+      const note = slides[n].querySelector('.notes, aside.notes, .speaker-notes');
+      notes.innerHTML = note ? note.innerHTML : '';
+
+      // hash
+      const hashTarget = '#/'+(n+1);
+      if (location.hash !== hashTarget && !isPresenterWindow) {
+        history.replaceState(null,'', hashTarget);
+      }
+
+      // re-trigger entry animations
+      slides[n].querySelectorAll('[data-anim]').forEach(el => {
+        const a = el.getAttribute('data-anim');
+        el.classList.remove('anim-'+a);
+        void el.offsetWidth;
+        el.classList.add('anim-'+a);
+      });
+
+      // counter-up
+      slides[n].querySelectorAll('.counter').forEach(el => {
+        const target = parseFloat(el.getAttribute('data-to')||el.textContent);
+        const dur = parseInt(el.getAttribute('data-dur')||'1200',10);
+        const start = performance.now();
+        const from = 0;
+        function tick(now){
+          const t = Math.min(1,(now-start)/dur);
+          const v = from + (target-from)*(1-Math.pow(1-t,3));
+          el.textContent = (target % 1 === 0) ? Math.round(v) : v.toFixed(1);
+          if (t<1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      });
+
+      // Broadcast to other window (audience ↔ presenter)
+      if (!fromRemote && bc) {
+        bc.postMessage({ type: 'go', idx: n });
+      }
+    }
+
+    /* ===== listen for remote navigation / theme changes ===== */
+    if (bc) {
+      bc.onmessage = function(e) {
+        if (!e.data) return;
+        if (e.data.type === 'go' && typeof e.data.idx === 'number') {
+          go(e.data.idx, true);
+        } else if (e.data.type === 'theme' && e.data.name) {
+          /* Sync theme across windows */
+          const i = themes.indexOf(e.data.name);
+          if (i >= 0) themeIdx = i;
+          applyTheme(e.data.name);
+        }
+      };
+    }
+
+    function toggleNotes(force){ notes.classList.toggle('open', force!==undefined?force:!notes.classList.contains('open')); }
+    function toggleOverview(force){
+      const isOpen = force!==undefined ? force : !overview.classList.contains('open');
+      overview.classList.toggle('open', isOpen);
+      if (isOpen) {
+        requestAnimationFrame(() => {
+          const thumbs = overview.querySelectorAll('.thumb');
+          if (thumbs.length) {
+            const scale = thumbs[0].clientWidth / 1920;
+            overview.querySelectorAll('.mini-slide').forEach(m => {
+              m.style.transform = 'scale(' + scale + ')';
+            });
+          }
+        });
+      }
+    }
+
+    /* ========== PRESENTER MODE — Magnetic-card popup window ========== */
+    /* Opens a new window with 4 draggable, resizable cards:
+     *   CURRENT  — iframe(?preview=N)   pixel-perfect preview of current slide
+     *   NEXT     — iframe(?preview=N+1) pixel-perfect preview of next slide
+     *   SCRIPT   — large speaker notes (script)
+     *   TIMER    — elapsed timer + page counter + controls
+     * Cards remember position/size in localStorage.
+     * Two windows sync via BroadcastChannel.
+     */
+    let presenterWin = null;
+
+    function openPresenterWindow() {
+      if (presenterWin && !presenterWin.closed) {
+        presenterWin.focus();
+        return;
+      }
+
+      // Build absolute URL of THIS deck file (without hash/query)
+      const deckUrl = location.protocol + '//' + location.host + location.pathname;
+
+      // Collect slide titles + notes (HTML strings)
+      const slideMeta = slides.map((s, i) => {
+        const note = s.querySelector('.notes, aside.notes, .speaker-notes');
+        return {
+          title: s.getAttribute('data-title') ||
+            (s.querySelector('h1,h2,h3')||{}).textContent || ('Slide '+(i+1)),
+          notes: note ? note.innerHTML : ''
+        };
+      });
+
+      /* Capture current theme so presenter previews match the audience */
+      const currentTheme = root.getAttribute('data-theme') || (themes[themeIdx] || '');
+      const presenterHTML = buildPresenterHTML(deckUrl, slideMeta, total, idx, CHANNEL_NAME, currentTheme);
+
+      presenterWin = window.open('', 'html-ppt-presenter', 'width=1280,height=820,menubar=no,toolbar=no');
+      if (!presenterWin) {
+        alert('Allow pop-ups to use the presenter view');
+        return;
+      }
+      presenterWin.document.open();
+      presenterWin.document.write(presenterHTML);
+      presenterWin.document.close();
+    }
+
+    function buildPresenterHTML(deckUrl, slideMeta, total, startIdx, channelName, currentTheme) {
+      const metaJSON = JSON.stringify(slideMeta);
+      const deckUrlJSON = JSON.stringify(deckUrl);
+      const channelJSON = JSON.stringify(channelName);
+      const themeJSON = JSON.stringify(currentTheme || '');
+      const storageKey = 'html-ppt-presenter:' + location.pathname;
+
+      // Build the document as a single template string for clarity
+      return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Presenter View</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #1a1d24;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(88,166,255,.04), transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(188,140,255,.04), transparent 50%);
+    color: #e6edf3;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+  }
+  /* Stage: positioned area where cards live */
+  #stage { position: absolute; inset: 0; overflow: hidden; }
+
+  /* Magnetic card */
+  .pcard {
+    position: absolute;
+    background: #0d1117;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.02);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    min-width: 180px; min-height: 100px;
+    transition: box-shadow .2s, border-color .2s;
+  }
+  .pcard.dragging { box-shadow: 0 16px 48px rgba(0,0,0,.6), 0 0 0 2px rgba(88,166,255,.5); border-color: #58a6ff; transition: none; z-index: 9999; }
+  .pcard.resizing { box-shadow: 0 16px 48px rgba(0,0,0,.6), 0 0 0 2px rgba(63,185,80,.5); border-color: #3fb950; transition: none; z-index: 9999; }
+  .pcard:hover { border-color: rgba(88,166,255,.3); }
+
+  /* Card header (drag handle) */
+  .pcard-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,.04);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    cursor: move;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .pcard-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dot-color, #58a6ff); flex-shrink: 0; }
+  .pcard-title {
+    font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    font-weight: 700; color: #8b949e; flex: 1;
+  }
+  .pcard-meta { font-size: 11px; color: #6e7681; }
+
+  /* Card body */
+  .pcard-body { flex: 1; position: relative; overflow: hidden; min-height: 0; }
+
+  /* Preview cards (CURRENT/NEXT) — iframe-based pixel-perfect render */
+  .pcard-preview .pcard-body { background: #000; }
+  .pcard-preview iframe {
+    position: absolute; top: 0; left: 0;
+    width: 1920px; height: 1080px;
+    border: none;
+    transform-origin: top left;
+    pointer-events: none;
+    background: transparent;
+  }
+  .pcard-preview .preview-end {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #484f58; font-size: 14px; letter-spacing: .12em;
+  }
+
+  /* Notes card */
+  .pcard-notes .pcard-body {
+    padding: 14px 18px;
+    overflow-y: auto;
+    font-size: 18px; line-height: 1.75;
+    color: #d0d7de;
+    font-family: "Noto Sans SC", -apple-system, sans-serif;
+  }
+  .pcard-notes .pcard-body p { margin: 0 0 .7em 0; }
+  .pcard-notes .pcard-body strong { color: #f0883e; }
+  .pcard-notes .pcard-body em { color: #58a6ff; font-style: normal; }
+  .pcard-notes .pcard-body code {
+    font-family: "SF Mono", monospace; font-size: .9em;
+    background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px;
+  }
+  .pcard-notes .empty { color: #484f58; font-style: italic; }
+
+  /* Timer card */
+  .pcard-timer .pcard-body {
+    display: flex; flex-direction: column; gap: 14px;
+    padding: 18px 20px; justify-content: center;
+  }
+  .timer-display {
+    font-family: "SF Mono", "JetBrains Mono", monospace;
+    font-size: 42px; font-weight: 700;
+    color: #3fb950;
+    letter-spacing: .04em;
+    line-height: 1;
+  }
+  .timer-row {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 14px; color: #8b949e;
+  }
+  .timer-row .label { font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: #6e7681; }
+  .timer-row .val { color: #e6edf3; font-weight: 600; font-family: "SF Mono", monospace; }
+  .timer-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  .timer-btn {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    color: #e6edf3;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .timer-btn:hover { background: rgba(88,166,255,.15); border-color: #58a6ff; }
+  .timer-btn:active { transform: translateY(1px); }
+
+  /* Resize handle */
+  .pcard-resize {
+    position: absolute; right: 0; bottom: 0;
+    width: 18px; height: 18px;
+    cursor: nwse-resize;
+    background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,.25) 50%, rgba(255,255,255,.25) 60%, transparent 60%, transparent 70%, rgba(255,255,255,.25) 70%, rgba(255,255,255,.25) 80%, transparent 80%);
+    z-index: 5;
+  }
+  .pcard-resize:hover { background: linear-gradient(135deg, transparent 50%, #58a6ff 50%, #58a6ff 60%, transparent 60%, transparent 70%, #58a6ff 70%, #58a6ff 80%, transparent 80%); }
+
+  /* Bottom hint bar */
+  .hint-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,.6);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255,255,255,.08);
+    padding: 6px 16px;
+    font-size: 11px; color: #8b949e;
+    display: flex; gap: 18px; align-items: center;
+    z-index: 1000;
+  }
+  .hint-bar kbd {
+    background: rgba(255,255,255,.08);
+    padding: 1px 6px; border-radius: 3px;
+    font-family: "SF Mono", monospace;
+    font-size: 10px;
+    border: 1px solid rgba(255,255,255,.1);
+    color: #e6edf3;
+  }
+  .hint-bar .reset-layout {
+    margin-left: auto;
+    background: transparent; border: 1px solid rgba(255,255,255,.15);
+    color: #8b949e; padding: 3px 10px; border-radius: 4px;
+    font-size: 11px; cursor: pointer; font-family: inherit;
+  }
+  .hint-bar .reset-layout:hover { background: rgba(248,81,73,.15); border-color: #f85149; color: #f85149; }
+
+  body.is-dragging-card * { user-select: none !important; }
+  body.is-dragging-card iframe { pointer-events: none !important; }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="pcard pcard-preview" id="card-cur" style="--dot-color:#58a6ff">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">CURRENT</span>
+      <span class="pcard-meta" id="cur-meta">—</span>
+    </div>
+    <div class="pcard-body"><iframe id="iframe-cur"></iframe></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-preview" id="card-nxt" style="--dot-color:#bc8cff">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">NEXT</span>
+      <span class="pcard-meta" id="nxt-meta">—</span>
+    </div>
+    <div class="pcard-body"><iframe id="iframe-nxt"></iframe></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-notes" id="card-notes" style="--dot-color:#f0883e">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">SPEAKER SCRIPT</span>
+    </div>
+    <div class="pcard-body" id="notes-body"></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-timer" id="card-timer" style="--dot-color:#3fb950">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">TIMER</span>
+    </div>
+    <div class="pcard-body">
+      <div class="timer-display" id="timer-display">00:00</div>
+      <div class="timer-row">
+        <span class="label">Slide</span>
+        <span class="val" id="timer-count">1 / ${total}</span>
+      </div>
+      <div class="timer-controls">
+        <button class="timer-btn" id="btn-prev">← Prev</button>
+        <button class="timer-btn" id="btn-next">Next →</button>
+        <button class="timer-btn" id="btn-reset">⏱ Reset</button>
+      </div>
+    </div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+</div>
+
+<div class="hint-bar">
+  <span><kbd>← →</kbd> Next or previous slide</span>
+  <span><kbd>R</kbd> Reset timer</span>
+  <span><kbd>Esc</kbd> Close</span>
+  <span style="color:#6e7681">Drag the header to move · Drag the bottom-right corner to resize</span>
+  <button class="reset-layout" id="reset-layout">Reset layout</button>
+</div>
+
+<script>
+(function(){
+  var slideMeta = ${metaJSON};
+  var total = ${total};
+  var idx = ${startIdx};
+  var deckUrl = ${deckUrlJSON};
+  var STORAGE_KEY = ${JSON.stringify(storageKey)};
+  var bc;
+  try { bc = new BroadcastChannel(${channelJSON}); } catch(e) {}
+
+  var iframeCur = document.getElementById('iframe-cur');
+  var iframeNxt = document.getElementById('iframe-nxt');
+  var notesBody = document.getElementById('notes-body');
+  var curMeta = document.getElementById('cur-meta');
+  var nxtMeta = document.getElementById('nxt-meta');
+  var timerDisplay = document.getElementById('timer-display');
+  var timerCount = document.getElementById('timer-count');
+
+  /* ===== Default card layout ===== */
+  function defaultLayout() {
+    var w = window.innerWidth;
+    var h = window.innerHeight - 36; /* leave room for hint bar */
+    return {
+      'card-cur':   { x: 16,        y: 16,            w: Math.round(w*0.55) - 24, h: Math.round(h*0.62) - 16 },
+      'card-nxt':   { x: Math.round(w*0.55) + 8, y: 16, w: w - Math.round(w*0.55) - 24, h: Math.round(h*0.42) - 16 },
+      'card-notes': { x: Math.round(w*0.55) + 8, y: Math.round(h*0.42) + 8, w: w - Math.round(w*0.55) - 24, h: h - Math.round(h*0.42) - 16 },
+      'card-timer': { x: 16,        y: Math.round(h*0.62) + 8, w: Math.round(w*0.55) - 24, h: h - Math.round(h*0.62) - 16 }
+    };
+  }
+
+  /* ===== Apply / save / restore layout ===== */
+  function applyLayout(layout) {
+    Object.keys(layout).forEach(function(id){
+      var el = document.getElementById(id);
+      var l = layout[id];
+      if (el && l) {
+        el.style.left = l.x + 'px';
+        el.style.top = l.y + 'px';
+        el.style.width = l.w + 'px';
+        el.style.height = l.h + 'px';
+      }
+    });
+    rescaleAll();
+  }
+  function readLayout() {
+    try {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return defaultLayout();
+  }
+  function saveLayout() {
+    var layout = {};
+    ['card-cur','card-nxt','card-notes','card-timer'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) {
+        layout[id] = {
+          x: parseInt(el.style.left,10) || 0,
+          y: parseInt(el.style.top,10) || 0,
+          w: parseInt(el.style.width,10) || 300,
+          h: parseInt(el.style.height,10) || 200
+        };
+      }
+    });
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(layout)); } catch(e) {}
+  }
+
+  /* ===== iframe rescale to fit card body ===== */
+  function rescaleIframe(iframe) {
+    if (!iframe || iframe.style.display === 'none') return;
+    var body = iframe.parentElement;
+    var cw = body.clientWidth, ch = body.clientHeight;
+    if (!cw || !ch) return;
+    var s = Math.min(cw / 1920, ch / 1080);
+    iframe.style.transform = 'scale(' + s + ')';
+    /* Center the scaled iframe in the body */
+    var sw = 1920 * s, sh = 1080 * s;
+    iframe.style.left = Math.max(0, (cw - sw) / 2) + 'px';
+    iframe.style.top = Math.max(0, (ch - sh) / 2) + 'px';
+  }
+  function rescaleAll() {
+    rescaleIframe(iframeCur);
+    rescaleIframe(iframeNxt);
+  }
+  window.addEventListener('resize', rescaleAll);
+
+  /* ===== Drag (move card by header) ===== */
+  document.querySelectorAll('[data-drag]').forEach(function(handle){
+    handle.addEventListener('mousedown', function(e){
+      if (e.button !== 0) return;
+      var card = handle.closest('.pcard');
+      if (!card) return;
+      e.preventDefault();
+      card.classList.add('dragging');
+      document.body.classList.add('is-dragging-card');
+      var startX = e.clientX, startY = e.clientY;
+      var startL = parseInt(card.style.left,10) || 0;
+      var startT = parseInt(card.style.top,10)  || 0;
+      function onMove(ev){
+        var nx = Math.max(0, Math.min(window.innerWidth - 100, startL + ev.clientX - startX));
+        var ny = Math.max(0, Math.min(window.innerHeight - 50, startT + ev.clientY - startY));
+        card.style.left = nx + 'px';
+        card.style.top = ny + 'px';
+      }
+      function onUp(){
+        card.classList.remove('dragging');
+        document.body.classList.remove('is-dragging-card');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        saveLayout();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+
+  /* ===== Resize (drag bottom-right corner) ===== */
+  document.querySelectorAll('[data-resize]').forEach(function(handle){
+    handle.addEventListener('mousedown', function(e){
+      if (e.button !== 0) return;
+      var card = handle.closest('.pcard');
+      if (!card) return;
+      e.preventDefault(); e.stopPropagation();
+      card.classList.add('resizing');
+      document.body.classList.add('is-dragging-card');
+      var startX = e.clientX, startY = e.clientY;
+      var startW = parseInt(card.style.width,10)  || card.offsetWidth;
+      var startH = parseInt(card.style.height,10) || card.offsetHeight;
+      function onMove(ev){
+        var nw = Math.max(180, startW + ev.clientX - startX);
+        var nh = Math.max(100, startH + ev.clientY - startY);
+        card.style.width = nw + 'px';
+        card.style.height = nh + 'px';
+        if (card.querySelector('iframe')) rescaleIframe(card.querySelector('iframe'));
+      }
+      function onUp(){
+        card.classList.remove('resizing');
+        document.body.classList.remove('is-dragging-card');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        rescaleAll();
+        saveLayout();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+
+  /* ===== Preview iframe ready tracking =====
+   * Each iframe loads the deck ONCE with ?preview=1 on init. Subsequent
+   * slide changes are sent via postMessage('preview-goto') so the iframe
+   * just toggles visibility of a different .slide — no reload, no flicker.
+   */
+  var iframeReady = { cur: false, nxt: false };
+  var currentTheme = ${themeJSON};
+  window.addEventListener('message', function(e) {
+    if (!e.data || e.data.type !== 'preview-ready') return;
+    var iframe = null;
+    if (e.source === iframeCur.contentWindow) {
+      iframeReady.cur = true;
+      iframe = iframeCur;
+      postPreviewGoto(iframeCur, idx);
+    } else if (e.source === iframeNxt.contentWindow) {
+      iframeReady.nxt = true;
+      iframe = iframeNxt;
+      postPreviewGoto(iframeNxt, idx + 1 < total ? idx + 1 : idx);
+    }
+    /* Sync current theme to the iframe */
+    if (iframe && currentTheme) {
+      try { iframe.contentWindow.postMessage({ type: 'preview-theme', name: currentTheme }, '*'); } catch(err) {}
+    }
+    if (iframe) rescaleIframe(iframe);
+  });
+
+  function postPreviewGoto(iframe, n) {
+    try {
+      iframe.contentWindow.postMessage({ type: 'preview-goto', idx: n }, '*');
+    } catch(e) {}
+  }
+
+  /* ===== Update content =====
+   * Smooth (no-reload) navigation: send postMessage to iframes instead of
+   * resetting src. Iframes stay loaded, just switch visible .slide.
+   */
+  function update(n) {
+    n = Math.max(0, Math.min(total - 1, n));
+    idx = n;
+
+    /* Current preview — postMessage (smooth) */
+    if (iframeReady.cur) postPreviewGoto(iframeCur, n);
+    curMeta.textContent = (n + 1) + '/' + total;
+
+    /* Next preview */
+    if (n + 1 < total) {
+      iframeNxt.style.display = '';
+      var endEl = document.querySelector('#card-nxt .preview-end');
+      if (endEl) endEl.remove();
+      if (iframeReady.nxt) postPreviewGoto(iframeNxt, n + 1);
+      nxtMeta.textContent = (n + 2) + '/' + total;
+    } else {
+      iframeNxt.style.display = 'none';
+      var body = document.querySelector('#card-nxt .pcard-body');
+      if (body && !body.querySelector('.preview-end')) {
+        var end = document.createElement('div');
+        end.className = 'preview-end';
+        end.textContent = '— END OF DECK —';
+        body.appendChild(end);
+      }
+      nxtMeta.textContent = 'END';
+    }
+
+    /* Notes */
+    var note = slideMeta[n].notes;
+    notesBody.innerHTML = note || '<span class="empty">(This slide has no speaker notes yet)</span>';
+
+    /* Timer count */
+    timerCount.textContent = (n + 1) + ' / ' + total;
+  }
+
+  /* ===== Timer ===== */
+  var tStart = Date.now();
+  setInterval(function(){
+    var s = Math.floor((Date.now() - tStart) / 1000);
+    var mm = String(Math.floor(s/60)).padStart(2,'0');
+    var ss = String(s%60).padStart(2,'0');
+    timerDisplay.textContent = mm + ':' + ss;
+  }, 1000);
+  function resetTimer(){ tStart = Date.now(); timerDisplay.textContent = '00:00'; }
+
+  /* ===== BroadcastChannel sync ===== */
+  if (bc) {
+    bc.onmessage = function(e){
+      if (!e.data) return;
+      if (e.data.type === 'go') update(e.data.idx);
+      else if (e.data.type === 'theme' && e.data.name) {
+        currentTheme = e.data.name;
+        /* Forward theme change to preview iframes */
+        [iframeCur, iframeNxt].forEach(function(iframe){
+          try {
+            iframe.contentWindow.postMessage({ type: 'preview-theme', name: e.data.name }, '*');
+          } catch(err) {}
+        });
+      }
+    };
+  }
+  function go(n) {
+    update(n);
+    if (bc) bc.postMessage({ type: 'go', idx: idx });
+  }
+
+  /* ===== Buttons ===== */
+  document.getElementById('btn-prev').addEventListener('click', function(){ go(idx - 1); });
+  document.getElementById('btn-next').addEventListener('click', function(){ go(idx + 1); });
+  document.getElementById('btn-reset').addEventListener('click', resetTimer);
+  document.getElementById('reset-layout').addEventListener('click', function(){
+    if (confirm('Restore the default layout?')) {
+      try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+      applyLayout(defaultLayout());
+    }
+  });
+
+  /* ===== Keyboard ===== */
+  document.addEventListener('keydown', function(e){
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    switch(e.key) {
+      case 'ArrowRight': case ' ': case 'PageDown': go(idx + 1); e.preventDefault(); break;
+      case 'ArrowLeft':  case 'PageUp':   go(idx - 1); e.preventDefault(); break;
+      case 'Home': go(0); break;
+      case 'End':  go(total - 1); break;
+      case 'r': case 'R': resetTimer(); break;
+      case 'Escape': window.close(); break;
+    }
+  });
+
+  /* ===== Iframe load → rescale (catches initial size) ===== */
+  iframeCur.addEventListener('load', function(){ rescaleIframe(iframeCur); });
+  iframeNxt.addEventListener('load', function(){ rescaleIframe(iframeNxt); });
+
+  /* ===== Init =====
+   * Load each iframe ONCE with the deck file. After they post
+   * 'preview-ready', all subsequent navigation is via postMessage
+   * (smooth, no reload, no flicker).
+   */
+  applyLayout(readLayout());
+  iframeCur.src = deckUrl + '?preview=' + (idx + 1);
+  if (idx + 1 < total) iframeNxt.src = deckUrl + '?preview=' + (idx + 2);
+  /* Initialize notes/timer/count without touching iframes */
+  notesBody.innerHTML = slideMeta[idx].notes || '<span class="empty">(This slide has no speaker notes yet)</span>';
+  curMeta.textContent = (idx + 1) + '/' + total;
+  nxtMeta.textContent = (idx + 2) + '/' + total;
+  timerCount.textContent = (idx + 1) + ' / ' + total;
+})();
+</` + `script>
+</body></html>`;
+    }
+
+    function fullscreen(){ const el=document.documentElement;
+      if (!document.fullscreenElement) el.requestFullscreen&&el.requestFullscreen();
+      else document.exitFullscreen&&document.exitFullscreen();
+    }
+
+    // theme cycling
+    const root = document.documentElement;
+    const themesAttr = root.getAttribute('data-themes') || document.body.getAttribute('data-themes');
+    const themes = themesAttr ? themesAttr.split(',').map(s=>s.trim()).filter(Boolean) : [];
+    let themeIdx = 0;
+
+    // Auto-detect theme base path from existing <link id="theme-link">
+    let themeBase = root.getAttribute('data-theme-base');
+    if (!themeBase) {
+      const existingLink = document.getElementById('theme-link');
+      if (existingLink) {
+        // el.getAttribute('href') gives the raw relative path written in HTML
+        const rawHref = existingLink.getAttribute('href') || '';
+        const lastSlash = rawHref.lastIndexOf('/');
+        themeBase = lastSlash >= 0 ? rawHref.substring(0, lastSlash + 1) : 'assets/themes/';
+      } else {
+        themeBase = 'assets/themes/';
+      }
+    }
+
+    function applyTheme(name) {
+      let link = document.getElementById('theme-link');
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.id = 'theme-link';
+        document.head.appendChild(link);
+      }
+      link.href = themeBase + name + '.css';
+      root.setAttribute('data-theme', name);
+      const ind = document.querySelector('.theme-indicator');
+      if (ind) ind.textContent = name;
+    }
+    function cycleTheme(fromRemote){
+      if (!themes.length) return;
+      themeIdx = (themeIdx+1) % themes.length;
+      const name = themes[themeIdx];
+      applyTheme(name);
+      /* Broadcast to other window (audience ↔ presenter) */
+      if (!fromRemote && bc) bc.postMessage({ type: 'theme', name: name });
+    }
+
+    // animation cycling on current slide
+    let animIdx = 0;
+    function cycleAnim(){
+      animIdx = (animIdx+1) % ANIMS.length;
+      const a = ANIMS[animIdx];
+      const target = slides[idx].querySelector('[data-anim-target]') || slides[idx];
+      ANIMS.forEach(x => target.classList.remove('anim-'+x));
+      void target.offsetWidth;
+      target.classList.add('anim-'+a);
+      target.setAttribute('data-anim', a);
+      const ind = document.querySelector('.anim-indicator');
+      if (ind) ind.textContent = a;
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if (e.metaKey||e.ctrlKey||e.altKey) return;
+      switch (e.key) {
+        case 'ArrowRight': case ' ': case 'PageDown': case 'Enter': go(idx+1); e.preventDefault(); break;
+        case 'ArrowLeft': case 'PageUp': case 'Backspace': go(idx-1); e.preventDefault(); break;
+        case 'Home': go(0); break;
+        case 'End': go(total-1); break;
+        case 'f': case 'F': fullscreen(); break;
+        case 's': case 'S': openPresenterWindow(); break;
+        case 'n': case 'N': toggleNotes(); break;
+        case 'o': case 'O': toggleOverview(); break;
+        case 't': case 'T': cycleTheme(); break;
+        case 'a': case 'A': cycleAnim(); break;
+        case 'Escape': toggleOverview(false); toggleNotes(false); break;
+      }
+    });
+
+    // hash deep-link
+    function fromHash(){
+      const m = /^#\/(\d+)/.exec(location.hash||'');
+      if (m) go(Math.max(0, parseInt(m[1],10)-1));
+    }
+    window.addEventListener('hashchange', fromHash);
+    fromHash();
+    go(idx);
+  });
+})();
+
+</script>
+<script>
+/* ---- animations/fx-runtime.js (self-contained variant) ----
+ * Canvas FX lifecycle manager.
+ * - FX modules are INLINED on window.HPX below (no external fetch — the deck
+ *   is a single self-contained file, so the upstream FX_LIST autoloader would
+ *   404 on every module; here `ready` resolves immediately instead).
+ * - Initializes [data-fx] elements when their slide becomes active
+ * - Calls handle.stop() when the slide leaves (MutationObserver on .slide class)
+ */
+(function(){
+  'use strict';
+
+  /* ===== inlined FX modules ===== */
+  window.HPX = window.HPX || {};
+  window.HPX.constellation = function(host){
+    var canvas = document.createElement('canvas');
+    canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%';
+    host.appendChild(canvas);
+    var ctx = canvas.getContext('2d');
+    var raf = 0, running = true;
+    var N = 70, LINK = 130, pts = [];
+    function size(){
+      canvas.width = host.clientWidth || 1280;
+      canvas.height = host.clientHeight || 720;
+    }
+    size();
+    for (var i = 0; i < N; i++){
+      pts.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - .5) * .35,
+        vy: (Math.random() - .5) * .35,
+        r: Math.random() * 1.8 + .6
+      });
+    }
+    function tick(){
+      if (!running) return;
+      if (canvas.width !== (host.clientWidth || canvas.width) ||
+          canvas.height !== (host.clientHeight || canvas.height)) size();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      var i, a, b, p;
+      for (i = 0; i < N; i++){
+        p = pts[i];
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > canvas.width)  p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, 6.2832);
+        ctx.fillStyle = 'rgba(122,162,247,.8)';
+        ctx.fill();
+      }
+      for (a = 0; a < N; a++) for (b = a + 1; b < N; b++){
+        var dx = pts[a].x - pts[b].x, dy = pts[a].y - pts[b].y, d2 = dx*dx + dy*dy;
+        if (d2 < LINK * LINK){
+          ctx.strokeStyle = 'rgba(187,154,247,' + (0.35 * (1 - Math.sqrt(d2) / LINK)).toFixed(3) + ')';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(pts[a].x, pts[a].y);
+          ctx.lineTo(pts[b].x, pts[b].y);
+          ctx.stroke();
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+    return { stop: function(){
+      running = false;
+      cancelAnimationFrame(raf);
+      if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+    } };
+  };
+
+  /* ===== lifecycle (same contract as upstream fx-runtime.js) ===== */
+  const ready = Promise.resolve();
+
+  window.__hpxActive = window.__hpxActive || new Map();
+
+  function initFxIn(root){
+    if (!window.HPX) return;
+    const els = root.querySelectorAll('[data-fx]');
+    els.forEach((el) => {
+      if (window.__hpxActive.has(el)) return;
+      const name = el.getAttribute('data-fx');
+      const fn = window.HPX[name];
+      if (typeof fn !== 'function') return;
+      try {
+        const handle = fn(el, {}) || { stop(){} };
+        window.__hpxActive.set(el, handle);
+      } catch(e){ console.warn('[hpx-fx]', name, e); }
+    });
+  }
+
+  function stopFxIn(root){
+    const els = root.querySelectorAll('[data-fx]');
+    els.forEach((el) => {
+      const h = window.__hpxActive.get(el);
+      if (h && typeof h.stop === 'function'){
+        try{ h.stop(); }catch(e){}
+      }
+      window.__hpxActive.delete(el);
+    });
+  }
+
+  function reinitFxIn(root){
+    stopFxIn(root);
+    initFxIn(root);
+  }
+  window.__hpxReinit = reinitFxIn;
+
+  function boot(){
+    ready.then(() => {
+      const active = document.querySelector('.slide.is-active') || document.querySelector('.slide');
+      if (active) initFxIn(active);
+
+      // Watch all slides for class changes
+      const slides = document.querySelectorAll('.slide');
+      slides.forEach((sl) => {
+        const mo = new MutationObserver((muts) => {
+          for (const m of muts){
+            if (m.attributeName === 'class'){
+              if (sl.classList.contains('is-active')) initFxIn(sl);
+              else stopFxIn(sl);
+            }
+          }
+        });
+        mo.observe(sl, { attributes: true, attributeFilter: ['class'] });
+      });
+    });
+  }
+
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
+
+</script>
+
+<script>
+/* deck :: scale-to-fit: fixed BASE_W x BASE_H layout scaled into any smaller viewport, laptops included (1366x768, 1280x800).
+   Viewports of at least BASE_W x BASE_H are left untouched (native fluid). Preview iframes skipped. */
+(function(){
+  try{
+    if (new URLSearchParams(location.search).has('preview')) return;
+    var BASE_W = 1440, BASE_H = 900;
+    var deck = document.querySelector('.deck');
+    if (!deck) return;
+    function fit(){
+      var vw = window.innerWidth, vh = window.innerHeight;
+      if (vw >= BASE_W && vh >= BASE_H){
+        deck.style.transform = '';
+        deck.style.width = ''; deck.style.height = '';
+        deck.style.position = ''; deck.style.left = ''; deck.style.top = '';
+        document.documentElement.style.overflow = ''; document.body.style.overflow = '';
+        document.documentElement.style.background = '';
+        return;
+      }
+      var scale = Math.min(vw / BASE_W, vh / BASE_H);
+      deck.style.width = BASE_W + 'px';
+      deck.style.height = BASE_H + 'px';
+      deck.style.transformOrigin = 'top left';
+      deck.style.transform = 'scale(' + scale + ')';
+      deck.style.position = 'absolute';
+      deck.style.left = ((vw - BASE_W * scale) / 2) + 'px';
+      deck.style.top = ((vh - BASE_H * scale) / 2) + 'px';
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.background = (function(){var d=getComputedStyle(deck).backgroundColor;if(d&&d!=='rgba(0, 0, 0, 0)'&&d!=='transparent')return d;var b=getComputedStyle(document.body).backgroundColor;return (b&&b!=='rgba(0, 0, 0, 0)'&&b!=='transparent')?b:'#0d1117';})();
+    }
+    fit();
+    window.addEventListener('resize', fit);
+    window.addEventListener('orientationchange', function(){ setTimeout(fit, 60); });
+  }catch(e){ /* never break the deck over a fit error */ }
+})();
+</script>
+
+<!-- ============ MOBILE NAV (UPEX) — swipe → flechas + hint once-only. scale-to-fit vive en el deck fuente ============ -->
+<style id="upex-navhint-style">
+#upex-navhint{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:120;
+  display:flex;align-items:center;gap:.4rem;background:rgba(20,22,34,.94);
+  border:1px solid rgba(255,255,255,.18);border-radius:999px;
+  padding:.5rem .95rem;font:600 13px/1.2 system-ui,-apple-system,sans-serif;color:#c0caf5;
+  box-shadow:0 6px 20px rgba(0,0,0,.45);animation:upexHintIn .35s ease both;cursor:pointer}
+@keyframes upexHintIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%)}}
+#upex-navhint.out{opacity:0;transition:opacity .4s}
+</style>
+<script id="upex-mobile-nav">
+(function(){
+'use strict';
+/* Navegación por swipe: el runtime del deck escucha keydown ArrowLeft/Right. */
+var send=function(key){document.dispatchEvent(new KeyboardEvent('keydown',{key:key,bubbles:true}))};
+var x0=null,y0=null,skip=false;
+document.addEventListener('touchstart',function(e){
+  var t=e.target;
+  skip=!!(t&&t.closest&&t.closest('textarea,input,button,pre,table,a,.quiz'));
+  var p=e.changedTouches[0]; x0=p.clientX; y0=p.clientY;
+},{passive:true});
+document.addEventListener('touchend',function(e){
+  if(x0===null||skip) return;
+  var p=e.changedTouches[0], dx=p.clientX-x0, dy=p.clientY-y0;
+  x0=y0=null;
+  if(Math.abs(dx)>60&&Math.abs(dx)>2*Math.abs(dy)) send(dx<0?'ArrowRight':'ArrowLeft');
+},{passive:true});
+/* Hint de navegación: solo móvil (chrome del deck oculto por scale-to-fit),
+   una sola vez por dominio (localStorage). ?hint=1 lo fuerza para QA. */
+var KEY='upex-deck-navhint-v1';
+var isMobile=matchMedia('(pointer:coarse)').matches&&matchMedia('(max-width:768px)').matches;
+var force=/[?&]hint=1/.test(location.search);
+var seen=false; try{seen=localStorage.getItem(KEY)==='1'}catch(_e){}
+if(force||(isMobile&&!seen)){
+  var h=document.createElement('div'); h.id='upex-navhint';
+  h.textContent='👆 Swipe to advance →';
+  var close=function(){ if(!h.isConnected)return; h.classList.add('out'); setTimeout(function(){h.remove();},400); try{localStorage.setItem(KEY,'1')}catch(_e){} };
+  h.addEventListener('click',close);
+  document.body.appendChild(h);
+  setTimeout(close,5000);
+}
+})();
+</script>
+
+</body>
+</html>
