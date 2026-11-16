@@ -565,6 +565,7 @@ Before step 1 a preflight checks, in seconds, what would make the update fail ha
 | `--dry-run` | Preview without writing. Prints the parity table; the prompt is not saved. With a newer updater upstream, the preview runs the NEW updater from the upstream clone, so it shows what the real run will do |
 | `--strict` | Exit 1 when the run ends with a BLOCKING parity finding (compat contract broken: alias, a command shadowing a skill, hooks, MCP). Default: warn, exit 0. Drift on protected files never blocks |
 | `--no-gates` | Skip the post-sync gates |
+| `--no-skills-update` | Skip the closing `bunx skills update` of the community skills the installer ships (`UPEX_SKIP_SKILLS_UPDATE=1` does the same, also on the first run with an older updater) |
 | `--headless` / `--ui` | Keep the run in the terminal / open the page even where the rules say terminal |
 | `--rollback` | Restore the most recent backup |
 | `--skill a,b` / `--list` | Sync only the named skills / list the skills the template offers |

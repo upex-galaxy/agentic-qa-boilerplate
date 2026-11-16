@@ -142,9 +142,11 @@ export function planSkillsUpdate(
     for (const row of rows) {
       if (seen.has(row.name)) { continue; }
       seen.add(row.name);
-      if (row.status !== 'tracked' || row.source === null) { plan.untracked.push(row.name); }
+      // A development link first: an untracked one must not be told to reinstall,
+      // which would replace the link exactly as an update does.
+      if (devLink(row.path)) { plan.devLinks.push(row.name); }
+      else if (row.status !== 'tracked' || row.source === null) { plan.untracked.push(row.name); }
       else if (normalizeSource(row.source) !== pkg) { plan.otherSource.push(row.name); }
-      else if (devLink(row.path)) { plan.devLinks.push(row.name); }
       else { plan.update.push(row.name); }
     }
   }

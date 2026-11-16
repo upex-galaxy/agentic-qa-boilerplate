@@ -65,6 +65,12 @@ describe('planSkillsUpdate', () => {
     expect(plan.notInstalled).toEqual([]);
   });
 
+  it('reports an untracked development link as a link, never as reinstallable', () => {
+    const plan = planSkillsUpdate('global', [{ package: OURS, skill: 'retro' }], [row('retro', { source: null, status: 'untracked' })], () => true);
+    expect(plan.devLinks).toEqual(['retro']);
+    expect(plan.untracked).toEqual([]);
+  });
+
   it('leaves development links alone', () => {
     const plan = planSkillsUpdate('global', [{ package: OURS, skill: 'mkd' }, { package: OURS, skill: 'retro' }], [row('mkd'), row('retro')], p => p.endsWith('/mkd'));
     expect(plan.devLinks).toEqual(['mkd']);
