@@ -210,7 +210,7 @@ footer code{font-family:var(--mono);font-size:12px;color:var(--t2)}
     <div>
       <strong>§2 always wins on content.</strong> OUTPUT STYLE only decides the render
       (headings, bold anchors, <code>backticks</code>, tables, spacing) and the texture of the sentences
-      (no long dash, varied length, no closing recap). If a rule in there ever changed
+      (no em dash, varied length, no closing recap). If a rule in there ever changed
       <em>what</em> is said, the rule is misplaced and belongs in §2.
     </div>
   </div>
@@ -262,18 +262,18 @@ footer code{font-family:var(--mono);font-size:12px;color:var(--t2)}
 
     <div class="card" style="--ac:var(--violet)">
       <span class="n">03</span>
-      <h4>Butler bullet without the long dash</h4>
+      <h4>Butler bullet without the em dash</h4>
       <p>The canonical format goes from <code>topic — fragment</code> to <code>topic: fragment</code>.
-      The instruction <em>ordered</em> a long dash while the global rule forbade it, so
+      The instruction <em>ordered</em> an em dash while the global rule forbade it, so
       no correction was going to work while the example said otherwise.</p>
       <span class="st done">applied</span>
     </div>
 
     <div class="card" style="--ac:var(--rose)">
       <span class="n">04</span>
-      <h4>Long-dash sweep</h4>
+      <h4>Em dash sweep</h4>
       <p><code>AGENTS.md</code> and <code>docs/ai-personality.md</code> were swept (retired path; the page is <code>docs/core/personalidad.html</code>). The model imitates
-      the typographic density it sees in its own instructions, and it saw many long dashes
+      the typographic density it sees in its own instructions, and it saw many em dashes
       against one line that forbade them. The sweep on this report's date left them at zero;
       the current state comes from a search in the file, not from this page.</p>
       <span class="st done">applied</span>
@@ -417,12 +417,12 @@ const VERDICT = {
   before: {
     cls: 'note bad',
     ic: 'Problem',
-    html: `Four paragraphs almost identical in length, without a single anchor for the eye to rest on. Zero <code>backticks</code>, so <code>TotpApi.ts</code> and <code>/api/auth/verify-2fa</code> read like prose. Long dashes as a structural crutch. A manufactured hook phrase at the start of every reply. Closing with "I hope this is useful to you". <strong>All the information is there, and you still have to read it all to find what blocks the sprint.</strong>`
+    html: `Four paragraphs almost identical in length, without a single anchor for the eye to rest on. Zero <code>backticks</code>, so <code>TotpApi.ts</code> and <code>/api/auth/verify-2fa</code> read like prose. Em dashes as a structural crutch. A manufactured hook phrase at the start of every reply. Closing with "I hope this is useful to you". <strong>All the information is there, and you still have to read it all to find what blocks the sprint.</strong>`
   },
   after: {
     cls: 'note good',
     ic: 'Result',
-    html: `This output was not written by hand: a subagent generated it by loading this branch's <code>AGENTS.md</code> and the global <code>OUTPUT STYLE</code>, both already rewritten. The headline answers and stands on its own. The comparison goes in a table because it is a comparison. Paths, ATCs and HTTP codes in <code>backticks</code>, so they jump out. Sentences of 6 to 30 words, alternating. Zero long dashes, zero closing recap. <strong>The menu lets you pull the thread you care about instead of receiving everything at once.</strong>`
+    html: `This output was not written by hand: a subagent generated it by loading this branch's <code>AGENTS.md</code> and the global <code>OUTPUT STYLE</code>, both already rewritten. The headline answers and stands on its own. The comparison goes in a table because it is a comparison. Paths, ATCs and HTTP codes in <code>backticks</code>, so they jump out. Sentences of 6 to 30 words, alternating. Zero em dashes, zero closing recap. <strong>The menu lets you pull the thread you care about instead of receiving everything at once.</strong>`
   }
 }
 

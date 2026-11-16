@@ -647,8 +647,8 @@ details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
 
 <script>
 /* ================================================================
-   RUNTIME — navegación, quizzes, misiones con persistencia local,
-   comandos copiables. Sin dependencias.
+   RUNTIME: navigation, quizzes, missions with local persistence,
+   copyable commands. No dependencies.
    ================================================================ */
 (function(){
 'use strict';
@@ -887,7 +887,7 @@ fromHash();
 @media (pointer:coarse){
   #help-hint{display:none}
 }
-/* Tip de una sola vez en móvil: los playgrounds se disfrutan mejor en desktop */
+/* One-time tip on mobile: the playgrounds are better enjoyed on desktop */
 #upex-tip{position:fixed;left:50%;transform:translateX(-50%);bottom:44px;z-index:90;
   max-width:min(92vw,420px);display:flex;align-items:flex-start;gap:.6rem;
   background:rgba(36,40,59,.96);border:1px solid rgba(255,255,255,.18);border-radius:12px;
@@ -901,10 +901,10 @@ fromHash();
 <script id="upex-mobile-nav">
 (function(){
 'use strict';
-/* Navega despachando eventos de teclado sintéticos — el runtime del deck ya
-   escucha keydown (ArrowLeft/ArrowRight) y protege textareas/inputs. */
+/* Navigates by dispatching synthetic keyboard events. The deck runtime already
+   listens for keydown (ArrowLeft/ArrowRight) and protects textareas/inputs. */
 var send=function(key){document.dispatchEvent(new KeyboardEvent('keydown',{key:key,bubbles:true}))};
-/* Swipe horizontal — ignora gestos que empiezan en zonas interactivas/scrollables */
+/* Horizontal swipe: ignores gestures that start in interactive/scrollable zones */
 var x0=null,y0=null,skip=false;
 document.addEventListener('touchstart',function(e){
   var t=e.target;
@@ -917,8 +917,8 @@ document.addEventListener('touchend',function(e){
   x0=y0=null;
   if(Math.abs(dx)>60&&Math.abs(dx)>2*Math.abs(dy)) send(dx<0?'ArrowRight':'ArrowLeft');
 },{passive:true});
-/* Tip de una sola vez (compartido entre todos los decks del dominio vía
-   localStorage). ?tip=1 lo fuerza para QA en navegadores sin touch. */
+/* One-time tip (shared across all decks of the domain via
+   localStorage). ?tip=1 forces it for QA in browsers without touch. */
 var KEY='upex-deck-mobile-tip-v1';
 var isMobile=matchMedia('(pointer:coarse)').matches&&matchMedia('(max-width:768px)').matches;
 var force=/[?&]tip=1/.test(location.search);
