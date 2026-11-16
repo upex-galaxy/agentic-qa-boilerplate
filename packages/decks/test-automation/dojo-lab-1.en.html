@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dojo Lab I: First Specs · Playwright against a real app</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* ===================== TOKYO NIGHT TOKENS ===================== */
+:root{
+  --bg:#16161e; --bg-2:#1a1b26; --surface:#24283b; --surface-2:#1f2335;
+  --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.16);
+  --text-1:#c0caf5; --text-2:#9aa5ce; --text-3:#565f89;
+  --blue:#7aa2f7; --purple:#bb9af7; --cyan:#7dcfff; --green:#9ece6a;
+  --red:#f7768e; --orange:#ff9e64; --yellow:#e0af68;
+  --grad:linear-gradient(135deg,#7aa2f7,#bb9af7 55%,#7dcfff);
+  --radius:16px; --radius-sm:10px;
+  --shadow:0 14px 40px rgba(0,0,0,.45);
+  --font-sans:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-mono:'JetBrains Mono',Menlo,monospace;
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);
+  font-family:var(--font-sans);line-height:1.55;-webkit-font-smoothing:antialiased;overflow:hidden}
+code,pre,kbd,textarea{font-family:var(--font-mono)}
+b,strong{color:var(--text-1)}
+::selection{background:rgba(122,162,247,.35)}
+
+/* ===================== SLIDE SYSTEM ===================== */
+.slide{position:fixed;inset:0;display:none;flex-direction:column;justify-content:center;
+  padding:6vh 6.5vw 9vh;background:var(--bg)}
+.slide.is-active{display:flex}
+.slide h1{font-size:clamp(2.4rem,5.6vw,4.6rem);font-weight:900;letter-spacing:-.03em;line-height:1.05;margin:0 0 .4em}
+.slide h2{font-size:clamp(1.6rem,3.2vw,2.5rem);font-weight:800;letter-spacing:-.02em;line-height:1.12;margin:0 0 .5em}
+.slide h3{font-size:clamp(1.05rem,1.7vw,1.35rem);font-weight:700;margin:0 0 .5em}
+.slide p,.slide li{font-size:clamp(.92rem,1.4vw,1.12rem);color:var(--text-2)}
+.kicker{font-size:.78rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--blue);margin-bottom:1rem}
+.grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start}
+.cols-32{display:grid;grid-template-columns:1.25fr 1fr;gap:2rem;align-items:start}
+.notes{display:none}
+
+/* chrome */
+#progress{position:fixed;top:0;left:0;height:3px;background:var(--grad);width:0%;z-index:60;transition:width .3s var(--ease)}
+#counter{position:fixed;bottom:18px;right:24px;font-family:var(--font-mono);font-size:.75rem;color:var(--text-3);z-index:60}
+#act-label{position:fixed;bottom:18px;left:24px;font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--text-3);z-index:60}
+#score-chip{position:fixed;top:16px;right:22px;z-index:60;font-family:var(--font-mono);font-size:.82rem;font-weight:700;
+  background:var(--surface);border:1px solid var(--border-strong);border-radius:999px;padding:.4rem .9rem;color:var(--yellow);
+  box-shadow:var(--shadow);transition:transform .25s var(--ease)}
+#score-chip.bump{transform:scale(1.18)}
+#help-hint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);font-size:.7rem;color:var(--text-3);z-index:60;font-family:var(--font-mono)}
+
+/* notes drawer */
+#notes-drawer{position:fixed;left:0;right:0;bottom:0;max-height:34vh;overflow:auto;background:var(--surface-2);
+  border-top:2px solid var(--blue);padding:1rem 2.2rem 1.4rem;z-index:80;transform:translateY(100%);transition:transform .3s var(--ease)}
+#notes-drawer.open{transform:translateY(0)}
+#notes-drawer .nd-tag{font-size:.7rem;font-weight:800;letter-spacing:.2em;color:var(--blue);text-transform:uppercase;margin-bottom:.4rem}
+#notes-drawer p{margin:.3rem 0;font-size:.95rem;color:var(--text-2)}
+
+/* ===================== ANIMATIONS ===================== */
+@keyframes fadeUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+@keyframes popIn{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:scale(1)}}
+@keyframes slideL{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:none}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+.slide.is-active [data-anim="fade-up"]{animation:fadeUp .7s var(--ease) both}
+.slide.is-active [data-anim="pop"]{animation:popIn .55s var(--ease) both}
+.slide.is-active [data-anim="slide-l"]{animation:slideL .6s var(--ease) both}
+.slide.is-active [data-stagger]>*{animation:fadeUp .55s var(--ease) both}
+.slide.is-active [data-stagger]>*:nth-child(1){animation-delay:.05s}
+.slide.is-active [data-stagger]>*:nth-child(2){animation-delay:.15s}
+.slide.is-active [data-stagger]>*:nth-child(3){animation-delay:.25s}
+.slide.is-active [data-stagger]>*:nth-child(4){animation-delay:.35s}
+.slide.is-active [data-stagger]>*:nth-child(5){animation-delay:.45s}
+.slide.is-active [data-stagger]>*:nth-child(6){animation-delay:.55s}
+.slide.is-active [data-stagger]>*:nth-child(7){animation-delay:.65s}
+.slide.is-active [data-stagger]>*:nth-child(8){animation-delay:.75s}
+
+/* ===================== CODE / TERMINAL ===================== */
+pre.code{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:1rem 1.2rem;font-size:clamp(.8rem,1.25vw,1rem);line-height:1.7;overflow:auto;margin:0;
+  box-shadow:var(--shadow);white-space:pre}
+.tk-k{color:var(--purple)} .tk-s{color:var(--green)} .tk-n{color:var(--orange)}
+.tk-b{color:var(--orange)} .tk-f{color:var(--blue)} .tk-c{color:var(--text-3);font-style:italic}
+.code-window{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.code-window .cw-bar{display:flex;align-items:center;gap:.45rem;padding:.6rem .9rem;background:var(--surface-2);border-bottom:1px solid var(--border)}
+.cw-bar .dot{width:11px;height:11px;border-radius:50%}
+.cw-bar .dot:nth-child(1){background:#f7768e}.cw-bar .dot:nth-child(2){background:#e0af68}.cw-bar .dot:nth-child(3){background:#9ece6a}
+.cw-bar .cw-title{margin-left:.5rem;font-family:var(--font-mono);font-size:.74rem;color:var(--text-3)}
+.code-window pre.code{border:none;border-radius:0;box-shadow:none}
+
+.term{background:#0d0d14;border:1px solid var(--border-strong);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.term .term-bar{background:#1d1e2e;padding:.5rem .9rem;display:flex;gap:.45rem;align-items:center}
+.term .term-bar .dot{width:10px;height:10px;border-radius:50%}
+.term pre{margin:0;padding:.9rem 1.2rem;font-size:clamp(.78rem,1.25vw,.98rem);line-height:1.8;color:var(--text-2);white-space:pre;overflow:auto}
+.t-green{color:var(--green)} .t-red{color:var(--red)} .t-dim{color:var(--text-3)} .t-cyan{color:var(--cyan)} .t-yellow{color:var(--yellow)}
+
+/* clickable command → copy */
+.cmd{display:flex;align-items:center;gap:.7rem;background:#0d0d14;border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm);padding:.6rem 1rem;margin:.45rem 0;cursor:pointer;transition:border-color .2s,transform .15s}
+.cmd:hover{border-color:var(--cyan);transform:translateX(3px)}
+.cmd .ps{color:var(--cyan);font-family:var(--font-mono);font-size:.85rem;flex:0 0 auto}
+.cmd .ct{color:var(--text-1);font-family:var(--font-mono);font-size:clamp(.78rem,1.25vw,.95rem);overflow-x:auto;white-space:nowrap}
+.cmd .copy{margin-left:auto;font-family:var(--font-mono);font-size:.68rem;color:var(--text-3);flex:0 0 auto}
+.cmd.copied{border-color:var(--green)}
+.cmd.copied .copy{color:var(--green)}
+
+/* cards */
+.cards{display:grid;gap:1rem}
+.cards.c3{grid-template-columns:repeat(3,1fr)}
+.cards.c2{grid-template-columns:repeat(2,1fr)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem 1.3rem;box-shadow:var(--shadow)}
+.card .ico{font-size:1.8rem;margin-bottom:.45rem}
+.card h3{margin-bottom:.3rem}
+.card p{font-size:.92rem;margin:.2rem 0}
+.card.hl{border-color:var(--blue);background:linear-gradient(160deg,rgba(122,162,247,.12),rgba(187,154,247,.08))}
+.pill{display:inline-block;font-family:var(--font-mono);font-size:.78rem;padding:.2rem .65rem;border-radius:999px;
+  background:var(--surface-2);border:1px solid var(--border-strong);color:var(--cyan);margin:.15rem .2rem}
+
+/* compare table */
+table.cmp{width:100%;border-collapse:collapse;font-size:clamp(.85rem,1.3vw,1.05rem)}
+table.cmp th{text-align:left;padding:.65rem .9rem;font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);border-bottom:2px solid var(--border-strong)}
+table.cmp td{padding:.6rem .9rem;border-bottom:1px solid var(--border);color:var(--text-2)}
+table.cmp td:first-child{color:var(--text-1)}
+table.cmp td code{color:var(--cyan);font-size:.9em}
+
+/* callout */
+.callout{display:flex;gap:.9rem;align-items:flex-start;background:rgba(158,206,106,.1);border:1px solid rgba(158,206,106,.35);
+  border-radius:var(--radius-sm);padding:.85rem 1.1rem;margin-top:1.2rem}
+.callout.warn{background:rgba(247,118,142,.1);border-color:rgba(247,118,142,.4)}
+.callout.info{background:rgba(122,162,247,.1);border-color:rgba(122,162,247,.4)}
+.callout .co-ico{font-size:1.35rem;line-height:1.3}
+.callout p{margin:0;font-size:clamp(.88rem,1.3vw,1.05rem)}
+
+/* ===================== MISSION ===================== */
+.mission{background:var(--surface);border:1.5px solid var(--border-strong);border-radius:var(--radius);
+  padding:1.2rem 1.5rem 1.3rem;box-shadow:var(--shadow);width:100%;transition:border-color .3s}
+.mission.done{border-color:var(--green)}
+.m-head{display:flex;align-items:center;gap:1rem;margin-bottom:.7rem;flex-wrap:wrap}
+.m-badge{font-family:var(--font-mono);font-size:.74rem;font-weight:700;letter-spacing:.16em;
+  background:rgba(255,158,100,.14);border:1px solid rgba(255,158,100,.5);color:var(--orange);
+  border-radius:999px;padding:.3rem .9rem;flex:0 0 auto}
+.mission.done .m-badge{background:rgba(158,206,106,.14);border-color:var(--green);color:var(--green)}
+.m-head h3{margin:0;flex:1 1 auto;font-size:clamp(1.1rem,1.9vw,1.5rem)}
+.m-check{display:flex;align-items:center;gap:.5rem;cursor:pointer;font-family:var(--font-mono);font-size:.8rem;
+  color:var(--text-3);background:var(--surface-2);border:1px solid var(--border-strong);border-radius:999px;
+  padding:.4rem 1rem;flex:0 0 auto;user-select:none;transition:all .2s}
+.m-check:hover{border-color:var(--green);color:var(--green)}
+.m-check input{accent-color:#9ece6a;width:1rem;height:1rem;cursor:pointer}
+.mission.done .m-check{border-color:var(--green);color:var(--green);background:rgba(158,206,106,.1)}
+.m-obj{font-size:clamp(.92rem,1.4vw,1.1rem);color:var(--text-2);margin:.3rem 0 .8rem}
+.m-obj b{color:var(--text-1)}
+.m-crit{display:flex;gap:.7rem;align-items:flex-start;background:rgba(158,206,106,.08);border:1px dashed rgba(158,206,106,.45);
+  border-radius:var(--radius-sm);padding:.7rem 1rem;margin-top:.9rem;font-size:clamp(.85rem,1.3vw,1.02rem);color:var(--text-2)}
+.m-crit b{color:var(--green)}
+details.m-hint{margin-top:.8rem;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
+details.m-hint summary{cursor:pointer;padding:.6rem 1rem;font-size:.88rem;font-weight:600;color:var(--cyan);user-select:none;list-style:none}
+details.m-hint summary::before{content:'💡 '}
+details.m-hint[open] summary{border-bottom:1px solid var(--border)}
+details.m-hint .hint-body{padding:.7rem 1rem .9rem;font-size:.88rem;color:var(--text-2)}
+details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
+
+/* repo tree */
+.tree{font-family:var(--font-mono);font-size:clamp(.85rem,1.4vw,1.1rem);line-height:1.95}
+.tree .tr-c{color:var(--text-3);font-size:.8em;margin-left:1rem}
+.tree .tr-dir{color:var(--blue);font-weight:700} .tree .tr-file{color:var(--text-1)} .tree .tr-star{color:var(--yellow)}
+
+/* before/after */
+.ba{display:grid;grid-template-columns:1fr 1fr;gap:1.3rem;align-items:start}
+.ba .ba-tag{display:inline-block;font-size:.72rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+  border-radius:999px;padding:.25rem .8rem;margin-bottom:.6rem}
+.ba .bad-tag{background:rgba(247,118,142,.14);border:1px solid rgba(247,118,142,.45);color:var(--red)}
+.ba .good-tag{background:rgba(158,206,106,.14);border:1px solid rgba(158,206,106,.45);color:var(--green)}
+
+/* ===================== QUIZ ===================== */
+.quiz{max-width:880px;width:100%;margin:0 auto}
+.quiz-tag{display:inline-block;font-family:var(--font-mono);font-size:.75rem;font-weight:700;letter-spacing:.2em;
+  color:var(--yellow);background:rgba(224,175,104,.12);border:1px solid rgba(224,175,104,.4);
+  border-radius:999px;padding:.3rem .9rem;margin-bottom:1.1rem}
+.quiz-q{font-size:clamp(1.25rem,2.3vw,1.85rem);font-weight:800;margin:0 0 1.3rem;line-height:1.25}
+.quiz-opts{display:grid;gap:.8rem}
+.quiz .opt{display:flex;align-items:center;gap:1rem;text-align:left;width:100%;cursor:pointer;
+  background:var(--surface);border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);
+  padding:.95rem 1.2rem;color:var(--text-1);font-family:var(--font-sans);font-size:clamp(.92rem,1.45vw,1.12rem);
+  transition:border-color .2s,background .2s,transform .15s}
+.quiz .opt:hover{border-color:var(--blue);transform:translateX(4px)}
+.quiz .opt .key{flex:0 0 auto;font-family:var(--font-mono);font-weight:700;font-size:.8rem;width:1.8rem;height:1.8rem;
+  display:grid;place-items:center;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text-3)}
+.quiz .opt code{color:var(--cyan)}
+.quiz .opt.correct{border-color:var(--green);background:rgba(158,206,106,.14)}
+.quiz .opt.correct .key{background:var(--green);color:#16161e;border-color:var(--green)}
+.quiz .opt.wrong{border-color:var(--red);background:rgba(247,118,142,.12);animation:shake .4s}
+.quiz.locked .opt{pointer-events:none;opacity:.8}
+.quiz.locked .opt.correct{opacity:1}
+.quiz-expl{display:none;margin-top:1.2rem;background:rgba(125,207,255,.08);border:1px solid rgba(125,207,255,.3);
+  border-radius:var(--radius-sm);padding:.9rem 1.2rem;color:var(--text-2);font-size:clamp(.88rem,1.35vw,1.05rem)}
+.quiz-expl.show{display:block;animation:fadeUp .4s var(--ease)}
+
+/* cover + final */
+#fx-cover{position:absolute;inset:0;z-index:0}
+.cover-inner{position:relative;z-index:2;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1.1rem}
+.cover-chips{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center}
+.final-list{display:grid;gap:.5rem;max-width:640px;margin:1rem auto 0;text-align:left}
+.final-list .fl-item{display:flex;align-items:center;gap:.8rem;background:var(--surface);border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm);padding:.55rem 1rem;font-family:var(--font-mono);font-size:.85rem;color:var(--text-3)}
+.final-list .fl-item.ok{border-color:var(--green);color:var(--green)}
+#confetti-canvas{position:fixed;inset:0;z-index:200;pointer-events:none}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div id="score-chip">🎯 0/7 · ⭐ 0/2</div>
+<div id="counter">1 / 17</div>
+<div id="act-label"></div>
+<div id="help-hint">← → navigate · N presenter notes · F fullscreen · click on commands = copy</div>
+<canvas id="confetti-canvas"></canvas>
+<div id="notes-drawer"><div class="nd-tag">🎙 Presenter notes</div><div id="nd-content"></div></div>
+
+<!-- ================================================================ -->
+<!-- ACTO 0 · BRIEFING -->
+<!-- ================================================================ -->
+
+<!-- 1 · Portada -->
+<section class="slide" data-act="Act 0 · Briefing" style="align-items:center">
+  <canvas id="fx-cover"></canvas>
+  <div class="cover-inner">
+    <div class="kicker" data-anim="fade-up">Hands-on lab · QA Engineering</div>
+    <h1 data-anim="fade-up" style="animation-delay:.1s">Dojo <span class="grad-text">Lab I</span> 🥷</h1>
+    <p data-anim="fade-up" style="animation-delay:.2s;max-width:660px;font-size:clamp(1.05rem,1.8vw,1.35rem)">
+      No simulators here. Here your code drives a <b>real browser</b> against a <b>real app</b>.<br>From zero to 5 green tests on your machine.</p>
+    <div class="cover-chips" data-anim="fade-up" style="animation-delay:.32s">
+      <span class="pill">7 missions 🎯</span><span class="pill">codegen</span><span class="pill">UI mode</span><span class="pill">trace viewer</span><span class="pill">dojo.upexgalaxy.com</span>
+    </div>
+  </div>
+  <div class="notes"><p>Session 5 of the series, LAB format: they work, you guide. Prerequisites: Coding Base + Coding Classes watched, a laptop with install permissions, internet. Suggested pace: missions 1-2 all together (setup is where they get stuck most), 3-5 guided, 6-7 semi-free with support. Realistic length: 2-3 hours with breaks.</p></div>
+</section>
+
+<!-- 2 · How the lab works -->
+<section class="slide" data-act="Act 0 · Briefing">
+  <div class="kicker">Rules of the game</div>
+  <h2 data-anim="fade-up">How a <span class="grad-text">mission lab</span> works</h2>
+  <div class="cards c3" data-stagger>
+    <div class="card"><div class="ico">🎯</div><h3>7 missions</h3><p>Each one has a goal, copyable commands (click = copy 📋) and a <b>verifiable success criterion</b>, so you will know exactly when you nailed it.</p></div>
+    <div class="card"><div class="ico">✅</div><h3>Track your progress</h3><p>A checkbox on every mission. It is saved in your browser: close the page and come back whenever you want, your progress stays.</p></div>
+    <div class="card"><div class="ico">💡</div><h3>Collapsible hints</h3><p>Get stuck first, ask for a hint later. Being stuck is part of the training: at a real job there is no slide with the answer.</p></div>
+    <div class="card"><div class="ico">⌨️</div><h3>Laptop open</h3><p>This is NOT for watching. Every mission is done in YOUR terminal and YOUR editor, in parallel.</p></div>
+    <div class="card"><div class="ico">🐢</div><h3>Your own pace</h3><p>Nobody gets left behind: the file is yours forever. Whatever you do not finish in the session, you finish at home.</p></div>
+    <div class="card hl"><div class="ico">📚</div><h3>Prerequisites</h3><p>Coding Base ✓ and Coding Classes ✓ (or knowing: variables, functions, async/await, classes). Without that, start with those decks.</p></div>
+  </div>
+  <div class="notes"><p>Set the lab contract: active work, hints only after trying, the success criterion as the judge (not your opinion). The persistent checkbox lowers the anxiety of the slower ones. Ask everyone to open a terminal NOW: the mental shift from "watching slides" to "working" happens at this moment.</p></div>
+</section>
+
+<!-- 3 · Conoce tu dojo -->
+<section class="slide" data-act="Act 0 · Briefing">
+  <div class="kicker">The training ground</div>
+  <h2 data-anim="fade-up">Meet your <span class="grad-text">dojo</span> 🏯</h2>
+  <div class="cols">
+    <div data-stagger>
+      <div class="card hl"><h3>🌐 dojo.upexgalaxy.com</h3><p>A real app built ON PURPOSE for QA automation practice. Break whatever you want, that is what it is for.</p>
+        <p style="margin-top:.5rem"><span class="pill">Login / Sign up</span><span class="pill">UI components page</span><span class="pill">Kanban dashboard</span><span class="pill">API + docs</span></p></div>
+      <div class="card" style="margin-top:.9rem"><h3>🔑 Demo credentials</h3>
+        <p style="font-family:var(--font-mono);font-size:.9rem">email: <b>testuser@upex.dev</b><br>password: <b>Test123!</b></p>
+        <p style="margin-top:.4rem">You can also register your own user. That will be one of your tests.</p></div>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.25s">
+      <div class="callout warn"><span class="co-ico">🧭</span><p><b>Golden rule of the lab:</b> the code samples in these slides show the right SHAPE. The exact selectors for each element are for YOU to discover with codegen and the inspector. That is how real work goes: nobody hands you the selectors.</p></div>
+      <div class="card" style="margin-top:.9rem"><h3>🗺️ Your flight plan</h3>
+        <p style="font-family:var(--font-mono);font-size:.85rem;line-height:2">
+        M1-M2 → kit + project<br>
+        M3-M4 → record and run your first test<br>
+        M5 → break it and diagnose<br>
+        M6 → 4 specs by hand<br>
+        M7 → 🏆 full green suite</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Walk through the dojo live for 2 minutes: log in with the demo credentials, show the dashboard and the components page. The golden rule is the anti-frustration insurance: if a selector in the slides does not match the app exactly, THAT is expected, because discovering them is the skill this lab trains. Check before class that the dojo is up.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 1 · SETUP -->
+<!-- ================================================================ -->
+
+<!-- 4 · M1 -->
+<section class="slide" data-act="Act 1 · Setup">
+  <div class="mission" data-mission="m1" data-anim="fade-up">
+    <div class="m-head"><span class="m-badge">MISSION 1</span><h3>Install the toolkit</h3>
+      <label class="m-check"><input type="checkbox"> Completed</label></div>
+    <div class="m-obj">🎯 Have <b>Node.js</b> (the engine that runs JavaScript outside the browser) and <b>VS Code</b> (your editor) working.</div>
+    <div class="cols" style="gap:1.2rem">
+      <div>
+        <p style="font-size:.9rem;margin:.2rem 0 .4rem"><b>1.</b> Download and install (LTS / stable version):</p>
+        <p style="font-size:.9rem;margin:.2rem 0"><span class="pill">nodejs.org</span> → Node.js LTS &nbsp;·&nbsp; <span class="pill">code.visualstudio.com</span> → VS Code</p>
+        <p style="font-size:.9rem;margin:.8rem 0 .3rem"><b>2.</b> Open a terminal and check:</p>
+        <div class="cmd"><span class="ps">$</span><span class="ct">node --version</span><span class="copy">📋 click = copy</span></div>
+        <div class="cmd"><span class="ps">$</span><span class="ct">npm --version</span><span class="copy">📋</span></div>
+      </div>
+      <div>
+        <div class="term"><div class="term-bar"><span class="dot" style="background:#f7768e"></span><span class="dot" style="background:#e0af68"></span><span class="dot" style="background:#9ece6a"></span></div>
+        <pre><span class="t-cyan">$</span> node --version
+<span class="t-green">v22.16.0</span>   <span class="t-dim">← any current LTS works</span>
+<span class="t-cyan">$</span> npm --version
+<span class="t-green">10.9.2</span></pre></div>
+        <details class="m-hint"><summary>Hint: "command not found"</summary><div class="hint-body"><p>Close and reopen the terminal after installing (the old terminal does not know about new programs). On Windows: use the VS Code terminal or PowerShell, not the old CMD.</p></div></details>
+      </div>
+    </div>
+    <div class="m-crit">✅ <span><b>Success criterion:</b> both commands answer with a version number (Node on a current LTS: the minimum is set by Playwright, see playwright.dev).</span></div>
+  </div>
+  <div class="notes"><p>The most boring mission and the most treacherous: admin permissions, corporate antivirus, a terminal that was not refreshed. Do not move on until EVERYONE has both versions on screen. Explain what Node is in one sentence: "the engine that runs JavaScript outside the browser, and Playwright runs on top of it". npm comes bundled with Node.</p></div>
+</section>
+
+<!-- 5 · M2 -->
+<section class="slide" data-act="Act 1 · Setup">
+  <div class="mission" data-mission="m2" data-anim="fade-up">
+    <div class="m-head"><span class="m-badge">MISSION 2</span><h3>Create your Playwright project</h3>
+      <label class="m-check"><input type="checkbox"> Completed</label></div>
+    <div class="m-obj">🎯 Generate the full project with the official installer and see the example tests <b>pass green</b>.</div>
+    <div class="cols" style="gap:1.2rem">
+      <div>
+        <div class="cmd"><span class="ps">$</span><span class="ct">npm init playwright@latest my-dojo-lab</span><span class="copy">📋</span></div>
+        <p style="font-size:.88rem;margin:.6rem 0 .3rem">The wizard asks questions, answer like this:</p>
+        <table class="cmp" style="font-size:.85rem">
+          <tr><td>TypeScript or JavaScript?</td><td><b>TypeScript</b> ✓</td></tr>
+          <tr><td>Tests folder?</td><td><b>tests</b> (default)</td></tr>
+          <tr><td>GitHub Actions workflow?</td><td><b>false</b> (not in this lab)</td></tr>
+          <tr><td>Install browsers?</td><td><b>true</b> ✓ (takes a few minutes)</td></tr>
+        </table>
+      </div>
+      <div>
+        <p style="font-size:.88rem;margin:.2rem 0 .3rem">Go into the project and run the example tests:</p>
+        <div class="cmd"><span class="ps">$</span><span class="ct">cd my-dojo-lab</span><span class="copy">📋</span></div>
+        <div class="cmd"><span class="ps">$</span><span class="ct">npx playwright test</span><span class="copy">📋</span></div>
+        <div class="term" style="margin-top:.6rem"><div class="term-bar"><span class="dot" style="background:#f7768e"></span><span class="dot" style="background:#e0af68"></span><span class="dot" style="background:#9ece6a"></span></div>
+        <pre>Running 6 tests using 4 workers
+
+  <span class="t-green">6 passed</span> <span class="t-dim">(8.3s)</span></pre></div>
+        <details class="m-hint"><summary>Hint: what just happened?</summary><div class="hint-body"><p>You ran the example tests (included in the project) against playwright.dev in 3 browsers, WITHOUT opening any window. Playwright runs headless (invisible) by default, which is why it is so fast.</p></div></details>
+      </div>
+    </div>
+    <div class="m-crit">✅ <span><b>Success criterion:</b> <code style="color:var(--cyan)">npx playwright test</code> ends green (all the example tests <b style="color:var(--green)">passed</b>).</span></div>
+  </div>
+  <div class="notes"><p>npm init playwright = the official installer: it downloads Playwright + browsers (its own Chromium/Firefox/WebKit, it does not use your Chrome). The browser download takes a while: launch the command and use the time to explain while it installs. The "6 passed" with no visible windows surprises people, so anticipate the headless explanation in the hint.</p></div>
+</section>
+
+<!-- 6 · Tour del proyecto -->
+<section class="slide" data-act="Act 1 · Setup">
+  <div class="kicker">Scouting the terrain</div>
+  <h2 data-anim="fade-up">Project tour: <span class="grad-text">you already know all this</span></h2>
+  <div class="cols">
+    <div class="tree" data-stagger>
+      <div><span class="tr-dir">my-dojo-lab/</span></div>
+      <div>├─ <span class="tr-file">package.json</span> <span class="tr-c">← the "ID card" (Coding Base, slide «Final zoom»)</span></div>
+      <div>├─ <span class="tr-file">playwright.config.ts</span> <span class="tr-c">← browsers, baseURL, timeouts</span></div>
+      <div>├─ <span class="tr-dir">node_modules/</span> <span class="tr-c">← installed tools (do not touch)</span></div>
+      <div>├─ <span class="tr-dir">tests/</span></div>
+      <div>│&nbsp;&nbsp;└─ <span class="tr-star">example.spec.ts</span> <span class="tr-c">← ⭐ open it in VS Code NOW</span></div>
+      <div>└─ <span class="tr-dir">tests-examples/</span> <span class="tr-c">← bigger demo (read-only)</span></div>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.25s">
+      <div class="code-window">
+        <div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/example.spec.ts</span></div>
+        <pre class="code" style="font-size:.82rem">
+<span class="tk-k">import</span> { test, expect } <span class="tk-k">from</span> <span class="tk-s">"@playwright/test"</span>;
+
+<span class="tk-f">test</span>(<span class="tk-s">"has title"</span>, <span class="tk-k">async</span> ({ page }) => {
+  <span class="tk-k">await</span> page.<span class="tk-f">goto</span>(<span class="tk-s">"https://playwright.dev/"</span>);
+  <span class="tk-k">await</span> <span class="tk-f">expect</span>(page).<span class="tk-f">toHaveTitle</span>(<span class="tk-c">/Playwright/</span>);
+});</pre>
+      </div>
+      <p style="margin-top:.8rem;font-size:.95rem">Inventory of what you recognize: <code class="pill">import</code> ✓ <code class="pill">test()</code> ✓ <code class="pill">async ({ page })</code> ✓ <code class="pill">await</code> ✓ <code class="pill">expect</code> ✓: <b>zero surprises</b>. The two previous sessions were for exactly this moment.</p>
+    </div>
+  </div>
+  <div class="notes"><p>Harvest moment: the tree is the one from the «Final zoom» slide of Coding Base, and the spec reads completely with what they have learned. Ask someone to READ example.spec.ts out loud, explaining each line: public proof that the basics are in. Mention playwright.config.ts without going deep: "that is where the 3 browsers of the 6 passed live; we go deeper in Playwright Pro".</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACTO 2 · PRIMER TEST REAL -->
+<!-- ================================================================ -->
+
+<!-- 7 · M3 codegen -->
+<section class="slide" data-act="Act 2 · First real test">
+  <div class="mission" data-mission="m3" data-anim="fade-up">
+    <div class="m-head"><span class="m-badge">MISSION 3</span><h3>Record your first test with codegen</h3>
+      <label class="m-check"><input type="checkbox"> Completed</label></div>
+    <div class="m-obj">🎯 Use the <b>official recorder</b>: you click around the dojo, Playwright writes the code for you.</div>
+    <div class="cols" style="gap:1.2rem">
+      <div>
+        <div class="cmd"><span class="ps">$</span><span class="ct">npx playwright codegen https://dojo.upexgalaxy.com</span><span class="copy">📋</span></div>
+        <p style="font-size:.9rem;margin:.7rem 0 .3rem">TWO windows open: the browser and the inspector (where the code shows up live). Now, in the browser:</p>
+        <p style="font-size:.9rem;margin:.3rem 0;line-height:1.9">
+        1. Navigate to the <b>login</b><br>
+        2. Type the demo email and password<br>
+        3. Click the sign-in button<br>
+        4. Look at the inspector: 👀 <b>the code wrote itself</b></p>
+      </div>
+      <div>
+        <p style="font-size:.9rem;margin:.2rem 0 .3rem">5. Copy the recorded code into a new file:</p>
+        <p style="font-size:.9rem;margin:.3rem 0"><span class="pill">tests/login.spec.ts</span>: create it in VS Code and paste inside a <code class="pill">test("login", async ({ page }) => { ... })</code> if codegen did not already wrap it.</p>
+        <details class="m-hint"><summary>Hint: the inspector shows no code</summary><div class="hint-body"><p>Check that the "Record" panel is active (red button). If you closed the inspector by accident: close everything and run the command again.</p></div></details>
+        <div class="callout warn" style="margin-top:.8rem"><span class="co-ico">⚠️</span><p><b>Codegen is a draft, not a product.</b> It records EVERYTHING you do (even accidental clicks) and adds no smart assertions. Next slide: cleaning it up.</p></div>
+      </div>
+    </div>
+    <div class="m-crit">✅ <span><b>Success criterion:</b> you have <code style="color:var(--cyan)">tests/login.spec.ts</code> with the login flow recorded by codegen.</span></div>
+  </div>
+  <div class="notes"><p>The magic moment of the lab: they watch their click turn into code instantly. Let them record freely for 3-4 minutes. Codegen also SUGGESTS good locators (getByLabel, getByRole): notice how it picked them and use that on the next slide. Anticipate the cleanup: nobody ships recorded code as is.</p></div>
+</section>
+
+<!-- 8 · Clean up the recording -->
+<section class="slide" data-act="Act 2 · First real test">
+  <div class="kicker">From draft to a test worth keeping</div>
+  <h2 data-anim="fade-up">Clean up the recording: <span class="grad-text">and add the expect</span></h2>
+  <div class="ba" data-anim="fade-up">
+    <div>
+      <span class="ba-tag bad-tag">❌ What codegen records (draft)</span>
+      <pre class="code" style="font-size:clamp(.7rem,1.05vw,.86rem)">
+<span class="tk-k">await</span> page.<span class="tk-f">goto</span>(<span class="tk-s">"https://dojo.upexgalaxy.com/"</span>);
+<span class="tk-k">await</span> page.<span class="tk-f">getByRole</span>(<span class="tk-s">"link"</span>, { name: <span class="tk-s">"Login"</span> }).<span class="tk-f">click</span>();
+<span class="tk-k">await</span> page.<span class="tk-f">getByLabel</span>(<span class="tk-s">"Email"</span>).<span class="tk-f">click</span>();   <span class="tk-c">← useless click</span>
+<span class="tk-k">await</span> page.<span class="tk-f">getByLabel</span>(<span class="tk-s">"Email"</span>).<span class="tk-f">fill</span>(<span class="tk-s">"testuser@upex.dev"</span>);
+<span class="tk-k">await</span> page.<span class="tk-f">getByLabel</span>(<span class="tk-s">"Password"</span>).<span class="tk-f">click</span>(); <span class="tk-c">← another one</span>
+<span class="tk-k">await</span> page.<span class="tk-f">getByLabel</span>(<span class="tk-s">"Password"</span>).<span class="tk-f">fill</span>(<span class="tk-s">"Test123!"</span>);
+<span class="tk-k">await</span> page.<span class="tk-f">getByRole</span>(<span class="tk-s">"button"</span>, { name: <span class="tk-s">"Sign in"</span> }).<span class="tk-f">click</span>();
+<span class="tk-c">// ...and THAT'S WHERE IT ENDS. Where is the check? 😱</span></pre>
+    </div>
+    <div>
+      <span class="ba-tag good-tag">✅ Your clean version (with an assertion)</span>
+      <pre class="code" style="font-size:clamp(.7rem,1.05vw,.86rem)">
+<span class="tk-f">test</span>(<span class="tk-s">"successful login on the dojo"</span>, <span class="tk-k">async</span> ({ page }) => {
+  <span class="tk-k">await</span> page.<span class="tk-f">goto</span>(<span class="tk-s">"https://dojo.upexgalaxy.com/login"</span>);
+  <span class="tk-k">await</span> page.<span class="tk-f">getByLabel</span>(<span class="tk-s">"Email"</span>).<span class="tk-f">fill</span>(<span class="tk-s">"testuser@upex.dev"</span>);
+  <span class="tk-k">await</span> page.<span class="tk-f">getByLabel</span>(<span class="tk-s">"Password"</span>).<span class="tk-f">fill</span>(<span class="tk-s">"Test123!"</span>);
+  <span class="tk-k">await</span> page.<span class="tk-f">getByRole</span>(<span class="tk-s">"button"</span>, { name: <span class="tk-c">/sign in/i</span> }).<span class="tk-f">click</span>();
+
+  <span class="tk-k">await</span> <span class="tk-f">expect</span>(page).<span class="tk-f">toHaveURL</span>(<span class="tk-c">/dashboard/</span>);
+});</pre>
+      <p style="margin-top:.6rem;font-size:.88rem">Cleanup: useless clicks out, a direct goto to the login, and the <b>expect that codegen never writes</b>. Without an assertion there is no test, just a stroll.</p>
+    </div>
+  </div>
+  <div class="notes"><p>Professional rule: codegen to discover locators and a skeleton, a human for intent and assertions. Notice the getByLabel/getByRole locators that codegen picked: they are the modern ones (semantic, stable), better than the #ids of the simulator in earlier decks: the app can change ids, but "the button that says Sign in" is stable. Remember the golden rule: if the exact texts of the dojo differ, adjust to whatever codegen recorded. That IS the exercise.</p></div>
+</section>
+
+<!-- 9 · M4 headed + UI mode -->
+<section class="slide" data-act="Act 2 · First real test">
+  <div class="mission" data-mission="m4" data-anim="fade-up">
+    <div class="m-head"><span class="m-badge">MISSION 4</span><h3>Run it with your own eyes</h3>
+      <label class="m-check"><input type="checkbox"> Completed</label></div>
+    <div class="m-obj">🎯 Run your login.spec.ts and watch the browser move, and get to know <b>UI mode</b>, your control center.</div>
+    <div class="cols" style="gap:1.2rem">
+      <div>
+        <p style="font-size:.9rem;margin:.2rem 0 .3rem"><b>1.</b> With a visible browser (headed):</p>
+        <div class="cmd"><span class="ps">$</span><span class="ct">npx playwright test login --headed</span><span class="copy">📋</span></div>
+        <p style="font-size:.9rem;margin:.7rem 0 .3rem"><b>2.</b> The mode you are going to LOVE: UI mode:</p>
+        <div class="cmd"><span class="ps">$</span><span class="ct">npx playwright test --ui</span><span class="copy">📋</span></div>
+      </div>
+      <div>
+        <div class="card"><h3>🕹️ Try this in UI mode</h3>
+          <p style="font-size:.88rem;line-height:1.9">▶ Run your test from the list<br>
+          ⏱️ Click each step on the timeline: <b>time travel</b>, you see the page BEFORE and AFTER every action<br>
+          🔍 "Locator" tab: hover over the page and it tells you the locator of each element</p></div>
+        <details class="m-hint"><summary>Hint: "login" runs nothing</summary><div class="hint-body"><p><code>npx playwright test login</code> filters by file name. Check that your file is called login.spec.ts and sits inside tests/.</p></div></details>
+      </div>
+    </div>
+    <div class="m-crit">✅ <span><b>Success criterion:</b> you saw the browser log in by itself, and in UI mode you walked through the timeline step by step.</span></div>
+  </div>
+  <div class="notes"><p>Headed gives you the photo of the lab: the browser filling in the form on its own, the moment they came for. UI mode is the #1 daily work tool: time travel + locator picker (that tab answers "which selector do I use?" for mission 6). Let them play for 5 minutes: every minute in UI mode now saves hours later.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACT 3 · BREAK IT AND DIAGNOSE -->
+<!-- ================================================================ -->
+
+<!-- 10 · M5 -->
+<section class="slide" data-act="Act 3 · Break it and diagnose">
+  <div class="mission" data-mission="m5" data-anim="fade-up">
+    <div class="m-head"><span class="m-badge">MISSION 5</span><h3>Break it on purpose and diagnose</h3>
+      <label class="m-check"><input type="checkbox"> Completed</label></div>
+    <div class="m-obj">🎯 Cause a controlled failure, <b>read the error without panic</b> and use the trace viewer to see the "black box" of the crash.</div>
+    <div class="cols" style="gap:1.2rem">
+      <div>
+        <p style="font-size:.9rem;margin:.2rem 0;line-height:1.9">
+        <b>1.</b> In your login.spec.ts change the password to <code class="pill">"incorrect"</code><br>
+        <b>2.</b> Run it with the black box turned on:</p>
+        <div class="cmd"><span class="ps">$</span><span class="ct">npx playwright test login --trace on</span><span class="copy">📋</span></div>
+        <p style="font-size:.9rem;margin:.7rem 0 .3rem"><b>3.</b> It fails (expected ✓). Open the report and the trace:</p>
+        <div class="cmd"><span class="ps">$</span><span class="ct">npx playwright show-report</span><span class="copy">📋</span></div>
+      </div>
+      <div>
+        <div class="term"><div class="term-bar"><span class="dot" style="background:#f7768e"></span><span class="dot" style="background:#e0af68"></span><span class="dot" style="background:#9ece6a"></span></div>
+        <pre>  <span class="t-red">✗</span> login.spec.ts:3 › successful login
+
+  <span class="t-red">Error: expect(page).toHaveURL(/dashboard/)</span>
+  Expected pattern: <span class="t-green">/dashboard/</span>
+  Received string:  <span class="t-red">"…/login"</span>  <span class="t-dim">← stayed on login</span>
+    <span class="t-dim">at login.spec.ts:9:24</span></pre></div>
+        <p style="margin-top:.6rem;font-size:.88rem">In the report, click the red test → <b>Trace</b>: a timeline with screenshots of every step, network, console. The complete black box of the failure.</p>
+        <details class="m-hint"><summary>Hint: read the error like a detective</summary><div class="hint-body"><p>Three questions, ALWAYS: what did it expect? (Expected) what did it find? (Received) on which line? (at …). A Playwright error is a well-written bug report, and reading them is your craft.</p></div></details>
+      </div>
+    </div>
+    <div class="m-crit">✅ <span><b>Success criterion:</b> you found in the trace the screenshot of the moment of failure (the page that stayed on login). Restore the good password and get back to green before moving on.</span></div>
+  </div>
+  <div class="notes"><p>Anti-fear mission: red is information, not failure. The test "failed" because it FOUND something: a login with a bad password does not reach the dashboard, so the test works! An important distinction to plant: this failure is "a correct test detecting the expected behavior of the system". At a real job they will tell a real bug from a badly written test with these same tools. Do not forget to restore the password.</p></div>
+</section>
+
+<!-- 11 · QUIZ 1 -->
+<section class="slide" data-act="Act 3 · Break it and diagnose" style="align-items:center">
+  <div class="quiz" data-quiz="q1">
+    <div class="quiz-tag">⭐ QUIZ 1 · Reading errors</div>
+    <h3 class="quiz-q">Your test fails with: <code style="color:var(--red);font-size:.85em">TimeoutError: waiting for getByLabel("Email")</code>. What does it mean?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span>The app is down: tell infrastructure</span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span>Playwright waited and never found an element with the label "Email": wrong locator or a different page</span></button>
+      <button class="opt"><span class="key">C</span><span>Just raise the timeout to 60 seconds and be done</span></button>
+    </div>
+    <div class="quiz-expl">💡 A TimeoutError on a locator almost always means "I looked and it does not exist (with that name, on this page)". First reflex: open UI mode or the trace and LOOK at which page was there and what the element is really called. Raising the timeout (option C) only makes the error take longer to show up. It sweeps the problem under the rug.</div>
+  </div>
+  <div class="notes"><p>Option C is the most common bad practice of juniors: raise the timeout and pray. Kill that instinct NOW: a long timeout does not fix broken locators. The right reflex: trace/UI mode → look at the real page → fix the locator. Option A teaches not to escalate without diagnosing.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACT 4 · YOUR SPECS -->
+<!-- ================================================================ -->
+
+<!-- 12 · M6 -->
+<section class="slide" data-act="Act 4 · Your specs">
+  <div class="mission" data-mission="m6" data-anim="fade-up">
+    <div class="m-head"><span class="m-badge">MISSION 6</span><h3>Write 4 specs by hand</h3>
+      <label class="m-check"><input type="checkbox"> Completed</label></div>
+    <div class="m-obj">🎯 No codegen this time (use it only to look up locators): you write the code. One file per feature.</div>
+    <table class="cmp" style="margin-top:.4rem">
+      <tr><th>Spec</th><th>Steps (Act)</th><th>Minimum assertion (Assert)</th></tr>
+      <tr><td>1 · <b>login-invalid.spec.ts</b></td><td>Log in with a bad password</td><td>The error message is visible</td></tr>
+      <tr><td>2 · <b>register.spec.ts</b></td><td>Register a new user (unique email: use <code>Date.now()</code>)</td><td>You land logged in or see a confirmation</td></tr>
+      <tr><td>3 · <b>navigation.spec.ts</b></td><td>From the home page, navigate to the components page</td><td>The URL and the title change</td></tr>
+      <tr><td>4 · <b>components.spec.ts</b></td><td>Interact with a component (checkbox, select…)</td><td>The component's state changed</td></tr>
+    </table>
+    <details class="m-hint"><summary>Hint: unique email for the registration</summary><div class="hint-body"><pre class="code" style="font-size:.8rem">const email = `tester${Date.now()}@upex.dev`;</pre><p style="margin-top:.4rem">Date.now() = current milliseconds, so every run generates a different email and the test is repeatable. Your first trick with dynamic test data.</p></div></details>
+    <div class="m-crit">✅ <span><b>Success criterion:</b> 4 new files in tests/, each one green on its own: <code style="color:var(--cyan)">npx playwright test &lt;name&gt;</code>.</span></div>
+  </div>
+  <div class="notes"><p>The heart of the lab: 40-60 minutes of semi-free work. Your role: walk around and unblock. Typical snags: locator not found (→ UI mode Locator tab), a forgotten await (→ they already know how to diagnose it), registration fails on the second run (→ the unique email hint, and also the first time they NEED dynamic test data, a golden concept). Whoever finishes fast: an extra logout spec.</p></div>
+</section>
+
+<!-- 13 · AAA pattern -->
+<section class="slide" data-act="Act 4 · Your specs">
+  <div class="kicker">The shape of every test worth keeping</div>
+  <h2 data-anim="fade-up"><span class="grad-text">AAA</span> pattern: your compass for Mission 6</h2>
+  <div class="cols-32">
+    <div data-anim="slide-l">
+      <pre class="code">
+<span class="tk-f">test</span>(<span class="tk-s">"invalid login shows an error"</span>, <span class="tk-k">async</span> ({ page }) => {
+  <span class="tk-c">// 1. ARRANGE: set up the scenario</span>
+  <span class="tk-k">await</span> page.<span class="tk-f">goto</span>(<span class="tk-s">"https://dojo.upexgalaxy.com/login"</span>);
+
+  <span class="tk-c">// 2. ACT: perform the action under test</span>
+  <span class="tk-k">await</span> page.<span class="tk-f">getByLabel</span>(<span class="tk-s">"Email"</span>).<span class="tk-f">fill</span>(<span class="tk-s">"testuser@upex.dev"</span>);
+  <span class="tk-k">await</span> page.<span class="tk-f">getByLabel</span>(<span class="tk-s">"Password"</span>).<span class="tk-f">fill</span>(<span class="tk-s">"incorrect"</span>);
+  <span class="tk-k">await</span> page.<span class="tk-f">getByRole</span>(<span class="tk-s">"button"</span>, { name: <span class="tk-c">/sign in/i</span> }).<span class="tk-f">click</span>();
+
+  <span class="tk-c">// 3. ASSERT: verify the expected result</span>
+  <span class="tk-k">await</span> <span class="tk-f">expect</span>(page.<span class="tk-f">getByText</span>(<span class="tk-c">/invalid|incorrect/i</span>)).<span class="tk-f">toBeVisible</span>();
+});</pre>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🎬 Arrange</h3><p>The preconditions of your manual test case: "being on the login page…"</p></div>
+      <div class="card" style="margin-top:.8rem"><h3>⚡ Act</h3><p>The steps. ONE main action under test per test.</p></div>
+      <div class="card" style="margin-top:.8rem"><h3>🔍 Assert</h3><p>The expected result. <b>A test without an expect is not a test, it is a stroll.</b></p></div>
+    </div>
+  </div>
+  <div class="notes"><p>AAA = the structure of their manual test case with other names: preconditions / steps / expected result. The comments in the example are didactic: in real code the structure shows by itself with blank lines. The "one main action per test" rule: if the title carries an "and" (tests this AND that), they are two tests.</p></div>
+</section>
+
+<!-- 14 · Tips de supervivencia -->
+<section class="slide" data-act="Act 4 · Your specs">
+  <div class="kicker">Distilled wisdom</div>
+  <h2 data-anim="fade-up">Survival <span class="grad-text">tips</span> 🧰</h2>
+  <div class="cards c2" data-stagger>
+    <div class="card"><div class="ico">⏳</div><h3>Never use sleep</h3><p>Playwright <b>waits by itself</b> for elements to appear (auto-wait). <code class="pill">waitForTimeout(5000)</code> = a slow AND flaky test. If you think you need it, an intermediate expect is missing.</p></div>
+    <div class="card"><div class="ico">🎯</div><h3>getByRole > CSS selectors</h3><p><code class="pill">getByRole("button", { name: "Sign in" })</code> survives redesigns; <code class="pill">.btn-primary > div:nth-child(2)</code> dies tomorrow. Semantic locators = cheap maintenance.</p></div>
+    <div class="card"><div class="ico">1️⃣</div><h3>One test, one goal</h3><p>The title describes ONE verifiable behavior. If you need an "and" in the title, split it into two tests.</p></div>
+    <div class="card"><div class="ico">🔁</div><h3>Run on every change</h3><p>Write 3 lines → run. Immediate feedback = small, easy errors. Writing 50 lines without running = bug archaeology.</p></div>
+  </div>
+  <div class="notes"><p>Four habits that separate juniors from professionals from day 1. Anti-sleep is the most important: auto-wait is THE advantage of Playwright over old Selenium; every waitForTimeout is a confession of not understanding what is being waited for. getByRole connects with the codegen cleanup (slide «From draft to a test worth keeping»). Burn these 4 into memory before the free work of M6.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACT 5 · FINAL BOSS -->
+<!-- ================================================================ -->
+
+<!-- 15 · M7 -->
+<section class="slide" data-act="Act 5 · Final boss">
+  <div class="mission" data-mission="m7" data-anim="fade-up">
+    <div class="m-head"><span class="m-badge">MISSION 7 · BOSS 🏆</span><h3>Full green suite + report</h3>
+      <label class="m-check"><input type="checkbox"> Completed</label></div>
+    <div class="m-obj">🎯 Your 5 specs (login + the 4 from M6) running together as a <b>suite</b>, and the HTML report as evidence.</div>
+    <div class="cols" style="gap:1.2rem">
+      <div>
+        <div class="cmd"><span class="ps">$</span><span class="ct">npx playwright test</span><span class="copy">📋</span></div>
+        <div class="cmd"><span class="ps">$</span><span class="ct">npx playwright show-report</span><span class="copy">📋</span></div>
+        <div class="term" style="margin-top:.6rem"><div class="term-bar"><span class="dot" style="background:#f7768e"></span><span class="dot" style="background:#e0af68"></span><span class="dot" style="background:#9ece6a"></span></div>
+        <pre>Running 15 tests using 4 workers
+  <span class="t-dim">5 specs × 3 browsers</span>
+
+  <span class="t-green">15 passed</span> <span class="t-dim">(31.2s)</span>   🎉</pre></div>
+      </div>
+      <div>
+        <div class="card"><h3>📊 Explore this in the HTML report</h3>
+          <p style="font-size:.88rem;line-height:1.9">✅ List of tests per browser (they ran on 3!)<br>
+          ⏱️ Duration of each test<br>
+          📷 Click any of them → detailed steps<br>
+          This report is what a QA Engineer attaches as <b>execution evidence</b></p></div>
+        <details class="m-hint"><summary>Hint: one fails only on WebKit/Firefox</summary><div class="hint-body"><p>Welcome to cross-browser bugs: the same steps, a different engine. Look at the trace of THAT browser. If you do not solve it in the session, write it down: it is exactly the kind of finding a QA reports.</p></div></details>
+      </div>
+    </div>
+    <div class="m-crit">✅ <span><b>Success criterion:</b> an HTML report showing your complete suite in green (15 passed = 5 specs × 3 browsers).</span></div>
+  </div>
+  <div class="notes"><p>The boss reveals the multiplier: they wrote 5 tests and ran 15, with 3 browsers for free (default config). Done manually that would be hours; here, 30 seconds. The HTML report can be shown to a lead as is: this is what professional evidence looks like. If a real cross-browser failure shows up, celebrate it: a legitimate finding on their first day.</p></div>
+</section>
+
+<!-- 16 · QUIZ 2 -->
+<section class="slide" data-act="Act 5 · Final boss" style="align-items:center">
+  <div class="quiz" data-quiz="q2">
+    <div class="quiz-tag">⭐ QUIZ 2 · The integrator</div>
+    <h3 class="quiz-q">Your suite passed 15/15 on Monday. On Tuesday it runs again WITHOUT code changes… and a test fails. What is the first professional hypothesis?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span>Playwright got corrupted: reinstall everything</span></button>
+      <button class="opt"><span class="key">B</span><span>Delete that test, the other 14 pass anyway</span></button>
+      <button class="opt" data-ok="1"><span class="key">C</span><span>Something changed outside the code: the app, the data, the timing. Open the trace and compare it against the green run</span></button>
+    </div>
+    <div class="quiz-expl">💡 A test that fails with no code changes is a sign that something DID change elsewhere: an app deploy, consumed test data (did your registration reuse an email?), network timing. The trace tells you which. If it comes and goes with no cause, it is called <b>flaky</b>, and diagnosing them is a star skill of the QA Engineer (covered in depth in Playwright Pro).</div>
+  </div>
+  <div class="notes"><p>The lab's closing mindset: an intermittent red is not ignored or deleted, it is diagnosed with evidence (trace). Option B is the real temptation in teams in a hurry: deleted tests = coverage lost silently. Remember that Playwright Pro tackles flakiness head on with hooks and isolated data.</p></div>
+</section>
+
+<!-- 17 · Cierre -->
+<section class="slide" data-act="Act 5 · Final boss" style="align-items:center;text-align:center">
+  <div class="kicker" data-anim="fade-up">Debrief</div>
+  <h2 data-anim="fade-up" style="animation-delay:.1s">Missions completed</h2>
+  <div class="final-list" id="final-list" data-anim="fade-up" style="animation-delay:.2s"></div>
+  <p id="final-msg" data-anim="fade-up" style="animation-delay:.3s;max-width:600px;margin-top:1rem"></p>
+  <div class="cards c3" data-stagger style="margin-top:1.2rem;max-width:1000px">
+    <div class="card"><div class="ico">🏠</div><h3>Homework</h3><p>Finish the pending missions. Your progress was saved in this file.</p></div>
+    <div class="card"><div class="ico">➕</div><h3>Extra challenge</h3><p>A logout spec + a spec for the dashboard kanban (drag & drop: research it).</p></div>
+    <div class="card hl"><div class="ico">🚀</div><h3>Next stop</h3><p><b>KATA Bridge</b>: from the Page Object you already built to the professional framework, with its layers, ATCs and manifest.</p></div>
+  </div>
+  <div class="notes"><p>Read the mission board out loud and celebrate the real progress (not everyone reaches 7/7 in the session, it is designed that way; the file keeps their progress). The session's achievement in one sentence: they installed their professional environment and wrote their first real multi-browser suite against a real app. Collect common snags to adjust the next session. Announce KATA Bridge: that is where the Page Object that already runs against real Playwright meets the professional framework.</p></div>
+</section>
+
+<script>
+/* ================================================================
+   RUNTIME — navegación, quizzes, misiones con persistencia local,
+   comandos copiables. Sin dependencias.
+   ================================================================ */
+(function(){
+'use strict';
+
+const $  = (s,r)=> (r||document).querySelector(s);
+const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
+
+/* ---------- slide navigation ---------- */
+const slides = $$('.slide');
+const N = slides.length;
+let cur = 0;
+const progress = $('#progress'), counter = $('#counter'), actLabel = $('#act-label');
+const drawer = $('#notes-drawer'), ndContent = $('#nd-content');
+
+function go(i){
+  cur = Math.max(0, Math.min(N-1, i));
+  slides.forEach((s,k)=> s.classList.toggle('is-active', k===cur));
+  progress.style.width = ((cur+1)/N*100) + '%';
+  counter.textContent = (cur+1) + ' / ' + N;
+  actLabel.textContent = slides[cur].dataset.act || '';
+  history.replaceState(null,'','#/'+(cur+1));
+  const notes = $('.notes', slides[cur]);
+  ndContent.innerHTML = notes ? notes.innerHTML : '<p>(no notes for this slide)</p>';
+  if(cur === N-1) renderFinal();
+}
+const fromHash = ()=>{ const m = location.hash.match(/^#\/(\d+)/); go(m ? parseInt(m[1],10)-1 : 0); };
+window.addEventListener('hashchange', fromHash);
+
+document.addEventListener('keydown', e=>{
+  const t = e.target;
+  if(t && (t.tagName==='TEXTAREA' || t.tagName==='INPUT')) return;
+  if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown') { e.preventDefault(); go(cur+1); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp') { e.preventDefault(); go(cur-1); }
+  else if(e.key==='Home') go(0);
+  else if(e.key==='End') go(N-1);
+  else if(e.key==='f'||e.key==='F'){ document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
+  else if(e.key==='n'||e.key==='N'||e.key==='s'||e.key==='S') drawer.classList.toggle('open');
+  else if(e.key==='Escape') drawer.classList.remove('open');
+});
+
+/* ---------- confetti ---------- */
+const cv = $('#confetti-canvas'), cx = cv.getContext('2d');
+let parts = [], rafC = null;
+function sizeCanvas(){ cv.width = innerWidth; cv.height = innerHeight; }
+sizeCanvas(); window.addEventListener('resize', sizeCanvas);
+const COLORS = ['#7aa2f7','#bb9af7','#7dcfff','#9ece6a','#ff9e64','#e0af68','#f7768e'];
+function confetti(x, y, n){
+  for(let i=0;i<(n||70);i++){
+    const a = Math.PI*2*Math.random(), v = 3+Math.random()*7;
+    parts.push({x:x, y:y, vx:Math.cos(a)*v, vy:Math.sin(a)*v-3, g:.22, life:1, d:.012+Math.random()*.012,
+      c:COLORS[(Math.random()*COLORS.length)|0], r:3+Math.random()*4, rot:Math.random()*Math.PI});
+  }
+  if(!rafC) tick();
+}
+function tick(){
+  cx.clearRect(0,0,cv.width,cv.height);
+  parts = parts.filter(p=>p.life>0);
+  for(const p of parts){
+    p.x+=p.vx; p.y+=p.vy; p.vy+=p.g; p.life-=p.d; p.rot+=.08;
+    cx.save(); cx.globalAlpha=Math.max(p.life,0); cx.translate(p.x,p.y); cx.rotate(p.rot);
+    cx.fillStyle=p.c; cx.fillRect(-p.r,-p.r/2,p.r*2,p.r); cx.restore();
+  }
+  rafC = parts.length ? requestAnimationFrame(tick) : null;
+}
+
+/* ---------- missions (persisted in localStorage) ---------- */
+const LS_KEY = 'dojo-lab-1-progress';
+let saved = {};
+try { saved = JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch(e){ saved = {}; }
+const missions = $$('.mission');
+const M_TOTAL = missions.length;
+const M_TITLES = {
+  m1:'M1 · Install the kit', m2:'M2 · Create the project', m3:'M3 · Codegen',
+  m4:'M4 · Headed + UI mode', m5:'M5 · Break it and diagnose', m6:'M6 · 4 specs by hand',
+  m7:'M7 · Boss: green suite'
+};
+function missionsDone(){ return missions.filter(m=>$('input',m).checked).length; }
+
+missions.forEach(m=>{
+  const id = m.dataset.mission, cb = $('input', m);
+  cb.checked = !!saved[id];
+  m.classList.toggle('done', cb.checked);
+  cb.addEventListener('change', ()=>{
+    saved[id] = cb.checked;
+    try { localStorage.setItem(LS_KEY, JSON.stringify(saved)); } catch(e){}
+    m.classList.toggle('done', cb.checked);
+    updateChip();
+    if(cb.checked){
+      const r = cb.getBoundingClientRect();
+      confetti(r.left, r.top, 50);
+      if(missionsDone() === M_TOTAL) setTimeout(()=>confetti(innerWidth/2, innerHeight*0.3, 160), 400);
+    }
+  });
+});
+
+/* ---------- quiz engine ---------- */
+const TOTAL_Q = $$('.quiz').length;
+const answered = {};
+let score = 0;
+/* ---------- quiz score persistence ---------- */
+const SCORE_KEY = 'dojo-lab-1.es.html-score:' + location.pathname;
+let qstate = { q:{}, score:0 };
+try { const _s = JSON.parse(localStorage.getItem(SCORE_KEY) || '{}'); if(_s && typeof _s === 'object'){ qstate.q = _s.q || {}; qstate.score = _s.score || 0; } } catch(e){ qstate = { q:{}, score:0 }; }
+score = qstate.score;
+function saveQuiz(){ qstate.score = score; try { localStorage.setItem(SCORE_KEY, JSON.stringify(qstate)); } catch(e){} }
+const chip = $('#score-chip');
+function updateChip(){
+  chip.textContent = '🎯 ' + missionsDone() + '/' + M_TOTAL + ' · ⭐ ' + score + '/' + TOTAL_Q;
+  chip.classList.remove('bump'); void chip.offsetWidth; chip.classList.add('bump');
+}
+$$('.quiz').forEach(qz=>{
+  const id = qz.dataset.quiz;
+  $$('.opt', qz).forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const ok = btn.dataset.ok === '1';
+      const first = !answered[id];
+      if(first) answered[id] = true;
+      if(ok){
+        btn.classList.add('correct');
+        qz.classList.add('locked');
+        $('.quiz-expl', qz).classList.add('show');
+        const r = btn.getBoundingClientRect();
+        confetti(r.left + r.width/2, r.top + r.height/2, 80);
+        if(first){ score++; updateChip(); }
+      } else {
+        btn.classList.remove('wrong'); void btn.offsetWidth; btn.classList.add('wrong');
+      }
+      qstate.q[id] = { a:true, c: ok || (qstate.q[id] && qstate.q[id].c) || false };
+      saveQuiz();
+    });
+  });
+});
+/* ---------- restore answered quizzes on load (no confetti) ---------- */
+$$('.quiz').forEach(qz=>{
+  const id = qz.dataset.quiz, st = qstate.q[id];
+  if(!st) return;
+  if(st.a) answered[id] = true;
+  if(st.c){
+    const okBtn = $('.opt[data-ok="1"]', qz);
+    if(okBtn) okBtn.classList.add('correct');
+    qz.classList.add('locked');
+    const ex = $('.quiz-expl', qz);
+    if(ex) ex.classList.add('show');
+  }
+});
+
+/* ---------- final board ---------- */
+function renderFinal(){
+  const list = $('#final-list');
+  list.innerHTML = missions.map(m=>{
+    const id = m.dataset.mission, done = $('input', m).checked;
+    return '<div class="fl-item'+(done?' ok':'')+'">'+(done?'✅':'⬜')+' '+(M_TITLES[id]||id)+'</div>';
+  }).join('');
+  const d = missionsDone();
+  $('#final-msg').textContent =
+    d === M_TOTAL ? '7/7: lab complete. You have a professional environment and your first real multi-browser suite. 🏆' :
+    d >= 5 ? d + '/' + M_TOTAL + ': great session. The pending ones are your homework: this file keeps your progress.' :
+    d >= 3 ? d + '/' + M_TOTAL + ': good progress. The setup (M1-M2) was the hardest part; the rest flows. Keep going at home.' :
+    'The lab stays with you: move at your own pace, the file remembers your progress. Every mission brings you closer to the craft. 🌱';
+  if(d === M_TOTAL) setTimeout(()=>confetti(innerWidth/2, innerHeight*0.3, 140), 450);
+}
+
+/* ---------- copy-on-click commands ---------- */
+$$('.cmd').forEach(c=>{
+  c.addEventListener('click', ()=>{
+    const txt = $('.ct', c).textContent;
+    const done = ()=>{
+      c.classList.add('copied');
+      const tag = $('.copy', c), old = tag.textContent;
+      tag.textContent = '✓ copied';
+      setTimeout(()=>{ c.classList.remove('copied'); tag.textContent = old; }, 1400);
+    };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done).catch(done);
+    } else { done(); }
+  });
+});
+
+/* ---------- cover FX: constellation ---------- */
+(function(){
+  const c = $('#fx-cover'); if(!c) return;
+  const ctx = c.getContext('2d');
+  let pts = [], raf = null;
+  function size(){ c.width = c.offsetWidth; c.height = c.offsetHeight; }
+  function init(){
+    size();
+    pts = Array.from({length:70}, ()=>({
+      x:Math.random()*c.width, y:Math.random()*c.height,
+      vx:(Math.random()-.5)*.45, vy:(Math.random()-.5)*.45, r:1+Math.random()*1.8}));
+  }
+  function frame(){
+    if(!slides[0].classList.contains('is-active')){ raf=null; return; }
+    ctx.clearRect(0,0,c.width,c.height);
+    for(const p of pts){
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0||p.x>c.width) p.vx*=-1;
+      if(p.y<0||p.y>c.height) p.vy*=-1;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7);
+      ctx.fillStyle='rgba(122,162,247,.55)'; ctx.fill();
+    }
+    for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
+      const a=pts[i], b=pts[j], dx=a.x-b.x, dy=a.y-b.y, d=dx*dx+dy*dy;
+      if(d<150*150){
+        ctx.strokeStyle='rgba(187,154,247,'+(0.16*(1-d/22500)).toFixed(3)+')';
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+      }
+    }
+    raf = requestAnimationFrame(frame);
+  }
+  window.addEventListener('resize', init);
+  init();
+  new MutationObserver(()=>{ if(slides[0].classList.contains('is-active') && !raf) raf=requestAnimationFrame(frame); })
+    .observe(slides[0], {attributes:true, attributeFilter:['class']});
+  raf = requestAnimationFrame(frame);
+})();
+
+/* ---------- init ---------- */
+updateChip();
+fromHash();
+})();
+</script>
+<!-- ============ MOBILE PATCH v3 (UPEX) — swipe + layout responsive + tip desktop ============ -->
+<style id="upex-mobile-style">
+/* Layout en pantallas angostas: 1 columna + scroll vertical dentro del slide */
+@media (max-width:768px){
+  .slide{padding:max(6vh,52px) 5vw 10vh;overflow-y:auto;justify-content:flex-start}
+  /* spacers flexibles: centran verticalmente cuando el contenido cabe y
+     colapsan a 0 cuando desborda (permitiendo scroll desde arriba) */
+  .slide::before{content:"";margin-top:auto}
+  .slide::after{content:"";margin-bottom:auto}
+  .cols,.cols-32,.cards.c3,.cards.c2,.memviz,.playground,.ba,.stepper,.termsim,.api-playground{grid-template-columns:1fr}
+  #help-hint,#act-label{display:none}
+  /* score chip compacto y pegado al borde superior para no tapar títulos */
+  #score-chip{top:6px;right:8px;font-size:.62rem;padding:.16rem .5rem;box-shadow:none}
+}
+@media (pointer:coarse){
+  #help-hint{display:none}
+}
+/* Tip de una sola vez en móvil: los playgrounds se disfrutan mejor en desktop */
+#upex-tip{position:fixed;left:50%;transform:translateX(-50%);bottom:44px;z-index:90;
+  max-width:min(92vw,420px);display:flex;align-items:flex-start;gap:.6rem;
+  background:rgba(36,40,59,.96);border:1px solid rgba(255,255,255,.18);border-radius:12px;
+  padding:.65rem .8rem;font-size:.78rem;line-height:1.45;color:#9aa5ce;
+  box-shadow:0 8px 24px rgba(0,0,0,.45);animation:upexTipIn .4s ease both}
+#upex-tip b{color:#c0caf5}
+#upex-tip-x{flex:0 0 auto;background:none;border:none;color:#565f89;font-size:.95rem;
+  cursor:pointer;padding:0 .15rem;margin-left:auto;line-height:1.3}
+@keyframes upexTipIn{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%)}}
+</style>
+<script id="upex-mobile-nav">
+(function(){
+'use strict';
+/* Navega despachando eventos de teclado sintéticos — el runtime del deck ya
+   escucha keydown (ArrowLeft/ArrowRight) y protege textareas/inputs. */
+var send=function(key){document.dispatchEvent(new KeyboardEvent('keydown',{key:key,bubbles:true}))};
+/* Swipe horizontal — ignora gestos que empiezan en zonas interactivas/scrollables */
+var x0=null,y0=null,skip=false;
+document.addEventListener('touchstart',function(e){
+  var t=e.target;
+  skip=!!(t&&t.closest&&t.closest('textarea,input,button,pre,table,.quiz,.lc-editor,.memviz,.playground'));
+  var p=e.changedTouches[0]; x0=p.clientX; y0=p.clientY;
+},{passive:true});
+document.addEventListener('touchend',function(e){
+  if(x0===null||skip) return;
+  var p=e.changedTouches[0], dx=p.clientX-x0, dy=p.clientY-y0;
+  x0=y0=null;
+  if(Math.abs(dx)>60&&Math.abs(dx)>2*Math.abs(dy)) send(dx<0?'ArrowRight':'ArrowLeft');
+},{passive:true});
+/* Tip de una sola vez (compartido entre todos los decks del dominio vía
+   localStorage). ?tip=1 lo fuerza para QA en navegadores sin touch. */
+var KEY='upex-deck-mobile-tip-v1';
+var isMobile=matchMedia('(pointer:coarse)').matches&&matchMedia('(max-width:768px)').matches;
+var force=/[?&]tip=1/.test(location.search);
+var seen=false; try{seen=localStorage.getItem(KEY)==='1'}catch(_e){}
+if(force||(isMobile&&!seen)){
+  var tip=document.createElement('div'); tip.id='upex-tip';
+  var msg=document.createElement('span');
+  msg.innerHTML='💻 <b>Tip:</b> to practice in the code playgrounds, come back to this deck from your computer.';
+  var x=document.createElement('button'); x.id='upex-tip-x'; x.textContent='✕'; x.setAttribute('aria-label','Close tip');
+  var close=function(){ if(tip.isConnected) tip.remove(); try{localStorage.setItem(KEY,'1')}catch(_e){} };
+  x.addEventListener('click',close);
+  tip.appendChild(msg); tip.appendChild(x); document.body.appendChild(tip);
+  setTimeout(close,12000);
+}
+})();
+</script>
+
+</body>
+</html>

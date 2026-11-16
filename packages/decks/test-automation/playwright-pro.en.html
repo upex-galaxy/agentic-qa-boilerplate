@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Playwright Pro: from loose scripts to a professional suite</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* ===================== TOKYO NIGHT TOKENS ===================== */
+:root{
+  --bg:#16161e; --bg-2:#1a1b26; --surface:#24283b; --surface-2:#1f2335;
+  --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.16);
+  --text-1:#c0caf5; --text-2:#9aa5ce; --text-3:#565f89;
+  --blue:#7aa2f7; --purple:#bb9af7; --cyan:#7dcfff; --green:#9ece6a;
+  --red:#f7768e; --orange:#ff9e64; --yellow:#e0af68;
+  --grad:linear-gradient(135deg,#7aa2f7,#bb9af7 55%,#7dcfff);
+  --radius:16px; --radius-sm:10px;
+  --shadow:0 14px 40px rgba(0,0,0,.45);
+  --font-sans:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-mono:'JetBrains Mono',Menlo,monospace;
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);
+  font-family:var(--font-sans);line-height:1.55;-webkit-font-smoothing:antialiased;overflow:hidden}
+code,pre,kbd,textarea{font-family:var(--font-mono)}
+b,strong{color:var(--text-1)}
+::selection{background:rgba(122,162,247,.35)}
+
+/* ===================== SLIDE SYSTEM ===================== */
+.slide{position:fixed;inset:0;display:none;flex-direction:column;justify-content:center;
+  padding:6vh 6.5vw 9vh;background:var(--bg)}
+.slide.is-active{display:flex}
+.slide h1{font-size:clamp(2.4rem,5.6vw,4.6rem);font-weight:900;letter-spacing:-.03em;line-height:1.05;margin:0 0 .4em}
+.slide h2{font-size:clamp(1.6rem,3.2vw,2.5rem);font-weight:800;letter-spacing:-.02em;line-height:1.12;margin:0 0 .5em}
+.slide h3{font-size:clamp(1.05rem,1.7vw,1.35rem);font-weight:700;margin:0 0 .5em}
+.slide p,.slide li{font-size:clamp(.92rem,1.4vw,1.12rem);color:var(--text-2)}
+.kicker{font-size:.78rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--blue);margin-bottom:1rem}
+.grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start}
+.cols-32{display:grid;grid-template-columns:1.25fr 1fr;gap:2rem;align-items:start}
+.notes{display:none}
+
+/* chrome */
+#progress{position:fixed;top:0;left:0;height:3px;background:var(--grad);width:0%;z-index:60;transition:width .3s var(--ease)}
+#counter{position:fixed;bottom:18px;right:24px;font-family:var(--font-mono);font-size:.75rem;color:var(--text-3);z-index:60}
+#act-label{position:fixed;bottom:18px;left:24px;font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--text-3);z-index:60}
+#score-chip{position:fixed;top:16px;right:22px;z-index:60;font-family:var(--font-mono);font-size:.82rem;font-weight:700;
+  background:var(--surface);border:1px solid var(--border-strong);border-radius:999px;padding:.4rem .9rem;color:var(--yellow);
+  box-shadow:var(--shadow);transition:transform .25s var(--ease)}
+#score-chip.bump{transform:scale(1.18)}
+#help-hint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);font-size:.7rem;color:var(--text-3);z-index:60;font-family:var(--font-mono)}
+
+/* notes drawer */
+#notes-drawer{position:fixed;left:0;right:0;bottom:0;max-height:34vh;overflow:auto;background:var(--surface-2);
+  border-top:2px solid var(--blue);padding:1rem 2.2rem 1.4rem;z-index:80;transform:translateY(100%);transition:transform .3s var(--ease)}
+#notes-drawer.open{transform:translateY(0)}
+#notes-drawer .nd-tag{font-size:.7rem;font-weight:800;letter-spacing:.2em;color:var(--blue);text-transform:uppercase;margin-bottom:.4rem}
+#notes-drawer p{margin:.3rem 0;font-size:.95rem;color:var(--text-2)}
+
+/* ===================== ANIMATIONS ===================== */
+@keyframes fadeUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+@keyframes popIn{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:scale(1)}}
+@keyframes slideL{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:none}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+.slide.is-active [data-anim="fade-up"]{animation:fadeUp .7s var(--ease) both}
+.slide.is-active [data-anim="pop"]{animation:popIn .55s var(--ease) both}
+.slide.is-active [data-anim="slide-l"]{animation:slideL .6s var(--ease) both}
+.slide.is-active [data-stagger]>*{animation:fadeUp .55s var(--ease) both}
+.slide.is-active [data-stagger]>*:nth-child(1){animation-delay:.05s}
+.slide.is-active [data-stagger]>*:nth-child(2){animation-delay:.15s}
+.slide.is-active [data-stagger]>*:nth-child(3){animation-delay:.25s}
+.slide.is-active [data-stagger]>*:nth-child(4){animation-delay:.35s}
+.slide.is-active [data-stagger]>*:nth-child(5){animation-delay:.45s}
+.slide.is-active [data-stagger]>*:nth-child(6){animation-delay:.55s}
+.slide.is-active [data-stagger]>*:nth-child(7){animation-delay:.65s}
+.slide.is-active [data-stagger]>*:nth-child(8){animation-delay:.75s}
+
+/* ===================== CODE / TERMINAL ===================== */
+pre.code{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:1rem 1.2rem;font-size:clamp(.78rem,1.2vw,.98rem);line-height:1.68;overflow:auto;margin:0;
+  box-shadow:var(--shadow);white-space:pre}
+.tk-k{color:var(--purple)} .tk-s{color:var(--green)} .tk-n{color:var(--orange)}
+.tk-b{color:var(--orange)} .tk-f{color:var(--blue)} .tk-c{color:var(--text-3);font-style:italic}
+.code-window{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.code-window .cw-bar{display:flex;align-items:center;gap:.45rem;padding:.6rem .9rem;background:var(--surface-2);border-bottom:1px solid var(--border)}
+.cw-bar .dot{width:11px;height:11px;border-radius:50%}
+.cw-bar .dot:nth-child(1){background:#f7768e}.cw-bar .dot:nth-child(2){background:#e0af68}.cw-bar .dot:nth-child(3){background:#9ece6a}
+.cw-bar .cw-title{margin-left:.5rem;font-family:var(--font-mono);font-size:.74rem;color:var(--text-3)}
+.code-window pre.code{border:none;border-radius:0;box-shadow:none}
+
+.term{background:#0d0d14;border:1px solid var(--border-strong);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.term .term-bar{background:#1d1e2e;padding:.5rem .9rem;display:flex;gap:.45rem;align-items:center}
+.term .term-bar .dot{width:10px;height:10px;border-radius:50%}
+.term pre{margin:0;padding:.9rem 1.2rem;font-size:clamp(.78rem,1.25vw,.98rem);line-height:1.8;color:var(--text-2);white-space:pre;overflow:auto}
+.t-green{color:var(--green)} .t-red{color:var(--red)} .t-dim{color:var(--text-3)} .t-cyan{color:var(--cyan)} .t-yellow{color:var(--yellow)}
+
+.cmd{display:flex;align-items:center;gap:.7rem;background:#0d0d14;border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm);padding:.6rem 1rem;margin:.45rem 0;cursor:pointer;transition:border-color .2s,transform .15s}
+.cmd:hover{border-color:var(--cyan);transform:translateX(3px)}
+.cmd .ps{color:var(--cyan);font-family:var(--font-mono);font-size:.85rem;flex:0 0 auto}
+.cmd .ct{color:var(--text-1);font-family:var(--font-mono);font-size:clamp(.78rem,1.25vw,.95rem);overflow-x:auto;white-space:nowrap}
+.cmd .copy{margin-left:auto;font-family:var(--font-mono);font-size:.68rem;color:var(--text-3);flex:0 0 auto}
+.cmd.copied{border-color:var(--green)}
+.cmd.copied .copy{color:var(--green)}
+
+/* cards */
+.cards{display:grid;gap:1rem}
+.cards.c3{grid-template-columns:repeat(3,1fr)}
+.cards.c2{grid-template-columns:repeat(2,1fr)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem 1.3rem;box-shadow:var(--shadow)}
+.card .ico{font-size:1.8rem;margin-bottom:.45rem}
+.card h3{margin-bottom:.3rem}
+.card p{font-size:.92rem;margin:.2rem 0}
+.card.hl{border-color:var(--blue);background:linear-gradient(160deg,rgba(122,162,247,.12),rgba(187,154,247,.08))}
+.pill{display:inline-block;font-family:var(--font-mono);font-size:.78rem;padding:.2rem .65rem;border-radius:999px;
+  background:var(--surface-2);border:1px solid var(--border-strong);color:var(--cyan);margin:.15rem .2rem}
+
+/* compare table */
+table.cmp{width:100%;border-collapse:collapse;font-size:clamp(.85rem,1.3vw,1.05rem)}
+table.cmp th{text-align:left;padding:.65rem .9rem;font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);border-bottom:2px solid var(--border-strong)}
+table.cmp td{padding:.6rem .9rem;border-bottom:1px solid var(--border);color:var(--text-2)}
+table.cmp td:first-child{color:var(--text-1)}
+table.cmp td code{color:var(--cyan);font-size:.9em}
+
+/* callout */
+.callout{display:flex;gap:.9rem;align-items:flex-start;background:rgba(158,206,106,.1);border:1px solid rgba(158,206,106,.35);
+  border-radius:var(--radius-sm);padding:.85rem 1.1rem;margin-top:1.2rem}
+.callout.warn{background:rgba(247,118,142,.1);border-color:rgba(247,118,142,.4)}
+.callout.info{background:rgba(122,162,247,.1);border-color:rgba(122,162,247,.4)}
+.callout .co-ico{font-size:1.35rem;line-height:1.3}
+.callout p{margin:0;font-size:clamp(.88rem,1.3vw,1.05rem)}
+
+/* ===================== MISSION ===================== */
+.mission{background:var(--surface);border:1.5px solid var(--border-strong);border-radius:var(--radius);
+  padding:1.2rem 1.5rem 1.3rem;box-shadow:var(--shadow);width:100%;transition:border-color .3s}
+.mission.done{border-color:var(--green)}
+.m-head{display:flex;align-items:center;gap:1rem;margin-bottom:.7rem;flex-wrap:wrap}
+.m-badge{font-family:var(--font-mono);font-size:.74rem;font-weight:700;letter-spacing:.16em;
+  background:rgba(255,158,100,.14);border:1px solid rgba(255,158,100,.5);color:var(--orange);
+  border-radius:999px;padding:.3rem .9rem;flex:0 0 auto}
+.mission.done .m-badge{background:rgba(158,206,106,.14);border-color:var(--green);color:var(--green)}
+.m-head h3{margin:0;flex:1 1 auto;font-size:clamp(1.1rem,1.9vw,1.5rem)}
+.m-check{display:flex;align-items:center;gap:.5rem;cursor:pointer;font-family:var(--font-mono);font-size:.8rem;
+  color:var(--text-3);background:var(--surface-2);border:1px solid var(--border-strong);border-radius:999px;
+  padding:.4rem 1rem;flex:0 0 auto;user-select:none;transition:all .2s}
+.m-check:hover{border-color:var(--green);color:var(--green)}
+.m-check input{accent-color:#9ece6a;width:1rem;height:1rem;cursor:pointer}
+.mission.done .m-check{border-color:var(--green);color:var(--green);background:rgba(158,206,106,.1)}
+.m-obj{font-size:clamp(.92rem,1.4vw,1.1rem);color:var(--text-2);margin:.3rem 0 .8rem}
+.m-obj b{color:var(--text-1)}
+.m-crit{display:flex;gap:.7rem;align-items:flex-start;background:rgba(158,206,106,.08);border:1px dashed rgba(158,206,106,.45);
+  border-radius:var(--radius-sm);padding:.7rem 1rem;margin-top:.9rem;font-size:clamp(.85rem,1.3vw,1.02rem);color:var(--text-2)}
+.m-crit b{color:var(--green)}
+details.m-hint{margin-top:.8rem;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
+details.m-hint summary{cursor:pointer;padding:.6rem 1rem;font-size:.88rem;font-weight:600;color:var(--cyan);user-select:none;list-style:none}
+details.m-hint summary::before{content:'💡 '}
+details.m-hint[open] summary{border-bottom:1px solid var(--border)}
+details.m-hint .hint-body{padding:.7rem 1rem .9rem;font-size:.88rem;color:var(--text-2)}
+details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
+
+/* tree + before/after */
+.tree{font-family:var(--font-mono);font-size:clamp(.85rem,1.4vw,1.1rem);line-height:1.95}
+.tree .tr-c{color:var(--text-3);font-size:.8em;margin-left:1rem}
+.tree .tr-dir{color:var(--blue);font-weight:700} .tree .tr-file{color:var(--text-1)} .tree .tr-star{color:var(--yellow)}
+.ba{display:grid;grid-template-columns:1fr 1fr;gap:1.3rem;align-items:start}
+.ba .ba-tag{display:inline-block;font-size:.72rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+  border-radius:999px;padding:.25rem .8rem;margin-bottom:.6rem}
+.ba .bad-tag{background:rgba(247,118,142,.14);border:1px solid rgba(247,118,142,.45);color:var(--red)}
+.ba .good-tag{background:rgba(158,206,106,.14);border:1px solid rgba(158,206,106,.45);color:var(--green)}
+
+/* pyramid */
+.pyramid{display:flex;flex-direction:column;align-items:center;gap:.4rem}
+.pyramid .py{border-radius:8px;padding:.5rem 1rem;font-family:var(--font-mono);font-size:.85rem;text-align:center;border:1.5px solid}
+.py.ui{width:64%;background:rgba(247,118,142,.12);border-color:rgba(247,118,142,.5);color:var(--red)}
+.py.api{width:80%;background:rgba(224,175,104,.12);border-color:rgba(224,175,104,.5);color:var(--yellow)}
+.py.unit{width:96%;background:rgba(158,206,106,.12);border-color:rgba(158,206,106,.5);color:var(--green)}
+
+/* ===================== QUIZ ===================== */
+.quiz{max-width:880px;width:100%;margin:0 auto}
+.quiz-tag{display:inline-block;font-family:var(--font-mono);font-size:.75rem;font-weight:700;letter-spacing:.2em;
+  color:var(--yellow);background:rgba(224,175,104,.12);border:1px solid rgba(224,175,104,.4);
+  border-radius:999px;padding:.3rem .9rem;margin-bottom:1.1rem}
+.quiz-q{font-size:clamp(1.25rem,2.3vw,1.85rem);font-weight:800;margin:0 0 1.3rem;line-height:1.25}
+.quiz-opts{display:grid;gap:.8rem}
+.quiz .opt{display:flex;align-items:center;gap:1rem;text-align:left;width:100%;cursor:pointer;
+  background:var(--surface);border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);
+  padding:.95rem 1.2rem;color:var(--text-1);font-family:var(--font-sans);font-size:clamp(.92rem,1.45vw,1.12rem);
+  transition:border-color .2s,background .2s,transform .15s}
+.quiz .opt:hover{border-color:var(--blue);transform:translateX(4px)}
+.quiz .opt .key{flex:0 0 auto;font-family:var(--font-mono);font-weight:700;font-size:.8rem;width:1.8rem;height:1.8rem;
+  display:grid;place-items:center;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text-3)}
+.quiz .opt code{color:var(--cyan)}
+.quiz .opt.correct{border-color:var(--green);background:rgba(158,206,106,.14)}
+.quiz .opt.correct .key{background:var(--green);color:#16161e;border-color:var(--green)}
+.quiz .opt.wrong{border-color:var(--red);background:rgba(247,118,142,.12);animation:shake .4s}
+.quiz.locked .opt{pointer-events:none;opacity:.8}
+.quiz.locked .opt.correct{opacity:1}
+.quiz-expl{display:none;margin-top:1.2rem;background:rgba(125,207,255,.08);border:1px solid rgba(125,207,255,.3);
+  border-radius:var(--radius-sm);padding:.9rem 1.2rem;color:var(--text-2);font-size:clamp(.88rem,1.35vw,1.05rem)}
+.quiz-expl.show{display:block;animation:fadeUp .4s var(--ease)}
+
+/* cover + final */
+#fx-cover{position:absolute;inset:0;z-index:0}
+.cover-inner{position:relative;z-index:2;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1.1rem}
+.cover-chips{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center}
+.final-list{display:grid;gap:.5rem;max-width:640px;margin:1rem auto 0;text-align:left}
+.final-list .fl-item{display:flex;align-items:center;gap:.8rem;background:var(--surface);border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm);padding:.55rem 1rem;font-family:var(--font-mono);font-size:.85rem;color:var(--text-3)}
+.final-list .fl-item.ok{border-color:var(--green);color:var(--green)}
+#confetti-canvas{position:fixed;inset:0;z-index:200;pointer-events:none}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div id="score-chip">🎯 0/6 · ⭐ 0/4</div>
+<div id="counter">1 / 23</div>
+<div id="act-label"></div>
+<div id="help-hint">← → navigate · N presenter notes · F fullscreen · click on commands = copy</div>
+<canvas id="confetti-canvas"></canvas>
+<div id="notes-drawer"><div class="nd-tag">🎙 Presenter notes</div><div id="nd-content"></div></div>
+
+<!-- ================================================================ -->
+<!-- ACT 0 · BRIEFING -->
+<!-- ================================================================ -->
+
+<!-- 1 · Cover -->
+<section class="slide" data-act="Acto 0 · Briefing" style="align-items:center">
+  <canvas id="fx-cover"></canvas>
+  <div class="cover-inner">
+    <div class="kicker" data-anim="fade-up">Session 4 · QA Engineering</div>
+    <h1 data-anim="fade-up" style="animation-delay:.1s">Playwright <span class="grad-text">Pro</span> 🚀</h1>
+    <p data-anim="fade-up" style="animation-delay:.2s;max-width:680px;font-size:clamp(1.05rem,1.8vw,1.35rem)">
+      You write a suite that works... but repeats code and lives in a mess.<br>Then you turn it into a <b>professional suite</b>: hooks, a real POM, fixtures and API testing.</p>
+    <div class="cover-chips" data-anim="fade-up" style="animation-delay:.32s">
+      <span class="pill">describe + hooks</span><span class="pill">locators pro</span><span class="pill">real POM</span><span class="pill">fixtures</span><span class="pill">API testing</span><span class="pill">7 missions 🎯</span>
+    </div>
+  </div>
+  <div class="notes"><p>Session 4 of the series. Prerequisites: Coding Base and Coding Classes watched, Node.js LTS and VS Code installed (the kit that closes Coding Base; if it is missing, nodejs.org and code.visualstudio.com), internet. The session does not depend on any later deck: mission P0 builds the starting suite in 10 minutes in its own folder, <code>mi-playwright-pro</code>, and everything else REFACTORS it. Hybrid format: short concept → applied mission. Duration: 2-3 hours.</p></div>
+</section>
+
+<!-- 1b · M P0 -->
+<section class="slide" data-act="Acto 0 · Briefing">
+  <div class="mission" data-mission="p0" data-anim="fade-up">
+    <div class="m-head"><span class="m-badge">MISSION P0</span><h3>Your starting suite</h3>
+      <label class="m-check"><input type="checkbox"> Completed</label></div>
+    <div class="m-obj">🎯 Create your practice folder and write 3 specs as a first draft: they work, but each one repeats the login. The rest of the session makes them professional.</div>
+    <div class="cols" style="gap:1.2rem">
+      <div>
+        <p style="font-size:.9rem;line-height:1.9;margin:.2rem 0">
+        1. Create the project (TypeScript, defaults for the rest) and open it:</p>
+        <div class="cmd"><span class="ps">$</span><span class="ct">npm init playwright@latest mi-playwright-pro</span><span class="copy">📋</span></div>
+        <div class="cmd"><span class="ps">$</span><span class="ct">cd mi-playwright-pro && code .</span><span class="copy">📋</span></div>
+        <p style="font-size:.9rem;line-height:1.9;margin:.4rem 0 .2rem">
+        2. In <code class="pill">tests/</code> create <code class="pill">login.spec.ts</code> from the model on the right<br>
+        3. <code class="pill">login-invalid.spec.ts</code>: the same with a bad password (<code class="pill">mala</code>), and wait for the error message<br>
+        4. <code class="pill">dashboard.spec.ts</code>: copy the login and check that the dashboard loads<br>
+        5. Delete the installer's <code class="pill">example.spec.ts</code> and run:</p>
+        <div class="cmd"><span class="ps">$</span><span class="ct">npx playwright test</span><span class="copy">📋</span></div>
+      </div>
+      <div>
+        <pre class="code" style="font-size:clamp(.66rem,.95vw,.8rem)">
+<span class="tk-c">// tests/login.spec.ts: first draft</span>
+<span class="tk-k">import</span> { test, expect } <span class="tk-k">from</span> <span class="tk-s">"@playwright/test"</span>;
+
+<span class="tk-f">test</span>(<span class="tk-s">"valid login reaches the dashboard"</span>, <span class="tk-k">async</span> ({ page }) => {
+  <span class="tk-k">await</span> page.<span class="tk-f">goto</span>(<span class="tk-s">"https://dojo.upexgalaxy.com/login"</span>);
+  <span class="tk-k">await</span> page.<span class="tk-f">getByLabel</span>(<span class="tk-s">"Email"</span>).<span class="tk-f">fill</span>(<span class="tk-s">"testuser@upex.dev"</span>);
+  <span class="tk-k">await</span> page.<span class="tk-f">getByLabel</span>(<span class="tk-s">"Password"</span>).<span class="tk-f">fill</span>(<span class="tk-s">"Test123!"</span>);
+  <span class="tk-k">await</span> page.<span class="tk-f">locator</span>(<span class="tk-s">"form button"</span>).<span class="tk-f">click</span>();
+  <span class="tk-k">await</span> <span class="tk-f">expect</span>(page).<span class="tk-f">toHaveURL</span>(<span class="tk-c">/dashboard/</span>);
+});</pre>
+        <details class="m-hint"><summary>Hint: a selector does not match the dojo</summary><div class="hint-body"><p>The model shows the SHAPE. Record the real flow with <code>npx playwright codegen https://dojo.upexgalaxy.com/login</code> and copy the locator it suggests. Keep the <code>page.locator("form button")</code> if it works: in P2 you will hunt it down.</p></div></details>
+      </div>
+    </div>
+    <div class="m-crit">✅ <span><b>Success criterion:</b> a <code>mi-playwright-pro</code> folder with 3 green specs (valid login, invalid login, dashboard), each with its own copied login.</span></div>
+  </div>
+  <div class="notes"><p>This mission builds on purpose the code the session is going to fix: the login copied into every spec and a structural CSS selector. Say it out loud: this is the first draft everyone writes, not a mistake. Whoever finishes early can try <code>npx playwright test --ui</code>. 10 minutes; do not move on until everyone has the 3 green, because every following mission starts from this folder.</p></div>
+</section>
+
+<!-- 2 · The current pain -->
+<section class="slide" data-act="Acto 0 · Briefing">
+  <div class="kicker">Diagnosis</div>
+  <h2 data-anim="fade-up">Your suite works. <span class="grad-text">Now look at it like a senior.</span></h2>
+  <div class="cols">
+    <div data-stagger>
+      <div class="card"><div class="ico">🔁</div><h3>Symptom 1: repeated login</h3><p>Your 3 specs start with the same login steps. Copy-paste detected.</p></div>
+      <div class="card" style="margin-top:.9rem"><div class="ico">🗺️</div><h3>Symptom 2: scattered selectors</h3><p>The login button's locator lives in 3 files, and on top of that it is structural CSS. A UI change means a hunt.</p></div>
+      <div class="card" style="margin-top:.9rem"><div class="ico">🐌</div><h3>Symptom 3: everything through the UI</h3><p>Every check goes through the browser, which is slow and fragile for things the API answers in milliseconds.</p></div>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.3s">
+      <div class="card hl"><h3>🗺️ The session plan</h3>
+        <p style="font-family:var(--font-mono);font-size:.88rem;line-height:2.1">
+        Act 1 → <b>organize</b>: describe + hooks<br>
+        Act 2 → <b>harden</b>: semantic locators<br>
+        Act 3 → <b>encapsulate</b>: your real LoginPage<br>
+        Act 4 → <b>inject</b>: your own fixtures<br>
+        Act 5 → <b>speed up</b>: API testing<br>
+        Act 6 → 🏆 reorganized suite</p></div>
+      <div class="callout info" style="margin-top:.9rem"><span class="co-ico">🧬</span><p>Every tool in this session uses concepts you ALREADY know: hooks = functions, POM = your class from Coding Classes, fixtures = the destructuring in <code>({ page })</code>.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>Open the session with self-criticism of your own code. The 3 symptoms really exist in the suite they just wrote in P0 (check it live with someone's). The message: they did not write bad code; they wrote the first draft every professional writes. Now comes the second pass, the one that separates scripts from engineering.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACT 1 · ORGANIZE -->
+<!-- ================================================================ -->
+
+<!-- 3 · describe -->
+<section class="slide" data-act="Acto 1 · Organiza">
+  <h2 data-anim="fade-up">test.describe: <span class="grad-text">chapters for your tests</span> 📂</h2>
+  <div class="cols-32">
+    <div data-anim="slide-l">
+      <pre class="code">
+<span class="tk-f">test</span>.<span class="tk-f">describe</span>(<span class="tk-s">"Login"</span>, () => {
+
+  <span class="tk-f">test</span>(<span class="tk-s">"with valid credentials reaches the dashboard"</span>, <span class="tk-k">async</span> ({ page }) => {
+    <span class="tk-c">// ...</span>
+  });
+
+  <span class="tk-f">test</span>(<span class="tk-s">"with an invalid password shows an error"</span>, <span class="tk-k">async</span> ({ page }) => {
+    <span class="tk-c">// ...</span>
+  });
+});</pre>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>📖 Group by feature</h3><p>The report reads like an index: <b>Login →</b> its cases. With 100 tests, chapters save lives.</p></div>
+      <div class="card" style="margin-top:.8rem"><h3>🎯 Run one chapter</h3><p><code class="pill">npx playwright test -g "Login"</code> runs only that group.</p></div>
+      <div class="card" style="margin-top:.8rem"><h3>🔧 Focus tools</h3><p><code class="pill">test.only(...)</code> runs ONLY that test (debugging) · <code class="pill">test.skip(...)</code> skips it, on the record. ⚠️ Never commit an .only.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>A light concept to warm up. describe takes an arrow function with the tests inside, a syntax they already read fluently. A forgotten .only in a commit is a classic: the suite "passes" in CI because it ran ONE test. Recommended anecdote if you have one of your own.</p></div>
+</section>
+
+<!-- 4 · Hooks -->
+<section class="slide" data-act="Acto 1 · Organiza">
+  <h2 data-anim="fade-up">beforeEach: <span class="grad-text">write the login ONCE</span> 🪝</h2>
+  <div class="ba" data-anim="fade-up">
+    <div>
+      <span class="ba-tag bad-tag">❌ Before: login copied into every test</span>
+      <pre class="code" style="font-size:clamp(.68rem,1vw,.84rem)">
+<span class="tk-f">test</span>(<span class="tk-s">"view dashboard"</span>, <span class="tk-k">async</span> ({ page }) => {
+  <span class="tk-k">await</span> page.<span class="tk-f">goto</span>(<span class="tk-s">"/login"</span>);
+  <span class="tk-k">await</span> page.<span class="tk-f">getByLabel</span>(<span class="tk-s">"Email"</span>).<span class="tk-f">fill</span>(<span class="tk-s">"testuser@upex.dev"</span>);
+  <span class="tk-k">await</span> page.<span class="tk-f">getByLabel</span>(<span class="tk-s">"Password"</span>).<span class="tk-f">fill</span>(<span class="tk-s">"Test123!"</span>);
+  <span class="tk-k">await</span> page.<span class="tk-f">getByRole</span>(<span class="tk-s">"button"</span>, { name: <span class="tk-c">/sign in/i</span> }).<span class="tk-f">click</span>();
+  <span class="tk-c">// ...finally the real test</span>
+});
+<span class="tk-c">// ...and again in the next test 😩</span></pre>
+    </div>
+    <div>
+      <span class="ba-tag good-tag">✅ After: the hook does it for everyone</span>
+      <pre class="code" style="font-size:clamp(.68rem,1vw,.84rem)">
+<span class="tk-f">test</span>.<span class="tk-f">describe</span>(<span class="tk-s">"Dashboard"</span>, () => {
+
+  <span class="tk-f">test</span>.<span class="tk-f">beforeEach</span>(<span class="tk-k">async</span> ({ page }) => {
+    <span class="tk-k">await</span> page.<span class="tk-f">goto</span>(<span class="tk-s">"/login"</span>);
+    <span class="tk-c">// ...login steps, just ONCE</span>
+  });
+
+  <span class="tk-f">test</span>(<span class="tk-s">"view dashboard"</span>, <span class="tk-k">async</span> ({ page }) => {
+    <span class="tk-c">// starts ALREADY logged in 🎉</span>
+  });
+
+  <span class="tk-f">test</span>(<span class="tk-s">"create task"</span>, <span class="tk-k">async</span> ({ page }) => {
+    <span class="tk-c">// also logged in</span>
+  });
+});</pre>
+    </div>
+  </div>
+  <div class="callout" data-anim="fade-up"><span class="co-ico">🪝</span><p><b>beforeEach runs before EACH test in the group</b>, so every test starts with a fresh, logged-in page, independent of the others. There are also <code>afterEach</code>, <code>beforeAll</code>, <code>afterAll</code> (cleanup and heavy setup).</p></div>
+  <div class="notes"><p>Hooks = the preconditions of their manual test case, in code and shared. A fine point: beforeEach runs for EACH test (isolation: a test does not inherit the previous one's mess); beforeAll runs once per group (faster, less isolated). For this level: beforeEach always, beforeAll when the slowness hurts.</p></div>
+</section>
+
+<!-- 5 · M P1 -->
+<section class="slide" data-act="Acto 1 · Organiza">
+  <div class="mission" data-mission="p1" data-anim="fade-up">
+    <div class="m-head"><span class="m-badge">MISSION P1</span><h3>Refactor with describe + beforeEach</h3>
+      <label class="m-check"><input type="checkbox"> Completed</label></div>
+    <div class="m-obj">🎯 Reorganize your starting suite: group the tests by feature and move the repeated login into a <b>beforeEach</b>.</div>
+    <div class="cols" style="gap:1.2rem">
+      <div>
+        <p style="font-size:.9rem;line-height:1.9;margin:.2rem 0">
+        1. Group your specs with <code class="pill">test.describe</code> by feature<br>
+        2. Where 2+ tests repeat the login → <code class="pill">test.beforeEach</code><br>
+        3. Run the whole suite again:</p>
+        <div class="cmd"><span class="ps">$</span><span class="ct">npx playwright test</span><span class="copy">📋</span></div>
+      </div>
+      <div>
+        <details class="m-hint"><summary>Hint: a test now fails</summary><div class="hint-body"><p>Does that test NEED to be logged out (e.g. login-invalid)? Then it does not belong in that describe. Leave it in its own group with no login hook. Hooks apply to the WHOLE group: group by shared precondition.</p></div></details>
+        <div class="callout info" style="margin-top:.8rem"><span class="co-ico">📏</span><p>An honest success metric: your suite loses duplicated lines without losing a single test.</p></div>
+      </div>
+    </div>
+    <div class="m-crit">✅ <span><b>Success criterion:</b> same number of tests, all green, login written ONCE per group.</span></div>
+  </div>
+  <div class="notes"><p>First mission = a real refactor on THEIR code. The hint's snag is teaching gold: login-invalid cannot share the valid-login hook, so they discover that you group by PRECONDITION, not on a whim. 15-20 minutes.</p></div>
+</section>
+
+<!-- 6 · QUIZ 1 -->
+<section class="slide" data-act="Acto 1 · Organiza" style="align-items:center">
+  <div class="quiz" data-quiz="q1">
+    <div class="quiz-tag">⭐ QUIZ 1 · Hooks</div>
+    <h3 class="quiz-q">A describe has 3 tests and a <code style="color:var(--cyan)">beforeEach</code> with login. How many times does the login run when the group runs?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span>Once, at the start of the group</span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span>3 times, before EACH test</span></button>
+      <button class="opt"><span class="key">C</span><span>It depends on the order of the tests</span></button>
+    </div>
+    <div class="quiz-expl">💡 before<b>Each</b> = before EACH test. That guarantees <b>isolation</b>: every test starts clean, without inheriting the state (or the mess) of the previous one. Option A describes <code>beforeAll</code>, which is faster but shares state: the classic speed vs isolation trade-off.</div>
+  </div>
+  <div class="notes"><p>The name says it (Each), but the deeper implication is isolation, the property that makes a suite reliable and parallelizable. Plant the word "isolation": it comes back in API testing and in KATA.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACT 2 · LOCATORS PRO -->
+<!-- ================================================================ -->
+
+<!-- 7 · Locator hierarchy -->
+<section class="slide" data-act="Acto 2 · Locators pro">
+  <h2 data-anim="fade-up">The hierarchy: <span class="grad-text">pick locators that survive</span> 🛡️</h2>
+  <table class="cmp" data-stagger>
+    <tr><th>Priority</th><th>Locator</th><th>Why</th></tr>
+    <tr><td>🥇 1st</td><td><code>getByRole("button", { name: "Sign in" })</code></td><td>How a user (and a screen reader) perceives it. Survives redesigns.</td></tr>
+    <tr><td>🥈 2nd</td><td><code>getByLabel("Email")</code> · <code>getByPlaceholder(...)</code></td><td>Anchored to the visible text of the form.</td></tr>
+    <tr><td>🥉 3rd</td><td><code>getByText("Bienvenida")</code></td><td>For non-interactive texts and messages.</td></tr>
+    <tr><td>4th</td><td><code>getByTestId("submit-btn")</code></td><td>An anchor built for testing (<code>data-testid</code>). Ask the dev team for it.</td></tr>
+    <tr><td>🚨 last</td><td><code>page.locator(".btn > div:nth-child(2)")</code></td><td>Structural CSS: dies with any redesign. Only when there is no alternative.</td></tr>
+  </table>
+  <div class="callout" data-anim="fade-up"><span class="co-ico">♿</span><p><b>Hidden bonus:</b> if getByRole cannot find your button, a user with a screen reader has the same problem. Semantic locators = robust tests AND a free accessibility audit.</p></div>
+  <div class="notes"><p>The table IS the lesson, so let it breathe. Mental rule: "how would you describe the element to a human over the phone?" That is the right locator. The accessibility bonus lifts the conversation: a QA who catches a11y problems in passing adds extra value. data-testid: the convention for asking the dev team for anchors when the DOM is hostile.</p></div>
+</section>
+
+<!-- 8 · Advanced locators -->
+<section class="slide" data-act="Acto 2 · Locators pro">
+  <h2 data-anim="fade-up">Chain and filter: <span class="grad-text">aim precisely</span> 🎯</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <h3>The problem: there are 10 rows, I want ONE</h3>
+      <pre class="code">
+<span class="tk-c">// "the Delete button in Ana's row"</span>
+<span class="tk-k">await</span> page
+  .<span class="tk-f">getByRole</span>(<span class="tk-s">"row"</span>)
+  .<span class="tk-f">filter</span>({ hasText: <span class="tk-s">"Ana"</span> })
+  .<span class="tk-f">getByRole</span>(<span class="tk-s">"button"</span>, { name: <span class="tk-s">"Delete"</span> })
+  .<span class="tk-f">click</span>();</pre>
+      <p style="margin-top:.7rem;font-size:.92rem">It reads like the sentence: row → that contains "Ana" → its Delete button. <b>Chaining</b> = narrowing the context step by step.</p>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.2s">
+      <h3>Web-first assertions (they wait on their own)</h3>
+      <pre class="code">
+<span class="tk-k">await</span> <span class="tk-f">expect</span>(locator).<span class="tk-f">toBeVisible</span>();
+<span class="tk-k">await</span> <span class="tk-f">expect</span>(locator).<span class="tk-f">toHaveText</span>(<span class="tk-s">"Saved"</span>);
+<span class="tk-k">await</span> <span class="tk-f">expect</span>(locator).<span class="tk-f">toHaveCount</span>(<span class="tk-n">3</span>);
+<span class="tk-k">await</span> <span class="tk-f">expect</span>(locator).<span class="tk-f">toBeEnabled</span>();
+<span class="tk-k">await</span> <span class="tk-f">expect</span>(page).<span class="tk-f">toHaveURL</span>(<span class="tk-c">/dashboard/</span>);</pre>
+      <p style="margin-top:.7rem;font-size:.92rem">They retry automatically until they pass (or time out). <b>That is why you never need sleep</b>: the assertion IS the wait.</p>
+    </div>
+  </div>
+  <div class="notes"><p>filter + chaining solves the most common real case: tables and lists. Web-first assertions close the anti-sleep circle: expect(...).toBeVisible() RETRIES until it shows up, so the smart wait is built into the assertion. Whoever understands this never writes waitForTimeout again.</p></div>
+</section>
+
+<!-- 9 · M P2 -->
+<section class="slide" data-act="Acto 2 · Locators pro">
+  <div class="mission" data-mission="p2" data-anim="fade-up">
+    <div class="m-head"><span class="m-badge">MISSION P2</span><h3>Hunt the fragile locators</h3>
+      <label class="m-check"><input type="checkbox"> Completed</label></div>
+    <div class="m-obj">🎯 Audit your suite and replace every structural CSS selector with <b>semantic</b> locators (getByRole / getByLabel / getByText).</div>
+    <div class="cols" style="gap:1.2rem">
+      <div>
+        <p style="font-size:.9rem;line-height:1.9;margin:.2rem 0">
+        1. Search your specs for <code class="pill">page.locator("</code> with CSS<br>
+        2. For each one, find the semantic equivalent.<br>&nbsp;&nbsp;&nbsp;The <b>UI mode locator picker</b> suggests it:</p>
+        <div class="cmd"><span class="ps">$</span><span class="ct">npx playwright test --ui</span><span class="copy">📋</span></div>
+        <p style="font-size:.9rem;margin:.5rem 0">3. Replace, run, green.</p>
+      </div>
+      <div>
+        <details class="m-hint"><summary>Hint: the dojo has no label on an input</summary><div class="hint-body"><p>Fallback order: placeholder? → getByPlaceholder. Unique nearby text? → getByText + chaining. Nothing? → that is the legitimate case for data-testid (and in a real project, you ask the dev for it). Document your decision in a comment.</p></div></details>
+        <div class="callout warn" style="margin-top:.8rem"><span class="co-ico">🧪</span><p>Acid test: does your locator describe WHAT the element is ("the Sign in button") or WHERE it hangs ("the third div of the form")? Only the first survives.</p></div>
+      </div>
+    </div>
+    <div class="m-crit">✅ <span><b>Success criterion:</b> zero structural CSS selectors in your suite (or each exception justified with a comment) and everything green.</span></div>
+  </div>
+  <div class="notes"><p>An audit mission that trains the critical eye on their own code. The UI mode locator picker does 80% of the work: hover and copy the suggestion. The WHAT vs WHERE acid test is the heuristic they take with them for good. 15-20 minutes.</p></div>
+</section>
+
+<!-- 10 · QUIZ 2 -->
+<section class="slide" data-act="Acto 2 · Locators pro" style="align-items:center">
+  <div class="quiz" data-quiz="q2">
+    <div class="quiz-tag">⭐ QUIZ 2 · Locators</div>
+    <h3 class="quiz-q">The team redesigns the whole CSS of the app (new classes, new structure, same texts). Which locator still works?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span><code>page.locator(".btn-primary")</code></span></button>
+      <button class="opt"><span class="key">B</span><span><code>page.locator("form > div:nth-child(3) > button")</code></span></button>
+      <button class="opt" data-ok="1"><span class="key">C</span><span><code>page.getByRole("button", { name: "Sign in" })</code></span></button>
+    </div>
+    <div class="quiz-expl">💡 The redesign changed classes and structure (killing A and B) but the button is still a button that says "Sign in". Role and accessible name are the contract with the user, and that contract is the last thing to change. A semantic locator = betting on the contract, not on the implementation.</div>
+  </div>
+  <div class="notes"><p>Key phrase of the explanation: "betting on the contract, not on the implementation". It is a general engineering principle that will come back in API testing (the OpenAPI contract) and in KATA. Plant it well.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACT 3 · REAL POM -->
+<!-- ================================================================ -->
+
+<!-- 11 · Real LoginPage -->
+<section class="slide" data-act="Acto 3 · POM real">
+  <h2 data-anim="fade-up">Your LoginPage... <span class="grad-text">for real this time</span> 📄</h2>
+  <div class="cols-32">
+    <div data-anim="slide-l">
+      <div class="code-window">
+        <div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">pages/login-page.ts</span></div>
+        <pre class="code" style="font-size:clamp(.72rem,1.1vw,.9rem)">
+<span class="tk-k">import</span> { <span class="tk-k">type</span> Page, <span class="tk-k">type</span> Locator } <span class="tk-k">from</span> <span class="tk-s">"@playwright/test"</span>;
+
+<span class="tk-k">export</span> <span class="tk-k">class</span> LoginPage {
+  <span class="tk-k">readonly</span> emailInput: Locator;
+  <span class="tk-k">readonly</span> passwordInput: Locator;
+  <span class="tk-k">readonly</span> signInButton: Locator;
+
+  <span class="tk-f">constructor</span>(<span class="tk-k">private</span> page: Page) {
+    <span class="tk-k">this</span>.emailInput = page.<span class="tk-f">getByLabel</span>(<span class="tk-s">"Email"</span>);
+    <span class="tk-k">this</span>.passwordInput = page.<span class="tk-f">getByLabel</span>(<span class="tk-s">"Password"</span>);
+    <span class="tk-k">this</span>.signInButton = page.<span class="tk-f">getByRole</span>(<span class="tk-s">"button"</span>, { name: <span class="tk-c">/sign in/i</span> });
+  }
+
+  <span class="tk-k">async</span> <span class="tk-f">goto</span>() {
+    <span class="tk-k">await</span> <span class="tk-k">this</span>.page.<span class="tk-f">goto</span>(<span class="tk-s">"https://dojo.upexgalaxy.com/login"</span>);
+  }
+
+  <span class="tk-k">async</span> <span class="tk-f">login</span>(email: <span class="tk-k">string</span>, password: <span class="tk-k">string</span>) {
+    <span class="tk-k">await</span> <span class="tk-k">this</span>.emailInput.<span class="tk-f">fill</span>(email);
+    <span class="tk-k">await</span> <span class="tk-k">this</span>.passwordInput.<span class="tk-f">fill</span>(password);
+    <span class="tk-k">await</span> <span class="tk-k">this</span>.signInButton.<span class="tk-f">click</span>();
+  }
+}</pre>
+      </div>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🆕 vs Coding Classes</h3><p>The same class you built in the simulator, with 3 production upgrades.</p></div>
+      <div class="card" style="margin-top:.75rem"><h3>📍 Locators as fields</h3><p>Declared ONCE in the constructor, typed as <code class="pill">Locator</code>, reused in every method.</p></div>
+      <div class="card" style="margin-top:.75rem"><h3>🏷️ Real TypeScript</h3><p><code class="pill">type Page</code> imported, <code class="pill">readonly</code> (cannot be reassigned), <code class="pill">private page</code> = parameter and property in one step.</p></div>
+      <div class="card" style="margin-top:.75rem"><h3>📤 export</h3><p>The word that lets other files do <code class="pill">import { LoginPage }</code>.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>The reunion: the class from the Coding Classes simulator, production version. Three novelties to name without drama: locators-as-fields (the modern POM standard), readonly (const for properties), private page in the constructor (a TS shortcut: parameter + property). export/import: the module mechanism they saw conceptually in Coding Base, which they now use for real.</p></div>
+</section>
+
+<!-- 12 · Spec with POM -->
+<section class="slide" data-act="Acto 3 · POM real">
+  <h2 data-anim="fade-up">The spec stays <span class="grad-text">clean and readable</span></h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <div class="code-window">
+        <div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/login.spec.ts</span></div>
+        <pre class="code" style="font-size:clamp(.72rem,1.1vw,.9rem)">
+<span class="tk-k">import</span> { test, expect } <span class="tk-k">from</span> <span class="tk-s">"@playwright/test"</span>;
+<span class="tk-k">import</span> { LoginPage } <span class="tk-k">from</span> <span class="tk-s">"../pages/login-page"</span>;
+
+<span class="tk-f">test</span>.<span class="tk-f">describe</span>(<span class="tk-s">"Login"</span>, () => {
+  <span class="tk-k">let</span> loginPage: LoginPage;
+
+  <span class="tk-f">test</span>.<span class="tk-f">beforeEach</span>(<span class="tk-k">async</span> ({ page }) => {
+    loginPage = <span class="tk-k">new</span> <span class="tk-f">LoginPage</span>(page);
+    <span class="tk-k">await</span> loginPage.<span class="tk-f">goto</span>();
+  });
+
+  <span class="tk-f">test</span>(<span class="tk-s">"valid credentials → dashboard"</span>, <span class="tk-k">async</span> ({ page }) => {
+    <span class="tk-k">await</span> loginPage.<span class="tk-f">login</span>(<span class="tk-s">"testuser@upex.dev"</span>, <span class="tk-s">"Test123!"</span>);
+    <span class="tk-k">await</span> <span class="tk-f">expect</span>(page).<span class="tk-f">toHaveURL</span>(<span class="tk-c">/dashboard/</span>);
+  });
+});</pre>
+      </div>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🗂️ New structure</h3>
+        <div class="tree" style="font-size:.85rem;line-height:1.8">
+        <div><span class="tr-dir">mi-playwright-pro/</span></div>
+        <div>├─ <span class="tr-dir">pages/</span> <span class="tr-c">← your Page Objects</span></div>
+        <div>│&nbsp;&nbsp;└─ <span class="tr-star">login-page.ts</span></div>
+        <div>└─ <span class="tr-dir">tests/</span> <span class="tr-c">← specs only</span></div>
+        <div>&nbsp;&nbsp;&nbsp;└─ <span class="tr-file">login.spec.ts</span></div></div></div>
+      <div class="card hl" style="margin-top:.9rem"><h3>📜 The sacred split</h3><p><b>Actions</b> → live in the Page Object.<br><b>Assertions (expect)</b> → live in the test.<br>The test decides what counts as pass/fail; the page only knows how to be operated.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>The actions/assertions split is THE architecture rule of this session (and a quiz question): the Page Object operates the page, the test judges the result. If the POM does expects, it decides pass/fail instead of the test and becomes inflexible. Note the pages/ folder kept separate from tests/, an order that scales.</p></div>
+</section>
+
+<!-- 13 · M P3 -->
+<section class="slide" data-act="Acto 3 · POM real">
+  <div class="mission" data-mission="p3" data-anim="fade-up">
+    <div class="m-head"><span class="m-badge">MISSION P3</span><h3>Your first production Page Object</h3>
+      <label class="m-check"><input type="checkbox"> Completed</label></div>
+    <div class="m-obj">🎯 Create <b>pages/login-page.ts</b> and refactor your login specs to use it.</div>
+    <div class="cols" style="gap:1.2rem">
+      <div>
+        <p style="font-size:.9rem;line-height:1.9;margin:.2rem 0">
+        1. Create the <code class="pill">pages/</code> folder and the <code class="pill">login-page.ts</code> file (model on the slide "Your LoginPage... for real this time". Type it, do not paste it: muscle memory matters)<br>
+        2. Refactor login.spec.ts and login-invalid.spec.ts to use it<br>
+        3. Green again:</p>
+        <div class="cmd"><span class="ps">$</span><span class="ct">npx playwright test login</span><span class="copy">📋</span></div>
+      </div>
+      <div>
+        <details class="m-hint"><summary>Hint: "Cannot find module '../pages/login-page'"</summary><div class="hint-body"><p>The import path is relative TO THE FILE that imports: from tests/, the pages/ folder is one level up → <code>../pages/login-page</code>. No .ts extension in the import.</p></div></details>
+        <details class="m-hint"><summary>Extra challenge if you are ahead</summary><div class="hint-body"><p>Also create <code>pages/dashboard-page.ts</code> with an <code>expectLoaded()</code> method... wait, expects in the POM? 🤔 You decide where the assertion goes, and defend your decision in the debrief.</p></div></details>
+      </div>
+    </div>
+    <div class="m-crit">✅ <span><b>Success criterion:</b> green login tests with NO direct <code style="color:var(--cyan)">page.fill/page.click</code> in the specs. Everything goes through LoginPage.</span></div>
+  </div>
+  <div class="notes"><p>The high point of the POM arc that started in Coding Classes. "Type it, do not paste it" is meant seriously: typing the constructor with its types fixes the syntax. The extra challenge plants the actions-vs-assertions debate on purpose. Pick it up in the debrief: the canonical answer is expects in the test, but convenience methods like expectLoaded() exist in the real world, and discussing it is a sign of maturity.</p></div>
+</section>
+
+<!-- 14 · QUIZ 3 -->
+<section class="slide" data-act="Acto 3 · POM real" style="align-items:center">
+  <div class="quiz" data-quiz="q3">
+    <div class="quiz-tag">⭐ QUIZ 3 · POM</div>
+    <h3 class="quiz-q">According to the sacred split, where does <code style="color:var(--cyan)">expect(page).toHaveURL(/dashboard/)</code> live?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span>In LoginPage, at the end of the login() method</span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span>In the test: the Page Object acts, the test verifies</span></button>
+      <button class="opt"><span class="key">C</span><span>In playwright.config.ts</span></button>
+    </div>
+    <div class="quiz-expl">💡 If login() included the dashboard expect, you could not reuse it for the case "invalid login stays on /login": the method would fail by design. Actions go to the POM because they REPEAT; assertions go to the test because they CHANGE with each case. Reusability vs specificity.</div>
+  </div>
+  <div class="notes"><p>The explanation gives the ARGUMENT, not just the rule: the same login() serves the valid and the invalid case precisely because it assumes no outcome. Whoever answered A and hears this understands WHY, which is worth more than getting it right.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACT 4 · FIXTURES -->
+<!-- ================================================================ -->
+
+<!-- 15 · Fixtures -->
+<section class="slide" data-act="Acto 4 · Fixtures">
+  <h2 data-anim="fade-up">Fixtures: <span class="grad-text">create your own ({ page })</span> 💉</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <div class="code-window">
+        <div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">fixtures.ts</span></div>
+        <pre class="code" style="font-size:clamp(.72rem,1.1vw,.9rem)">
+<span class="tk-k">import</span> { test <span class="tk-k">as</span> base } <span class="tk-k">from</span> <span class="tk-s">"@playwright/test"</span>;
+<span class="tk-k">import</span> { LoginPage } <span class="tk-k">from</span> <span class="tk-s">"./pages/login-page"</span>;
+
+<span class="tk-k">export</span> <span class="tk-k">const</span> test = base.<span class="tk-f">extend</span><{ loginPage: LoginPage }>({
+  loginPage: <span class="tk-k">async</span> ({ page }, use) => {
+    <span class="tk-k">const</span> loginPage = <span class="tk-k">new</span> <span class="tk-f">LoginPage</span>(page);
+    <span class="tk-k">await</span> loginPage.<span class="tk-f">goto</span>();
+    <span class="tk-k">await</span> <span class="tk-f">use</span>(loginPage);  <span class="tk-c">// ← the test runs here</span>
+  },
+});
+<span class="tk-k">export</span> { expect } <span class="tk-k">from</span> <span class="tk-s">"@playwright/test"</span>;</pre>
+      </div>
+    </div>
+    <div data-anim="fade-up" style="animation-delay:.2s">
+      <div class="code-window">
+        <div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/login.spec.ts, now</span></div>
+        <pre class="code" style="font-size:clamp(.72rem,1.1vw,.9rem)">
+<span class="tk-k">import</span> { test, expect } <span class="tk-k">from</span> <span class="tk-s">"../fixtures"</span>;
+
+<span class="tk-f">test</span>(<span class="tk-s">"valid login"</span>, <span class="tk-k">async</span> ({ loginPage, page }) => {
+  <span class="tk-k">await</span> loginPage.<span class="tk-f">login</span>(<span class="tk-s">"testuser@upex.dev"</span>, <span class="tk-s">"Test123!"</span>);
+  <span class="tk-k">await</span> <span class="tk-f">expect</span>(page).<span class="tk-f">toHaveURL</span>(<span class="tk-c">/dashboard/</span>);
+});</pre>
+      </div>
+      <div class="card hl" style="margin-top:.9rem"><h3>🤯 The circle closes</h3><p>The <code class="pill">({ page })</code> you have used since Coding Base IS a Playwright fixture. You just learned to build your own: <code class="pill">({ loginPage })</code> arrives <b>already instantiated and on the login page</b>, with no new, no goto, no beforeEach.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>The most abstract concept of the session, so anchor it in what they know: page was always a fixture; extend adds your own to the same mechanism. The fixture pattern: prepare (new + goto) → use(object) = "the test runs here" → (after use: cleanup if needed). Do not go deep on the generic <{...}>: "it tells TypeScript what type the fixture delivers" is enough. The KATA connection goes in the closing.</p></div>
+</section>
+
+<!-- 16 · M P4 -->
+<section class="slide" data-act="Acto 4 · Fixtures">
+  <div class="mission" data-mission="p4" data-anim="fade-up">
+    <div class="m-head"><span class="m-badge">MISSION P4</span><h3>Build your fixture</h3>
+      <label class="m-check"><input type="checkbox"> Completed</label></div>
+    <div class="m-obj">🎯 Create <b>fixtures.ts</b> with the <code style="color:var(--cyan)">loginPage</code> fixture and migrate your login specs to use it.</div>
+    <div class="cols" style="gap:1.2rem">
+      <div>
+        <p style="font-size:.9rem;line-height:1.9;margin:.2rem 0">
+        1. Create <code class="pill">fixtures.ts</code> in the root (model on the slide "Fixtures: create your own ({ page })")<br>
+        2. In your login specs: change the import from <code class="pill">@playwright/test</code> to <code class="pill">../fixtures</code><br>
+        3. Receive <code class="pill">({ loginPage, page })</code> and delete the beforeEach you no longer need<br>
+        4. Green again.</p>
+      </div>
+      <div>
+        <details class="m-hint"><summary>Hint: TypeScript complains about extend</summary><div class="hint-body"><p>Check the generic: <code>base.extend&lt;{ loginPage: LoginPage }&gt;</code>. The braces declare the "menu" of new fixtures and their type. And the fixture body MUST call <code>await use(...)</code> exactly once.</p></div></details>
+        <div class="callout info" style="margin-top:.8rem"><span class="co-ico">🥋</span><p>Planting the future: in KATA you will receive <code>({ api })</code>, <code>({ ui })</code>, <code>({ test })</code>. They are fixtures exactly like the one you just built, with more layers inside.</p></div>
+      </div>
+    </div>
+    <div class="m-crit">✅ <span><b>Success criterion:</b> your login tests receive <code style="color:var(--cyan)">({ loginPage })</code> from your own fixtures import and pass green.</span></div>
+  </div>
+  <div class="notes"><p>A short mission but conceptually dense: walk around and check the extends. Typical mistake: forgetting await use(loginPage) (the test never runs, a silent timeout). The KATA connection here is literal: the boilerplate's TestFixture L4 IS this file with more muscle. Whoever finishes this mission already understands half the architecture of the professional repo.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACT 5 · API TESTING -->
+<!-- ================================================================ -->
+
+<!-- 17 · Why API -->
+<section class="slide" data-act="Acto 5 · API testing">
+  <h2 data-anim="fade-up">Not everything deserves a browser: <span class="grad-text">the pyramid</span> 🔺</h2>
+  <div class="cols">
+    <div data-anim="slide-l">
+      <div class="pyramid" data-stagger>
+        <div class="py ui">🖥️ UI / E2E: few, slow, fragile</div>
+        <div class="py api">🔌 API / integration: more, fast, stable</div>
+        <div class="py unit">⚙️ Unit: many, instant (dev territory)</div>
+      </div>
+      <p style="margin-top:1rem;font-size:.95rem">Your login test through the UI: <b>~5 seconds</b> (browser, render, animations). The same login through the API: <b>~200 ms</b>, and it does not break when someone moves a button.</p>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>🖥️ UI when...</h3><p>You test the user JOURNEY: critical flows, visuals, real interaction.</p></div>
+      <div class="card" style="margin-top:.8rem"><h3>🔌 API when...</h3><p>You test business RULES: validations, permissions, data, 4xx errors. Most of your edge cases.</p></div>
+      <div class="card hl" style="margin-top:.8rem"><h3>🥋 The dojo is waiting</h3><p>It has a documented REST API: <span class="pill">dojo.upexgalaxy.com/api/docs</span>. Open it NOW and see which endpoints it offers.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>The pyramid without dogma: a cost-benefit heuristic, not a religion. Practical message: "are you testing the journey (UI) or the rule (API)?" Validation edge cases through the UI = slowness multiplied; through the API they are milliseconds. Ask them to open /api/docs live, because mission P5 comes from there.</p></div>
+</section>
+
+<!-- 18 · request -->
+<section class="slide" data-act="Acto 5 · API testing">
+  <h2 data-anim="fade-up">request: <span class="grad-text">Playwright without a browser</span> 🔌</h2>
+  <div class="cols-32">
+    <div data-anim="slide-l">
+      <pre class="code">
+<span class="tk-f">test</span>(<span class="tk-s">"API: login returns a session"</span>, <span class="tk-k">async</span> ({ request }) => {
+  <span class="tk-k">const</span> res = <span class="tk-k">await</span> request.<span class="tk-f">post</span>(<span class="tk-s">"https://dojo.upexgalaxy.com/api/auth/login"</span>, {
+    data: { email: <span class="tk-s">"testuser@upex.dev"</span>, password: <span class="tk-s">"Test123!"</span> },
+  });
+
+  <span class="tk-f">expect</span>(res.<span class="tk-f">status</span>()).<span class="tk-f">toBe</span>(<span class="tk-n">200</span>);
+
+  <span class="tk-k">const</span> body = <span class="tk-k">await</span> res.<span class="tk-f">json</span>();
+  <span class="tk-f">expect</span>(body).<span class="tk-f">toHaveProperty</span>(<span class="tk-s">"access_token"</span>);
+});
+
+<span class="tk-f">test</span>(<span class="tk-s">"API: invalid login responds 401"</span>, <span class="tk-k">async</span> ({ request }) => {
+  <span class="tk-k">const</span> res = <span class="tk-k">await</span> request.<span class="tk-f">post</span>(<span class="tk-s">".../api/auth/login"</span>, {
+    data: { email: <span class="tk-s">"testuser@upex.dev"</span>, password: <span class="tk-s">"mala"</span> },
+  });
+  <span class="tk-f">expect</span>(res.<span class="tk-f">status</span>()).<span class="tk-f">toBe</span>(<span class="tk-n">401</span>);
+});</pre>
+    </div>
+    <div data-stagger>
+      <div class="card"><h3>💉 ({ request })</h3><p>Another built-in fixture: an HTTP client ready to use, zero browser.</p></div>
+      <div class="card" style="margin-top:.8rem"><h3>📨 Anatomy</h3><p><code class="pill">post(url, { data })</code> sends JSON · <code class="pill">res.status()</code> the code · <code class="pill">res.json()</code> the body. You already know the statuses (200, 401, 404...) from the job.</p></div>
+      <div class="card" style="margin-top:.8rem"><h3>🗺️ Shape vs reality</h3><p>Exact routes and fields: in the dojo's <span class="pill">/api/docs</span>. These slides show the SHAPE, the same rule as in P0.</p></div>
+    </div>
+  </div>
+  <div class="notes"><p>The second test (the sad path through the API) is the strongest argument: validating the 401 through the UI costs seconds and depends on visual messages; through the API it goes straight to the contract. Note that expect here has no await on status (it is not web-first, it is an immediate value). If someone asks, that is the reason; if not, do not complicate it.</p></div>
+</section>
+
+<!-- 19 · M P5 -->
+<section class="slide" data-act="Acto 5 · API testing">
+  <div class="mission" data-mission="p5" data-anim="fade-up">
+    <div class="m-head"><span class="m-badge">MISSION P5</span><h3>Your first API tests</h3>
+      <label class="m-check"><input type="checkbox"> Completed</label></div>
+    <div class="m-obj">🎯 Explore the dojo's <b>/api/docs</b> and write 2 API tests in <code style="color:var(--cyan)">tests/api/</code>.</div>
+    <div class="cols" style="gap:1.2rem">
+      <div>
+        <p style="font-size:.9rem;line-height:1.9;margin:.2rem 0">
+        1. Open <span class="pill">dojo.upexgalaxy.com/api/docs</span> and pick 2 endpoints<br>
+        2. Suggestion: valid login (200) and invalid login (401)<br>
+        3. Create them in <code class="pill">tests/api/auth.spec.ts</code> and run only that folder:</p>
+        <div class="cmd"><span class="ps">$</span><span class="ct">npx playwright test tests/api</span><span class="copy">📋</span></div>
+      </div>
+      <div>
+        <details class="m-hint"><summary>Hint: which exact route and fields?</summary><div class="hint-body"><p>EVERYTHING is in /api/docs: method (GET/POST), route, expected body and possible responses. Reading API documentation is a QA skill, and this mission trains it as much as the code.</p></div></details>
+        <div class="callout" style="margin-top:.8rem"><span class="co-ico">⚡</span><p>Look at the duration when you finish: your API tests should run in <b>under 2 seconds</b>. Compare it with your UI tests. That delta IS the pyramid.</p></div>
+      </div>
+    </div>
+    <div class="m-crit">✅ <span><b>Success criterion:</b> 2 green API tests in <code style="color:var(--cyan)">tests/api/</code>, validating the status and at least one property of the body.</span></div>
+  </div>
+  <div class="notes"><p>Double training: the code (simple) and READING API documentation (the underlying skill). If the dojo exposes public GET endpoints, they are the second easiest test. At the close, compare durations live: UI suite vs the api folder. The delta convinces more than any pyramid slide.</p></div>
+</section>
+
+<!-- 20 · QUIZ 4 -->
+<section class="slide" data-act="Acto 5 · API testing" style="align-items:center">
+  <div class="quiz" data-quiz="q4">
+    <div class="quiz-tag">⭐ QUIZ 4 · Strategy</div>
+    <h3 class="quiz-q">You must test 12 combinations of invalid data in the sign-up form. Professional strategy?</h3>
+    <div class="quiz-opts">
+      <button class="opt"><span class="key">A</span><span>12 UI tests: the form is UI, so you test it through the UI</span></button>
+      <button class="opt" data-ok="1"><span class="key">B</span><span>12 through the API (the validation rules) + 1-2 through the UI (that the error is SHOWN to the user)</span></button>
+      <button class="opt"><span class="key">C</span><span>Test only the 3 most likely ones and pray</span></button>
+    </div>
+    <div class="quiz-expl">💡 The validation RULES live in the backend → API: 12 cases in ~2 seconds, stable. What the UI uniquely contributes is SHOWING the error → 1-2 UI tests cover it. Division of labor: the API tests the rule, the UI tests the experience. Full coverage, fast suite.</div>
+  </div>
+  <div class="notes"><p>The quiz lands the pyramid in a real suite-design decision. The formula "the API tests the rule, the UI tests the experience" is quotable and they will take it to work. Option C exists because real time pressure pushes there. Name it: with API testing, covering everything IS cheap.</p></div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ACT 6 · BOSS -->
+<!-- ================================================================ -->
+
+<!-- 21 · M P6 boss -->
+<section class="slide" data-act="Acto 6 · Boss final">
+  <div class="mission" data-mission="p6" data-anim="fade-up">
+    <div class="m-head"><span class="m-badge">MISSION P6 · BOSS 🏆</span><h3>The professional suite, complete</h3>
+      <label class="m-check"><input type="checkbox"> Completed</label></div>
+    <div class="m-obj">🎯 All together: a tidy final structure, the full suite green, the report as evidence.</div>
+    <div class="cols" style="gap:1.2rem">
+      <div>
+        <div class="tree" style="font-size:.82rem;line-height:1.75">
+          <div><span class="tr-dir">mi-playwright-pro/</span></div>
+          <div>├─ <span class="tr-file">fixtures.ts</span> <span class="tr-c">← your fixtures (P4)</span></div>
+          <div>├─ <span class="tr-dir">pages/</span></div>
+          <div>│&nbsp;&nbsp;└─ <span class="tr-star">login-page.ts</span> <span class="tr-c">← POM (P3)</span></div>
+          <div>├─ <span class="tr-dir">tests/</span></div>
+          <div>│&nbsp;&nbsp;├─ <span class="tr-file">login.spec.ts</span> <span class="tr-c">← describe+fixture (P1, P4)</span></div>
+          <div>│&nbsp;&nbsp;├─ <span class="tr-file">login-invalid.spec.ts</span> <span class="tr-c">← POM (P3)</span></div>
+          <div>│&nbsp;&nbsp;├─ <span class="tr-file">dashboard.spec.ts</span> <span class="tr-c">← fixture (P4)</span></div>
+          <div>│&nbsp;&nbsp;└─ <span class="tr-dir">api/</span></div>
+          <div>│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ <span class="tr-file">auth.spec.ts</span> <span class="tr-c">← API tests (P5)</span></div>
+          <div>└─ <span class="tr-file">playwright.config.ts</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="cmd"><span class="ps">$</span><span class="ct">npx playwright test</span><span class="copy">📋</span></div>
+        <div class="cmd"><span class="ps">$</span><span class="ct">npx playwright show-report</span><span class="copy">📋</span></div>
+        <div class="callout" style="margin-top:.8rem"><span class="co-ico">📊</span><p>In the report: your describes as chapters, API tests in milliseconds, UI tests organized. <b>This structure is a mini version of what a professional framework looks like.</b></p></div>
+        <details class="m-hint"><summary>Hint: specs that still use page.fill for login</summary><div class="hint-body"><p>The ones that touch login must go through LoginPage or the fixture. A spec that does not touch login can stay direct. Do not force a POM where it adds nothing YET. Judgment > dogma.</p></div></details>
+      </div>
+    </div>
+    <div class="m-crit">✅ <span><b>Success criterion:</b> a tree like the one on the left, the full suite green (UI + API), an HTML report you can browse by chapters.</span></div>
+  </div>
+  <div class="notes"><p>The boss is integration, not new content. The final hint teaches judgment: POM where there is real repetition, direct where there is not. "Judgment > dogma" is the mark of a senior. The final tree is deliberately a miniature of KATA: fixtures.ts ≈ TestFixture, pages/ ≈ L3 components. That rhyme is revealed in the closing.</p></div>
+</section>
+
+<!-- 22 · The bridge -->
+<section class="slide" data-act="Acto 6 · Boss final">
+  <div class="kicker">What you just built</div>
+  <h2 data-anim="fade-up" style="text-align:center">Your folder already <span class="grad-text">rhymes with KATA</span> 🥋</h2>
+  <table class="cmp" data-stagger style="max-width:880px;margin:0 auto">
+    <tr><th>Yours (this session)</th><th>KATA (the professional framework)</th></tr>
+    <tr><td><code>pages/login-page.ts</code></td><td>Page Component (L3 layer) with registered ATCs</td></tr>
+    <tr><td><code>fixtures.ts</code> with <code>({ loginPage })</code></td><td>TestFixture (L4): delivers <code>({ ui })</code>, <code>({ api })</code>, <code>({ test })</code></td></tr>
+    <tr><td>Helpers repeated in every POM</td><td>UiBase / ApiBase (L2), inherited with <code>extends</code></td></tr>
+    <tr><td>Hardcoded credentials 😬</td><td>TestContext (L1): config + data per environment</td></tr>
+    <tr><td><code>tests/api/auth.spec.ts</code></td><td>Api Components with types generated from the OpenAPI</td></tr>
+  </table>
+  <div class="callout" data-anim="fade-up" style="max-width:880px;margin:1.2rem auto 0"><span class="co-ico">🌉</span><p>You did not learn "advanced Playwright". You built, by hand and at small scale, <b>every piece that KATA industrializes</b>. The KATA Bridge deck crosses the bridge.</p></div>
+  <div class="notes"><p>A strong conceptual close: the table shows that KATA is not a new world but the industrialization of what they just did by hand. The hardcoded credentials row (everyone has it) sparks curiosity about TestContext. Do not explain KATA here, that is the whole of deck 6.</p></div>
+</section>
+
+<!-- 23 · Closing -->
+<section class="slide" data-act="Acto 6 · Boss final" style="align-items:center;text-align:center">
+  <div class="kicker" data-anim="fade-up">Debrief</div>
+  <h2 data-anim="fade-up" style="animation-delay:.1s">Missions completed</h2>
+  <div class="final-list" id="final-list" data-anim="fade-up" style="animation-delay:.2s"></div>
+  <p id="final-msg" data-anim="fade-up" style="animation-delay:.3s;max-width:600px;margin-top:1rem"></p>
+  <div class="cards c3" data-stagger style="margin-top:1.2rem;max-width:1000px">
+    <div class="card"><div class="ico">🏠</div><h3>Homework</h3><p>Finish the pending missions + create the POM of a second dojo page.</p></div>
+    <div class="card"><div class="ico">🥷</div><h3>Next: Dojo Lab I</h3><p>First specs against a real app, with the professional environment installed and guided missions.</p></div>
+    <div class="card hl"><div class="ico">🥋</div><h3>After that: KATA Bridge</h3><p>Cross from your mini-framework to the professional boilerplate. The series continues afterwards with Automation Patterns and API Automation.</p></div>
+  </div>
+  <div class="notes"><p>The session's achievement in one sentence: they went from "I have tests" to "I have a small framework": organization (hooks), robustness (locators), encapsulation (POM), injection (fixtures) and strategy (API vs UI). What comes next in the catalog: Dojo Lab I (practice against a real app) and KATA Bridge (the bridge to the professional framework). Mission progress is saved in this file.</p></div>
+</section>
+
+<script>
+/* ================================================================
+   RUNTIME: navigation, quizzes, persistent missions, copyable
+   commands. No dependencies.
+   ================================================================ */
+(function(){
+'use strict';
+
+const $  = (s,r)=> (r||document).querySelector(s);
+const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
+
+/* ---------- slide navigation ---------- */
+const slides = $$('.slide');
+const N = slides.length;
+let cur = 0;
+const progress = $('#progress'), counter = $('#counter'), actLabel = $('#act-label');
+const drawer = $('#notes-drawer'), ndContent = $('#nd-content');
+
+function go(i){
+  cur = Math.max(0, Math.min(N-1, i));
+  slides.forEach((s,k)=> s.classList.toggle('is-active', k===cur));
+  progress.style.width = ((cur+1)/N*100) + '%';
+  counter.textContent = (cur+1) + ' / ' + N;
+  actLabel.textContent = slides[cur].dataset.act || '';
+  history.replaceState(null,'','#/'+(cur+1));
+  const notes = $('.notes', slides[cur]);
+  ndContent.innerHTML = notes ? notes.innerHTML : '<p>(no notes for this slide)</p>';
+  if(cur === N-1) renderFinal();
+}
+const fromHash = ()=>{ const m = location.hash.match(/^#\/(\d+)/); go(m ? parseInt(m[1],10)-1 : 0); };
+window.addEventListener('hashchange', fromHash);
+
+document.addEventListener('keydown', e=>{
+  const t = e.target;
+  if(t && (t.tagName==='TEXTAREA' || t.tagName==='INPUT')) return;
+  if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown') { e.preventDefault(); go(cur+1); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp') { e.preventDefault(); go(cur-1); }
+  else if(e.key==='Home') go(0);
+  else if(e.key==='End') go(N-1);
+  else if(e.key==='f'||e.key==='F'){ document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
+  else if(e.key==='n'||e.key==='N'||e.key==='s'||e.key==='S') drawer.classList.toggle('open');
+  else if(e.key==='Escape') drawer.classList.remove('open');
+});
+
+/* ---------- confetti ---------- */
+const cv = $('#confetti-canvas'), cx = cv.getContext('2d');
+let parts = [], rafC = null;
+function sizeCanvas(){ cv.width = innerWidth; cv.height = innerHeight; }
+sizeCanvas(); window.addEventListener('resize', sizeCanvas);
+const COLORS = ['#7aa2f7','#bb9af7','#7dcfff','#9ece6a','#ff9e64','#e0af68','#f7768e'];
+function confetti(x, y, n){
+  for(let i=0;i<(n||70);i++){
+    const a = Math.PI*2*Math.random(), v = 3+Math.random()*7;
+    parts.push({x:x, y:y, vx:Math.cos(a)*v, vy:Math.sin(a)*v-3, g:.22, life:1, d:.012+Math.random()*.012,
+      c:COLORS[(Math.random()*COLORS.length)|0], r:3+Math.random()*4, rot:Math.random()*Math.PI});
+  }
+  if(!rafC) tick();
+}
+function tick(){
+  cx.clearRect(0,0,cv.width,cv.height);
+  parts = parts.filter(p=>p.life>0);
+  for(const p of parts){
+    p.x+=p.vx; p.y+=p.vy; p.vy+=p.g; p.life-=p.d; p.rot+=.08;
+    cx.save(); cx.globalAlpha=Math.max(p.life,0); cx.translate(p.x,p.y); cx.rotate(p.rot);
+    cx.fillStyle=p.c; cx.fillRect(-p.r,-p.r/2,p.r*2,p.r); cx.restore();
+  }
+  rafC = parts.length ? requestAnimationFrame(tick) : null;
+}
+
+/* ---------- missions (persisted) ---------- */
+const LS_KEY = 'playwright-pro-progress';
+let saved = {};
+try { saved = JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch(e){ saved = {}; }
+const missions = $$('.mission');
+const M_TOTAL = missions.length;
+const M_TITLES = {
+  p1:'P1 · describe + beforeEach', p2:'P2 · Locator hunt', p3:'P3 · Real Page Object',
+  p4:'P4 · Your fixture', p5:'P5 · API tests', p6:'P6 · Boss: professional suite'
+};
+function missionsDone(){ return missions.filter(m=>$('input',m).checked).length; }
+
+missions.forEach(m=>{
+  const id = m.dataset.mission, cb = $('input', m);
+  cb.checked = !!saved[id];
+  m.classList.toggle('done', cb.checked);
+  cb.addEventListener('change', ()=>{
+    saved[id] = cb.checked;
+    try { localStorage.setItem(LS_KEY, JSON.stringify(saved)); } catch(e){}
+    m.classList.toggle('done', cb.checked);
+    updateChip();
+    if(cb.checked){
+      const r = cb.getBoundingClientRect();
+      confetti(r.left, r.top, 50);
+      if(missionsDone() === M_TOTAL) setTimeout(()=>confetti(innerWidth/2, innerHeight*0.3, 160), 400);
+    }
+  });
+});
+
+/* ---------- quiz engine ---------- */
+const TOTAL_Q = $$('.quiz').length;
+const answered = {};
+let score = 0;
+/* ---------- quiz score persistence ---------- */
+const SCORE_KEY = 'playwright-pro.es.html-score:' + location.pathname;
+let qstate = { q:{}, score:0 };
+try { const _s = JSON.parse(localStorage.getItem(SCORE_KEY) || '{}'); if(_s && typeof _s === 'object'){ qstate.q = _s.q || {}; qstate.score = _s.score || 0; } } catch(e){ qstate = { q:{}, score:0 }; }
+score = qstate.score;
+function saveQuiz(){ qstate.score = score; try { localStorage.setItem(SCORE_KEY, JSON.stringify(qstate)); } catch(e){} }
+const chip = $('#score-chip');
+function updateChip(){
+  chip.textContent = '🎯 ' + missionsDone() + '/' + M_TOTAL + ' · ⭐ ' + score + '/' + TOTAL_Q;
+  chip.classList.remove('bump'); void chip.offsetWidth; chip.classList.add('bump');
+}
+$$('.quiz').forEach(qz=>{
+  const id = qz.dataset.quiz;
+  $$('.opt', qz).forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const ok = btn.dataset.ok === '1';
+      const first = !answered[id];
+      if(first) answered[id] = true;
+      if(ok){
+        btn.classList.add('correct');
+        qz.classList.add('locked');
+        $('.quiz-expl', qz).classList.add('show');
+        const r = btn.getBoundingClientRect();
+        confetti(r.left + r.width/2, r.top + r.height/2, 80);
+        if(first){ score++; updateChip(); }
+      } else {
+        btn.classList.remove('wrong'); void btn.offsetWidth; btn.classList.add('wrong');
+      }
+      qstate.q[id] = { a:true, c: ok || (qstate.q[id] && qstate.q[id].c) || false };
+      saveQuiz();
+    });
+  });
+});
+/* ---------- restore answered quizzes on load (no confetti) ---------- */
+$$('.quiz').forEach(qz=>{
+  const id = qz.dataset.quiz, st = qstate.q[id];
+  if(!st) return;
+  if(st.a) answered[id] = true;
+  if(st.c){
+    const okBtn = $('.opt[data-ok="1"]', qz);
+    if(okBtn) okBtn.classList.add('correct');
+    qz.classList.add('locked');
+    const ex = $('.quiz-expl', qz);
+    if(ex) ex.classList.add('show');
+  }
+});
+
+/* ---------- final board ---------- */
+function renderFinal(){
+  const list = $('#final-list');
+  list.innerHTML = missions.map(m=>{
+    const id = m.dataset.mission, done = $('input', m).checked;
+    return '<div class="fl-item'+(done?' ok':'')+'">'+(done?'✅':'⬜')+' '+(M_TITLES[id]||id)+'</div>';
+  }).join('');
+  const d = missionsDone();
+  $('#final-msg').textContent =
+    d === M_TOTAL ? M_TOTAL + '/' + M_TOTAL + ': you have a mini-framework built by hand. KATA will feel like familiar territory. 🏆' :
+    d >= 4 ? d + '/' + M_TOTAL + ': great session. The pending ones are your homework; the file saves your progress.' :
+    d >= 2 ? d + '/' + M_TOTAL + ': good progress. P3 (POM) and P4 (fixture) are the critical ones for KATA, so prioritize them at home.' :
+    'The session stays with you. Go at your own pace, every mission builds on the previous one. 🌱';
+  if(d === M_TOTAL) setTimeout(()=>confetti(innerWidth/2, innerHeight*0.3, 140), 450);
+}
+
+/* ---------- copy-on-click commands ---------- */
+$$('.cmd').forEach(c=>{
+  c.addEventListener('click', ()=>{
+    const txt = $('.ct', c).textContent;
+    const done = ()=>{
+      c.classList.add('copied');
+      const tag = $('.copy', c), old = tag.textContent;
+      tag.textContent = '✓ copied';
+      setTimeout(()=>{ c.classList.remove('copied'); tag.textContent = old; }, 1400);
+    };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done).catch(done);
+    } else { done(); }
+  });
+});
+
+/* ---------- cover FX: constellation ---------- */
+(function(){
+  const c = $('#fx-cover'); if(!c) return;
+  const ctx = c.getContext('2d');
+  let pts = [], raf = null;
+  function size(){ c.width = c.offsetWidth; c.height = c.offsetHeight; }
+  function init(){
+    size();
+    pts = Array.from({length:70}, ()=>({
+      x:Math.random()*c.width, y:Math.random()*c.height,
+      vx:(Math.random()-.5)*.45, vy:(Math.random()-.5)*.45, r:1+Math.random()*1.8}));
+  }
+  function frame(){
+    if(!slides[0].classList.contains('is-active')){ raf=null; return; }
+    ctx.clearRect(0,0,c.width,c.height);
+    for(const p of pts){
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0||p.x>c.width) p.vx*=-1;
+      if(p.y<0||p.y>c.height) p.vy*=-1;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7);
+      ctx.fillStyle='rgba(122,162,247,.55)'; ctx.fill();
+    }
+    for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
+      const a=pts[i], b=pts[j], dx=a.x-b.x, dy=a.y-b.y, d=dx*dx+dy*dy;
+      if(d<150*150){
+        ctx.strokeStyle='rgba(187,154,247,'+(0.16*(1-d/22500)).toFixed(3)+')';
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+      }
+    }
+    raf = requestAnimationFrame(frame);
+  }
+  window.addEventListener('resize', init);
+  init();
+  new MutationObserver(()=>{ if(slides[0].classList.contains('is-active') && !raf) raf=requestAnimationFrame(frame); })
+    .observe(slides[0], {attributes:true, attributeFilter:['class']});
+  raf = requestAnimationFrame(frame);
+})();
+
+/* ---------- init ---------- */
+updateChip();
+fromHash();
+})();
+</script>
+<!-- ============ MOBILE PATCH v3 (UPEX): swipe + responsive layout + desktop tip ============ -->
+<style id="upex-mobile-style">
+/* Layout en pantallas angostas: 1 columna + scroll vertical dentro del slide */
+@media (max-width:768px){
+  .slide{padding:max(6vh,52px) 5vw 10vh;overflow-y:auto;justify-content:flex-start}
+  /* spacers flexibles: centran verticalmente cuando el contenido cabe y
+     colapsan a 0 cuando desborda (permitiendo scroll desde arriba) */
+  .slide::before{content:"";margin-top:auto}
+  .slide::after{content:"";margin-bottom:auto}
+  .cols,.cols-32,.cards.c3,.cards.c2,.memviz,.playground,.ba,.stepper,.termsim,.api-playground{grid-template-columns:1fr}
+  #help-hint,#act-label{display:none}
+  /* score chip compacto y pegado al borde superior para no tapar títulos */
+  #score-chip{top:6px;right:8px;font-size:.62rem;padding:.16rem .5rem;box-shadow:none}
+}
+@media (pointer:coarse){
+  #help-hint{display:none}
+}
+/* Tip de una sola vez en móvil: los playgrounds se disfrutan mejor en desktop */
+#upex-tip{position:fixed;left:50%;transform:translateX(-50%);bottom:44px;z-index:90;
+  max-width:min(92vw,420px);display:flex;align-items:flex-start;gap:.6rem;
+  background:rgba(36,40,59,.96);border:1px solid rgba(255,255,255,.18);border-radius:12px;
+  padding:.65rem .8rem;font-size:.78rem;line-height:1.45;color:#9aa5ce;
+  box-shadow:0 8px 24px rgba(0,0,0,.45);animation:upexTipIn .4s ease both}
+#upex-tip b{color:#c0caf5}
+#upex-tip-x{flex:0 0 auto;background:none;border:none;color:#565f89;font-size:.95rem;
+  cursor:pointer;padding:0 .15rem;margin-left:auto;line-height:1.3}
+@keyframes upexTipIn{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%)}}
+</style>
+<script id="upex-mobile-nav">
+(function(){
+'use strict';
+/* Navigates by dispatching synthetic keyboard events: the deck runtime already
+   listens to keydown (ArrowLeft/ArrowRight) and protects textareas/inputs. */
+var send=function(key){document.dispatchEvent(new KeyboardEvent('keydown',{key:key,bubbles:true}))};
+/* Horizontal swipe: ignores gestures that start in interactive/scrollable areas */
+var x0=null,y0=null,skip=false;
+document.addEventListener('touchstart',function(e){
+  var t=e.target;
+  skip=!!(t&&t.closest&&t.closest('textarea,input,button,pre,table,.quiz,.lc-editor,.memviz,.playground'));
+  var p=e.changedTouches[0]; x0=p.clientX; y0=p.clientY;
+},{passive:true});
+document.addEventListener('touchend',function(e){
+  if(x0===null||skip) return;
+  var p=e.changedTouches[0], dx=p.clientX-x0, dy=p.clientY-y0;
+  x0=y0=null;
+  if(Math.abs(dx)>60&&Math.abs(dx)>2*Math.abs(dy)) send(dx<0?'ArrowRight':'ArrowLeft');
+},{passive:true});
+/* One-time tip (shared across all the domain's decks via
+   localStorage). ?tip=1 forces it for QA in browsers without touch. */
+var KEY='upex-deck-mobile-tip-v1';
+var isMobile=matchMedia('(pointer:coarse)').matches&&matchMedia('(max-width:768px)').matches;
+var force=/[?&]tip=1/.test(location.search);
+var seen=false; try{seen=localStorage.getItem(KEY)==='1'}catch(_e){}
+if(force||(isMobile&&!seen)){
+  var tip=document.createElement('div'); tip.id='upex-tip';
+  var msg=document.createElement('span');
+  msg.innerHTML='💻 <b>Tip:</b> to practice in the code playgrounds, come back to this deck from your computer.';
+  var x=document.createElement('button'); x.id='upex-tip-x'; x.textContent='✕'; x.setAttribute('aria-label','Close tip');
+  var close=function(){ if(tip.isConnected) tip.remove(); try{localStorage.setItem(KEY,'1')}catch(_e){} };
+  x.addEventListener('click',close);
+  tip.appendChild(msg); tip.appendChild(x); document.body.appendChild(tip);
+  setTimeout(close,12000);
+}
+})();
+</script>
+
+</body>
+</html>

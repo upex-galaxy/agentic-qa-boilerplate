@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Output Style: how the AI writes from now on</title>
+<style>
+:root{
+  --bg:#0b0d12; --bg-2:#0e1118; --panel:#12161f; --panel-2:#161b26; --panel-3:#1b2130;
+  --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.14);
+  --t1:#eef1f7; --t2:#9aa3b4; --t3:#5f6878;
+  --mono:ui-monospace,'SF Mono','JetBrains Mono',SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --cyan:#22d3ee; --violet:#a78bfa; --lime:#a3e635; --amber:#fbbf24; --rose:#f472b6;
+  --green:#34d399; --red:#f87171; --blue:#60a5fa;
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--t1);font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;letter-spacing:-.01em;line-height:1.6}
+
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px 120px}
+
+/* ---------- hero ---------- */
+header.hero{position:relative;padding:76px 0 44px;overflow:hidden}
+header.hero::before{content:"";position:absolute;inset:-40% -20% auto -20%;height:520px;z-index:-1;
+  background:radial-gradient(700px 380px at 18% 0%,rgba(34,211,238,.13),transparent 62%),
+             radial-gradient(620px 420px at 88% 30%,rgba(167,139,250,.11),transparent 58%)}
+.kick{font-family:var(--mono);font-size:12.5px;font-weight:600;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--cyan);margin:0 0 14px}
+h1{font-size:clamp(34px,5vw,58px);line-height:1.04;font-weight:700;letter-spacing:-.035em;margin:0 0 18px}
+.grad{background:linear-gradient(100deg,var(--cyan),var(--violet) 55%,var(--rose));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.lede{font-size:clamp(16px,1.6vw,20px);line-height:1.55;color:var(--t2);font-weight:300;max-width:74ch;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px}
+.tag{font-family:var(--mono);font-size:11.5px;padding:4px 10px;border-radius:6px;
+  background:var(--panel-2);color:var(--t2);border:1px solid var(--line)}
+
+/* ---------- sections ---------- */
+section{margin-top:62px}
+h2{font-size:clamp(24px,3vw,34px);line-height:1.12;font-weight:700;letter-spacing:-.03em;margin:0 0 10px}
+h2 .num{font-family:var(--mono);font-size:.55em;color:var(--t3);margin-right:12px;font-weight:600}
+.sub{color:var(--t2);font-weight:300;max-width:78ch;margin:0 0 26px;font-size:16.5px}
+
+/* ---------- layer table ---------- */
+table.layers{width:100%;border-collapse:collapse;background:var(--panel);
+  border:1px solid var(--line);border-radius:14px;overflow:hidden;font-size:14.5px}
+table.layers th{text-align:left;padding:14px 18px;background:var(--panel-2);
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--t3);font-weight:600;border-bottom:1px solid var(--line)}
+table.layers td{padding:15px 18px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--t2)}
+table.layers tr:last-child td{border-bottom:none}
+table.layers td:first-child{color:var(--t1);font-weight:600;white-space:nowrap}
+table.layers code{font-family:var(--mono);font-size:12.5px;background:var(--panel-3);
+  padding:2px 6px;border-radius:5px;color:var(--violet);border:1px solid var(--line)}
+.pill{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:999px;margin-left:8px}
+.pill.win{background:rgba(52,211,153,.14);color:var(--green);border:1px solid rgba(52,211,153,.32)}
+
+/* ---------- toggle ---------- */
+.switcher{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 22px}
+.seg{display:inline-flex;background:var(--panel);border:1px solid var(--line-2);
+  border-radius:11px;padding:4px;gap:4px}
+.seg button{font-family:var(--mono);font-size:12.5px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;padding:9px 20px;border-radius:8px;border:none;cursor:pointer;
+  background:transparent;color:var(--t3);transition:all .22s var(--ease)}
+.seg button:hover{color:var(--t2)}
+.seg button.on{background:var(--panel-3);color:var(--t1);box-shadow:0 1px 0 rgba(255,255,255,.06) inset}
+.seg button.on[data-mode="before"]{color:var(--red)}
+.seg button.on[data-mode="after"]{color:var(--green)}
+.hint{font-size:13.5px;color:var(--t3)}
+.hint kbd{font-family:var(--mono);font-size:11.5px;background:var(--panel-2);
+  border:1px solid var(--line-2);border-bottom-width:2px;border-radius:5px;padding:2px 7px;color:var(--t2)}
+
+/* ---------- terminal ---------- */
+.term{background:var(--bg-2);border:1px solid var(--line-2);border-radius:14px;overflow:hidden;
+  box-shadow:0 30px 70px -30px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.03)}
+.term-bar{display:flex;align-items:center;gap:9px;padding:12px 16px;background:var(--panel-2);
+  border-bottom:1px solid var(--line)}
+.dot{width:11px;height:11px;border-radius:50%}
+.dot.r{background:#ff5f57}.dot.y{background:#febc2e}.dot.g{background:#28c840}
+.term-title{margin-left:10px;font-family:var(--mono);font-size:12px;color:var(--t3);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.term-badge{margin-left:auto;font-family:var(--mono);font-size:10.5px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.term-badge.before{background:rgba(248,113,113,.13);color:var(--red);border:1px solid rgba(248,113,113,.3)}
+.term-badge.after{background:rgba(52,211,153,.13);color:var(--green);border:1px solid rgba(52,211,153,.3)}
+.term-body{padding:26px 28px 30px;font-family:var(--mono);font-size:13.5px;line-height:1.72}
+
+/* user prompt line */
+.uline{display:flex;gap:11px;align-items:flex-start;margin:30px 0 20px}
+.uline:first-child{margin-top:0}
+.uline .caret{color:var(--cyan);font-weight:700;flex-shrink:0}
+.uline .txt{color:var(--t1)}
+
+/* claude reply */
+.reply{border-left:2px solid var(--line-2);padding:2px 0 2px 20px;margin:0 0 8px}
+.reply.after-mode{border-left-color:rgba(52,211,153,.36)}
+.reply.before-mode{border-left-color:rgba(248,113,113,.3)}
+.reply p{margin:0 0 13px;color:var(--t2)}
+.reply p.head{color:var(--t1);font-size:14.5px;margin-bottom:16px}
+.reply strong{color:var(--t1);font-weight:700}
+.reply .punch{color:var(--amber);font-weight:700}
+.reply code{background:var(--panel-3);border:1px solid var(--line);border-radius:5px;
+  padding:1.5px 6px;font-size:12.5px;color:var(--violet)}
+.reply h3{font-size:14px;font-weight:700;color:var(--t1);margin:20px 0 10px;
+  letter-spacing:0;display:flex;align-items:center;gap:9px}
+.reply h3::before{content:"##";font-family:var(--mono);color:var(--t3);font-weight:600;font-size:12px}
+.reply ul{list-style:none;margin:0 0 14px;padding:0}
+.reply ul li{position:relative;padding-left:19px;margin-bottom:7px;color:var(--t2)}
+.reply ul li::before{content:"•";position:absolute;left:2px;color:var(--cyan);font-weight:700}
+.reply .q{color:var(--t3);font-style:italic;margin-bottom:12px}
+.reply table{width:100%;border-collapse:collapse;margin:4px 0 16px;font-size:12.5px}
+.reply table th{text-align:left;padding:8px 12px;color:var(--t3);font-weight:600;
+  border-bottom:1px solid var(--line-2);white-space:nowrap}
+.reply table td{padding:8px 12px;border-bottom:1px solid var(--line);color:var(--t2);vertical-align:top}
+.reply table tr:last-child td{border-bottom:none}
+.reply table td strong{color:var(--amber)}
+.reply pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:14px 16px;overflow-x:auto;font-size:12.5px;line-height:1.6;margin:4px 0 15px;color:var(--t2)}
+.reply pre .c{color:var(--t3)} .reply pre .k{color:var(--cyan)}
+.reply pre .f{color:var(--lime)} .reply pre .a{color:var(--amber)}
+.reply .lang{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);
+  display:block;margin-bottom:8px}
+.reply .dash{color:var(--red);font-weight:700;background:rgba(248,113,113,.14);
+  border-radius:3px;padding:0 3px}
+.reply .wall{color:var(--t2)}
+
+.note{display:flex;gap:12px;margin-top:18px;padding:14px 18px;border-radius:11px;
+  background:var(--panel);border:1px solid var(--line);font-size:14px;color:var(--t2);line-height:1.55}
+.note .ic{flex-shrink:0;font-family:var(--mono);font-weight:700;font-size:12px;
+  letter-spacing:.08em;text-transform:uppercase}
+.note.bad .ic{color:var(--red)} .note.good .ic{color:var(--green)}
+.note strong{color:var(--t1)}
+.note code{font-family:var(--mono);font-size:12.5px;background:var(--panel-3);
+  padding:1.5px 6px;border-radius:5px;color:var(--violet);border:1px solid var(--line)}
+
+/* ---------- changes grid ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;
+  border-top:2px solid var(--ac,var(--cyan))}
+.card h4{margin:0 0 8px;font-size:15.5px;font-weight:700;color:var(--t1);letter-spacing:-.01em}
+.card p{margin:0;font-size:14px;color:var(--t2);line-height:1.55}
+.card .n{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ac,var(--cyan));display:block;margin-bottom:9px}
+.card code{font-family:var(--mono);font-size:12.5px;background:var(--panel-3);
+  padding:1.5px 6px;border-radius:5px;color:var(--violet);border:1px solid var(--line)}
+.card .st{display:inline-block;margin-top:11px;font-family:var(--mono);font-size:10.5px;
+  font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:999px}
+.st.done{background:rgba(52,211,153,.13);color:var(--green);border:1px solid rgba(52,211,153,.3)}
+.st.wait{background:rgba(251,191,36,.13);color:var(--amber);border:1px solid rgba(251,191,36,.3)}
+
+footer{margin-top:80px;padding-top:26px;border-top:1px solid var(--line);
+  font-size:13px;color:var(--t3);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+footer code{font-family:var(--mono);font-size:12px;color:var(--t2)}
+
+@media (max-width:760px){
+  .wrap{padding:0 18px 80px}
+  .term-body{padding:20px 18px 24px;font-size:12.5px}
+  .reply{padding-left:14px}
+  table.layers{font-size:13px} table.layers th,table.layers td{padding:11px 12px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <p class="kick">Output contract · agentic-qa-boilerplate</p>
+  <h1>How the AI writes <span class="grad">from now on</span></h1>
+  <p class="lede">
+    Two layers govern every chat reply, each over a different dimension.
+    This page shows the split and a fictional QA session rendered in both
+    styles, so the difference is seen instead of read.
+  </p>
+  <div class="meta">
+    <span class="tag">AGENTS.md §2</span>
+    <span class="tag">user instructions → OUTPUT STYLE</span>
+    <span class="tag">2026-08-17</span>
+  </div>
+</header>
+
+<section id="layers">
+  <h2><span class="num">01</span>The layer split</h2>
+  <p class="sub">
+    Each layer rules over a single dimension. When two layers claim the same one, they contradict each other,
+    and the one that is reinjected more times per turn wins, not the one that is right. That was the underlying problem.
+  </p>
+  <table class="layers">
+    <thead>
+      <tr><th>Layer</th><th>Dimension</th><th>Where it lives</th><th>Frequency</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>AGENTS.md §2<span class="pill win">wins</span></td>
+        <td><strong>what</strong> is said, granularity and register</td>
+        <td>Butler + PM Voice + Visual Mapping</td>
+        <td>every turn, via the new hook</td>
+      </tr>
+      <tr>
+        <td>OUTPUT STYLE</td>
+        <td>how it <strong>looks</strong> and what <strong>texture</strong> it has</td>
+        <td>user-level agent instructions (<code>## OUTPUT STYLE</code>), in any of the hosts</td>
+        <td>at session start</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="note good">
+    <span class="ic">Rule</span>
+    <div>
+      <strong>§2 always wins on content.</strong> OUTPUT STYLE only decides the render
+      (headings, bold anchors, <code>backticks</code>, tables, spacing) and the texture of the sentences
+      (no long dash, varied length, no closing recap). If a rule in there ever changed
+      <em>what</em> is said, the rule is misplaced and belongs in §2.
+    </div>
+  </div>
+</section>
+
+<section id="session">
+  <h2><span class="num">02</span>The same session, in both styles</h2>
+  <p class="sub">
+    Fictional ticket <code>UPEX-482</code>, login with 2FA. Same work, same information,
+    roughly the same length. Only how it arrives changes.
+  </p>
+
+  <div class="switcher">
+    <div class="seg" role="tablist">
+      <button data-mode="before" class="on">Before</button>
+      <button data-mode="after">Now</button>
+    </div>
+    <span class="hint">Click to toggle, or use <kbd>←</kbd> <kbd>→</kbd></span>
+  </div>
+
+  <div class="term">
+    <div class="term-bar">
+      <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="term-title">claude · ~/projects/agentic-qa-boilerplate</span>
+      <span class="term-badge before" id="badge">previous style</span>
+    </div>
+    <div class="term-body" id="termBody"></div>
+  </div>
+
+  <div class="note bad" id="verdict"></div>
+</section>
+
+<section id="changes">
+  <h2><span class="num">03</span>What was changed</h2>
+  <p class="sub">
+    Seven actions, all applied and verified with <code>bun run repo:check</code>.
+  </p>
+  <div class="cards">
+
+    <div class="card" style="--ac:var(--cyan)">
+      <span class="n">01 · 02</span>
+      <h4>WRITING STYLE becomes OUTPUT STYLE</h4>
+      <p>Three blocks (two of them positive) instead of blacklists: there is no
+      <code>BANNED VOCABULARY</code>, <code>BANNED PHRASES</code> or
+      <code>BANNED RHETORICAL PATTERNS</code>. What remains is a micro-list of words to avoid with an
+      exception for literal technical use, which is what lets you write <code>API key</code> without dodging it.</p>
+      <span class="st done">applied</span>
+    </div>
+
+    <div class="card" style="--ac:var(--violet)">
+      <span class="n">03</span>
+      <h4>Butler bullet without the long dash</h4>
+      <p>The canonical format goes from <code>topic — fragment</code> to <code>topic: fragment</code>.
+      The instruction <em>ordered</em> a long dash while the global rule forbade it, so
+      no correction was going to work while the example said otherwise.</p>
+      <span class="st done">applied</span>
+    </div>
+
+    <div class="card" style="--ac:var(--rose)">
+      <span class="n">04</span>
+      <h4>Long-dash sweep</h4>
+      <p><code>AGENTS.md</code> and <code>docs/ai-personality.md</code> were swept (retired path; the page is <code>docs/core/personalidad.html</code>). The model imitates
+      the typographic density it sees in its own instructions, and it saw many long dashes
+      against one line that forbade them. The sweep on this report's date left them at zero;
+      the current state comes from a search in the file, not from this page.</p>
+      <span class="st done">applied</span>
+    </div>
+
+    <div class="card" style="--ac:var(--amber)">
+      <span class="n">05</span>
+      <h4>Headline punch removed</h4>
+      <p>The rule forced every reply to open with a different hook phrase each time.
+      Manufactured theatre, and it contradicted the <em>anti-theatre</em> trait of the personality itself.
+      The menu's orientation question stays: that one does help navigation.</p>
+      <span class="st done">applied</span>
+    </div>
+
+    <div class="card" style="--ac:var(--lime)">
+      <span class="n">07</span>
+      <h4>ai-personality.md resynced (page: <code>docs/core/personalidad.html</code>)</h4>
+      <p>Five drift points: nonexistent hook paths, <code>6-component</code>
+      against <code>7-COMPONENT</code>, <code>/sdd-*</code> skills that are not installed, and a description
+      of the global file that listed things that file never had. Section 3.7 is added
+      documenting the new layer.</p>
+      <span class="st done">applied</span>
+    </div>
+
+    <div class="card" style="--ac:var(--blue)">
+      <span class="n">06</span>
+      <h4>Contract reinjection hook</h4>
+      <p><code>.agents/hooks/personality-reinject.mjs</code> stores the text once and a thin
+      adapter per harness registers it:
+      <code>.claude/settings.json</code>, <code>.opencode/plugins/personality-reinject.js</code>,
+      <code>.codex/hooks.json</code> and <code>.pi/extensions/agentic-qa.js</code>. Without it, PM Voice and Butler are read once and fade over the course
+      of the session: the problem was mechanical, not editorial. It costs a few dozen
+      tokens per turn.</p>
+      <span class="st done">applied</span>
+    </div>
+
+  </div>
+
+</section>
+
+<footer>
+  <span>Fictional mockup, no ticket is real</span>
+  <span><code>packages/decks/agentic-qa-core/output-style.es.html</code></span>
+</footer>
+
+</div>
+
+<script>
+const SESSION = {
+  before: [
+    {
+      user: 'how did the testing of the login with 2FA story turn out?',
+      html: `
+<p class="head"><span class="punch">Summary</span>: the manual suite execution on story UPEX-482 <span class="dash">—</span> two-factor login <span class="dash">—</span> has been completed and the results are detailed below.</p>
+<p class="wall">Eleven test cases were executed in total on the staging environment, covering both the SMS flow and the authenticator app flow, and of those eleven cases nine resulted in a passed status while two presented deviations from the expected behavior described in the story's acceptance criteria. The first deviation corresponds to the validity window of the TOTP code, which according to acceptance criterion number three should be thirty seconds but in practice accepts codes generated up to ninety seconds earlier, which represents a security risk by tripling the exposure window of an intercepted code. The second deviation corresponds to the absence of a code resend button, a situation that forces the user to reload the entire page to request a new code, degrading the experience without breaking any explicit acceptance criterion.</p>
+<p class="wall">Both findings were reported in Jira following the defect management doctrine in force in the repository, the first being classified as a defect because it concerns functionality not yet released to production and the second as an improvement because it does not correspond to an unmet acceptance criterion but to a specification gap detected during exploration beyond the criteria.</p>
+<p class="wall">In conclusion, the story is not in a condition to be closed until the TOTP window defect is fixed and verified again, while the improvement can be prioritized independently by the product team.</p>`
+    },
+    {
+      user: 'give me the detail of the TOTP defect, which file is the fixture in?',
+      html: `
+<p class="head"><span class="punch">Detail</span>: defect UPEX-517 <span class="dash">—</span> extended TOTP window <span class="dash">—</span> reproduces consistently.</p>
+<p class="wall">The fixture that generates the test codes is located in tests/components/auth/TotpApi.ts and exposes the generateCode method, which internally uses the otplib library with a window parameter set to three units, when the correct value for a thirty-second window would be one, this being the parameter that multiplies by three the effective validity period. Reproduction requires generating a code, waiting between thirty-one and ninety seconds, and entering it in the verification form, at which point the response from the POST /api/auth/verify-2fa endpoint returns a two hundred code when a four hundred one is expected.</p>
+<p class="wall">The impact is considered high given that it triples the effective exposure window of a code intercepted by an attacker, and it affects all users who have the second authentication factor enabled through an authenticator app, but not those who use the SMS channel.</p>`
+    },
+    {
+      user: 'ok, and what is left to close the sprint?',
+      html: `
+<p class="head"><span class="punch">Status</span>: four items remain pending before closing.</p>
+<p class="wall">In the defects section, ticket UPEX-517 remains open awaiting a fix from the development team and subsequent verification by QA, this being the only real blocker for closing the sprint. In the documentation section, two test cases remain to be documented in the test management tool, corresponding to the expiration and resend flows, as well as the update of the story's acceptance test plan. In the automation section, three candidates with a favorable return on investment were identified that should be incorporated into the regression suite before the next cycle. Finally, in the reporting section, the generation of the sprint's quality executive report remains pending.</p>
+<p class="wall">I hope this summary is useful to you, and I remain awaiting your instructions on which of these fronts you prefer to address first.</p>`
+    }
+  ],
+  after: [
+    {
+      user: 'how did the testing of the login with 2FA story turn out?',
+      html: `
+<p class="head">Login with 2FA stays blocked: the <strong>TOTP window</strong> accepts expired codes up to 90 seconds old. 9 of 11 cases pass, and the 2 that fail are the same problem.</p>
+<table>
+  <thead><tr><th>Channel</th><th>Cases</th><th>Pass</th><th>Fail</th></tr></thead>
+  <tbody>
+    <tr><td>SMS</td><td>5</td><td>5</td><td>0</td></tr>
+    <tr><td>Authenticator app (TOTP)</td><td>6</td><td>4</td><td>2</td></tr>
+  </tbody>
+</table>
+<p class="q">Where do you want to start?</p>
+<ul>
+  <li><code>UPEX-517</code> (Defect, <strong>High</strong> severity): TOTP code is still valid 90 s after it is generated, triple the 30 s specified in AC-3.</li>
+  <li>Business risk: a code glimpsed on the screen, or forwarded over WhatsApp, works a minute and a half longer. It is not theoretical: the 6 digits stay on the phone screen.</li>
+  <li><code>UPEX-518</code> (Improvement, no AC broken): there is no resend button. The user reloads the whole page to ask for another SMS.</li>
+  <li>Coverage beyond the ACs: 4 cases added for risk (reuse of the same code, 2FA with a previous session open, device change mid-flow, lockout after 5 failed attempts).</li>
+  <li>Artifacts in Jira: ATP <code>UPEX-505</code> and ATR <code>UPEX-516</code> published; the story stays In Test until the retest.</li>
+  <li>Evidence: 6 screenshots and 1 annotated in <code>.context/PBI/epics/EPIC-UPEX-470-auth/stories/STORY-UPEX-482-login-2fa/evidence/</code></li>
+</ul>`
+    },
+    {
+      user: 'give me the detail of the TOTP defect, which file is the fixture in?',
+      html: `
+<p class="head">The fixture is in <code>tests/components/TestFixture.ts</code>. The ATC that reproduces the defect lives in <code>tests/components/auth/api/AuthApi.ts</code>, registered as <code>@atc('UPEX-491')</code>.</p>
+<table>
+  <thead><tr><th>Code age</th><th>Expected</th><th>Observed</th></tr></thead>
+  <tbody>
+    <tr><td>0-30 s</td><td><code>200</code> accepts</td><td>accepts</td></tr>
+    <tr><td>31-60 s</td><td><code>401 TOTP_EXPIRED</code></td><td><strong>accepts</strong></td></tr>
+    <tr><td>61-90 s</td><td><code>401 TOTP_EXPIRED</code></td><td><strong>accepts</strong></td></tr>
+    <tr><td>91 s and later</td><td><code>401 TOTP_EXPIRED</code></td><td>rejects</td></tr>
+  </tbody>
+</table>
+<p>Probable cause in the backend: <code>speakeasy.totp.verify()</code> called with <code>window: 3</code>, that is 3 steps of 30 s backwards. AC-3 asks for <code>window: 1</code>. Not confirmed in product code, only inferred from the clean cutoff at 90 s.</p>
+<pre><span class="lang">typescript</span><span class="c">// tests/components/auth/api/AuthApi.ts</span>
+<span class="a">@atc</span>(<span class="f">'UPEX-491'</span>)
+<span class="k">async</span> verify2fa({ userId, skewSeconds }: Verify2faInput) {
+  <span class="k">const</span> code = totpAt(<span class="k">this</span>.ctx.seed.totpSecret, Date.now() - skewSeconds * <span class="f">1_000</span>);
+  <span class="k">return</span> <span class="k">this</span>.post(<span class="f">'/api/v1/auth/2fa/verify'</span>, { userId, code });
+}</pre>
+<p>Local repro:</p>
+<pre><span class="lang">bash</span><span class="k">bunx</span> playwright test tests/integration/auth/totp-window.spec.ts --grep <span class="f">@UPEX-517</span></pre>
+<ul>
+  <li>Fixture used: <code>{ api }</code>, the case is pure API and does not launch a browser.</li>
+  <li>Clock helper: <code>totpAt()</code> in <code>tests/utils/totp.ts</code>, shifts the timestamp without touching the system clock.</li>
+  <li>Contract: <code>Verify2faRequest</code> in <code>api/schemas/auth.ts</code>, regenerated with <code>bun run api:sync</code> on 12/08.</li>
+  <li>Manifest: the ATC is already in <code>kata-manifest.json</code>, no need to regenerate.</li>
+</ul>`
+    },
+    {
+      user: 'ok, and what is left to close the sprint?',
+      html: `
+<p class="head">There is <strong>a single blocker</strong> left to close the sprint: the retest of the security defect. The rest is work that does not hold up the release.</p>
+<p class="q">What do you want me to push first?</p>
+<ul>
+  <li><code>UPEX-517</code>: assigned to dev, fix estimated for today. The retest is 3 cases, about 25 minutes, and returns the story to Tested.</li>
+  <li><code>UPEX-518</code>: stopped on a PO decision. If it goes into the next sprint, it touches nothing already tested.</li>
+  <li>Pending automation: 3 cases came out Candidate in the ROI scoring (happy-path TOTP login, expired code, lockout after 5 attempts). No code yet.</li>
+  <li>Nightly regression: runs green, but the suite does not include 2FA yet. Today it is blind to this story.</li>
+</ul>`
+    }
+  ]
+}
+
+const VERDICT = {
+  before: {
+    cls: 'note bad',
+    ic: 'Problem',
+    html: `Four paragraphs almost identical in length, without a single anchor for the eye to rest on. Zero <code>backticks</code>, so <code>TotpApi.ts</code> and <code>/api/auth/verify-2fa</code> read like prose. Long dashes as a structural crutch. A manufactured hook phrase at the start of every reply. Closing with "I hope this is useful to you". <strong>All the information is there, and you still have to read it all to find what blocks the sprint.</strong>`
+  },
+  after: {
+    cls: 'note good',
+    ic: 'Result',
+    html: `This output was not written by hand: a subagent generated it by loading this branch's <code>AGENTS.md</code> and the global <code>OUTPUT STYLE</code>, both already rewritten. The headline answers and stands on its own. The comparison goes in a table because it is a comparison. Paths, ATCs and HTTP codes in <code>backticks</code>, so they jump out. Sentences of 6 to 30 words, alternating. Zero long dashes, zero closing recap. <strong>The menu lets you pull the thread you care about instead of receiving everything at once.</strong>`
+  }
+}
+
+let mode = 'before'
+const body = document.getElementById('termBody')
+const badge = document.getElementById('badge')
+const verdict = document.getElementById('verdict')
+
+function render () {
+  body.innerHTML = SESSION[mode].map(t => `
+    <div class="uline"><span class="caret">&gt;</span><span class="txt">${t.user}</span></div>
+    <div class="reply ${mode}-mode">${t.html}</div>`).join('')
+  badge.className = 'term-badge ' + mode
+  badge.textContent = mode === 'before' ? 'previous style' : 'new style'
+  const v = VERDICT[mode]
+  verdict.className = v.cls
+  verdict.innerHTML = `<span class="ic">${v.ic}</span><div>${v.html}</div>`
+  document.querySelectorAll('.seg button').forEach(b =>
+    b.classList.toggle('on', b.dataset.mode === mode))
+}
+
+document.querySelectorAll('.seg button').forEach(b =>
+  b.addEventListener('click', () => { mode = b.dataset.mode; render() }))
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft') { mode = 'before'; render() }
+  if (e.key === 'ArrowRight') { mode = 'after'; render() }
+})
+
+render()
+</script>
+</body>
+</html>
