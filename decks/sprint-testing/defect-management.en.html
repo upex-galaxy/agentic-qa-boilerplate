@@ -1,0 +1,2580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Defect Management: Managing Quality Through Its Incidents</title>
+<style>
+/* html-ppt :: shared webfonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@200;300;400;500;600;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,800;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap');
+/* html-ppt :: base.css — reset + shared tokens + layout primitives */
+/* Default tokens. Themes in assets/themes/*.css override the :root block. */
+:root {
+  --bg: #ffffff;
+  --bg-soft: #f7f7f8;
+  --surface: #ffffff;
+  --surface-2: #f2f2f4;
+  --border: rgba(0,0,0,.08);
+  --border-strong: rgba(0,0,0,.16);
+  --text-1: #111216;
+  --text-2: #55596a;
+  --text-3: #8a8f9e;
+  --accent: #3b6cff;
+  --accent-2: #7a5cff;
+  --accent-3: #ff5c8a;
+  --good: #1aaf6c;
+  --warn: #f5a524;
+  --bad:  #e0445a;
+  --grad: linear-gradient(135deg,#3b6cff,#7a5cff 55%,#ff5c8a);
+  --grad-soft: linear-gradient(135deg,#eef2ff,#f5ecff 55%,#ffeef5);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --radius-lg: 26px;
+  --shadow: 0 10px 30px rgba(18,24,40,.08), 0 2px 6px rgba(18,24,40,.04);
+  --shadow-lg: 0 24px 60px rgba(18,24,40,.14), 0 6px 16px rgba(18,24,40,.06);
+  --font-sans: 'Inter','Noto Sans SC',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
+  --font-serif: 'Playfair Display','Noto Serif SC',Georgia,serif;
+  --font-mono: 'JetBrains Mono','IBM Plex Mono',SFMono-Regular,Menlo,monospace;
+  --font-display: var(--font-sans);
+  --letter-tight: -.03em;
+  --letter-normal: -.01em;
+  --ease: cubic-bezier(.4,0,.2,1);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);
+  font-family:var(--font-sans);font-weight:400;line-height:1.6;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  letter-spacing:var(--letter-normal)}
+img,svg,video{max-width:100%;display:block}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code,kbd,pre,samp{font-family:var(--font-mono)}
+
+/* ================= SLIDE SYSTEM ================= */
+.deck{position:relative;width:100vw;height:100vh;overflow:hidden;background:var(--bg)}
+.slide{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:72px 96px;
+  box-sizing:border-box;
+  opacity:0;pointer-events:none;
+  transition:opacity .5s var(--ease), transform .5s var(--ease);
+  transform:translateX(30px);
+  overflow:hidden;
+}
+.slide.is-active{opacity:1;pointer-events:auto;transform:translateX(0);z-index:2}
+.slide.is-prev{transform:translateX(-30px)}
+
+/* single-page standalone (used when a layout file is opened directly) */
+body.single .slide{position:relative;width:100vw;height:100vh;opacity:1;transform:none;pointer-events:auto}
+
+/* ================= TYPOGRAPHY ================= */
+.eyebrow{font-size:13px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--text-3)}
+.kicker{font-size:14px;font-weight:600;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+h1.title,.h1{font-family:var(--font-display);font-size:72px;line-height:1.05;font-weight:800;letter-spacing:var(--letter-tight);margin:0 0 18px;color:var(--text-1)}
+h2.title,.h2{font-family:var(--font-display);font-size:54px;line-height:1.1;font-weight:700;letter-spacing:var(--letter-tight);margin:0 0 14px}
+h3,.h3{font-size:32px;line-height:1.2;font-weight:600;letter-spacing:var(--letter-normal);margin:0 0 10px}
+h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
+.lede{font-size:22px;line-height:1.55;color:var(--text-2);font-weight:300;max-width:62ch}
+.dim{color:var(--text-2)}
+.dim2{color:var(--text-3)}
+.mono{font-family:var(--font-mono)}
+.serif{font-family:var(--font-serif)}
+.gradient-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+
+/* ================= LAYOUT PRIMITIVES ================= */
+.stack>*+*{margin-top:14px}
+.row{display:flex;gap:24px;align-items:center}
+.row.wrap{flex-wrap:wrap}
+.grid{display:grid;gap:24px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.center{display:flex;align-items:center;justify-content:center;text-align:center}
+.fill{flex:1}
+.sp-t{padding-top:24px}.sp-b{padding-bottom:24px}
+.mt-s{margin-top:8px}.mt-m{margin-top:18px}.mt-l{margin-top:32px}
+.mb-s{margin-bottom:8px}.mb-m{margin-bottom:18px}.mb-l{margin-bottom:32px}
+
+/* ================= CARDS ================= */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:26px 28px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.card-soft{background:var(--surface-2);border:1px solid var(--border)}
+.card-outline{background:transparent;border:1.5px solid var(--border-strong);box-shadow:none}
+.card-accent{background:var(--surface);border-top:3px solid var(--accent)}
+.card-hover{transition:transform .3s var(--ease),box-shadow .3s var(--ease)}
+.card-hover:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+
+.pill{display:inline-block;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:500;
+  background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
+.pill-accent{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 28%,transparent)}
+
+/* ================= BARS / DIVIDERS ================= */
+.divider{height:1px;background:var(--border);width:100%}
+.divider-accent{height:3px;width:72px;background:var(--accent);border-radius:2px}
+
+/* ================= CHROME (header/footer/progress) ================= */
+.deck-header{position:absolute;top:24px;left:40px;right:40px;display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--text-3);letter-spacing:.12em;text-transform:uppercase;z-index:10;pointer-events:none}
+.deck-footer{position:absolute;bottom:24px;left:40px;right:40px;display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;color:var(--text-3);z-index:10;pointer-events:none}
+.slide-number::before{content:attr(data-current)}
+.slide-number::after{content:" / " attr(data-total)}
+.progress-bar{position:fixed;left:0;right:0;bottom:0;height:3px;background:transparent;z-index:20}
+.progress-bar > span{display:block;height:100%;width:0;background:var(--accent);transition:width .3s var(--ease)}
+
+/* ================= PRESENTER / OVERVIEW ================= */
+.notes{display:none!important}
+.notes-overlay{position:fixed;inset:auto 0 0 0;max-height:42vh;background:rgba(20,22,30,.95);color:#e8ebf4;
+  padding:20px 32px;font-size:16px;line-height:1.6;border-top:1px solid rgba(255,255,255,.1);transform:translateY(100%);
+  transition:transform .3s var(--ease);z-index:40;overflow:auto;font-family:var(--font-sans)}
+.notes-overlay.open{transform:translateY(0)}
+.overview{position:fixed;inset:0;background:rgba(10,12,18,.92);backdrop-filter:blur(12px);z-index:50;
+  display:none;padding:40px;overflow:auto}
+.overview.open{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;align-content:start}
+.overview .thumb{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  aspect-ratio:16/9;overflow:hidden;cursor:pointer;position:relative;color:var(--text-1);padding:16px;
+  font-size:11px;transition:transform .2s var(--ease)}
+.overview .thumb:hover{transform:scale(1.04)}
+.overview .thumb .n{position:absolute;top:8px;left:10px;font-weight:700;font-size:14px;color:var(--text-3)}
+.overview .thumb .t{position:absolute;bottom:10px;left:14px;right:14px;font-weight:600;color:var(--text-1)}
+
+/* ================= PRESENTER VIEW ================= */
+/* Presenter view opens in a separate popup window (S key).
+ * All presenter styles are self-contained in the popup HTML generated by runtime.js.
+ * The audience window (this file) is NOT affected — it stays as normal deck view.
+ * Only the .notes class below is needed to hide speaker notes from audience. */
+
+/* ================= UTILITY ================= */
+.hidden{display:none!important}
+.nowrap{white-space:nowrap}
+.tr{text-align:right}.tc{text-align:center}.tl{text-align:left}
+.uppercase{text-transform:uppercase;letter-spacing:.12em}
+
+/* ================= PRINT ================= */
+@media print{
+  .slide{position:relative;opacity:1!important;transform:none!important;page-break-after:always;height:100vh}
+  .deck-header,.deck-footer,.progress-bar,.notes-overlay,.overview{display:none!important}
+}
+/* html-ppt :: animations.css
+ * Apply by adding class="anim-<name>" or data-anim="<name>".
+ * Durations are deliberately snappy; tweak --anim-dur per element.
+ */
+:root{--anim-dur:.7s;--anim-ease:cubic-bezier(.4,0,.2,1)}
+
+/* ---------- FADE DIRECTIONALS ---------- */
+@keyframes kf-fade-up{from{opacity:0;transform:translateY(32px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-down{from{opacity:0;transform:translateY(-32px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-left{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:none}}
+@keyframes kf-fade-right{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+.anim-fade-up{animation:kf-fade-up var(--anim-dur) var(--anim-ease) both}
+.anim-fade-down{animation:kf-fade-down var(--anim-dur) var(--anim-ease) both}
+.anim-fade-left{animation:kf-fade-left var(--anim-dur) var(--anim-ease) both}
+.anim-fade-right{animation:kf-fade-right var(--anim-dur) var(--anim-ease) both}
+
+/* ---------- RISE / DROP / ZOOM / BLUR / GLITCH ---------- */
+@keyframes kf-rise{from{opacity:0;transform:translateY(60px) scale(.97);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+@keyframes kf-drop{from{opacity:0;transform:translateY(-60px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes kf-zoom{0%{opacity:0;transform:scale(.6)}60%{transform:scale(1.04)}100%{opacity:1;transform:scale(1)}}
+@keyframes kf-blur{from{opacity:0;filter:blur(18px)}to{opacity:1;filter:none}}
+@keyframes kf-glitch{0%{opacity:0;transform:translateX(0);clip-path:inset(0 0 0 0)}
+  20%{opacity:1;transform:translateX(-6px);clip-path:inset(20% 0 30% 0)}
+  40%{transform:translateX(4px);clip-path:inset(50% 0 10% 0)}
+  60%{transform:translateX(-3px);clip-path:inset(10% 0 60% 0)}
+  80%{transform:translateX(2px);clip-path:inset(0 0 0 0)}
+  100%{opacity:1;transform:none}}
+.anim-rise-in{animation:kf-rise .9s var(--anim-ease) both}
+.anim-drop-in{animation:kf-drop .8s var(--anim-ease) both}
+.anim-zoom-pop{animation:kf-zoom .7s cubic-bezier(.22,1.3,.36,1) both}
+.anim-blur-in{animation:kf-blur .8s var(--anim-ease) both}
+.anim-glitch-in{animation:kf-glitch .8s steps(5,end) both}
+
+/* ---------- TYPEWRITER ---------- */
+.anim-typewriter{display:inline-block;overflow:hidden;white-space:nowrap;border-right:2px solid currentColor;
+  width:0;animation:kf-type 2.4s steps(40,end) forwards, kf-caret 1s step-end infinite}
+@keyframes kf-type{to{width:100%}}
+@keyframes kf-caret{50%{border-color:transparent}}
+
+/* ---------- GLOW / SHIMMER / GRADIENT-FLOW ---------- */
+@keyframes kf-neon{0%,100%{text-shadow:0 0 8px var(--accent),0 0 20px var(--accent)}
+  50%{text-shadow:0 0 16px var(--accent),0 0 40px var(--accent),0 0 80px var(--accent)}}
+.anim-neon-glow{animation:kf-neon 2s ease-in-out infinite}
+
+.anim-shimmer-sweep{position:relative;overflow:hidden}
+.anim-shimmer-sweep::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(110deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%);
+  transform:translateX(-100%);animation:kf-shimmer 2.4s var(--anim-ease) infinite}
+@keyframes kf-shimmer{to{transform:translateX(100%)}}
+
+.anim-gradient-flow{background:linear-gradient(90deg,var(--accent),var(--accent-2,var(--accent)),var(--accent-3,var(--accent)),var(--accent));
+  background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+  animation:kf-gradflow 4s linear infinite}
+@keyframes kf-gradflow{to{background-position:300% 0}}
+
+/* ---------- STAGGER LIST ---------- */
+.anim-stagger-list > *{opacity:0;animation:kf-rise .65s var(--anim-ease) both}
+.anim-stagger-list > *:nth-child(1){animation-delay:.05s}
+.anim-stagger-list > *:nth-child(2){animation-delay:.15s}
+.anim-stagger-list > *:nth-child(3){animation-delay:.25s}
+.anim-stagger-list > *:nth-child(4){animation-delay:.35s}
+.anim-stagger-list > *:nth-child(5){animation-delay:.45s}
+.anim-stagger-list > *:nth-child(6){animation-delay:.55s}
+.anim-stagger-list > *:nth-child(7){animation-delay:.65s}
+.anim-stagger-list > *:nth-child(8){animation-delay:.75s}
+.anim-stagger-list > *:nth-child(n+9){animation-delay:.85s}
+
+/* ---------- COUNTER-UP (JS-driven, marker class only) ---------- */
+.counter{font-variant-numeric:tabular-nums}
+
+/* ---------- SVG PATH DRAW ---------- */
+.anim-path-draw path,.anim-path-draw line,.anim-path-draw polyline,.anim-path-draw circle,.anim-path-draw rect{
+  stroke-dasharray:1000;stroke-dashoffset:1000;animation:kf-draw 2s var(--anim-ease) forwards}
+@keyframes kf-draw{to{stroke-dashoffset:0}}
+
+/* ---------- PARALLAX TILT (hover) ---------- */
+.anim-parallax-tilt{transform-style:preserve-3d;transition:transform .4s var(--anim-ease)}
+.anim-parallax-tilt:hover{transform:perspective(900px) rotateX(6deg) rotateY(-8deg) translateZ(10px)}
+
+/* ---------- CARD FLIP 3D ---------- */
+@keyframes kf-flip{from{transform:perspective(1200px) rotateY(-90deg);opacity:0}
+  to{transform:perspective(1200px) rotateY(0);opacity:1}}
+.anim-card-flip-3d{animation:kf-flip .9s var(--anim-ease) both;transform-style:preserve-3d;backface-visibility:hidden}
+
+/* ---------- CUBE ROTATE 3D ---------- */
+@keyframes kf-cube{from{transform:perspective(1200px) rotateX(20deg) rotateY(-90deg) translateZ(-200px);opacity:0}
+  to{transform:perspective(1200px) rotateX(0) rotateY(0) translateZ(0);opacity:1}}
+.anim-cube-rotate-3d{animation:kf-cube 1s var(--anim-ease) both}
+
+/* ---------- PAGE TURN 3D ---------- */
+@keyframes kf-pageturn{from{transform:perspective(1600px) rotateY(-85deg);transform-origin:left center;opacity:0}
+  to{transform:perspective(1600px) rotateY(0);opacity:1}}
+.anim-page-turn-3d{animation:kf-pageturn 1s var(--anim-ease) both;transform-origin:left center}
+
+/* ---------- PERSPECTIVE ZOOM ---------- */
+@keyframes kf-pzoom{from{opacity:0;transform:perspective(1400px) translateZ(-400px) rotateX(12deg)}
+  to{opacity:1;transform:none}}
+.anim-perspective-zoom{animation:kf-pzoom 1s var(--anim-ease) both}
+
+/* ---------- MARQUEE SCROLL ---------- */
+.anim-marquee-scroll{display:flex;gap:48px;white-space:nowrap;animation:kf-marquee 20s linear infinite}
+@keyframes kf-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ---------- KEN BURNS ---------- */
+@keyframes kf-kenburns{0%{transform:scale(1) translate(0,0)}100%{transform:scale(1.15) translate(-2%,-1%)}}
+.anim-kenburns{animation:kf-kenburns 14s ease-in-out infinite alternate}
+
+/* ---------- CONFETTI BURST (pseudo — pure CSS sparkles) ---------- */
+.anim-confetti-burst{position:relative}
+.anim-confetti-burst::before,.anim-confetti-burst::after{
+  content:"";position:absolute;top:50%;left:50%;width:8px;height:8px;border-radius:50%;
+  background:var(--accent);box-shadow:
+    20px -30px 0 var(--accent-2,var(--accent)),-25px -20px 0 var(--accent-3,var(--accent)),
+    30px 20px 0 var(--good,#1aaf6c),-30px 25px 0 var(--warn,#f5a524),
+    40px -10px 0 var(--bad,#e0445a),-45px 0 0 var(--accent),
+    10px 40px 0 var(--accent-2,var(--accent)),-15px -40px 0 var(--accent-3,var(--accent));
+  opacity:0;animation:kf-confetti 1.2s var(--anim-ease) forwards}
+.anim-confetti-burst::after{animation-delay:.15s;transform:rotate(45deg)}
+@keyframes kf-confetti{0%{opacity:0;transform:scale(.2)}30%{opacity:1}100%{opacity:0;transform:scale(2.2)}}
+
+/* ---------- SPOTLIGHT ---------- */
+@keyframes kf-spot{0%{clip-path:circle(0% at 50% 50%)}100%{clip-path:circle(140% at 50% 50%)}}
+.anim-spotlight{animation:kf-spot 1.1s var(--anim-ease) both}
+
+/* ---------- MORPH SHAPE (SVG) ---------- */
+.anim-morph-shape path{animation:kf-morph 6s ease-in-out infinite alternate}
+@keyframes kf-morph{0%{d:path("M60,120 Q120,20 180,120 T300,120")}
+  100%{d:path("M60,120 Q120,220 180,120 T300,120")}}
+
+/* ---------- RIPPLE REVEAL ---------- */
+@keyframes kf-ripple{0%{clip-path:circle(0% at 20% 80%);opacity:.4}
+  100%{clip-path:circle(160% at 20% 80%);opacity:1}}
+.anim-ripple-reveal{animation:kf-ripple 1.2s var(--anim-ease) both}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce){
+  [class*="anim-"]{animation:none!important;transition:none!important}
+}
+/* ===========================================================================
+   how-it-works deck theme — dark engineering, accent-parametrized
+   Set per deck on <body class="tpl-howto" style="--a1:..;--a2:..;--a3:..">
+   =========================================================================== */
+.tpl-howto{
+  --a1:#7ee787; --a2:#79c0ff; --a3:#d2a8ff;            /* fallbacks */
+  --bg:#0d1117; --bg-soft:#161b22; --surface:#161b22; --surface-2:#1c2230;
+  --border:rgba(139,148,158,.22); --border-strong:rgba(139,148,158,.42);
+  --text-1:#e6edf3; --text-2:#9aa6b2; --text-3:#6e7681;
+  --accent:var(--a1); --accent-2:var(--a2); --accent-3:var(--a3);
+  --good:#3fb950; --warn:#d29922; --bad:#f85149;
+  --grad:linear-gradient(120deg,var(--a1) 0%,var(--a2) 55%,var(--a3) 100%);
+  --radius:14px; --radius-lg:20px;
+  --shadow:0 20px 60px rgba(0,0,0,.5);
+  font-family:'Inter','Noto Sans SC',sans-serif;
+  background:#0d1117; color:var(--text-1);
+}
+.tpl-howto .deck{background:#0d1117}
+.tpl-howto .slide{padding:64px 88px;background:#0d1117;color:var(--text-1)}
+.tpl-howto .slide::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:
+   radial-gradient(58% 48% at 88% 8%,color-mix(in srgb,var(--a2) 14%,transparent),transparent 60%),
+   radial-gradient(52% 50% at 8% 92%,color-mix(in srgb,var(--a1) 10%,transparent),transparent 62%);}
+.tpl-howto .slide>*{position:relative;z-index:1}
+
+/* ---------- typography ---------- */
+.tpl-howto .h1{font-size:74px;line-height:1.04;font-weight:800;letter-spacing:-.03em;color:#fff}
+.tpl-howto .h2{font-size:50px;line-height:1.08;font-weight:700;letter-spacing:-.025em;color:#fff}
+.tpl-howto h3,.tpl-howto .h3{color:#fff;font-weight:600}
+.tpl-howto h4,.tpl-howto .h4{color:#fff;font-weight:600}
+.tpl-howto .lede{color:var(--text-2);font-weight:300}
+.tpl-howto .dim{color:var(--text-2)} .tpl-howto .dim2{color:var(--text-3)}
+.tpl-howto .mono{font-family:'JetBrains Mono','IBM Plex Mono',monospace}
+.tpl-howto .gradient-text,.tpl-howto .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.tpl-howto .kicker{color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;text-transform:none;letter-spacing:.02em}
+.tpl-howto .kicker::before{content:"// "}
+.tpl-howto .kicker.run::before{content:"> "}
+.tpl-howto .divider-accent{height:3px;width:64px;background:var(--grad);border-radius:2px}
+
+/* ---------- cards ---------- */
+.tpl-howto .card{background:var(--surface);border:1px solid var(--border);box-shadow:none;border-radius:var(--radius)}
+.tpl-howto .card-accent{border-top:3px solid var(--accent)}
+.tpl-howto .card-soft{background:var(--surface-2);border:1px solid var(--border)}
+.tpl-howto .card h4{margin-bottom:8px}
+.tpl-howto .card p{font-size:15px;line-height:1.6}
+.tpl-howto .num-badge{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;
+  background:color-mix(in srgb,var(--a1) 16%,transparent);color:var(--accent);font-weight:800;font-family:'JetBrains Mono',monospace;font-size:16px;border:1px solid color-mix(in srgb,var(--a1) 30%,transparent)}
+
+/* ---------- tags / pills / kbd ---------- */
+.tpl-howto .tag{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:7px;font-family:'JetBrains Mono',monospace;
+  font-size:12px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-2)}
+.tpl-howto .tag.ok{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,transparent);background:color-mix(in srgb,var(--good) 12%,transparent)}
+.tpl-howto .tag.no{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,transparent);background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.tpl-howto .tag.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,transparent);background:color-mix(in srgb,var(--warn) 12%,transparent)}
+.tpl-howto .pill{background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
+.tpl-howto .pill-accent{background:color-mix(in srgb,var(--a1) 14%,transparent);color:var(--accent);border-color:color-mix(in srgb,var(--a1) 32%,transparent)}
+.tpl-howto kbd,.tpl-howto .kbd{font-family:'JetBrains Mono',monospace;font-size:13px;padding:3px 10px;border-radius:7px;
+  background:color-mix(in srgb,var(--a1) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--a1) 30%,transparent);white-space:nowrap}
+
+/* ---------- terminal / code ---------- */
+.tpl-howto .terminal{background:#010409;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
+  box-shadow:0 30px 80px rgba(0,0,0,.6);font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:14.5px;line-height:1.7}
+.tpl-howto .terminal .bar{display:flex;align-items:center;gap:8px;padding:11px 16px;background:#161b22;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-3)}
+.tpl-howto .terminal .dot{width:11px;height:11px;border-radius:50%;background:#ff5f56}
+.tpl-howto .terminal .dot:nth-child(2){background:#ffbd2e}
+.tpl-howto .terminal .dot:nth-child(3){background:#27c93f}
+.tpl-howto .terminal pre{margin:0;padding:22px 26px;color:#e6edf3;overflow:auto;max-height:520px;white-space:pre-wrap}
+.tpl-howto .terminal .p{color:var(--accent);font-weight:600}   /* prompt $ */
+.tpl-howto .terminal .c{color:#e6edf3}                          /* command */
+.tpl-howto .terminal .o{color:var(--text-2)}                    /* output */
+.tpl-howto .kw{color:#ff7b72} .tpl-howto .fn{color:#d2a8ff} .tpl-howto .str{color:#a5d6ff}
+.tpl-howto .cmt{color:#6e7681;font-style:italic} .tpl-howto .num{color:#79c0ff}
+.tpl-howto .caret{display:inline-block;width:8px;height:16px;background:var(--accent);vertical-align:middle;animation:hb-blink 1s step-end infinite}
+@keyframes hb-blink{50%{opacity:0}}
+
+/* ---------- agenda rows ---------- */
+.tpl-howto .agenda-row{display:flex;align-items:baseline;gap:22px;padding:15px 0;border-bottom:1px dashed var(--border);font-family:'JetBrains Mono',monospace}
+.tpl-howto .agenda-row .anum{color:var(--accent);flex:none;width:42px}
+.tpl-howto .agenda-row .at{color:#fff;font-size:22px;flex:1;font-family:'Inter',sans-serif;font-weight:600}
+.tpl-howto .agenda-row .ad{color:var(--text-3);font-size:12px}
+
+/* ---------- numbered steps (process) ---------- */
+.tpl-howto .steps{display:grid;gap:20px;margin-top:34px}
+.tpl-howto .steps.s2{grid-template-columns:repeat(2,1fr)}
+.tpl-howto .steps.s3{grid-template-columns:repeat(3,1fr)}
+.tpl-howto .steps.s4{grid-template-columns:repeat(4,1fr)}
+.tpl-howto .step{position:relative;padding:24px 22px 20px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+.tpl-howto .step .num{position:absolute;top:-18px;left:20px;width:40px;height:40px;border-radius:11px;background:var(--grad);color:#03121a;
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;font-family:'JetBrains Mono',monospace}
+.tpl-howto .step h4{margin:14px 0 7px;font-size:17px}
+.tpl-howto .step p{font-size:13.5px;color:var(--text-2);line-height:1.55}
+
+/* ---------- vertical stage flow ---------- */
+.tpl-howto .flow{display:flex;flex-direction:column;gap:0;margin-top:24px}
+.tpl-howto .flow .stage{display:grid;grid-template-columns:46px 1fr;gap:18px;padding:14px 0;align-items:start}
+.tpl-howto .flow .stage .sx{width:46px;height:46px;border-radius:12px;background:color-mix(in srgb,var(--a1) 14%,transparent);
+  border:1px solid color-mix(in srgb,var(--a1) 34%,transparent);color:var(--accent);display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-family:'JetBrains Mono',monospace;font-size:17px}
+.tpl-howto .flow .stage h4{font-size:19px;margin-bottom:3px}
+.tpl-howto .flow .stage p{font-size:14px;color:var(--text-2);line-height:1.55;margin:0}
+.tpl-howto .flow .stage+.stage{border-top:1px dashed var(--border)}
+
+/* ---------- comparison (manual pain vs craft / do vs dont) ---------- */
+.tpl-howto .vs{display:grid;grid-template-columns:1fr 64px 1fr;gap:22px;align-items:stretch;margin-top:26px}
+.tpl-howto .vs .side{padding:26px 28px}
+.tpl-howto .vs .mid{font-size:42px;font-weight:800;color:var(--text-3);display:flex;align-items:center;justify-content:center}
+.tpl-howto .vs .bad-side{border-top:3px solid var(--bad)}
+.tpl-howto .vs .good-side{border-top:3px solid var(--good)}
+.tpl-howto .vs h3{font-size:21px;margin-bottom:12px}
+.tpl-howto .vs ul{padding-left:18px;margin:0;font-size:14.5px;line-height:1.75;color:var(--text-2)}
+.tpl-howto .vs .bad-side li::marker{color:var(--bad)}
+.tpl-howto .vs .good-side li::marker{color:var(--good)}
+
+/* ---------- callout / note box ---------- */
+.tpl-howto .callout{border-left:3px solid var(--accent);background:color-mix(in srgb,var(--a1) 7%,transparent);
+  padding:18px 22px;border-radius:0 10px 10px 0;margin-top:20px}
+.tpl-howto .callout h4{font-size:16px;margin-bottom:5px;color:var(--accent)}
+.tpl-howto .callout p{font-size:15px;color:var(--text-2);line-height:1.6;margin:0}
+.tpl-howto .callout.warn{border-left-color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,transparent)}
+.tpl-howto .callout.warn h4{color:var(--warn)}
+
+/* ---------- decision / data table ---------- */
+.tpl-howto .dtable{width:100%;border-collapse:collapse;margin-top:24px;font-size:15px}
+.tpl-howto .dtable th{text-align:left;padding:12px 16px;color:var(--text-3);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border-strong)}
+.tpl-howto .dtable td{padding:13px 16px;border-bottom:1px solid var(--border);color:var(--text-2);vertical-align:top}
+.tpl-howto .dtable tr:last-child td{border-bottom:none}
+.tpl-howto .dtable td b,.tpl-howto .dtable td strong{color:#fff;font-weight:600}
+
+/* ---------- bullet list (clean) ---------- */
+.tpl-howto .blist{list-style:none;padding:0;margin:22px 0 0}
+.tpl-howto .blist li{position:relative;padding:9px 0 9px 30px;font-size:17px;color:var(--text-2);line-height:1.5;border-bottom:1px solid var(--border)}
+.tpl-howto .blist li:last-child{border-bottom:none}
+.tpl-howto .blist li::before{content:"▸";position:absolute;left:4px;top:9px;color:var(--accent);font-weight:700}
+.tpl-howto .blist li b{color:#fff;font-weight:600}
+
+/* ---------- speaker / cover meta ---------- */
+.tpl-howto .speaker{display:flex;align-items:center;gap:14px;margin-top:26px}
+.tpl-howto .speaker .av{width:50px;height:50px;border-radius:13px;background:var(--grad)}
+.tpl-howto .speaker b{display:block;color:#fff;font-size:17px}
+.tpl-howto .speaker span{color:var(--text-3);font-size:12.5px;font-family:'JetBrains Mono',monospace}
+
+/* ---------- section divider ---------- */
+.tpl-howto .slide.divider{justify-content:center;height:auto}
+.tpl-howto .part-no{font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--accent);letter-spacing:.1em}
+.tpl-howto .slide.divider .h1{font-size:64px;margin-top:10px;max-width:20ch}
+.tpl-howto .slide.divider .lede{margin-top:26px;font-size:20px}
+
+/* ---------- big stat ---------- */
+.tpl-howto .bigstat{font-size:180px;font-weight:900;line-height:1;letter-spacing:-.04em}
+
+/* ---------- footer ---------- */
+.tpl-howto .deck-footer .mono{color:var(--text-3)}
+.tpl-howto .slide-number{color:var(--text-3)}
+
+/* fix: cover .speaker must not collide with the absolute .deck-footer */
+.tpl-howto .slide:has(> .speaker){padding-bottom:160px}
+.tpl-howto .slide .speaker{position:absolute;left:88px;right:88px;bottom:70px;margin-top:0;z-index:3}
+/* dense slides: the same content at a tighter type step so it fits the 1280x720 canvas */
+.tpl-howto .slide.compact .h2{font-size:42px}
+.tpl-howto .slide.compact .lede{font-size:18px;line-height:1.5}
+.tpl-howto .slide.compact .card{padding:18px 22px}
+.tpl-howto .slide.compact .card p{font-size:14px;line-height:1.5}
+.tpl-howto .slide.compact .callout p{font-size:14px;line-height:1.5}
+.tpl-howto .slide.compact .blist li{padding:6px 0 6px 30px;font-size:16px}
+.tpl-howto .slide.compact .blist li::before{top:6px}
+.tpl-howto .slide.compact .dtable td{padding:8px 14px}
+.tpl-howto .slide.compact .dtable th{padding:8px 14px}
+.tpl-howto .slide.compact .terminal{font-size:13.5px;line-height:1.55}
+.tpl-howto .slide.compact .terminal .bar{padding:8px 16px}
+.tpl-howto .slide.compact .terminal pre{padding:14px 22px}
+.tpl-howto .slide.compact .agenda-row{padding:10px 0}
+.tpl-howto .slide.compact .agenda-row .at{font-size:20px}
+.tpl-howto .slide.compact .mt-l{margin-top:20px}
+.tpl-howto .slide.compact .flow .stage{padding:9px 0}</style>
+<style>
+/* ===== defect-management :: extra components (quiz, lifecycle, metric cards) ===== */
+.tpl-howto .lifecycle{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:22px}
+.tpl-howto .lstate{padding:9px 15px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:13.5px;font-weight:600;border:1px solid;white-space:nowrap}
+.tpl-howto .lstate.new{color:var(--text-1);background:var(--surface-2);border-color:var(--border-strong)}
+.tpl-howto .lstate.prog{color:var(--warn);background:color-mix(in srgb,var(--warn) 13%,transparent);border-color:color-mix(in srgb,var(--warn) 40%,transparent)}
+.tpl-howto .lstate.good{color:var(--good);background:color-mix(in srgb,var(--good) 13%,transparent);border-color:color-mix(in srgb,var(--good) 40%,transparent)}
+.tpl-howto .lstate.bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent);border-color:color-mix(in srgb,var(--bad) 40%,transparent)}
+.tpl-howto .arr{color:var(--text-3);font-weight:700;font-size:15px}
+
+/* triage fan */
+.tpl-howto .triage{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+.tpl-howto .tnode{padding:13px 16px;border:1px solid var(--border);border-radius:11px;background:var(--surface)}
+.tpl-howto .tnode .tt{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);margin-bottom:5px}
+.tpl-howto .tnode .ts{font-size:13.5px;color:var(--text-2);line-height:1.5}
+.tpl-howto .tnode b{color:#fff;font-weight:600}
+
+/* horizontal bar chart (real data) */
+.tpl-howto .bars{display:grid;gap:11px;margin-top:22px}
+.tpl-howto .barrow{display:grid;grid-template-columns:150px 1fr 48px;align-items:center;gap:14px;font-size:14px}
+.tpl-howto .barrow .bl{color:var(--text-2);font-family:'JetBrains Mono',monospace;font-size:13px;text-align:right}
+.tpl-howto .barrow .bt{height:22px;border-radius:6px;background:var(--grad);min-width:3px}
+.tpl-howto .barrow .bt.muted{background:var(--surface-2);border:1px solid var(--border-strong)}
+.tpl-howto .barrow .bn{color:#fff;font-weight:700;font-family:'JetBrains Mono',monospace;font-size:14px}
+
+/* metric stat cards */
+.tpl-howto .mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:22px}
+.tpl-howto .mcard{padding:20px;border:1px solid var(--border);border-radius:14px;background:var(--surface);border-top:3px solid var(--accent)}
+.tpl-howto .mcard .mv{font-size:40px;font-weight:900;line-height:1;letter-spacing:-.03em}
+.tpl-howto .mcard .mk{font-size:13px;color:var(--text-3);margin-top:8px;font-family:'JetBrains Mono',monospace}
+.tpl-howto .mcard .md{font-size:13px;color:var(--text-2);margin-top:6px;line-height:1.5}
+
+/* ===== QUIZ ===== */
+.tpl-howto .quiz{margin-top:18px}
+.tpl-howto .qitem{margin-bottom:18px}
+.tpl-howto .qq{font-size:19px;font-weight:600;color:#fff;margin-bottom:12px;display:flex;gap:12px;line-height:1.4}
+.tpl-howto .qq .qn{flex:none;color:var(--accent);font-family:'JetBrains Mono',monospace}
+.tpl-howto .opts{display:grid;gap:9px}
+.tpl-howto .opt{display:flex;align-items:center;gap:13px;padding:12px 17px;border:1px solid var(--border);border-radius:11px;background:var(--surface);cursor:pointer;font-size:15px;color:var(--text-2);transition:border-color .15s,background .15s,color .15s}
+.tpl-howto .opt:hover{border-color:var(--border-strong);color:#fff}
+.tpl-howto .opt .mk{flex:none;width:26px;height:26px;border-radius:7px;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--text-2)}
+.tpl-howto .opt.correct{border-color:var(--good);background:color-mix(in srgb,var(--good) 15%,transparent);color:#fff}
+.tpl-howto .opt.correct .mk{background:var(--good);border-color:var(--good);color:#03130b}
+.tpl-howto .opt.reveal-correct{border-color:var(--good);color:#fff}
+.tpl-howto .opt.reveal-correct .mk{background:var(--good);border-color:var(--good);color:#03130b}
+.tpl-howto .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent);color:#fff}
+.tpl-howto .opt.wrong .mk{background:var(--bad);border-color:var(--bad);color:#190405}
+.tpl-howto .qitem.answered .opt{cursor:default}
+.tpl-howto .qexp{margin-top:11px;font-size:14px;color:var(--text-2);border-left:3px solid var(--good);padding:11px 16px;background:color-mix(in srgb,var(--good) 7%,transparent);border-radius:0 9px 9px 0;display:none;line-height:1.6}
+.tpl-howto .qitem.answered .qexp{display:block}
+.tpl-howto .qexp b{color:#fff}
+.tpl-howto .qhint{font-size:13px;color:var(--text-3);font-family:'JetBrains Mono',monospace;margin-top:6px}
+/* quizzes: the two questions side by side, so both answered explanations fit the 1280x720 canvas */
+.tpl-howto .quiz{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start;margin-top:18px}
+.tpl-howto .quiz .qitem{margin-bottom:0}
+
+/* ===== DASHBOARD CHART CARDS (donut / pie / gauge / stacked / blocked) ===== */
+.tpl-howto .chartcard{display:flex;flex-direction:column;padding:18px 20px}
+.tpl-howto .chartcard .cq{font-size:16px;font-weight:700;color:#fff;line-height:1.32;min-height:42px}
+.tpl-howto .chartcard .cm{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--accent);margin-top:5px;text-transform:none}
+.tpl-howto .chartcard .cm.ill{color:var(--warn)}
+.tpl-howto .chartwrap{display:flex;align-items:center;justify-content:center;gap:16px;margin:14px 0;flex:1;min-height:128px}
+.tpl-howto .chartans{font-size:12.5px;color:var(--text-2);line-height:1.5;border-top:1px dashed var(--border);padding-top:9px;margin-top:auto}
+.tpl-howto .chartans b{color:#fff;font-weight:600}
+
+/* donut & pie */
+.tpl-howto .donut{position:relative;width:124px;height:124px;border-radius:50%;flex:none}
+.tpl-howto .donut::before{content:"";position:absolute;inset:25px;border-radius:50%;background:var(--surface);z-index:1}
+.tpl-howto .donut .dlabel{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2}
+.tpl-howto .donut .dlabel .dv{font-size:29px;font-weight:900;line-height:1;letter-spacing:-.02em}
+.tpl-howto .donut .dlabel .dn{font-size:10px;color:var(--text-3);font-family:'JetBrains Mono',monospace;margin-top:3px}
+.tpl-howto .pie{position:relative;width:120px;height:120px;border-radius:50%;flex:none;box-shadow:0 0 0 1px var(--border) inset}
+
+/* legend */
+.tpl-howto .legend{display:flex;flex-direction:column;gap:6px;font-size:12px;min-width:124px}
+.tpl-howto .legend-item{display:flex;align-items:center;gap:8px;color:var(--text-2);white-space:nowrap}
+.tpl-howto .legend-item .swatch{width:11px;height:11px;border-radius:3px;flex:none}
+.tpl-howto .legend-item b{color:#fff;font-weight:700;font-family:'JetBrains Mono',monospace;margin-left:auto;padding-left:8px}
+
+/* stacked bar */
+.tpl-howto .stackwrap{display:flex;flex-direction:column;gap:12px;width:100%}
+.tpl-howto .stacked{display:flex;width:100%;height:30px;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.tpl-howto .stacked .seg{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;min-width:0;overflow:hidden}
+.tpl-howto .stacked-legend{display:grid;grid-template-columns:1fr 1fr;gap:5px 14px;font-size:11.5px}
+
+/* gauge (semicircle) */
+.tpl-howto .gauge{position:relative;width:156px;height:88px;overflow:hidden;flex:none}
+.tpl-howto .gauge .garc{position:absolute;top:0;left:0;width:156px;height:156px;border-radius:50%}
+.tpl-howto .gauge .ghole{position:absolute;top:26px;left:26px;width:104px;height:104px;border-radius:50%;background:var(--surface)}
+.tpl-howto .gauge .gval{position:absolute;left:0;right:0;bottom:2px;text-align:center;font-size:26px;font-weight:900;line-height:1;letter-spacing:-.02em}
+.tpl-howto .gauge .gsub{position:absolute;left:0;right:0;bottom:-18px;text-align:center;font-size:10px;color:var(--text-3);font-family:'JetBrains Mono',monospace}
+
+/* blocked / unmeasurable chart */
+.tpl-howto .blocked{position:relative;width:100%}
+.tpl-howto .blocked .bars{margin-top:0;filter:grayscale(1) opacity(.5)}
+.tpl-howto .blocked .blockover{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:repeating-linear-gradient(135deg,transparent 0 9px,color-mix(in srgb,var(--bad) 7%,transparent) 9px 18px)}
+.tpl-howto .blocked .blockover span{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--bad);
+  background:var(--surface);border:1px solid color-mix(in srgb,var(--bad) 45%,transparent);border-radius:8px;padding:6px 12px}
+
+/* ===== mini chart icons (primer / legend slide) ===== */
+.tpl-howto .iconwrap{display:flex;align-items:center;justify-content:center;height:70px;margin-bottom:10px}
+.tpl-howto .donut.mini{width:62px;height:62px}
+.tpl-howto .donut.mini::before{inset:13px}
+.tpl-howto .pie.mini{width:60px;height:60px}
+.tpl-howto .gauge.mini{width:80px;height:46px}
+.tpl-howto .gauge.mini .garc{width:80px;height:80px}
+.tpl-howto .gauge.mini .ghole{top:13px;left:13px;width:54px;height:54px}
+/* gauges: clip the arc and the hole to their top half instead of clipping the whole gauge,
+   so the caption under the arc (.gsub) stays visible */
+.tpl-howto .gauge{overflow:visible}
+.tpl-howto .gauge .garc,.tpl-howto .gauge .ghole{clip-path:inset(0 0 50% 0)}
+.tpl-howto .stacked.mini{height:18px;width:86px}
+.tpl-howto .minibars{display:flex;flex-direction:column;gap:5px;width:80px}
+.tpl-howto .minibars .bt{height:9px}
+.tpl-howto .chartcard.tiny{padding:16px 18px}
+.tpl-howto .chartcard.tiny h4{margin:0 0 4px;font-size:16px}
+.tpl-howto .chartcard.tiny p{font-size:12.5px;color:var(--text-2);margin:0;line-height:1.45}
+.tpl-howto .chartcard.tiny p b{color:#fff;font-weight:600}
+
+/* ===== PART C :: horizontal centering (match reference automation decks) =====
+   Big screens left an awkward right gap because content stretched full-width.
+   Center each in-flow block and cap its width → balanced, centered layout.
+   Absolutely-positioned chrome (footer, speaker, notes) is excluded. */
+.tpl-howto .slide{align-items:center}
+.tpl-howto .slide > *:not(.deck-footer):not(.deck-header):not(.notes):not(.speaker){
+  width:100%;max-width:1360px;margin-left:auto;margin-right:auto}
+.tpl-howto .slide.center > *:not(.deck-footer):not(.notes):not(.speaker),
+.tpl-howto .slide.divider > *:not(.deck-footer):not(.notes):not(.speaker){max-width:1120px}
+</style>
+</head>
+<body class="tpl-howto" style="--a1:#ff7b72;--a2:#f0883e;--a3:#d2a8ff">
+<div class="deck">
+
+<!-- 1. COVER -->
+<section class="slide" data-title="Cover">
+  <p class="kicker run">how-it-works · agentic-qa · defect-management</p>
+  <h1 class="h1 anim-fade-up" data-anim="fade-up">Defect Management: Managing <span class="grad">Quality Through Its Incidents</span></h1>
+  <p class="lede mt-m">Bug, Defect, Improvement: the same symptom, a different management strategy. How they are reported under a reusable quality standard, how they live in their workflow, and how they become metrics that answer quality questions.</p>
+  <div class="speaker"><div class="av"></div><div><b>From report to metric</b><span>part 1: the 3 incidents · part 2: workflow + standard fields · part 3: measuring (ShopFlow example)</span></div></div>
+  <div class="deck-footer"><span class="mono">Jira · quality standard · ShopFlow example project (SHOP)</span><span class="slide-number" data-current="1" data-total="38"></span></div>
+  <div class="notes">Framing: this is NOT about test cases or test plans. It is about managing error incidents (Bug/Defect/Improvement): how they are reported, how they move and how they are measured. The end goal is for the product team to see the health of the app with their own eyes.</div>
+</section>
+
+<!-- 2. STAT HOOK -->
+<section class="slide center tc" data-title="Stat hook">
+  <div>
+    <p class="kicker">the data that answers</p>
+    <div class="bigstat"><span class="grad">40 / 40</span></div>
+    <h3>In ShopFlow, all <b>40 incidents</b> have <span class="mono">Components</span> and every other field of the standard filled in. The data does not just exist: it <b>answers every quality question</b>. What you fill in with discipline now is what the dashboard can measure tomorrow.</h3>
+  </div>
+  <div class="notes">Start with the thesis: managing defects is not opening tickets, it is generating data that answers questions. ShopFlow fills in 100% of its fields, so the dashboard sees everything. We come back to this model team in part 3.</div>
+</section>
+
+<!-- 3. AGENDA -->
+<section class="slide" data-title="Agenda">
+  <p class="kicker">what we will cover</p>
+  <h2 class="h2" data-anim="fade-up">Three Parts: Distinguish, Manage, Measure</h2>
+  <div class="stack mt-l anim-stagger-list">
+    <div class="agenda-row"><span class="anum">01</span><span class="at">The three incidents: Bug vs Defect vs Improvement, same term, different management strategy</span><span class="ad">distinguish</span></div>
+    <div class="agenda-row"><span class="anum">02</span><span class="at">The quality standard: one workflow, the same fields, and the central role of Components</span><span class="ad">manage</span></div>
+    <div class="agenda-row"><span class="anum">03</span><span class="at">Measuring quality: from filled-in fields to metrics and dashboards that answer questions (ShopFlow example)</span><span class="ad">measure</span></div>
+  </div>
+  <p class="qhint mt-l">3 interactive quizzes along the way: click on the answers.</p>
+  <div class="notes">Part 3 is the most important one: the metrics. Parts 1 and 2 build the vocabulary and the discipline that make measuring possible.</div>
+</section>
+
+<!-- 4. DIVIDER PART 1 -->
+<section class="slide divider" data-title="Part 1">
+  <div>
+    <p class="part-no">PART 01</p>
+    <h1 class="h1">The Three Incidents<br><span class="grad">Bug · Defect · Improvement</span></h1>
+    <p class="lede">The term does not tell them apart: lexically, a bug IS a defect. What tells them apart is <b>when they are born</b> and <b>what they tell the team</b> about the state of the product.</p>
+  </div>
+  <div class="notes">Stress this: the difference is not semantic, it is strategic. It is an incident management decision, not a dictionary one.</div>
+</section>
+
+<!-- 5. SAME WORD DIFFERENT MANAGEMENT -->
+<section class="slide" data-title="Same term">
+  <p class="kicker">the core idea</p>
+  <h2 class="h2" data-anim="fade-up">Same Term, Different Management</h2>
+  <p class="lede mt-s">"Bug" and "defect" are synonyms in everyday language. The difference lives in the <b>life stage of the feature</b>: is it already live above Staging, or is it still pre-release?</p>
+  <div class="callout mt-l"><h4>The axis that decides everything</h4><p>One question: <b>is the affected feature already live above Staging?</b> If NO (it is still pre-release, whether the current sprint is building it or not) → <b>Defect</b>. If YES (the end user can run into it) → <b>Bug</b>. The Improvement is the third path: it breaks no criterion, it proposes an improvement.</p><p class="mt-s"><b>No matter when or where you found it.</b> You can reproduce the failure on <span class="mono">localhost</span> or on <span class="mono">qa</span> and it is still a Defect; you can see it for the first time on Staging and it is a Bug, if the feature is already in production.</p></div>
+  <div class="notes">The doctrine is literal: «Classification follows the lifecycle stage of the FEATURE, not the environment where you happened to find the problem» (defect-management-doctrine.md). The case people get wrong most: while testing Story A you stumble on a failure in Story B. Look at the stage of B, not at where you were standing. If B is already in production → Bug, even if you saw it on Staging.</div>
+</section>
+
+<!-- 6. DEFECT -->
+<section class="slide" data-title="Defect">
+  <p class="kicker">incident #1</p>
+  <h2 class="h2" data-anim="fade-up"><span class="grad">Defect</span>: the failure we catch in the sprint</h2>
+  <div class="grid g2 mt-m">
+    <div class="card card-accent">
+      <h4>What it indicates</h4>
+      <p class="dim">That a <b>User Story under sprint</b> is coming out defective and has to be fixed <b>before</b> it moves up to higher environments.</p>
+    </div>
+    <div class="card card-accent">
+      <h4>When it is born</h4>
+      <p class="dim">When the feature has <b>not yet crossed Staging</b> toward higher environments, no matter when the failure is discovered. This is <b>normal and desirable</b>: the sprint exists to uncover defects and close them. They are <b>contained</b>, not escaped.</p>
+    </div>
+  </div>
+  <ul class="blist">
+    <li><b>It is born from a User Story.</b> It links to the US being built (edge causation: the US <span class="mono">causes</span> the Defect).</li>
+    <li><b>It is containment, not escape.</b> Finding it here is a QA success: the defect never reached the user.</li>
+    <li><b>If the sprint does its job</b>, the US enters the release <b>free of defects</b>.</li>
+  </ul>
+  <div class="notes">Stress this: uncovering defects in the sprint is the goal. A sprint with many defects detected and closed is a healthy sprint, not a sick one.</div>
+</section>
+
+<!-- 7. BUG -->
+<section class="slide" data-title="Bug">
+  <p class="kicker">incident #2</p>
+  <h2 class="h2" data-anim="fade-up"><span class="grad">Bug</span>: the regression that escaped</h2>
+  <div class="grid g2 mt-m">
+    <div class="card card-accent">
+      <h4>What it indicates</h4>
+      <p class="dim">That a feature <b>already released and deployed</b> is failing. Something that <b>was supposed to work</b> stopped working.</p>
+    </div>
+    <div class="card card-accent">
+      <h4>When it is born</h4>
+      <p class="dim">When the affected feature is <b>already live in production</b>, even if the failure is discovered inside the sprint while testing another Story. Every feature is presumed approved by the quality gate before release: a failure in something already released <b>escaped</b> that gate.</p>
+    </div>
+  </div>
+  <ul class="blist">
+    <li><b>The Bug is the incident type for regressions:</b> every time something that should work, fails.</li>
+    <li><b>It is an escape.</b> It crossed the sprint's safety net and reached production, which is exactly what the metrics must watch.</li>
+    <li><b>Same symptom as a Defect</b>, different moment, so a different management reading.</li>
+  </ul>
+  <div class="notes">The bug is not "worse" than a defect by nature, it is worse by location: it is already in the user's hands. The Defect/Bug distinction is precisely what makes the "escape" measurable.</div>
+</section>
+
+<!-- 8. TIMELINE EXAMPLE -->
+<section class="slide" data-title="Cart example">
+  <p class="kicker">the same failure, two lives</p>
+  <h2 class="h2" data-anim="fade-up">Case: the Shopping Cart</h2>
+  <div class="flow mt-s">
+    <div class="stage"><div class="sx">1</div><div><h4>Sprint: new cart US</h4><p>A user story about the cart is added. QA detects that the total calculation fails. <span class="tag no">DEFECT</span> &nbsp;It is in development, it links to the US, and it gets fixed inside the sprint.</p></div></div>
+    <div class="stage"><div class="sx">2</div><div><h4>Release: the US ships clean</h4><p>The defect was repaired. The cart functionality enters the release <b>free of defects</b>. The user receives it working.</p></div></div>
+    <div class="stage"><div class="sx">3</div><div><h4>Months later: an edge case</h4><p>An edge case shows up around the same cart (coupon + foreign currency + stock 0). It fails in production. <span class="tag warn">BUG</span> &nbsp;It is a regression discovered post-sprint.</p></div></div>
+  </div>
+  <div class="notes">This is the canonical example from the user. The same component (the cart) first produces a Defect (in sprint) and then a Bug (post-release). The taxonomy captures the difference in timing, and the escape metrics come from there.</div>
+</section>
+
+<!-- 9. IMPROVEMENT -->
+<section class="slide" data-title="Improvement">
+  <p class="kicker">incident #3</p>
+  <h2 class="h2" data-anim="fade-up"><span class="grad">Improvement</span>: not a failure, an enhancement</h2>
+  <p class="lede mt-s">A work type for <b>enhancements</b>. Sometimes trivial; sometimes the destination of a Bug or Defect that, after root cause analysis, turns out not to be a failure but a requirements matter.</p>
+  <div class="grid g2 mt-m">
+    <div class="card card-accent">
+      <h4>Direct origin</h4>
+      <p class="dim">A small improvement spotted while using the product: copy, UX, a shortcut. It breaks nothing, it raises quality.</p>
+    </div>
+    <div class="card card-accent">
+      <h4>Origin by reclassification</h4>
+      <p class="dim">A Bug/Defect goes through <b>RCA</b> and it turns out the "error" was actually the specified behavior. It is transformed: into an Improvement, or into a new User Story.</p>
+    </div>
+  </div>
+  <div class="callout warn mt-m"><h4>In the workflow this is literal</h4><p>The <span class="mono">is not a Bug</span> transition takes a Bug/Defect from <span class="mono">Open</span> to the terminal state <span class="mono">Enhancement</span>. The reclassification is wired into the standard's flow, it is not informal.</p></div>
+  <div class="notes">Connect with part 2: the terminal state "Enhancement" and the "is not a Bug" transition are exactly this path. RCA can turn an error report into a requirement.</div>
+</section>
+
+<!-- 10. COMPARISON TABLE -->
+<section class="slide" data-title="Comparison table">
+  <p class="kicker">all three, side by side</p>
+  <h2 class="h2" data-anim="fade-up">Defect vs Bug vs Improvement</h2>
+  <table class="dtable mt-s">
+    <thead><tr><th>Dimension</th><th>Defect</th><th>Bug</th><th>Improvement</th></tr></thead>
+    <tbody>
+      <tr><td><b>Feature stage</b></td><td>Has not passed Staging yet</td><td>Already lives above Staging (prod)</td><td>Any</td></tr>
+      <tr><td><b>Product state</b></td><td>In development</td><td>Already released</td><td>Functional</td></tr>
+      <tr><td><b>What it signals</b></td><td>US coming out defective</td><td>Regression / escape</td><td>Enhancement or reclassification</td></tr>
+      <tr><td><b>Management reading</b></td><td>Containment (QA success)</td><td>Leak (risk to the user)</td><td>Incremental value / RCA</td></tr>
+      <tr><td><b>Born from</b></td><td>A User Story</td><td>An edge case in prod</td><td>Real use or an RCA</td></tr>
+    </tbody>
+  </table>
+  <div class="callout mt-m"><h4>Read it as instrumentation, not bureaucracy</h4><p>Choosing the right work type is not paperwork: it is what later makes the question <i>"are we stopping defects before they escape?"</i> <b>measurable</b>.</p></div>
+  <div class="notes">This table is the conceptual anchor of part 1. Each row is a management decision, not an arbitrary label.</div>
+</section>
+
+<!-- 11. QUIZ 1 -->
+<section class="slide" data-title="Quiz 1">
+  <p class="kicker">quiz · part 1</p>
+  <h2 class="h2" data-anim="fade-up">Bug, Defect or Improvement?</h2>
+  <div class="quiz">
+    <div class="qitem">
+      <div class="qq"><span class="qn">Q1</span><span>During the sprint, QA finds that the new sign-up form does not validate the email. The US is still in development.</span></div>
+      <div class="opts">
+        <div class="opt" data-correct="1"><span class="mk">A</span><span>Defect: failure caught in the sprint, on a US still in development</span></div>
+        <div class="opt"><span class="mk">B</span><span>Bug: it is a functional failure</span></div>
+        <div class="opt"><span class="mk">C</span><span>Improvement: the form could be better</span></div>
+      </div>
+      <div class="qexp"><b>Defect.</b> What decides it is the life stage of the <i>feature</i>, not the severity or the environment where you saw it: the functionality is still under construction and has not passed Staging yet. Catching it here is containment, not a leak.</div>
+    </div>
+    <div class="qitem">
+      <div class="qq"><span class="qn">Q2</span><span>Three months after the release, a user reports that login fails only if the password contains emojis. It used to work.</span></div>
+      <div class="opts">
+        <div class="opt"><span class="mk">A</span><span>Defect: it has to be fixed</span></div>
+        <div class="opt" data-correct="1"><span class="mk">B</span><span>Bug: regression / edge case on something already released</span></div>
+        <div class="opt"><span class="mk">C</span><span>Improvement: supporting emojis is an enhancement</span></div>
+      </div>
+      <div class="qexp"><b>Bug.</b> Functionality already deployed that stops working = regression. It is an escape: it crossed the sprint's safety net and reached the user.</div>
+    </div>
+  </div>
+  <div class="notes">Let the audience click: the explanations appear when they answer. The lesson: the criterion that tells them apart is the life stage of the feature (is it already live above Staging?), never the severity, the symptom or the environment where you found it. Third case (Improvement): if after RCA the behavior is the specified one but the customer wants it different, it is reclassified via "is not a Bug" → Enhancement (see slide 9).</div>
+</section>
+
+<!-- 12. DIVIDER PART 2 -->
+<section class="slide divider" data-title="Part 2">
+  <div>
+    <p class="part-no">PART 02</p>
+    <h1 class="h1">The Quality Standard<br><span class="grad">One Workflow, the Same Fields</span></h1>
+    <p class="lede">The three incidents share <b>exactly</b> the same workflow scheme and the same fields. Reporting with discipline now is what makes measuring possible tomorrow.</p>
+  </div>
+  <div class="notes">Make clear that this is a reusable management standard: a recommendation, not a universal law. But it is a proven, consistent standard that any team can adopt in Jira.</div>
+</section>
+
+<!-- 13. SAME SCHEME -->
+<section class="slide" data-title="Same schema">
+  <p class="kicker">finding from the real schema</p>
+  <h2 class="h2" data-anim="fade-up">Bug, Defect and Improvement Share One Schema</h2>
+  <div class="grid g3 mt-m">
+    <div class="card card-accent"><h4>Bug</h4><p class="dim">shared workflow</p></div>
+    <div class="card card-accent"><h4>Defect</h4><p class="dim">shared workflow</p></div>
+    <div class="card card-accent"><h4>Improvement</h4><p class="dim">shared workflow</p></div>
+  </div>
+  <div class="callout mt-l"><h4>Identical, byte for byte</h4><p>Same states (for example Open, In Progress...; the catalog is <span class="mono">.agents/jira-workflows.json</span>), same transitions, same fields to fill in. You change the <i>work type</i>, not the mechanics. This is deliberate: one mental model to manage all three.</p></div>
+  <div class="notes">Source: .agents/jira-workflows.json: the three share the same workflow_scheme. For the team it means zero extra learning curve when moving from one to another.</div>
+</section>
+
+<!-- 14. LIFECYCLE -->
+<section class="slide" data-title="Lifecycle">
+  <p class="kicker">the happy path</p>
+  <h2 class="h2" data-anim="fade-up">The Life Cycle of an Incident</h2>
+  <div class="lifecycle">
+    <span class="lstate new">Open</span><span class="arr">→</span>
+    <span class="lstate prog">In Progress</span><span class="arr">→</span>
+    <span class="lstate prog">In Review</span><span class="arr">→</span>
+    <span class="lstate new">Ready For QA</span><span class="arr">→</span>
+    <span class="lstate good">Closed ✓</span>
+  </div>
+  <div class="grid g3 mt-l">
+    <div class="card card-soft"><h4 class="mono" style="font-size:15px">start fixing</h4><p class="dim">Open → In Progress. The dev picks up the incident.</p></div>
+    <div class="card card-soft"><h4 class="mono" style="font-size:15px">Pull Request / Fixed &amp; Deployed</h4><p class="dim">In Progress → In Review → Ready For QA. The fix reaches QA for retest.</p></div>
+    <div class="card card-soft"><h4 class="mono" style="font-size:15px">ReTest Passed</h4><p class="dim">Ready For QA → Closed. QA verifies the fix (success terminal).</p></div>
+  </div>
+  <div class="callout warn mt-m"><h4>Wired-in shortcuts and returns</h4><p><span class="mono">Hard pushed</span> skips the review (In Progress → Ready For QA). <span class="mono">back</span> reopens a Closed to Ready For QA when a regression slips in after sign-off.</p></div>
+  <div class="notes">Standard workflow; the real catalog is .agents/jira-workflows.json. This is the main path. The colors: gray=new, amber=indeterminate (work in progress), green=done. The state category matters for the metrics (part 3).</div>
+</section>
+
+<!-- 15. TRIAGE -->
+<section class="slide" data-title="Triage">
+  <p class="kicker">the most important decision</p>
+  <h2 class="h2" data-anim="fade-up">Triage from <span class="mono" style="font-size:.7em">Open</span>: the paths of the standard</h2>
+  <p class="lede mt-s">Open is the triage hub. Not every report gets fixed: half of the management value is in correctly classifying what is <b>not</b> a fix.</p>
+  <div class="triage">
+    <div class="tnode"><div class="tt">start fixing → In Progress</div><div class="ts"><b>It is real.</b> The dev picks it up and starts the fix.</div></div>
+    <div class="tnode"><div class="tt">is duplicated → Duplicated</div><div class="ts"><b>Repeated.</b> Another ticket already exists. Terminal.</div></div>
+    <div class="tnode"><div class="tt">is WAD → REJECTED</div><div class="ts"><b>Working As Designed.</b> Not a failure. Terminal.</div></div>
+    <div class="tnode"><div class="tt">is CNR → Cannot Reproduce</div><div class="ts"><b>Not reproducible.</b> No repro, no fix. Terminal.</div></div>
+    <div class="tnode"><div class="tt">is not a Bug → Enhancement</div><div class="ts"><b>Reclassification.</b> It was a requirement → enhancement. Terminal.</div></div>
+    <div class="tnode"><div class="tt">defer → Deferred</div><div class="ts"><b>Postponed.</b> Accepted but not now. Resumable.</div></div>
+  </div>
+  <div class="notes">Paths of the standard; the live set is .agents/jira-workflows.json. Triage is where a Bug can become an Improvement (is not a Bug → Enhancement). The four terminal exits (Duplicated, REJECTED, CNR, Enhancement) are "noise" that the report-quality metrics must watch.</div>
+</section>
+
+<!-- 16. TERMINAL STATES -->
+<section class="slide" data-title="Terminal states">
+  <p class="kicker">how an incident ends</p>
+  <h2 class="h2" data-anim="fade-up">Terminal States and Their Categories</h2>
+  <table class="dtable mt-s">
+    <thead><tr><th>State</th><th>Category</th><th>Means</th><th>Metric reading</th></tr></thead>
+    <tbody>
+      <tr><td><b>Closed</b></td><td><span class="tag ok">done</span></td><td>Fix verified by QA</td><td>Resolved work: the numerator of progress</td></tr>
+      <tr><td><b>Duplicated</b></td><td><span class="tag ok">done</span></td><td>Repeat of another ticket</td><td>Report noise</td></tr>
+      <tr><td><b>REJECTED</b></td><td><span class="tag ok">done</span></td><td>Working As Designed</td><td>False positive</td></tr>
+      <tr><td><b>Cannot Reproduce</b></td><td><span class="tag ok">done</span></td><td>No confirmable repro</td><td>Incomplete report</td></tr>
+      <tr><td><b>Enhancement</b></td><td><span class="tag ok">done</span></td><td>Reclassified as an enhancement</td><td>Requirements matter</td></tr>
+      <tr><td><b>Deferred</b></td><td><span class="tag warn">indeterminate</span></td><td>Postponed, resumable</td><td>Live debt (aging)</td></tr>
+      <tr><td><b>ABORTED</b></td><td><span class="tag ok">done</span></td><td>Abandoned without a fix</td><td>Discarded</td></tr>
+    </tbody>
+  </table>
+  <div class="notes">Snapshot of the standard; real categories in .agents/jira-workflows.json. The category (new / indeterminate / done) is what Jira uses for coloring and for the gadgets. Duplicated + REJECTED + CNR together = the "noise" rate, a quality metric for the reporting process.</div>
+</section>
+
+<!-- 17. FIELDS -->
+<section class="slide compact" data-title="Fields">
+  <p class="kicker">what gets filled in when reporting</p>
+  <h2 class="h2" data-anim="fade-up">The Fields of the Quality Standard</h2>
+  <div class="grid g2 mt-s">
+    <div>
+      <h4 class="mb-s" style="color:var(--good)">Always (high signal)</h4>
+      <ul class="blist" style="margin-top:6px">
+        <li><b>Summary</b>: <span class="mono">Epic: Component: Symptom</span></li>
+        <li><b>Steps to Reproduce</b>: numbered steps</li>
+        <li><b>Actual</b> vs <b>Expected Result</b></li>
+        <li><b>Severity</b> · <b>Priority</b></li>
+        <li><b>Error Type</b> · <b>Test Environment</b></li>
+        <li><b>Evidence</b>: screenshot / trace / log</li>
+        <li><b>QA Assignee</b>: yourself; it is read before writing and an existing owner is <b>never overwritten</b></li>
+      </ul>
+    </div>
+    <div>
+      <h4 class="mb-s" style="color:var(--warn)">Later / context</h4>
+      <ul class="blist" style="margin-top:6px">
+        <li><b>Root Cause</b>: set after the RCA</li>
+        <li><b>Fix</b>: bugfix vs hotfix</li>
+        <li><b>Workaround</b>: temporary mitigation</li>
+        <li><b>Components</b>: grouping (the one that matters →)</li>
+        <li><b>Labels</b>: <span class="mono">bug</span>, domain</li>
+        <li><b>Links</b>: US <span class="mono">causes</span> Bug</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout mt-m"><h4>Golden rule</h4><p>Every field you leave empty is a question the dashboard <b>will not be able to answer</b>. Discipline when reporting IS the raw material of the metric.</p></div>
+  <div class="notes">The field matrix per work type lives in agentic-qa-core/references/defect-management-doctrine.md (Part 5); the catalog of field definitions is the required: block of .agents/jira-required.yaml. The slide shows the pedagogical grouping. The summary follows the Epic:Component:Symptom pattern, which is already groupable. It connects with Components on the next slide.</div>
+</section>
+
+<!-- 18. SEVERITY / PRIORITY -->
+<section class="slide" data-title="Severity">
+  <p class="kicker">classifying the impact</p>
+  <h2 class="h2" data-anim="fade-up">Severity → Priority</h2>
+  <table class="dtable mt-s">
+    <thead><tr><th>Severity</th><th>Criterion</th><th>Priority</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr><td><b>Critical</b></td><td>Core blocked, no workaround, data loss</td><td>Highest</td><td>Login down, checkout fails</td></tr>
+      <tr><td><b>Major</b></td><td>Main feature broken, hard workaround</td><td>High</td><td>Search returns wrong results</td></tr>
+      <tr><td><b>Moderate</b></td><td>Issue with an easy workaround</td><td>Medium</td><td>Sorting broken but the filter works</td></tr>
+      <tr><td><b>Minor</b></td><td>Low impact, low priority</td><td>Low</td><td>Missing edge case validation</td></tr>
+      <tr><td><b>Trivial</b></td><td>Cosmetic only</td><td>Lowest</td><td>Typo, slight misalignment</td></tr>
+    </tbody>
+  </table>
+  <div class="callout warn mt-m"><h4>Severity ≠ Priority</h4><p>Severity is <b>technical impact</b> (set by QA); Priority is <b>business urgency</b> (set by the team). A typo in the logo (Trivial) can be High priority before a demo. Always keep them apart.</p></div>
+  <div class="notes">The Severity→Priority mapping is the default; the business can override Priority. Keeping both fields gives two distinct measurement axes.</div>
+</section>
+
+<!-- 19. ERROR TYPE / ROOT CAUSE -->
+<section class="slide" data-title="Taxonomies">
+  <p class="kicker">two taxonomies that feed metrics</p>
+  <h2 class="h2" data-anim="fade-up">Error Type (what) vs Root Cause (why)</h2>
+  <div class="grid g2 mt-s">
+    <div class="card card-accent">
+      <h4>Error Type: the symptom</h4>
+      <p class="dim mb-s">Inferred when reporting, from the observed behavior.</p>
+      <div class="row wrap" style="gap:8px">
+        <span class="tag">functional</span><span class="tag">visual</span><span class="dim" style="font-size:12px">example · options in <span class="mono">.agents/jira-fields.json</span> (error_type); the ShopFlow dashboard data below uses those options</span>
+      </div>
+    </div>
+    <div class="card card-accent">
+      <h4>Root Cause: the cause</h4>
+      <p class="dim mb-s">Set <b>after</b> the fix, in the post-mortem.</p>
+      <div class="row wrap" style="gap:8px">
+        <span class="tag">code_error</span><span class="tag">requirement_error</span><span class="dim" style="font-size:12px">example · options in <span class="mono">.agents/jira-fields.json</span> (root_cause)</span>
+      </div>
+    </div>
+  </div>
+  <div class="callout mt-m"><h4>Why both matter</h4><p>Error Type answers <i>"what kind of failures dominate?"</i> (are we weak on security? on performance?). Root Cause answers <i>"where do they come from?"</i> (code? requirements? integrations?). Two questions, two fields, two charts.</p></div>
+  <div class="notes">Error Type faces the user (symptom); Root Cause faces the process (cause, post-RCA). Together they allow process improvement questions, not just counting.</div>
+</section>
+
+<!-- 20. COMPONENTS SPOTLIGHT -->
+<section class="slide compact" data-title="Components">
+  <p class="kicker">the underrated field</p>
+  <h2 class="h2" data-anim="fade-up"><span class="grad">Components</span>: Group to Measure</h2>
+  <p class="lede mt-s">A native Jira field, configurable so it appears on every incident. Its superpower: <b>grouping</b> Bugs, Defects and Improvements by the part of the product they affect.</p>
+  <div class="grid g2 mt-m">
+    <div class="card card-accent">
+      <h4>Real functional modules, not epics</h4>
+      <p class="dim">Each component = a <b>real functional module</b> of the app (the route <span class="mono">/checkout/cart</span> → component <b>Cart</b>). They are derived from the <b>source</b> and the <b>backlog scope</b> (a module not yet built is declared in advance), and reconciled via <span class="mono">jira-administration</span> mode <span class="mono">components</span> with a plan a human approves. The "epic" axis is already covered by parent/link, so do not duplicate it here.</p>
+    </div>
+    <div class="card card-accent">
+      <h4>What it is really for</h4>
+      <p class="dim">"Which part of the app fails the most?" becomes a single query. It enables <b>ownership</b> (which team owns which component) and automatic <b>routing</b> of incidents.</p>
+      <p class="dim mt-s"><b>The three axes, kept apart:</b> the <b>parent</b> is always the <i>QA process</i> epic ("QA Defect Management" for bug / defect / improvement) and <b>never</b> a product or development epic. The <b>issue-link</b> carries the origin Story. The <b>components</b> carry the affected module.</p>
+    </div>
+  </div>
+  <div class="callout mt-m"><h4>And ShopFlow always fills it in</h4><p>All <b>40 incidents</b> in ShopFlow mark their Component, so the ownership dashboard exists and says which module concentrates the defects. The rule in one line: <i>what you do not fill in, you cannot measure</i>. That is why it is hygiene recommendation #1, and ShopFlow leaves none empty. We look at it in part 3.</p></div>
+  <div class="notes">Emphasis: Components maps real functional modules of the app (derived from the code and the backlog scope, reconciled with jira-administration mode components under human approval). They are NOT derived from epics: that axis is already carried by parent and issue-link. ShopFlow fills it in on all 40 incidents, which is why its ownership dashboard can be drawn in full. It is the field most teams forget and the one that enables the most questions.</div>
+</section>
+
+<!-- 21. QUIZ 2 -->
+<section class="slide" data-title="Quiz 2">
+  <p class="kicker">quiz · part 2</p>
+  <h2 class="h2" data-anim="fade-up">Workflow &amp; Fields</h2>
+  <div class="quiz">
+    <div class="qitem">
+      <div class="qq"><span class="qn">Q1</span><span>Triage of a newly opened Bug: the team confirms the behavior is exactly the specified one. Transition and state?</span></div>
+      <div class="opts">
+        <div class="opt"><span class="mk">A</span><span><span class="mono">start fixing</span> → In Progress</span></div>
+        <div class="opt" data-correct="1"><span class="mk">B</span><span><span class="mono">is WAD</span> → REJECTED</span></div>
+        <div class="opt"><span class="mk">C</span><span><span class="mono">defer</span> → Deferred</span></div>
+      </div>
+      <div class="qexp"><b>is WAD → REJECTED.</b> Working As Designed: it is not a failure, it is specified behavior. Terminal state (category done). If the customer also wanted to change it, it would be <span class="mono">is not a Bug</span> → Enhancement.</div>
+    </div>
+    <div class="qitem">
+      <div class="qq"><span class="qn">Q2</span><span>The product team wants a dashboard for "which part of the app concentrates the most defects?". Which field enables it?</span></div>
+      <div class="opts">
+        <div class="opt"><span class="mk">A</span><span>Severity</span></div>
+        <div class="opt"><span class="mk">B</span><span>Priority</span></div>
+        <div class="opt" data-correct="1"><span class="mk">C</span><span>Components</span></div>
+      </div>
+      <div class="qexp"><b>Components.</b> It is the field that groups by functional module of the app (routes, real features of the running system), never derived from epics: the epic travels through the parent and the link. In ShopFlow it is filled in on all 40 incidents, so that dashboard is built in full and shows that Checkout and Auth lead.</div>
+    </div>
+  </div>
+  <div class="notes">Reinforces: terminal triage (is WAD → REJECTED) and the role of Components. Also remember the other axis: a cosmetic typo before a demo = Severity Trivial (low impact) but Priority High (high urgency): independent axes, two fields (see slide 18).</div>
+</section>
+
+<!-- 22. DIVIDER PART 3 -->
+<section class="slide divider" data-title="Part 3">
+  <div>
+    <p class="part-no">PART 03</p>
+    <h1 class="h1">Measuring Quality<br><span class="grad">From Fields to Answered Questions</span></h1>
+    <p class="lede">A dashboard is not a list of data, it is a set of <b>answers</b>. The goal: for product to see, with their own eyes, how the app is doing. We illustrate it with the ShopFlow example project.</p>
+  </div>
+  <div class="notes">The most important part. The guiding principle: nobody wants to see metrics, they want to resolve doubts. The metrics are the means. The ShopFlow numbers are illustrative, not from a real project.</div>
+</section>
+
+<!-- 23. PHILOSOPHY -->
+<section class="slide" data-title="Philosophy">
+  <p class="kicker">the guiding principle</p>
+  <h2 class="h2" data-anim="fade-up">Data Only Matters if It Answers Questions</h2>
+  <div class="vs">
+    <div class="card bad-side">
+      <h3>❌ Dashboard as a dumping ground</h3>
+      <ul>
+        <li>A list of 200 ungrouped tickets</li>
+        <li>Counts with no context ("there are 40 incidents")</li>
+        <li>Metrics nobody knows how to read</li>
+        <li>The product team understands nothing</li>
+      </ul>
+    </div>
+    <div class="mid">→</div>
+    <div class="card good-side">
+      <h3>✓ Dashboard as an answer</h3>
+      <ul>
+        <li>"Are we stopping defects before they escape?"</li>
+        <li>"Which component fails the most?"</li>
+        <li>"Is fix quality getting better or worse?"</li>
+        <li>Product opens Jira and <b>understands</b> the health</li>
+      </ul>
+    </div>
+  </div>
+  <div class="notes">First the quality question, then the metric, then the field, then the query. Never the other way around. This order is the heart of the lesson.</div>
+</section>
+
+<!-- 24. EXAMPLE SNAPSHOT (ShopFlow) -->
+<section class="slide" data-title="ShopFlow example">
+  <p class="kicker">snapshot · ShopFlow example project (house in order)</p>
+  <h2 class="h2" data-anim="fade-up">A Typical Snapshot: ShopFlow</h2>
+  <div class="mgrid">
+    <div class="mcard"><div class="mv grad">40</div><div class="mk">incident family</div><div class="md">26 Defect · 10 Bug · 4 Improvement, all typed</div></div>
+    <div class="mcard"><div class="mv grad">26</div><div class="mk">Closed (verified)</div><div class="md">4 In Progress · 4 Ready For QA · 3 Open · 3 discarded (2 Duplicated, 1 REJECTED)</div></div>
+    <div class="mcard"><div class="mv grad">4</div><div class="mk">Critical</div><div class="md">11 Major · 17 Moderate · 8 Minor, 40/40 with Severity</div></div>
+  </div>
+  <div class="bars">
+    <div class="barrow"><span class="bl">Defect</span><span class="bt" style="width:100%"></span><span class="bn">26</span></div>
+    <div class="barrow"><span class="bl">Bug</span><span class="bt" style="width:38%"></span><span class="bn">10</span></div>
+    <div class="barrow"><span class="bl">Improvement</span><span class="bt" style="width:15%"></span><span class="bn">4</span></div>
+  </div>
+  <div class="notes">ShopFlow is an example project (fictional), but it models a team that DID do the quality engineering: 40 incidents, every field filled in. 26 Defects vs 10 Bugs: most were caught in the sprint; keep this proportion for the escape rate slide (28% is healthy).</div>
+</section>
+
+<!-- 25. HYGIENE REALITY -->
+<section class="slide" data-title="Hygiene">
+  <p class="kicker">what you fill in, you can measure</p>
+  <h2 class="h2" data-anim="fade-up">The House in Order: Fields at 100%</h2>
+  <div class="bars">
+    <div class="barrow"><span class="bl">Priority</span><span class="bt" style="width:100%"></span><span class="bn">100%</span></div>
+    <div class="barrow"><span class="bl">Severity</span><span class="bt" style="width:100%"></span><span class="bn">100%</span></div>
+    <div class="barrow"><span class="bl">Components</span><span class="bt" style="width:100%"></span><span class="bn">100%</span></div>
+    <div class="barrow"><span class="bl">Root Cause</span><span class="bt" style="width:100%"></span><span class="bn">100%</span></div>
+    <div class="barrow"><span class="bl">Error Type</span><span class="bt" style="width:100%"></span><span class="bn">100%</span></div>
+    <div class="barrow"><span class="bl">Resolution</span><span class="bt" style="width:72%"></span><span class="bn">72%</span></div>
+  </div>
+  <div class="callout mt-m"><h4>The diagnosis</h4><p>ShopFlow fills in <b>every field of the standard</b> on all 40 incidents → the 8 questions of part 3 have an answer, with no "unassigned" slice. The principle holds, in reverse: <i>what you do not fill in, you cannot measure</i>, and here nothing was left empty. Discipline when reporting NOW is the reliable metric of TOMORROW.</p></div>
+  <div class="notes">Here is the model team: full coverage. Severity, Components and Error Type at 100% → every chart is drawn in full, with no muted slice. The only field that does not reach 100% is Resolution (72%: 29 of 40, the closed and the discarded ones), because 11 incidents are still open. That is expected, not a hygiene gap.</div>
+</section>
+
+<!-- 26. QUESTIONS -> METRICS (CENTERPIECE) -->
+<section class="slide" data-title="Questions→Metrics">
+  <p class="kicker">the map that matters</p>
+  <h2 class="h2" data-anim="fade-up">Quality Question → Metric → Field</h2>
+  <table class="dtable mt-s" style="font-size:14px">
+    <thead><tr><th>The question the team asks</th><th>Metric that answers it</th><th>Field(s)</th></tr></thead>
+    <tbody>
+      <tr><td>Are we stopping defects before they escape to prod?</td><td><b>Defect Escape Rate</b> = Bugs / (Bugs+Defects)</td><td>issuetype</td></tr>
+      <tr><td>How serious is what we find?</td><td><b>Severity</b> distribution + Severity Index</td><td>Severity</td></tr>
+      <tr><td>Which part of the app fails the most?</td><td>Defects per <b>Component</b></td><td>Components</td></tr>
+      <tr><td>Why do we fail? (process improvement)</td><td><b>Root Cause</b> distribution</td><td>Root Cause</td></tr>
+      <tr><td>What kind of failures dominate?</td><td><b>Error Type</b> distribution</td><td>Error Type</td></tr>
+      <tr><td>How good is the fix? (do we reopen?)</td><td><b>Reopen Rate</b></td><td>status history (<span class="mono">back</span>/<span class="mono">re-open</span>)</td></tr>
+      <tr><td>How long do we take to close?</td><td><b>Defect Age</b> / MTTR</td><td>created → resolved</td></tr>
+      <tr><td>How much noise does reporting generate?</td><td><b>Rejection Ratio</b> = (Dup+REJ+CNR)/total</td><td>resolution / status</td></tr>
+    </tbody>
+  </table>
+  <div class="notes">THIS is the core slide. The order is always: question first, metric second, field last. Each row can be built directly (or nearly so) with the fields of the standard. Escape Rate is the star, and the next slide develops it.</div>
+</section>
+
+<!-- 27. JQL -->
+<section class="slide" data-title="JQL">
+  <p class="kicker">from question to query</p>
+  <h2 class="h2" data-anim="fade-up">JQL: the Language of Dashboards</h2>
+  <div class="terminal mt-s">
+    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span>JQL · SHOP project (example)</span></div>
+<pre><span class="cmt"># All critical defects still open</span>
+<span class="kw">project</span> = SHOP <span class="kw">AND</span> issuetype <span class="kw">in</span> (Bug, Defect) <span class="kw">AND</span> <span class="str">"Severity[Select List]"</span> = Critical <span class="kw">AND</span> statusCategory != Done
+
+<span class="cmt"># Escape: post-release bugs vs in-sprint defects</span>
+<span class="kw">project</span> = SHOP <span class="kw">AND</span> issuetype = Bug      <span class="cmt">→ 10 (escaped)</span>
+<span class="kw">project</span> = SHOP <span class="kw">AND</span> issuetype = Defect   <span class="cmt">→ 26 (contained)</span>
+
+<span class="cmt"># Group by component (Components filled in on all 40)</span>
+<span class="kw">project</span> = SHOP <span class="kw">AND</span> issuetype <span class="kw">in</span> (Bug, Defect) <span class="kw">ORDER BY</span> component
+
+<span class="cmt"># Report noise: discarded</span>
+<span class="kw">project</span> = SHOP <span class="kw">AND</span> status <span class="kw">in</span> (Duplicated, REJECTED, <span class="str">"Cannot Reproduce"</span>)  <span class="cmt">→ 3</span></pre>
+  </div>
+  <div class="notes">JQL is the engine behind every dashboard gadget. A well-posed quality question translates almost 1:1 into a JQL clause + a group-by. Show that the fields are literally the filters.</div>
+</section>
+
+<!-- 28. METRICS TERMINOLOGY -->
+<section class="slide" data-title="Terminology">
+  <p class="kicker">defect metrics vocabulary</p>
+  <h2 class="h2" data-anim="fade-up">The Metrics You Should Be Able to Name</h2>
+  <table class="dtable mt-s" style="font-size:14px">
+    <thead><tr><th>Metric</th><th>What it measures</th><th>Formula (in terms of the standard)</th></tr></thead>
+    <tbody>
+      <tr><td><b>Defect Escape Rate</b></td><td>Leaks to production</td><td>Bugs / (Bugs + Defects)</td></tr>
+      <tr><td><b>DDP / DRE</b></td><td>Detection efficiency</td><td>Defects / (Defects + Bugs), the inverse of the escape</td></tr>
+      <tr><td><b>Defect Density</b></td><td>Concentration</td><td>Defects per Story / per Component / per module</td></tr>
+      <tr><td><b>Reopen Rate</b></td><td>Fix quality</td><td>reopened (<span class="mono">back</span>) / closed</td></tr>
+      <tr><td><b>Defect Age / MTTR</b></td><td>Closing speed</td><td>mean time created → Closed</td></tr>
+      <tr><td><b>Rejection Ratio</b></td><td>Report quality</td><td>(Duplicated + REJECTED + CNR) / total</td></tr>
+      <tr><td><b>Severity Index</b></td><td>Weighted severity</td><td>Σ(weight × count) / total</td></tr>
+    </tbody>
+  </table>
+  <div class="notes">Define each term in incident management terms, not test execution terms. DDP/DRE and Escape Rate are inverses: how much you contain vs how much leaks. These are the words a Senior QA should be able to use with authority.</div>
+</section>
+
+<!-- 29. ESCAPE RATE HERO -->
+<section class="slide" data-title="Escape rate">
+  <p class="kicker">the star metric of shift-left</p>
+  <h2 class="h2" data-anim="fade-up">Defect vs Bug = Your Escape Gauge</h2>
+  <p class="lede mt-s">This is where the taxonomy pays off. Since <b>Defect = a feature not yet released</b> and <b>Bug = a feature already released</b>, their proportion <b>is</b>, literally, the health of shift-left: how much do we contain vs how much leaks?</p>
+  <div class="mgrid mt-m">
+    <div class="mcard"><div class="mv grad">26</div><div class="mk">Defects (contained)</div><div class="md">caught inside the sprint</div></div>
+    <div class="mcard"><div class="mv grad">10</div><div class="mk">Bugs (escaped)</div><div class="md">discovered post-release</div></div>
+    <div class="mcard"><div class="mv" style="color:var(--good)">28%</div><div class="mk">Escape Rate</div><div class="md">10 / (10+26)</div></div>
+  </div>
+  <div class="callout mt-m"><h4>28% is healthy shift-left</h4><p>Because ShopFlow uses the Defect work type with discipline, the reading is reliable: <b>72% of defects are contained in the sprint</b> and only 28% escape to production. A well-applied Defect/Bug taxonomy is exactly what makes this metric credible.</p></div>
+  <div class="notes">With 26 contained Defects and 10 escaped Bugs, the 28% reflects a shift-left that works: most failures are caught before release. The Bug/Defect distinction used with discipline is what makes this metric reliable instead of an artifact of under-typing.</div>
+</section>
+
+<!-- 30. DASHBOARD BLUEPRINT -->
+<section class="slide" data-title="Dashboard">
+  <p class="kicker">the product home in jira</p>
+  <h2 class="h2" data-anim="fade-up">The Dashboard Product Wants to See</h2>
+  <div class="grid g3 mt-s">
+    <div class="card card-accent"><h4>Overall health</h4><p class="dim">Gadgets: by <b>type</b>, by <b>status</b> (lifecycle slice), Escape Rate. <span class="tag ok">ready in ShopFlow</span></p></div>
+    <div class="card card-accent"><h4>Severity &amp; cause</h4><p class="dim">Pie by <b>Severity</b>, by <b>Root Cause</b>, by <b>Error Type</b>. <span class="tag ok">ready in ShopFlow</span></p></div>
+    <div class="card card-accent"><h4>Ownership</h4><p class="dim">By <b>Component</b> + Reopen trend + Aging. <span class="tag ok">ready: Components at 100%</span></p></div>
+  </div>
+  <div class="callout mt-m"><h4>The end goal</h4><p>A page where the PO/PM opens Jira and, without asking anyone, <b>sees</b>: how many live incidents, how serious, which part of the app suffers, whether the fix is improving. Incident management becomes transparent.</p></div>
+  <div class="notes">Close the arc: the dashboard is NOT about tests (that is another presentation), it is about incident management. In ShopFlow the three blocks are built in full because every field is filled in: health, severity/cause, ownership.</div>
+</section>
+
+<!-- 31. PRIMER: HOW TO READ THESE CHARTS -->
+<section class="slide compact" data-title="How to read">
+  <p class="kicker">legend · before the dashboard</p>
+  <h2 class="h2" data-anim="fade-up">How to Read These Charts</h2>
+  <div class="grid g4 mt-s">
+
+    <div class="card chartcard tiny">
+      <div class="iconwrap">
+        <div class="donut mini" style="background:conic-gradient(var(--a1) 0 58%,var(--a2) 58% 84%,var(--a3) 84% 100%)"></div>
+      </div>
+      <h4>Donut / Pie</h4>
+      <p>Proportion of a total; the parts add up to 100%. <b>"How is the total split?"</b></p>
+    </div>
+
+    <div class="card chartcard tiny">
+      <div class="iconwrap">
+        <div class="minibars">
+          <span class="bt" style="width:100%"></span>
+          <span class="bt" style="width:64%;background:var(--a2)"></span>
+          <span class="bt" style="width:38%;background:var(--a3)"></span>
+        </div>
+      </div>
+      <h4>Bars</h4>
+      <p>Compare magnitude across categories. <b>"Which one is bigger?"</b></p>
+    </div>
+
+    <div class="card chartcard tiny">
+      <div class="iconwrap">
+        <div class="stacked mini">
+          <div class="seg" style="width:45%;background:var(--good)"></div>
+          <div class="seg" style="width:30%;background:var(--warn)"></div>
+          <div class="seg" style="width:25%;background:#79c0ff"></div>
+        </div>
+      </div>
+      <h4>Stacked bar</h4>
+      <p>The composition of ONE total inside a single bar. <b>"What is this made of?"</b></p>
+    </div>
+
+    <div class="card chartcard tiny">
+      <div class="iconwrap">
+        <div class="gauge mini">
+          <div class="garc" style="background:conic-gradient(from 270deg,var(--warn) 0 54deg,var(--surface-2) 54deg 180deg,transparent 180deg)"></div>
+          <div class="ghole"></div>
+        </div>
+      </div>
+      <h4>Gauge</h4>
+      <p>A single value against its maximum/target (a %). <b>"How close to the ceiling?"</b></p>
+    </div>
+
+  </div>
+  <table class="dtable mt-m" style="font-size:13.5px">
+    <thead><tr><th>Term</th><th>What it is</th><th>Example in this dashboard</th></tr></thead>
+    <tbody>
+      <tr><td><b>Rate</b></td><td>A proportion expressed from 0 to 100%</td><td>Escape Rate = escaped / total</td></tr>
+      <tr><td><b>Ratio</b></td><td>A relationship between two quantities</td><td>Rejection Ratio = noise / total</td></tr>
+      <tr><td><b>Distribution</b></td><td>How the count is split across categories</td><td>by Severity, by Root Cause...</td></tr>
+      <tr><td><b>Weighted index</b></td><td>Σ(weight × count) / total, since not everything weighs the same</td><td>Severity Index: a critical weighs more than a minor</td></tr>
+      <tr><td><b>"Unassigned" slice</b></td><td>The portion of missing data; showing it = honesty</td><td>if a field were left empty it would go here (muted); in ShopFlow it does not apply: everything is filled in</td></tr>
+    </tbody>
+  </table>
+  <div class="notes">Glossary slide: so nobody gets lost with donut/gauge/stacked bar before seeing the dashboard. Key idea to say out loud: each shape answers a different question: proportion (donut), comparison (bars), composition (stacked), value-against-target (gauge). The "Unassigned" slice (muted) is the honest resource for when a field is left empty, but in ShopFlow it does not appear, because everything is filled in. The icons are the same CSS components you will see at full size in the next 3 dashboards.</div>
+</section>
+
+<!-- 32. DASHBOARD D1: OVERALL HEALTH -->
+<section class="slide" data-title="Dashboard · Health">
+  <p class="kicker">live dashboard · block 1/3 · ShopFlow example</p>
+  <h2 class="h2" data-anim="fade-up">Dashboard · Overall Health</h2>
+  <div class="grid g3 mt-s">
+
+    <!-- chart 1: escape rate donut -->
+    <div class="card chartcard">
+      <div class="cq">Are we stopping defects before they escape to prod?</div>
+      <div class="cm">metric · Defect Escape Rate</div>
+      <div class="chartwrap">
+        <div class="donut" style="background:conic-gradient(var(--warn) 0 28%,var(--good) 28% 100%)">
+          <div class="dlabel"><span class="dv" style="color:var(--good)">72%</span><span class="dn">contained</span></div>
+        </div>
+      </div>
+      <div class="chartans"><b>Shift-left works: 72% is contained in the sprint</b>, Escape Rate 28%, healthy.</div>
+    </div>
+
+    <!-- chart 2: type split donut -->
+    <div class="card chartcard">
+      <div class="cq">What is the incident family made of?</div>
+      <div class="cm">metric · Type split (40 total)</div>
+      <div class="chartwrap">
+        <div class="donut" style="background:conic-gradient(var(--a1) 0 65%,var(--a2) 65% 90%,var(--a3) 90% 100%)">
+          <div class="dlabel"><span class="dv grad">40</span><span class="dn">incidents</span></div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><span class="swatch" style="background:var(--a1)"></span>Defect<b>26</b></div>
+          <div class="legend-item"><span class="swatch" style="background:var(--a2)"></span>Bug<b>10</b></div>
+          <div class="legend-item"><span class="swatch" style="background:var(--a3)"></span>Improvement<b>4</b></div>
+        </div>
+      </div>
+      <div class="chartans"><b>Defects (26) &gt; Bugs (10): it is caught before release.</b></div>
+    </div>
+
+    <!-- chart 3: status lifecycle stacked bar -->
+    <div class="card chartcard">
+      <div class="cq">Where in the cycle are they?</div>
+      <div class="cm">metric · Status lifecycle (40 total)</div>
+      <div class="chartwrap">
+        <div class="stackwrap">
+          <div class="stacked">
+            <div class="seg" style="width:65%;background:var(--good);color:#03130b">65%</div>
+            <div class="seg" style="width:10%;background:var(--warn);color:#1a1303">10%</div>
+            <div class="seg" style="width:10%;background:#79c0ff;color:#04121f">10%</div>
+            <div class="seg" style="width:7.5%;background:var(--text-3);color:#0d1117">7%</div>
+            <div class="seg" style="width:7.5%;background:var(--a2);color:#0d1117">7%</div>
+          </div>
+          <div class="stacked-legend">
+            <div class="legend-item"><span class="swatch" style="background:var(--good)"></span>Closed<b>26</b></div>
+            <div class="legend-item"><span class="swatch" style="background:var(--warn)"></span>In Progress<b>4</b></div>
+            <div class="legend-item"><span class="swatch" style="background:#79c0ff"></span>Ready For QA<b>4</b></div>
+            <div class="legend-item"><span class="swatch" style="background:var(--text-3)"></span>Open<b>3</b></div>
+            <div class="legend-item"><span class="swatch" style="background:var(--a2)"></span>Duplicated / REJECTED<b>3</b></div>
+          </div>
+        </div>
+      </div>
+      <div class="chartans"><b>26 closed; 11 live and 3 discarded</b> moving through a healthy flow.</div>
+    </div>
+
+  </div>
+  <div class="notes">Block 1 of the dashboard blueprint, materialized with the full ShopFlow data. Escape Rate (donut): 72% contained in the sprint, 28% escapes: healthy shift-left. Type split: Defect dominates (26 of 40) → it is caught before release. Lifecycle (stacked bar): 26 Closed + 11 live (4 In Progress, 4 Ready For QA, 3 Open) + 3 discarded (2 Duplicated, 1 REJECTED), all in normal flow. The three gadgets are drawn in full because type and status are at 100%.</div>
+</section>
+
+<!-- 32. DASHBOARD D2: SEVERITY & CAUSE -->
+<section class="slide" data-title="Dashboard · Severity">
+  <p class="kicker">live dashboard · block 2/3 · ShopFlow example</p>
+  <h2 class="h2" data-anim="fade-up">Dashboard · Severity &amp; Cause</h2>
+  <div class="grid g3 mt-s">
+
+    <!-- chart 4: severity bars -->
+    <div class="card chartcard">
+      <div class="cq">How serious is what we find?</div>
+      <div class="cm">metric · Severity dist. (40 total)</div>
+      <div class="chartwrap" style="align-items:stretch">
+        <div class="bars" style="margin-top:0;width:100%">
+          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Critical</span><span class="bt" style="width:24%;background:var(--bad)"></span><span class="bn">4</span></div>
+          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Major</span><span class="bt" style="width:65%;background:var(--warn)"></span><span class="bn">11</span></div>
+          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Moderate</span><span class="bt" style="width:100%;background:#79c0ff"></span><span class="bn">17</span></div>
+          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Minor</span><span class="bt" style="width:47%;background:var(--good)"></span><span class="bn">8</span></div>
+        </div>
+      </div>
+      <div class="chartans"><b>Mostly Moderate/Major; 4 criticals under control.</b></div>
+    </div>
+
+    <!-- chart 5: root cause pie -->
+    <div class="card chartcard">
+      <div class="cq">Why do we fail?</div>
+      <div class="cm">metric · Root Cause (40 total)</div>
+      <div class="chartwrap">
+        <div class="pie" style="background:conic-gradient(var(--a1) 0 37.5%,var(--a2) 37.5% 60%,var(--a3) 60% 77.5%,#79c0ff 77.5% 92.5%,var(--good) 92.5% 100%)"></div>
+        <div class="legend">
+          <div class="legend-item"><span class="swatch" style="background:var(--a1)"></span>Code logic<b>15</b></div>
+          <div class="legend-item"><span class="swatch" style="background:var(--a2)"></span>Ambiguous req.<b>9</b></div>
+          <div class="legend-item"><span class="swatch" style="background:var(--a3)"></span>Data<b>7</b></div>
+          <div class="legend-item"><span class="swatch" style="background:#79c0ff"></span>Integration<b>6</b></div>
+          <div class="legend-item"><span class="swatch" style="background:var(--good)"></span>Config<b>3</b></div>
+        </div>
+      </div>
+      <div class="chartans"><b>Code logic dominates</b>, so process improvement should start there.</div>
+    </div>
+
+    <!-- chart 6: error type bars -->
+    <div class="card chartcard">
+      <div class="cq">What kind of failures dominate?</div>
+      <div class="cm">metric · Error Type (40 total)</div>
+      <div class="chartwrap" style="align-items:stretch">
+        <div class="bars" style="margin-top:0;width:100%">
+          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Functional</span><span class="bt" style="width:100%;background:var(--a1)"></span><span class="bn">17</span></div>
+          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Visual</span><span class="bt" style="width:53%;background:var(--a2)"></span><span class="bn">9</span></div>
+          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Data</span><span class="bt" style="width:41%;background:#79c0ff"></span><span class="bn">7</span></div>
+          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Performance</span><span class="bt" style="width:29%;background:var(--warn)"></span><span class="bn">5</span></div>
+          <div class="barrow" style="grid-template-columns:96px 1fr 30px"><span class="bl">Security</span><span class="bt" style="width:12%;background:var(--bad)"></span><span class="bn">2</span></div>
+        </div>
+      </div>
+      <div class="chartans"><b>Functional dominates; visual and data follow.</b></div>
+    </div>
+
+  </div>
+  <div class="notes">Block 2 of the dashboard, with the full ShopFlow data: Severity, Root Cause and Error Type are at 100%, so no chart needs an "Unassigned" slice. Severity: mostly Moderate (17) / Major (11), only 4 criticals under control. Root Cause: code logic dominates (15), so process improvement should start there. Error Type: functional dominates (17), followed by UI and validation.</div>
+</section>
+
+<!-- 33. DASHBOARD D3: OWNERSHIP & PROCESS -->
+<section class="slide" data-title="Dashboard · Ownership">
+  <p class="kicker">live dashboard · block 3/3 · ShopFlow example</p>
+  <h2 class="h2" data-anim="fade-up">Dashboard · Ownership &amp; Process</h2>
+  <div class="grid g3 mt-s">
+
+    <!-- chart 7: components populated -->
+    <div class="card chartcard">
+      <div class="cq">Which part of the app fails the most?</div>
+      <div class="cm">metric · Defects per Component (40 total)</div>
+      <div class="chartwrap" style="align-items:stretch">
+        <div class="bars" style="margin-top:0;width:100%">
+          <div class="barrow" style="grid-template-columns:90px 1fr 30px"><span class="bl">Checkout</span><span class="bt" style="width:100%;background:var(--a1)"></span><span class="bn">11</span></div>
+          <div class="barrow" style="grid-template-columns:90px 1fr 30px"><span class="bl">Auth</span><span class="bt" style="width:73%;background:var(--a2)"></span><span class="bn">8</span></div>
+          <div class="barrow" style="grid-template-columns:90px 1fr 30px"><span class="bl">Search</span><span class="bt" style="width:64%;background:var(--a3)"></span><span class="bn">7</span></div>
+          <div class="barrow" style="grid-template-columns:90px 1fr 30px"><span class="bl">Cart</span><span class="bt" style="width:55%;background:#79c0ff"></span><span class="bn">6</span></div>
+          <div class="barrow" style="grid-template-columns:90px 1fr 30px"><span class="bl">Profile</span><span class="bt" style="width:45%;background:var(--warn)"></span><span class="bn">5</span></div>
+          <div class="barrow" style="grid-template-columns:90px 1fr 30px"><span class="bl">Notifications</span><span class="bt" style="width:27%;background:var(--good)"></span><span class="bn">3</span></div>
+        </div>
+      </div>
+      <div class="chartans"><b>Checkout and Auth concentrate the defects</b> → where to reinforce.</div>
+    </div>
+
+    <!-- chart 8: reopen rate gauge -->
+    <div class="card chartcard">
+      <div class="cq">How good is the fix? (do we reopen?)</div>
+      <div class="cm">metric · Reopen Rate</div>
+      <div class="chartwrap">
+        <div class="gauge">
+          <div class="garc" style="background:conic-gradient(from 270deg,var(--good) 0 14deg,var(--surface-2) 14deg 180deg,transparent 180deg)"></div>
+          <div class="ghole"></div>
+          <div class="gval" style="color:var(--good)">8%</div>
+          <div class="gsub">2 reopened / 26 closed</div>
+        </div>
+      </div>
+      <div class="chartans"><b>Only 8% get reopened: solid fixes.</b></div>
+    </div>
+
+    <!-- chart 9: rejection ratio donut -->
+    <div class="card chartcard">
+      <div class="cq">How much noise does reporting generate?</div>
+      <div class="cm">metric · Rejection Ratio (40 total)</div>
+      <div class="chartwrap">
+        <div class="donut" style="background:conic-gradient(var(--warn) 0 7.5%,var(--good) 7.5% 100%)">
+          <div class="dlabel"><span class="dv" style="color:var(--good)">7%</span><span class="dn">noise</span></div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><span class="swatch" style="background:var(--warn)"></span>Dup + REJ<b>3</b></div>
+          <div class="legend-item"><span class="swatch" style="background:var(--good)"></span>Signal<b>37</b></div>
+        </div>
+      </div>
+      <div class="chartans"><b>7% noise: clean reports</b> (2 duplicates + 1 rejected).</div>
+    </div>
+
+  </div>
+  <div class="notes">Block 3 of the dashboard, with the full ShopFlow data. Components (chart 1) is drawn in full: Checkout (11) and Auth (8) concentrate the defects → reinforce testing and ownership there. Reopen Rate (gauge): 2/26 = 8%, solid fixes. Rejection Ratio (donut): 3 discarded (2 Duplicated + 1 REJECTED) = 7% noise → clean reports. It closes the arc: the three gadgets exist because the team filled in all of its fields.</div>
+</section>
+
+<!-- 34. QUIZ 3 -->
+<section class="slide" data-title="Quiz 3">
+  <p class="kicker">quiz · part 3</p>
+  <h2 class="h2" data-anim="fade-up">Metrics &amp; Dashboards</h2>
+  <div class="quiz">
+    <div class="qitem">
+      <div class="qq"><span class="qn">Q1</span><span>The PM asks: "are we catching the problems before they reach the user?". Which metric answers it?</span></div>
+      <div class="opts">
+        <div class="opt" data-correct="1"><span class="mk">A</span><span>Defect Escape Rate = Bugs / (Bugs+Defects)</span></div>
+        <div class="opt"><span class="mk">B</span><span>Severity Index</span></div>
+        <div class="opt"><span class="mk">C</span><span>Defect Age</span></div>
+      </div>
+      <div class="qexp"><b>Defect Escape Rate.</b> The Bug/Defect proportion measures the leak exactly, because Defect = a feature not yet released and Bug = a feature already released. It is the core shift-left metric.</div>
+    </div>
+    <div class="qitem">
+      <div class="qq"><span class="qn">Q2</span><span>The product team opens the ShopFlow dashboard and asks "which part of the app concentrates the most defects?". Which module leads?</span></div>
+      <div class="opts">
+        <div class="opt" data-correct="1"><span class="mk">A</span><span>Checkout (11 defects)</span></div>
+        <div class="opt"><span class="mk">B</span><span>Notifications (3 defects)</span></div>
+        <div class="opt"><span class="mk">C</span><span>It cannot be known: Components is not filled in</span></div>
+      </div>
+      <div class="qexp"><b>Checkout (11).</b> Because ShopFlow fills in Components on all 40 incidents, the ownership chart is drawn in full: Checkout and Auth (8) lead → reinforce there. If the field were empty, the answer would be C, but that is exactly the discipline this team did not neglect.</div>
+    </div>
+  </div>
+  <div class="notes">It ties together the key ideas of part 3: escape rate as the star metric (28% is healthy) and the payoff of field hygiene (Components at 100% → a readable ownership dashboard, Checkout leads). One more metric to name: if many tickets are reopened via "back" after being closed, that is a high Reopen Rate = fixes that did not really resolve the problem. In ShopFlow it is only 8% (see slide 28).</div>
+</section>
+
+<!-- 32. BEST PRACTICES -->
+<section class="slide" data-title="Best practices">
+  <p class="kicker">hygiene checklist</p>
+  <h2 class="h2" data-anim="fade-up">Defect Management Discipline</h2>
+  <div class="grid g2 mt-s">
+    <ul class="blist">
+      <li><b>Use the right work type</b>: Defect if the feature has not crossed Staging, Bug if it is already live above. It is what makes the escape measurable.</li>
+      <li><b>Always fill in Components</b>: without it, there is no ownership dashboard.</li>
+      <li><b>Severity ≠ Priority</b>: two axes, two fields, two questions.</li>
+      <li><b>Always add evidence</b>: embedded screenshot, trace or log.</li>
+    </ul>
+    <ul class="blist">
+      <li><b>Set Root Cause after the RCA</b>: it feeds process improvement.</li>
+      <li><b>Triage honestly</b>: Duplicated/WAD/CNR keep the signal clean.</li>
+      <li><b>Link US ↔ incident</b>: <span class="mono">causes</span> / <span class="mono">is blocked by</span> for traceability.</li>
+      <li><b>Question first, then metric</b>: never a dashboard for its own sake.</li>
+    </ul>
+  </div>
+  <div class="notes">The operational checklist. Each point is a direct lever on the quality of the metrics that come later. Discipline when reporting NOW is the reliable metric of TOMORROW.</div>
+</section>
+
+<!-- 33. TAKEAWAYS -->
+<section class="slide" data-title="Takeaways">
+  <p class="kicker">to take away</p>
+  <h2 class="h2" data-anim="fade-up">Three Ideas That Stay</h2>
+  <div class="steps s3 mt-l">
+    <div class="step"><div class="num">1</div><h4>The feature stage defines the type</h4><p>Bug = defect = identical symptom. What changes is whether the feature is already live above Staging, not where or when you found it. Defect contains; Bug leaks; Improvement improves.</p></div>
+    <div class="step"><div class="num">2</div><h4>One workflow, the same fields</h4><p>The quality standard: the three incidents share a schema. Discipline when filling in, above all Components, is the raw material of every metric.</p></div>
+    <div class="step"><div class="num">3</div><h4>Measure questions, not data</h4><p>A dashboard is a set of answers. Question first, metric second, field last. Escape Rate is the star of shift-left.</p></div>
+  </div>
+  <div class="notes">The close of the three concepts. If the audience remembers only three things, let it be these.</div>
+</section>
+
+<!-- 34. THANKS -->
+<section class="slide center tc" data-title="Closing">
+  <div>
+    <h1 class="h1"><span class="grad">Report with Discipline. Measure with Questions.</span></h1>
+    <p class="lede" style="margin:14px auto">Distinguish (Bug/Defect/Improvement) → Manage (one workflow, the same fields) → Measure (from filled-in fields to dashboards the product team understands at a glance).</p>
+    <p class="lede" style="margin:14px auto">← → navigate · S speaker notes · O overview · T theme</p>
+  </div>
+  <div class="notes">It closes by tying the three parts together. Well-done incident management is what turns loose tickets into a living, honest picture of product health.</div>
+</section>
+
+</div>
+
+<!-- PART B :: score chip + keyboard-nav hint (ported from coding-classes/playwright-pro) -->
+<div id="score-chip">⭐ 0/6</div>
+<div id="help-hint">← → navigate · O overview · S presenter · N notes · F fullscreen · T theme</div>
+<style id="upex-chip-hint-style">
+#score-chip{position:fixed;top:18px;right:24px;z-index:60;font-family:'JetBrains Mono','IBM Plex Mono',monospace;
+  font-size:14px;font-weight:700;background:var(--surface-2);border:1px solid var(--border-strong);
+  border-radius:999px;padding:6px 15px;color:var(--accent);box-shadow:var(--shadow);transition:transform .25s var(--ease)}
+#score-chip.bump{transform:scale(1.25)}
+#help-hint{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:60;pointer-events:none;
+  font-family:'JetBrains Mono','IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;color:var(--text-3)}
+@media (max-width:768px){#help-hint{display:none}#score-chip{top:8px;right:10px;font-size:11px;padding:4px 10px;box-shadow:none}}
+@media (pointer:coarse){#help-hint{display:none}}
+@media print{#score-chip,#help-hint{display:none!important}}
+</style>
+
+<script>
+/* html-ppt :: runtime.js
+ * Keyboard-driven deck runtime. Zero dependencies.
+ *
+ * Features:
+ *   ← → / space / PgUp PgDn / Home End  navigation
+ *   F  fullscreen
+ *   S  presenter mode (opens a NEW WINDOW with current/next slide preview + notes + timer)
+ *       The original window stays as audience view, synced via BroadcastChannel.
+ *       Slide previews use CSS transform:scale() at design resolution for pixel-perfect layout.
+ *   N  quick notes overlay (bottom drawer)
+ *   O  slide overview grid
+ *   T  cycle themes (reads data-themes on <html> or <body>)
+ *   A  cycle demo animation on current slide
+ *   URL hash #/N  deep-link to slide N (1-based)
+ *   Progress bar auto-managed
+ */
+(function () {
+  'use strict';
+
+  const ANIMS = ['fade-up','fade-down','fade-left','fade-right','rise-in','drop-in',
+    'zoom-pop','blur-in','glitch-in','typewriter','neon-glow','shimmer-sweep',
+    'gradient-flow','stagger-list','counter-up','path-draw','parallax-tilt',
+    'card-flip-3d','cube-rotate-3d','page-turn-3d','perspective-zoom',
+    'marquee-scroll','kenburns','confetti-burst','spotlight','morph-shape','ripple-reveal'];
+
+  function ready(fn){ if(document.readyState!='loading')fn(); else document.addEventListener('DOMContentLoaded',fn);}
+
+  /* ========== Parse URL for preview-only mode ==========
+   * When loaded as iframe.src = "index.html?preview=3", runtime enters a
+   * locked single-slide mode: only slide N is visible, no chrome, no keys,
+   * no hash updates. This is how the presenter window shows pixel-perfect
+   * previews — by loading the actual deck file in an iframe and telling it
+   * to display only a specific slide.
+   */
+  function getPreviewIdx() {
+    const m = /[?&]preview=(\d+)/.exec(location.search || '');
+    return m ? parseInt(m[1], 10) - 1 : -1;
+  }
+
+  ready(function () {
+    const deck = document.querySelector('.deck');
+    if (!deck) return;
+    const slides = Array.from(deck.querySelectorAll('.slide'));
+    if (!slides.length) return;
+
+    const previewOnlyIdx = getPreviewIdx();
+    const isPreviewMode = previewOnlyIdx >= 0 && previewOnlyIdx < slides.length;
+
+    /* ===== Preview-only mode: show one slide, hide everything else ===== */
+    if (isPreviewMode) {
+      function showSlide(i) {
+        slides.forEach((s, j) => {
+          const active = (j === i);
+          s.classList.toggle('is-active', active);
+          s.style.display = active ? '' : 'none';
+          if (active) {
+            s.style.opacity = '1';
+            s.style.transform = 'none';
+            s.style.pointerEvents = 'auto';
+          }
+        });
+      }
+      showSlide(previewOnlyIdx);
+      /* Hide chrome that the presenter shouldn't see in preview */
+      const hideSel = '.progress-bar, .notes-overlay, .overview, .notes, aside.notes, .speaker-notes';
+      document.querySelectorAll(hideSel).forEach(el => { el.style.display = 'none'; });
+      document.documentElement.setAttribute('data-preview', '1');
+      document.body.setAttribute('data-preview', '1');
+      /* Auto-detect theme base path for theme switching in preview mode */
+      function getPreviewThemeBase() {
+        const base = document.documentElement.getAttribute('data-theme-base');
+        if (base) return base;
+        const tl = document.getElementById('theme-link');
+        if (tl) {
+          const raw = tl.getAttribute('href') || '';
+          const ls = raw.lastIndexOf('/');
+          if (ls >= 0) return raw.substring(0, ls + 1);
+        }
+        return 'assets/themes/';
+      }
+      const previewThemeBase = getPreviewThemeBase();
+
+      /* Listen for postMessage from parent presenter window:
+       *  - preview-goto: switch visible slide WITHOUT reloading
+       *  - preview-theme: switch theme CSS link to match audience window */
+      window.addEventListener('message', function(e) {
+        if (!e.data) return;
+        if (e.data.type === 'preview-goto') {
+          const n = parseInt(e.data.idx, 10);
+          if (n >= 0 && n < slides.length) showSlide(n);
+        } else if (e.data.type === 'preview-theme' && e.data.name) {
+          let link = document.getElementById('theme-link');
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.id = 'theme-link';
+            document.head.appendChild(link);
+          }
+          link.href = previewThemeBase + e.data.name + '.css';
+          document.documentElement.setAttribute('data-theme', e.data.name);
+        }
+      });
+      /* Signal to parent that preview iframe is ready */
+      try { window.parent && window.parent.postMessage({ type: 'preview-ready' }, '*'); } catch(e) {}
+      return;
+    }
+
+    let idx = 0;
+    const total = slides.length;
+
+    /* ===== BroadcastChannel for presenter sync ===== */
+    const CHANNEL_NAME = 'html-ppt-presenter-' + location.pathname;
+    let bc;
+    try { bc = new BroadcastChannel(CHANNEL_NAME); } catch(e) { bc = null; }
+
+    // Are we running inside the presenter popup? (legacy flag, now unused)
+    const isPresenterWindow = false;
+
+    /* ===== progress bar ===== */
+    let bar = document.querySelector('.progress-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'progress-bar';
+      bar.innerHTML = '<span></span>';
+      document.body.appendChild(bar);
+    }
+    const barFill = bar.querySelector('span');
+
+    /* ===== notes overlay (N key) ===== */
+    let notes = document.querySelector('.notes-overlay');
+    if (!notes) {
+      notes = document.createElement('div');
+      notes.className = 'notes-overlay';
+      document.body.appendChild(notes);
+    }
+
+    /* ===== overview grid (O key) ===== */
+    let overview = document.querySelector('.overview');
+    if (!overview) {
+      overview = document.createElement('div');
+      overview.className = 'overview';
+      slides.forEach((s, i) => {
+        const t = document.createElement('div');
+        t.className = 'thumb';
+        // Force 16:9 aspect ratio robustly
+        t.style.padding = '0 0 56.25% 0';
+        t.style.height = '0';
+        t.style.position = 'relative';
+        t.style.overflow = 'hidden';
+
+        const title = s.getAttribute('data-title') ||
+          (s.querySelector('h1,h2,h3')||{}).textContent || ('Slide '+(i+1));
+        
+        // Create a container for the mini-slide
+        const mini = document.createElement('div');
+        mini.className = 'mini-slide';
+        mini.style.position = 'absolute';
+        mini.style.top = '0';
+        mini.style.left = '0';
+        mini.style.width = '1920px';
+        mini.style.height = '1080px';
+        mini.style.transformOrigin = 'top left';
+        mini.style.pointerEvents = 'none';
+        mini.style.background = 'var(--bg)';
+        
+        // Clone the slide content
+        const clone = s.cloneNode(true);
+        clone.className = 'slide is-active'; // force active styles
+        clone.style.position = 'absolute';
+        clone.style.inset = '0';
+        clone.style.transform = 'none';
+        clone.style.opacity = '1';
+        clone.style.padding = '72px 96px'; // ensure padding is kept
+        
+        mini.appendChild(clone);
+        t.appendChild(mini);
+
+        // Add the number and title overlay
+        const overlay = document.createElement('div');
+        overlay.style.position = 'absolute';
+        overlay.style.inset = '0';
+        overlay.style.background = 'linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, transparent 40%, transparent 60%, rgba(0,0,0,0.8) 100%)';
+        overlay.style.color = '#fff';
+        overlay.style.zIndex = '10';
+        overlay.style.pointerEvents = 'none';
+        
+        const n = document.createElement('div');
+        n.className = 'n';
+        n.textContent = i + 1;
+        n.style.position = 'absolute';
+        n.style.top = '12px';
+        n.style.left = '16px';
+        n.style.fontWeight = '700';
+        n.style.fontSize = '16px';
+        n.style.color = '#fff';
+        n.style.textShadow = '0 1px 4px rgba(0,0,0,0.8)';
+        
+        const text = document.createElement('div');
+        text.className = 't';
+        text.textContent = title.trim().slice(0,80);
+        text.style.position = 'absolute';
+        text.style.bottom = '12px';
+        text.style.left = '16px';
+        text.style.right = '16px';
+        text.style.fontWeight = '600';
+        text.style.fontSize = '14px';
+        text.style.color = '#fff';
+        text.style.textShadow = '0 1px 4px rgba(0,0,0,0.8)';
+        
+        overlay.appendChild(n);
+        overlay.appendChild(text);
+        t.appendChild(overlay);
+
+        t.addEventListener('click', () => { go(i); toggleOverview(false); });
+        overview.appendChild(t);
+      });
+      document.body.appendChild(overview);
+    }
+
+    /* ===== navigation ===== */
+    function go(n, fromRemote){
+      n = Math.max(0, Math.min(total-1, n));
+      slides.forEach((s,i) => {
+        s.classList.toggle('is-active', i===n);
+        s.classList.toggle('is-prev', i<n);
+      });
+      idx = n;
+      barFill.style.width = ((n+1)/total*100)+'%';
+      const numEl = document.querySelector('.slide-number');
+      if (numEl) { numEl.setAttribute('data-current', n+1); numEl.setAttribute('data-total', total); }
+
+      // notes (bottom overlay)
+      const note = slides[n].querySelector('.notes, aside.notes, .speaker-notes');
+      notes.innerHTML = note ? note.innerHTML : '';
+
+      // hash
+      const hashTarget = '#/'+(n+1);
+      if (location.hash !== hashTarget && !isPresenterWindow) {
+        history.replaceState(null,'', hashTarget);
+      }
+
+      // re-trigger entry animations
+      slides[n].querySelectorAll('[data-anim]').forEach(el => {
+        const a = el.getAttribute('data-anim');
+        el.classList.remove('anim-'+a);
+        void el.offsetWidth;
+        el.classList.add('anim-'+a);
+      });
+
+      // counter-up
+      slides[n].querySelectorAll('.counter').forEach(el => {
+        const target = parseFloat(el.getAttribute('data-to')||el.textContent);
+        const dur = parseInt(el.getAttribute('data-dur')||'1200',10);
+        const start = performance.now();
+        const from = 0;
+        function tick(now){
+          const t = Math.min(1,(now-start)/dur);
+          const v = from + (target-from)*(1-Math.pow(1-t,3));
+          el.textContent = (target % 1 === 0) ? Math.round(v) : v.toFixed(1);
+          if (t<1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      });
+
+      // Broadcast to other window (audience ↔ presenter)
+      if (!fromRemote && bc) {
+        bc.postMessage({ type: 'go', idx: n });
+      }
+    }
+
+    /* ===== listen for remote navigation / theme changes ===== */
+    if (bc) {
+      bc.onmessage = function(e) {
+        if (!e.data) return;
+        if (e.data.type === 'go' && typeof e.data.idx === 'number') {
+          go(e.data.idx, true);
+        } else if (e.data.type === 'theme' && e.data.name) {
+          /* Sync theme across windows */
+          const i = themes.indexOf(e.data.name);
+          if (i >= 0) themeIdx = i;
+          applyTheme(e.data.name);
+        }
+      };
+    }
+
+    function toggleNotes(force){ notes.classList.toggle('open', force!==undefined?force:!notes.classList.contains('open')); }
+    function toggleOverview(force){
+      const isOpen = force!==undefined ? force : !overview.classList.contains('open');
+      overview.classList.toggle('open', isOpen);
+      if (isOpen) {
+        requestAnimationFrame(() => {
+          const thumbs = overview.querySelectorAll('.thumb');
+          if (thumbs.length) {
+            const scale = thumbs[0].clientWidth / 1920;
+            overview.querySelectorAll('.mini-slide').forEach(m => {
+              m.style.transform = 'scale(' + scale + ')';
+            });
+          }
+        });
+      }
+    }
+
+    /* ========== PRESENTER MODE — Magnetic-card popup window ========== */
+    /* Opens a new window with 4 draggable, resizable cards:
+     *   CURRENT  — iframe(?preview=N)   pixel-perfect preview of current slide
+     *   NEXT     — iframe(?preview=N+1) pixel-perfect preview of next slide
+     *   SCRIPT   — large speaker notes (Guion)
+     *   TIMER    — elapsed timer + page counter + controls
+     * Cards remember position/size in localStorage.
+     * Two windows sync via BroadcastChannel.
+     */
+    let presenterWin = null;
+
+    function openPresenterWindow() {
+      if (presenterWin && !presenterWin.closed) {
+        presenterWin.focus();
+        return;
+      }
+
+      // Build absolute URL of THIS deck file (without hash/query)
+      const deckUrl = location.protocol + '//' + location.host + location.pathname;
+
+      // Collect slide titles + notes (HTML strings)
+      const slideMeta = slides.map((s, i) => {
+        const note = s.querySelector('.notes, aside.notes, .speaker-notes');
+        return {
+          title: s.getAttribute('data-title') ||
+            (s.querySelector('h1,h2,h3')||{}).textContent || ('Slide '+(i+1)),
+          notes: note ? note.innerHTML : ''
+        };
+      });
+
+      /* Capture current theme so presenter previews match the audience */
+      const currentTheme = root.getAttribute('data-theme') || (themes[themeIdx] || '');
+      const presenterHTML = buildPresenterHTML(deckUrl, slideMeta, total, idx, CHANNEL_NAME, currentTheme);
+
+      presenterWin = window.open('', 'html-ppt-presenter', 'width=1280,height=820,menubar=no,toolbar=no');
+      if (!presenterWin) {
+        alert('Allow pop-up windows to use the presenter view');
+        return;
+      }
+      presenterWin.document.open();
+      presenterWin.document.write(presenterHTML);
+      presenterWin.document.close();
+    }
+
+    function buildPresenterHTML(deckUrl, slideMeta, total, startIdx, channelName, currentTheme) {
+      const metaJSON = JSON.stringify(slideMeta);
+      const deckUrlJSON = JSON.stringify(deckUrl);
+      const channelJSON = JSON.stringify(channelName);
+      const themeJSON = JSON.stringify(currentTheme || '');
+      const storageKey = 'html-ppt-presenter:' + location.pathname;
+
+      // Build the document as a single template string for clarity
+      return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Presenter View</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #1a1d24;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(88,166,255,.04), transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(188,140,255,.04), transparent 50%);
+    color: #e6edf3;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+  }
+  /* Stage: positioned area where cards live */
+  #stage { position: absolute; inset: 0; overflow: hidden; }
+
+  /* Magnetic card */
+  .pcard {
+    position: absolute;
+    background: #0d1117;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.02);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    min-width: 180px; min-height: 100px;
+    transition: box-shadow .2s, border-color .2s;
+  }
+  .pcard.dragging { box-shadow: 0 16px 48px rgba(0,0,0,.6), 0 0 0 2px rgba(88,166,255,.5); border-color: #58a6ff; transition: none; z-index: 9999; }
+  .pcard.resizing { box-shadow: 0 16px 48px rgba(0,0,0,.6), 0 0 0 2px rgba(63,185,80,.5); border-color: #3fb950; transition: none; z-index: 9999; }
+  .pcard:hover { border-color: rgba(88,166,255,.3); }
+
+  /* Card header (drag handle) */
+  .pcard-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,.04);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    cursor: move;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .pcard-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dot-color, #58a6ff); flex-shrink: 0; }
+  .pcard-title {
+    font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
+    font-weight: 700; color: #8b949e; flex: 1;
+  }
+  .pcard-meta { font-size: 11px; color: #6e7681; }
+
+  /* Card body */
+  .pcard-body { flex: 1; position: relative; overflow: hidden; min-height: 0; }
+
+  /* Preview cards (CURRENT/NEXT) — iframe-based pixel-perfect render */
+  .pcard-preview .pcard-body { background: #000; }
+  .pcard-preview iframe {
+    position: absolute; top: 0; left: 0;
+    width: 1920px; height: 1080px;
+    border: none;
+    transform-origin: top left;
+    pointer-events: none;
+    background: transparent;
+  }
+  .pcard-preview .preview-end {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #484f58; font-size: 14px; letter-spacing: .12em;
+  }
+
+  /* Notes card */
+  .pcard-notes .pcard-body {
+    padding: 14px 18px;
+    overflow-y: auto;
+    font-size: 18px; line-height: 1.75;
+    color: #d0d7de;
+    font-family: "Noto Sans SC", -apple-system, sans-serif;
+  }
+  .pcard-notes .pcard-body p { margin: 0 0 .7em 0; }
+  .pcard-notes .pcard-body strong { color: #f0883e; }
+  .pcard-notes .pcard-body em { color: #58a6ff; font-style: normal; }
+  .pcard-notes .pcard-body code {
+    font-family: "SF Mono", monospace; font-size: .9em;
+    background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px;
+  }
+  .pcard-notes .empty { color: #484f58; font-style: italic; }
+
+  /* Timer card */
+  .pcard-timer .pcard-body {
+    display: flex; flex-direction: column; gap: 14px;
+    padding: 18px 20px; justify-content: center;
+  }
+  .timer-display {
+    font-family: "SF Mono", "JetBrains Mono", monospace;
+    font-size: 42px; font-weight: 700;
+    color: #3fb950;
+    letter-spacing: .04em;
+    line-height: 1;
+  }
+  .timer-row {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 14px; color: #8b949e;
+  }
+  .timer-row .label { font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: #6e7681; }
+  .timer-row .val { color: #e6edf3; font-weight: 600; font-family: "SF Mono", monospace; }
+  .timer-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  .timer-btn {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    color: #e6edf3;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .timer-btn:hover { background: rgba(88,166,255,.15); border-color: #58a6ff; }
+  .timer-btn:active { transform: translateY(1px); }
+
+  /* Resize handle */
+  .pcard-resize {
+    position: absolute; right: 0; bottom: 0;
+    width: 18px; height: 18px;
+    cursor: nwse-resize;
+    background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,.25) 50%, rgba(255,255,255,.25) 60%, transparent 60%, transparent 70%, rgba(255,255,255,.25) 70%, rgba(255,255,255,.25) 80%, transparent 80%);
+    z-index: 5;
+  }
+  .pcard-resize:hover { background: linear-gradient(135deg, transparent 50%, #58a6ff 50%, #58a6ff 60%, transparent 60%, transparent 70%, #58a6ff 70%, #58a6ff 80%, transparent 80%); }
+
+  /* Bottom hint bar */
+  .hint-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,.6);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255,255,255,.08);
+    padding: 6px 16px;
+    font-size: 11px; color: #8b949e;
+    display: flex; gap: 18px; align-items: center;
+    z-index: 1000;
+  }
+  .hint-bar kbd {
+    background: rgba(255,255,255,.08);
+    padding: 1px 6px; border-radius: 3px;
+    font-family: "SF Mono", monospace;
+    font-size: 10px;
+    border: 1px solid rgba(255,255,255,.1);
+    color: #e6edf3;
+  }
+  .hint-bar .reset-layout {
+    margin-left: auto;
+    background: transparent; border: 1px solid rgba(255,255,255,.15);
+    color: #8b949e; padding: 3px 10px; border-radius: 4px;
+    font-size: 11px; cursor: pointer; font-family: inherit;
+  }
+  .hint-bar .reset-layout:hover { background: rgba(248,81,73,.15); border-color: #f85149; color: #f85149; }
+
+  body.is-dragging-card * { user-select: none !important; }
+  body.is-dragging-card iframe { pointer-events: none !important; }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="pcard pcard-preview" id="card-cur" style="--dot-color:#58a6ff">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">CURRENT</span>
+      <span class="pcard-meta" id="cur-meta">—</span>
+    </div>
+    <div class="pcard-body"><iframe id="iframe-cur"></iframe></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-preview" id="card-nxt" style="--dot-color:#bc8cff">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">NEXT</span>
+      <span class="pcard-meta" id="nxt-meta">—</span>
+    </div>
+    <div class="pcard-body"><iframe id="iframe-nxt"></iframe></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-notes" id="card-notes" style="--dot-color:#f0883e">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">SPEAKER SCRIPT · Guion</span>
+    </div>
+    <div class="pcard-body" id="notes-body"></div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+
+  <div class="pcard pcard-timer" id="card-timer" style="--dot-color:#3fb950">
+    <div class="pcard-head" data-drag>
+      <span class="pcard-dot"></span>
+      <span class="pcard-title">TIMER</span>
+    </div>
+    <div class="pcard-body">
+      <div class="timer-display" id="timer-display">00:00</div>
+      <div class="timer-row">
+        <span class="label">Slide</span>
+        <span class="val" id="timer-count">1 / ${total}</span>
+      </div>
+      <div class="timer-controls">
+        <button class="timer-btn" id="btn-prev">← Prev</button>
+        <button class="timer-btn" id="btn-next">Next →</button>
+        <button class="timer-btn" id="btn-reset">⏱ Reset</button>
+      </div>
+    </div>
+    <div class="pcard-resize" data-resize></div>
+  </div>
+</div>
+
+<div class="hint-bar">
+  <span><kbd>← →</kbd> Pasar diapositiva</span>
+  <span><kbd>R</kbd> Reiniciar tiempo</span>
+  <span><kbd>Esc</kbd> Cerrar</span>
+  <span style="color:#6e7681">Drag the header to move · Drag the bottom-right corner to resize</span>
+  <button class="reset-layout" id="reset-layout">Reset layout</button>
+</div>
+
+<script>
+(function(){
+  var slideMeta = ${metaJSON};
+  var total = ${total};
+  var idx = ${startIdx};
+  var deckUrl = ${deckUrlJSON};
+  var STORAGE_KEY = ${JSON.stringify(storageKey)};
+  var bc;
+  try { bc = new BroadcastChannel(${channelJSON}); } catch(e) {}
+
+  var iframeCur = document.getElementById('iframe-cur');
+  var iframeNxt = document.getElementById('iframe-nxt');
+  var notesBody = document.getElementById('notes-body');
+  var curMeta = document.getElementById('cur-meta');
+  var nxtMeta = document.getElementById('nxt-meta');
+  var timerDisplay = document.getElementById('timer-display');
+  var timerCount = document.getElementById('timer-count');
+
+  /* ===== Default card layout ===== */
+  function defaultLayout() {
+    var w = window.innerWidth;
+    var h = window.innerHeight - 36; /* leave room for hint bar */
+    return {
+      'card-cur':   { x: 16,        y: 16,            w: Math.round(w*0.55) - 24, h: Math.round(h*0.62) - 16 },
+      'card-nxt':   { x: Math.round(w*0.55) + 8, y: 16, w: w - Math.round(w*0.55) - 24, h: Math.round(h*0.42) - 16 },
+      'card-notes': { x: Math.round(w*0.55) + 8, y: Math.round(h*0.42) + 8, w: w - Math.round(w*0.55) - 24, h: h - Math.round(h*0.42) - 16 },
+      'card-timer': { x: 16,        y: Math.round(h*0.62) + 8, w: Math.round(w*0.55) - 24, h: h - Math.round(h*0.62) - 16 }
+    };
+  }
+
+  /* ===== Apply / save / restore layout ===== */
+  function applyLayout(layout) {
+    Object.keys(layout).forEach(function(id){
+      var el = document.getElementById(id);
+      var l = layout[id];
+      if (el && l) {
+        el.style.left = l.x + 'px';
+        el.style.top = l.y + 'px';
+        el.style.width = l.w + 'px';
+        el.style.height = l.h + 'px';
+      }
+    });
+    rescaleAll();
+  }
+  function readLayout() {
+    try {
+      var saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return defaultLayout();
+  }
+  function saveLayout() {
+    var layout = {};
+    ['card-cur','card-nxt','card-notes','card-timer'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) {
+        layout[id] = {
+          x: parseInt(el.style.left,10) || 0,
+          y: parseInt(el.style.top,10) || 0,
+          w: parseInt(el.style.width,10) || 300,
+          h: parseInt(el.style.height,10) || 200
+        };
+      }
+    });
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(layout)); } catch(e) {}
+  }
+
+  /* ===== iframe rescale to fit card body ===== */
+  function rescaleIframe(iframe) {
+    if (!iframe || iframe.style.display === 'none') return;
+    var body = iframe.parentElement;
+    var cw = body.clientWidth, ch = body.clientHeight;
+    if (!cw || !ch) return;
+    var s = Math.min(cw / 1920, ch / 1080);
+    iframe.style.transform = 'scale(' + s + ')';
+    /* Center the scaled iframe in the body */
+    var sw = 1920 * s, sh = 1080 * s;
+    iframe.style.left = Math.max(0, (cw - sw) / 2) + 'px';
+    iframe.style.top = Math.max(0, (ch - sh) / 2) + 'px';
+  }
+  function rescaleAll() {
+    rescaleIframe(iframeCur);
+    rescaleIframe(iframeNxt);
+  }
+  window.addEventListener('resize', rescaleAll);
+
+  /* ===== Drag (move card by header) ===== */
+  document.querySelectorAll('[data-drag]').forEach(function(handle){
+    handle.addEventListener('mousedown', function(e){
+      if (e.button !== 0) return;
+      var card = handle.closest('.pcard');
+      if (!card) return;
+      e.preventDefault();
+      card.classList.add('dragging');
+      document.body.classList.add('is-dragging-card');
+      var startX = e.clientX, startY = e.clientY;
+      var startL = parseInt(card.style.left,10) || 0;
+      var startT = parseInt(card.style.top,10)  || 0;
+      function onMove(ev){
+        var nx = Math.max(0, Math.min(window.innerWidth - 100, startL + ev.clientX - startX));
+        var ny = Math.max(0, Math.min(window.innerHeight - 50, startT + ev.clientY - startY));
+        card.style.left = nx + 'px';
+        card.style.top = ny + 'px';
+      }
+      function onUp(){
+        card.classList.remove('dragging');
+        document.body.classList.remove('is-dragging-card');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        saveLayout();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+
+  /* ===== Resize (drag bottom-right corner) ===== */
+  document.querySelectorAll('[data-resize]').forEach(function(handle){
+    handle.addEventListener('mousedown', function(e){
+      if (e.button !== 0) return;
+      var card = handle.closest('.pcard');
+      if (!card) return;
+      e.preventDefault(); e.stopPropagation();
+      card.classList.add('resizing');
+      document.body.classList.add('is-dragging-card');
+      var startX = e.clientX, startY = e.clientY;
+      var startW = parseInt(card.style.width,10)  || card.offsetWidth;
+      var startH = parseInt(card.style.height,10) || card.offsetHeight;
+      function onMove(ev){
+        var nw = Math.max(180, startW + ev.clientX - startX);
+        var nh = Math.max(100, startH + ev.clientY - startY);
+        card.style.width = nw + 'px';
+        card.style.height = nh + 'px';
+        if (card.querySelector('iframe')) rescaleIframe(card.querySelector('iframe'));
+      }
+      function onUp(){
+        card.classList.remove('resizing');
+        document.body.classList.remove('is-dragging-card');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        rescaleAll();
+        saveLayout();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+
+  /* ===== Preview iframe ready tracking =====
+   * Each iframe loads the deck ONCE with ?preview=1 on init. Subsequent
+   * slide changes are sent via postMessage('preview-goto') so the iframe
+   * just toggles visibility of a different .slide — no reload, no flicker.
+   */
+  var iframeReady = { cur: false, nxt: false };
+  var currentTheme = ${themeJSON};
+  window.addEventListener('message', function(e) {
+    if (!e.data || e.data.type !== 'preview-ready') return;
+    var iframe = null;
+    if (e.source === iframeCur.contentWindow) {
+      iframeReady.cur = true;
+      iframe = iframeCur;
+      postPreviewGoto(iframeCur, idx);
+    } else if (e.source === iframeNxt.contentWindow) {
+      iframeReady.nxt = true;
+      iframe = iframeNxt;
+      postPreviewGoto(iframeNxt, idx + 1 < total ? idx + 1 : idx);
+    }
+    /* Sync current theme to the iframe */
+    if (iframe && currentTheme) {
+      try { iframe.contentWindow.postMessage({ type: 'preview-theme', name: currentTheme }, '*'); } catch(err) {}
+    }
+    if (iframe) rescaleIframe(iframe);
+  });
+
+  function postPreviewGoto(iframe, n) {
+    try {
+      iframe.contentWindow.postMessage({ type: 'preview-goto', idx: n }, '*');
+    } catch(e) {}
+  }
+
+  /* ===== Update content =====
+   * Smooth (no-reload) navigation: send postMessage to iframes instead of
+   * resetting src. Iframes stay loaded, just switch visible .slide.
+   */
+  function update(n) {
+    n = Math.max(0, Math.min(total - 1, n));
+    idx = n;
+
+    /* Current preview — postMessage (smooth) */
+    if (iframeReady.cur) postPreviewGoto(iframeCur, n);
+    curMeta.textContent = (n + 1) + '/' + total;
+
+    /* Next preview */
+    if (n + 1 < total) {
+      iframeNxt.style.display = '';
+      var endEl = document.querySelector('#card-nxt .preview-end');
+      if (endEl) endEl.remove();
+      if (iframeReady.nxt) postPreviewGoto(iframeNxt, n + 1);
+      nxtMeta.textContent = (n + 2) + '/' + total;
+    } else {
+      iframeNxt.style.display = 'none';
+      var body = document.querySelector('#card-nxt .pcard-body');
+      if (body && !body.querySelector('.preview-end')) {
+        var end = document.createElement('div');
+        end.className = 'preview-end';
+        end.textContent = '— END OF DECK —';
+        body.appendChild(end);
+      }
+      nxtMeta.textContent = 'END';
+    }
+
+    /* Notes */
+    var note = slideMeta[n].notes;
+    notesBody.innerHTML = note || '<span class="empty">(This slide has no speaker script yet)</span>';
+
+    /* Timer count */
+    timerCount.textContent = (n + 1) + ' / ' + total;
+  }
+
+  /* ===== Timer ===== */
+  var tStart = Date.now();
+  setInterval(function(){
+    var s = Math.floor((Date.now() - tStart) / 1000);
+    var mm = String(Math.floor(s/60)).padStart(2,'0');
+    var ss = String(s%60).padStart(2,'0');
+    timerDisplay.textContent = mm + ':' + ss;
+  }, 1000);
+  function resetTimer(){ tStart = Date.now(); timerDisplay.textContent = '00:00'; }
+
+  /* ===== BroadcastChannel sync ===== */
+  if (bc) {
+    bc.onmessage = function(e){
+      if (!e.data) return;
+      if (e.data.type === 'go') update(e.data.idx);
+      else if (e.data.type === 'theme' && e.data.name) {
+        currentTheme = e.data.name;
+        /* Forward theme change to preview iframes */
+        [iframeCur, iframeNxt].forEach(function(iframe){
+          try {
+            iframe.contentWindow.postMessage({ type: 'preview-theme', name: e.data.name }, '*');
+          } catch(err) {}
+        });
+      }
+    };
+  }
+  function go(n) {
+    update(n);
+    if (bc) bc.postMessage({ type: 'go', idx: idx });
+  }
+
+  /* ===== Buttons ===== */
+  document.getElementById('btn-prev').addEventListener('click', function(){ go(idx - 1); });
+  document.getElementById('btn-next').addEventListener('click', function(){ go(idx + 1); });
+  document.getElementById('btn-reset').addEventListener('click', resetTimer);
+  document.getElementById('reset-layout').addEventListener('click', function(){
+    if (confirm('Restore the default layout?')) {
+      try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+      applyLayout(defaultLayout());
+    }
+  });
+
+  /* ===== Keyboard ===== */
+  document.addEventListener('keydown', function(e){
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    switch(e.key) {
+      case 'ArrowRight': case ' ': case 'PageDown': go(idx + 1); e.preventDefault(); break;
+      case 'ArrowLeft':  case 'PageUp':   go(idx - 1); e.preventDefault(); break;
+      case 'Home': go(0); break;
+      case 'End':  go(total - 1); break;
+      case 'r': case 'R': resetTimer(); break;
+      case 'Escape': window.close(); break;
+    }
+  });
+
+  /* ===== Iframe load → rescale (catches initial size) ===== */
+  iframeCur.addEventListener('load', function(){ rescaleIframe(iframeCur); });
+  iframeNxt.addEventListener('load', function(){ rescaleIframe(iframeNxt); });
+
+  /* ===== Init =====
+   * Load each iframe ONCE with the deck file. After they post
+   * 'preview-ready', all subsequent navigation is via postMessage
+   * (smooth, no reload, no flicker).
+   */
+  applyLayout(readLayout());
+  iframeCur.src = deckUrl + '?preview=' + (idx + 1);
+  if (idx + 1 < total) iframeNxt.src = deckUrl + '?preview=' + (idx + 2);
+  /* Initialize notes/timer/count without touching iframes */
+  notesBody.innerHTML = slideMeta[idx].notes || '<span class="empty">(This slide has no speaker script yet)</span>';
+  curMeta.textContent = (idx + 1) + '/' + total;
+  nxtMeta.textContent = (idx + 2) + '/' + total;
+  timerCount.textContent = (idx + 1) + ' / ' + total;
+})();
+</` + `script>
+</body></html>`;
+    }
+
+    function fullscreen(){ const el=document.documentElement;
+      if (!document.fullscreenElement) el.requestFullscreen&&el.requestFullscreen();
+      else document.exitFullscreen&&document.exitFullscreen();
+    }
+
+    // theme cycling
+    const root = document.documentElement;
+    const themesAttr = root.getAttribute('data-themes') || document.body.getAttribute('data-themes');
+    const themes = themesAttr ? themesAttr.split(',').map(s=>s.trim()).filter(Boolean) : [];
+    let themeIdx = 0;
+
+    // Auto-detect theme base path from existing <link id="theme-link">
+    let themeBase = root.getAttribute('data-theme-base');
+    if (!themeBase) {
+      const existingLink = document.getElementById('theme-link');
+      if (existingLink) {
+        // el.getAttribute('href') gives the raw relative path written in HTML
+        const rawHref = existingLink.getAttribute('href') || '';
+        const lastSlash = rawHref.lastIndexOf('/');
+        themeBase = lastSlash >= 0 ? rawHref.substring(0, lastSlash + 1) : 'assets/themes/';
+      } else {
+        themeBase = 'assets/themes/';
+      }
+    }
+
+    function applyTheme(name) {
+      let link = document.getElementById('theme-link');
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.id = 'theme-link';
+        document.head.appendChild(link);
+      }
+      link.href = themeBase + name + '.css';
+      root.setAttribute('data-theme', name);
+      const ind = document.querySelector('.theme-indicator');
+      if (ind) ind.textContent = name;
+    }
+    function cycleTheme(fromRemote){
+      if (!themes.length) return;
+      themeIdx = (themeIdx+1) % themes.length;
+      const name = themes[themeIdx];
+      applyTheme(name);
+      /* Broadcast to other window (audience ↔ presenter) */
+      if (!fromRemote && bc) bc.postMessage({ type: 'theme', name: name });
+    }
+
+    // animation cycling on current slide
+    let animIdx = 0;
+    function cycleAnim(){
+      animIdx = (animIdx+1) % ANIMS.length;
+      const a = ANIMS[animIdx];
+      const target = slides[idx].querySelector('[data-anim-target]') || slides[idx];
+      ANIMS.forEach(x => target.classList.remove('anim-'+x));
+      void target.offsetWidth;
+      target.classList.add('anim-'+a);
+      target.setAttribute('data-anim', a);
+      const ind = document.querySelector('.anim-indicator');
+      if (ind) ind.textContent = a;
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if (e.metaKey||e.ctrlKey||e.altKey) return;
+      switch (e.key) {
+        case 'ArrowRight': case ' ': case 'PageDown': case 'Enter': go(idx+1); e.preventDefault(); break;
+        case 'ArrowLeft': case 'PageUp': case 'Backspace': go(idx-1); e.preventDefault(); break;
+        case 'Home': go(0); break;
+        case 'End': go(total-1); break;
+        case 'f': case 'F': fullscreen(); break;
+        case 's': case 'S': openPresenterWindow(); break;
+        case 'n': case 'N': toggleNotes(); break;
+        case 'o': case 'O': toggleOverview(); break;
+        case 't': case 'T': cycleTheme(); break;
+        case 'a': case 'A': cycleAnim(); break;
+        case 'Escape': toggleOverview(false); toggleNotes(false); break;
+      }
+    });
+
+    // hash deep-link
+    function fromHash(){
+      const m = /^#\/(\d+)/.exec(location.hash||'');
+      if (m) go(Math.max(0, parseInt(m[1],10)-1));
+    }
+    window.addEventListener('hashchange', fromHash);
+    fromHash();
+    go(idx);
+  });
+})();
+
+</script>
+<script>
+/* deck :: scale-to-fit: fixed BASE_W x BASE_H layout scaled into any viewport smaller than its base.
+   Viewports of at least BASE_W x BASE_H are left untouched (native fluid). Preview iframes skipped. */
+(function(){
+  try{
+    if (new URLSearchParams(location.search).has('preview')) return;
+    var BASE_W = 1280, BASE_H = 720;
+    var deck = document.querySelector('.deck');
+    if (!deck) return;
+    function fit(){
+      var vw = window.innerWidth, vh = window.innerHeight;
+      if (vw >= BASE_W && vh >= BASE_H){
+        deck.style.transform = '';
+        deck.style.width = ''; deck.style.height = '';
+        deck.style.position = ''; deck.style.left = ''; deck.style.top = '';
+        document.documentElement.style.overflow = ''; document.body.style.overflow = '';
+        document.documentElement.style.background = '';
+        return;
+      }
+      var scale = Math.min(vw / BASE_W, vh / BASE_H);
+      deck.style.width = BASE_W + 'px';
+      deck.style.height = BASE_H + 'px';
+      deck.style.transformOrigin = 'top left';
+      deck.style.transform = 'scale(' + scale + ')';
+      deck.style.position = 'absolute';
+      deck.style.left = ((vw - BASE_W * scale) / 2) + 'px';
+      deck.style.top = ((vh - BASE_H * scale) / 2) + 'px';
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.background = (function(){var d=getComputedStyle(deck).backgroundColor;if(d&&d!=='rgba(0, 0, 0, 0)'&&d!=='transparent')return d;var b=getComputedStyle(document.body).backgroundColor;return (b&&b!=='rgba(0, 0, 0, 0)'&&b!=='transparent')?b:'#0d1117';})();
+    }
+    fit();
+    window.addEventListener('resize', fit);
+    window.addEventListener('orientationchange', function(){ setTimeout(fit, 60); });
+  }catch(e){ /* never break the deck over a fit error */ }
+})();
+</script>
+
+<!-- ============ MOBILE NAV (UPEX) — swipe → flechas + hint once-only. scale-to-fit vive en el deck fuente ============ -->
+<style id="upex-navhint-style">
+#upex-navhint{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:120;
+  display:flex;align-items:center;gap:.4rem;background:rgba(20,22,34,.94);
+  border:1px solid rgba(255,255,255,.18);border-radius:999px;
+  padding:.5rem .95rem;font:600 13px/1.2 system-ui,-apple-system,sans-serif;color:#c0caf5;
+  box-shadow:0 6px 20px rgba(0,0,0,.45);animation:upexHintIn .35s ease both;cursor:pointer}
+@keyframes upexHintIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%)}}
+#upex-navhint.out{opacity:0;transition:opacity .4s}
+</style>
+<script id="upex-mobile-nav">
+(function(){
+'use strict';
+/* Swipe navigation: the deck runtime listens for keydown ArrowLeft/Right. */
+var send=function(key){document.dispatchEvent(new KeyboardEvent('keydown',{key:key,bubbles:true}))};
+var x0=null,y0=null,skip=false;
+document.addEventListener('touchstart',function(e){
+  var t=e.target;
+  skip=!!(t&&t.closest&&t.closest('textarea,input,button,pre,table,a,.quiz'));
+  var p=e.changedTouches[0]; x0=p.clientX; y0=p.clientY;
+},{passive:true});
+document.addEventListener('touchend',function(e){
+  if(x0===null||skip) return;
+  var p=e.changedTouches[0], dx=p.clientX-x0, dy=p.clientY-y0;
+  x0=y0=null;
+  if(Math.abs(dx)>60&&Math.abs(dx)>2*Math.abs(dy)) send(dx<0?'ArrowRight':'ArrowLeft');
+},{passive:true});
+/* Navigation hint: mobile only (deck chrome hidden by scale-to-fit),
+   shown once per domain (localStorage). ?hint=1 forces it for QA. */
+var KEY='upex-deck-navhint-v1';
+var isMobile=matchMedia('(pointer:coarse)').matches&&matchMedia('(max-width:768px)').matches;
+var force=/[?&]hint=1/.test(location.search);
+var seen=false; try{seen=localStorage.getItem(KEY)==='1'}catch(_e){}
+if(force||(isMobile&&!seen)){
+  var h=document.createElement('div'); h.id='upex-navhint';
+  h.textContent='👆 Swipe to advance →';
+  var close=function(){ if(!h.isConnected)return; h.classList.add('out'); setTimeout(function(){h.remove();},400); try{localStorage.setItem(KEY,'1')}catch(_e){} };
+  h.addEventListener('click',close);
+  document.body.appendChild(h);
+  setTimeout(close,5000);
+}
+})();
+</script>
+
+<!-- ============ PART B :: QUIZ SCORE ENGINE (accumulating + localStorage) ============
+     Ported from test-automation/playwright-pro.es.html (quiz engine + score chip +
+     bump animation + localStorage persistence). Adapted to this deck's .qitem markup:
+     each .qitem locks on first answer, reveals .qexp, the running score accumulates in
+     the #score-chip and survives reloads via localStorage. -->
+<script id="upex-quiz-engine">
+(function(){
+'use strict';
+function init(){
+  var qitems = Array.prototype.slice.call(document.querySelectorAll('.qitem'));
+  if(!qitems.length) return;
+  var TOTAL = qitems.length;
+  var chip = document.getElementById('score-chip');
+  var KEY = 'defect-management-quiz:' + location.pathname;
+  var state = {};
+  try { state = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){ state = {}; }
+  var score = 0;
+
+  function persist(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+  function recount(){ score = 0; for(var k in state){ if(state[k] === 'correct') score++; } }
+  function updateChip(){
+    if(!chip) return;
+    chip.textContent = '⭐ ' + score + '/' + TOTAL;
+    chip.classList.remove('bump'); void chip.offsetWidth; chip.classList.add('bump');
+  }
+  function correctOpt(qi){
+    var opts = qi.querySelectorAll('.opt');
+    for(var i=0;i<opts.length;i++){ if(opts[i].getAttribute('data-correct') === '1') return opts[i]; }
+    return null;
+  }
+  function lock(qi, clickedOpt, ok){
+    qi.classList.add('answered');
+    var co = correctOpt(qi);
+    if(ok){
+      (clickedOpt || co || {classList:{add:function(){}}}).classList.add('correct');
+    } else {
+      if(clickedOpt) clickedOpt.classList.add('wrong');
+      if(co) co.classList.add('reveal-correct');
+    }
+  }
+
+  qitems.forEach(function(qi, i){
+    var id = 'q' + i;
+    if(state[id]) lock(qi, null, state[id] === 'correct');   // replay saved answers
+    Array.prototype.forEach.call(qi.querySelectorAll('.opt'), function(opt){
+      opt.addEventListener('click', function(){
+        if(qi.classList.contains('answered')) return;          // one shot per question
+        var ok = opt.getAttribute('data-correct') === '1';
+        state[id] = ok ? 'correct' : 'wrong';
+        lock(qi, opt, ok);
+        persist(); recount(); updateChip();
+      });
+    });
+  });
+
+  recount(); updateChip();
+}
+if(document.readyState !== 'loading') init();
+else document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+
+</body></html>
