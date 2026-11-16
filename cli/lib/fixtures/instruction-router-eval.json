@@ -351,6 +351,18 @@
     {
       "prompt": "esto también funciona en Pi?",
       "expect": ["harnesses"]
+    },
+    {
+      "prompt": "free up disk space: delete the generated playwright reports and logs that pile up in the repo",
+      "expect": ["context-map"]
+    },
+    {
+      "prompt": "limpia la basura de playwright y todo lo autogenerable del repo para liberar espacio",
+      "expect": ["context-map"]
+    },
+    {
+      "prompt": "what generated files can I safely delete here? run the cleanup",
+      "expect": ["context-map"]
     }
   ]
 }

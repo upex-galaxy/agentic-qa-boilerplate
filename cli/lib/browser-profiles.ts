@@ -54,7 +54,7 @@ export interface DaemonProfile {
   lastUsedMs: number
 }
 
-function walk(dir: string): { bytes: number, newest: number } {
+export function walk(dir: string): { bytes: number, newest: number } {
   let bytes = 0;
   let newest = 0;
   const stack = [dir];

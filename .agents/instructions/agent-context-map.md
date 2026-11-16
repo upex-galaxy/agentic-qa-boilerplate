@@ -2,7 +2,7 @@
 id: context-map
 title: 'Context loading map: task to skill to context'
 load_when: 'any workflow task (onboard, discover, adapt, shift-left, sprint testing, documentation, automation, regression, maps, defects, decisions, handoff, browser, Jira) or "which skill / what to read for X"'
-triggers: ['\bonboard', '\bshift.?left', '\bsprint', '\bregres', '\b(?:re)?test(?:ing)? (?:this|the|a) (?:story|ticket|bug)\b', '\bretest', '\b(?:write|draft|create) (?:the |an? )?AT[PR]\b', '\bbusiness (?:data|feature|api|domain|e2e|infra) map\b', '\bautomat', '\bdocument (the )?tests?\b', '\bROI\b', '\bADR\b', '\bhandoff\b', '\bscreenshot', '\bmaster test plan\b', '\bcoverage\b', '\bexplorat', '\bconductor\b', '\bexplor\w* (?:the )?(?:\w+ )?(?:module|flow)\b', '\bwhich skill\b', '\bhow does .+ work\b']
+triggers: ['\bonboard', '\bshift.?left', '\bsprint', '\bregres', '\b(?:re)?test(?:ing)? (?:this|the|a) (?:story|ticket|bug)\b', '\bretest', '\b(?:write|draft|create) (?:the |an? )?AT[PR]\b', '\bbusiness (?:data|feature|api|domain|e2e|infra) map\b', '\bautomat', '\bdocument (the )?tests?\b', '\bROI\b', '\bADR\b', '\bhandoff\b', '\bscreenshot', '\bmaster test plan\b', '\bcoverage\b', '\bexplorat', '\bconductor\b', '\bexplor\w* (?:the )?(?:\w+ )?(?:module|flow)\b', '\bwhich skill\b', '\bhow does .+ work\b', '\bdisk space\b', '\bfree (?:up )?(?:disk|space)\b', '\bclean ?up\b', '\bclean (?:the )?(?:repo|generated|reports?|artifacts?|junk)\b', '\bgenerated (?:files?|artifacts?|junk)\b', '\bjunk\b', '\bbun (?:run )?clean\b']
 paths: []
 ---
 
@@ -35,6 +35,7 @@ When the request is a goal and not yet a skill name, pick by intent. The skill's
 | Branch, commit, push or open a PR | `/git-flow-master` |
 | Review someone's PR | `/pr-review-lead` |
 | Change the boilerplate or the agent instructions | `/framework-development` |
+| Free disk space, or clear generated files (test output, reports, playwright-cli logs, scratch, builds) | `bun run clean` (dry run first; its registry in `cli/lib/clean.ts` is the list of what is safe to delete) |
 | Continue in a fresh session | `/session-handoff` |
 
 Two requests cut across the list. Deriving coverage from ACs loads `agentic-qa-core/references/test-design-doctrine.md` inside whichever testing skill is active. Filing a defect loads `agentic-qa-core/references/defect-management-doctrine.md` the same way.
