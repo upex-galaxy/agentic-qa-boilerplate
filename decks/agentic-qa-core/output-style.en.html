@@ -169,13 +169,13 @@ footer code{font-family:var(--mono);font-size:12px;color:var(--t2)}
   <p class="kick">Output contract · agentic-qa-boilerplate</p>
   <h1>How the AI writes <span class="grad">from now on</span></h1>
   <p class="lede">
-    Two layers govern every chat reply, each over a different dimension.
+    Three layers govern every chat reply, each over a different dimension.
     This page shows the split and a fictional QA session rendered in both
     styles, so the difference is seen instead of read.
   </p>
   <div class="meta">
     <span class="tag">AGENTS.md §2</span>
-    <span class="tag">user instructions → OUTPUT STYLE</span>
+    <span class="tag">user instructions → ## Replies + humanizer</span>
     <span class="tag">2026-08-17</span>
   </div>
 </header>
@@ -184,7 +184,7 @@ footer code{font-family:var(--mono);font-size:12px;color:var(--t2)}
   <h2><span class="num">01</span>The layer split</h2>
   <p class="sub">
     Each layer rules over a single dimension. When two layers claim the same one, they contradict each other,
-    and the one that is reinjected more times per turn wins, not the one that is right. That was the underlying problem.
+    and the one that is reinjected more times per turn wins, not the one that is right. That is why each layer has its own dimension and its own file.
   </p>
   <table class="layers">
     <thead>
@@ -198,20 +198,28 @@ footer code{font-family:var(--mono);font-size:12px;color:var(--t2)}
         <td>every turn, via the new hook</td>
       </tr>
       <tr>
-        <td>OUTPUT STYLE</td>
-        <td>how it <strong>looks</strong> and what <strong>texture</strong> it has</td>
-        <td>user-level agent instructions (<code>## OUTPUT STYLE</code>), in any of the hosts</td>
+        <td>Replies</td>
+        <td>how the render <strong>looks</strong></td>
+        <td><code>## Replies</code> section of the user-level instruction file, one shared <code>~/.agents/AGENTS.md</code> for every harness</td>
         <td>at session start</td>
+      </tr>
+      <tr>
+        <td>humanizer</td>
+        <td>how the <strong>prose</strong> sounds</td>
+        <td>user-level <code>humanizer</code> skill, which the user file says to load before writing text a person will read</td>
+        <td>when writing that text</td>
       </tr>
     </tbody>
   </table>
   <div class="note good">
     <span class="ic">Rule</span>
     <div>
-      <strong>§2 always wins on content.</strong> OUTPUT STYLE only decides the render
-      (headings, bold anchors, <code>backticks</code>, tables, spacing) and the texture of the sentences
-      (no em dash, varied length, no closing recap). If a rule in there ever changed
-      <em>what</em> is said, the rule is misplaced and belongs in §2.
+      <strong>§2 always wins on content.</strong> <code>## Replies</code> only decides the render
+      (headings, one bold anchor per block, <code>backticks</code>, tables, spacing, lists only for real lists),
+      and <code>humanizer</code> only the prose (no machine tells, no em dash, no closing recap).
+      If a rule in there ever changed <em>what</em> is said, it is misplaced and belongs in §2. And if a skill or a project file defines its own output format,
+      that format wins for that turn. The user file is a single one: <code>~/.claude/CLAUDE.md</code>, <code>~/.codex/AGENTS.md</code>
+      and <code>~/.config/opencode/AGENTS.md</code> point to it, and Pi appends it to its generated <code>AGENTS.md</code>, so all four tools read the same rules.
     </div>
   </div>
 </section>
@@ -252,11 +260,11 @@ footer code{font-family:var(--mono);font-size:12px;color:var(--t2)}
 
     <div class="card" style="--ac:var(--cyan)">
       <span class="n">01 · 02</span>
-      <h4>WRITING STYLE becomes OUTPUT STYLE</h4>
-      <p>Three blocks (two of them positive) instead of blacklists: there is no
-      <code>BANNED VOCABULARY</code>, <code>BANNED PHRASES</code> or
-      <code>BANNED RHETORICAL PATTERNS</code>. What remains is a micro-list of words to avoid with an
-      exception for literal technical use, which is what lets you write <code>API key</code> without dodging it.</p>
+      <h4>WRITING STYLE became OUTPUT STYLE, and that became Replies + humanizer</h4>
+      <p>First the blacklists (<code>BANNED VOCABULARY</code>, <code>BANNED PHRASES</code>,
+      <code>BANNED RHETORICAL PATTERNS</code>) were replaced by a positive section, <code>## OUTPUT STYLE</code>. That section and
+      <code>## REDACCIÓN PARA HUMANOS</code> no longer exist: the render now lives in <code>## Replies</code> and the prose rules
+      in the <code>humanizer</code> skill, which keeps the literal technical-use exception so you can write <code>API key</code> without dodging it.</p>
       <span class="st done">applied</span>
     </div>
 
@@ -422,7 +430,7 @@ const VERDICT = {
   after: {
     cls: 'note good',
     ic: 'Result',
-    html: `This output was not written by hand: a subagent generated it by loading this branch's <code>AGENTS.md</code> and the global <code>OUTPUT STYLE</code>, both already rewritten. The headline answers and stands on its own. The comparison goes in a table because it is a comparison. Paths, ATCs and HTTP codes in <code>backticks</code>, so they jump out. Sentences of 6 to 30 words, alternating. Zero em dashes, zero closing recap. <strong>The menu lets you pull the thread you care about instead of receiving everything at once.</strong>`
+    html: `This output was not written by hand: a subagent generated it by loading this branch's <code>AGENTS.md</code>, the <code>## Replies</code> section of the user file and the <code>humanizer</code> skill. The headline answers and stands on its own. The comparison goes in a table because it is a comparison. Paths, ATCs and HTTP codes in <code>backticks</code>, so they jump out. Sentences of 6 to 30 words, alternating. Zero em dashes, zero closing recap. <strong>The menu lets you pull the thread you care about instead of receiving everything at once.</strong>`
   }
 }
 

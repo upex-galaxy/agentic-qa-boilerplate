@@ -169,13 +169,13 @@ footer code{font-family:var(--mono);font-size:12px;color:var(--t2)}
   <p class="kick">Contrato de salida · agentic-qa-boilerplate</p>
   <h1>Cómo escribe la IA <span class="grad">a partir de ahora</span></h1>
   <p class="lede">
-    Dos capas gobiernan cada respuesta en el chat, cada una sobre una dimensión distinta.
+    Tres capas gobiernan cada respuesta en el chat, cada una sobre una dimensión distinta.
     Esta página muestra el reparto y una sesión ficticia de QA renderizada en los dos
     estilos, para que la diferencia se vea en lugar de leerse.
   </p>
   <div class="meta">
     <span class="tag">AGENTS.md §2</span>
-    <span class="tag">instrucciones de usuario → OUTPUT STYLE</span>
+    <span class="tag">instrucciones de usuario → ## Replies + humanizer</span>
     <span class="tag">2026-08-17</span>
   </div>
 </header>
@@ -184,7 +184,7 @@ footer code{font-family:var(--mono);font-size:12px;color:var(--t2)}
   <h2><span class="num">01</span>El reparto de capas</h2>
   <p class="sub">
     Cada capa manda sobre una sola dimensión. Cuando dos capas reclaman la misma, se contradicen,
-    y gana la que se reinyecta más veces por turno, no la que tiene razón. Ese era el problema de fondo.
+    y gana la que se reinyecta más veces por turno, no la que tiene razón. Por eso cada capa tiene su dimensión y su archivo.
   </p>
   <table class="layers">
     <thead>
@@ -198,20 +198,28 @@ footer code{font-family:var(--mono);font-size:12px;color:var(--t2)}
         <td>cada turno, vía hook nuevo</td>
       </tr>
       <tr>
-        <td>OUTPUT STYLE</td>
-        <td>cómo se <strong>ve</strong> y qué <strong>textura</strong> tiene</td>
-        <td>instrucciones de agente a nivel usuario (<code>## OUTPUT STYLE</code>), en cualquiera de los hosts</td>
+        <td>Replies</td>
+        <td>cómo se <strong>ve</strong> el render</td>
+        <td>sección <code>## Replies</code> del archivo de instrucciones de usuario, un único <code>~/.agents/AGENTS.md</code> compartido por todos los harnesses</td>
         <td>al arrancar sesión</td>
+      </tr>
+      <tr>
+        <td>humanizer</td>
+        <td>cómo suena la <strong>prosa</strong></td>
+        <td>skill <code>humanizer</code> a nivel usuario, que el archivo de usuario manda cargar antes de escribir texto que va a leer una persona</td>
+        <td>al escribir ese texto</td>
       </tr>
     </tbody>
   </table>
   <div class="note good">
     <span class="ic">Regla</span>
     <div>
-      <strong>§2 gana siempre sobre contenido.</strong> OUTPUT STYLE solo decide el render
-      (títulos, anclas en negrita, <code>backticks</code>, tablas, espaciado) y la textura de las frases
-      (sin guión largo, longitud variable, sin recap final). Si una regla de ahí cambiara
-      <em>qué</em> se dice, la regla está mal puesta y pertenece a §2.
+      <strong>§2 gana siempre sobre contenido.</strong> <code>## Replies</code> solo decide el render
+      (títulos, una ancla en negrita por bloque, <code>backticks</code>, tablas, espaciado, listas solo para listas reales),
+      y <code>humanizer</code> solo la prosa (sin giros de máquina, sin guión largo, sin recap final).
+      Si una regla de ahí cambiara <em>qué</em> se dice, está mal puesta y pertenece a §2. Y si una skill o un archivo del proyecto define su propio formato de salida,
+      ese formato gana en ese turno. El archivo de usuario es uno solo: <code>~/.claude/CLAUDE.md</code>, <code>~/.codex/AGENTS.md</code>
+      y <code>~/.config/opencode/AGENTS.md</code> apuntan a él, y Pi lo agrega a su <code>AGENTS.md</code> generado, así que las cuatro herramientas leen las mismas reglas.
     </div>
   </div>
 </section>
@@ -252,11 +260,11 @@ footer code{font-family:var(--mono);font-size:12px;color:var(--t2)}
 
     <div class="card" style="--ac:var(--cyan)">
       <span class="n">01 · 02</span>
-      <h4>WRITING STYLE pasa a OUTPUT STYLE</h4>
-      <p>Tres bloques (dos de ellos positivos) en lugar de listas negras: no hay
-      <code>BANNED VOCABULARY</code>, <code>BANNED PHRASES</code> ni
-      <code>BANNED RHETORICAL PATTERNS</code>. Queda una micro-lista de palabras a evitar con
-      excepción de uso técnico literal, que es lo que permite escribir <code>API key</code> sin esquivarlo.</p>
+      <h4>WRITING STYLE pasó a OUTPUT STYLE, y ese a Replies + humanizer</h4>
+      <p>Primero se reemplazaron las listas negras (<code>BANNED VOCABULARY</code>, <code>BANNED PHRASES</code>,
+      <code>BANNED RHETORICAL PATTERNS</code>) por una sección positiva, <code>## OUTPUT STYLE</code>. Esa sección y
+      <code>## REDACCIÓN PARA HUMANOS</code> ya no existen: el render quedó en <code>## Replies</code> y las reglas de prosa
+      en la skill <code>humanizer</code>, que conserva la excepción de uso técnico literal para poder escribir <code>API key</code> sin esquivarlo.</p>
       <span class="st done">aplicado</span>
     </div>
 
@@ -422,7 +430,7 @@ const VERDICT = {
   after: {
     cls: 'note good',
     ic: 'Resultado',
-    html: `Esta salida no está escrita a mano: la generó un subagente cargando el <code>AGENTS.md</code> de esta rama y el <code>OUTPUT STYLE</code> global ya reescritos. El titular responde y se sostiene solo. La comparación va en tabla porque es una comparación. Rutas, ATCs y códigos HTTP en <code>backticks</code>, así que saltan a la vista. Frases de 6 a 30 palabras alternadas. Cero guiones largos, cero recap final. <strong>El menú deja que tires del hilo que te interese en lugar de recibirlo todo de golpe.</strong>`
+    html: `Esta salida no está escrita a mano: la generó un subagente cargando el <code>AGENTS.md</code> de esta rama, la sección <code>## Replies</code> del archivo de usuario y la skill <code>humanizer</code>. El titular responde y se sostiene solo. La comparación va en tabla porque es una comparación. Rutas, ATCs y códigos HTTP en <code>backticks</code>, así que saltan a la vista. Frases de 6 a 30 palabras alternadas. Cero guiones largos, cero recap final. <strong>El menú deja que tires del hilo que te interese en lugar de recibirlo todo de golpe.</strong>`
   }
 }
 
