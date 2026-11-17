@@ -117,6 +117,7 @@ The craft decks teach the QA judgment behind a stage; the test-automation curric
 | Explore a feature by layers (UI · API · DB) | `sprint-testing/triforce-exploration.es.html` |
 | Classify and file quality issues (Bug / Defect / Improvement) | `sprint-testing/defect-management.es.html` |
 | Write test cases: scopes, naming, ROI | `test-documentation/test-case-craft.es.html` |
+| Read the template test code file by file, and why it has no comments | `test-automation/kata-code-tour.es.html` |
 | Automation curriculum, in order | `test-automation/coding-base.es.html` → `coding-classes.es.html` → `dev-craft.es.html` → `playwright-pro.es.html` → `dojo-lab-1.es.html` → `kata-bridge.es.html` → `automation-patterns.es.html` → `api-automation-playwright.es.html` |
 
 The skills-io deck is the best single answer to "what does skill X need or produce" and "show me the whole pipeline". It renders as a Mac-style terminal with one tab per phase (arrow keys or `1-9` switch tabs).

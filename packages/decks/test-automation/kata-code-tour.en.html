@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KATA Code Tour: the template code, file by file</title>
+<style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* ===================== TOKYO NIGHT TOKENS ===================== */
+:root{
+  --bg:#16161e; --bg-2:#1a1b26; --surface:#24283b; --surface-2:#1f2335;
+  --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.16);
+  --text-1:#c0caf5; --text-2:#9aa5ce; --text-3:#565f89;
+  --blue:#7aa2f7; --purple:#bb9af7; --cyan:#7dcfff; --green:#9ece6a;
+  --red:#f7768e; --orange:#ff9e64; --yellow:#e0af68;
+  --grad:linear-gradient(135deg,#7aa2f7,#bb9af7 55%,#7dcfff);
+  --radius:16px; --radius-sm:10px;
+  --shadow:0 14px 40px rgba(0,0,0,.45);
+  --font-sans:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-mono:'JetBrains Mono',Menlo,monospace;
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);
+  font-family:var(--font-sans);line-height:1.55;-webkit-font-smoothing:antialiased;overflow:hidden}
+code,pre,kbd,textarea{font-family:var(--font-mono)}
+b,strong{color:var(--text-1)}
+::selection{background:rgba(122,162,247,.35)}
+
+/* ===================== SLIDE SYSTEM ===================== */
+.slide{position:fixed;inset:0;display:none;flex-direction:column;justify-content:center;
+  padding:6vh 6.5vw 9vh;background:var(--bg)}
+.slide.is-active{display:flex}
+.slide h1{font-size:clamp(2.4rem,5.6vw,4.6rem);font-weight:900;letter-spacing:-.03em;line-height:1.05;margin:0 0 .4em}
+.slide h2{font-size:clamp(1.6rem,3.2vw,2.5rem);font-weight:800;letter-spacing:-.02em;line-height:1.12;margin:0 0 .5em}
+.slide h3{font-size:clamp(1.05rem,1.7vw,1.35rem);font-weight:700;margin:0 0 .5em}
+.slide p,.slide li{font-size:clamp(.92rem,1.4vw,1.12rem);color:var(--text-2)}
+.kicker{font-size:.78rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--blue);margin-bottom:1rem}
+.grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start}
+.cols-32{display:grid;grid-template-columns:1.25fr 1fr;gap:2rem;align-items:start}
+.notes{display:none}
+
+/* chrome */
+#progress{position:fixed;top:0;left:0;height:3px;background:var(--grad);width:0%;z-index:60;transition:width .3s var(--ease)}
+#counter{position:fixed;bottom:18px;right:24px;font-family:var(--font-mono);font-size:.75rem;color:var(--text-3);z-index:60}
+#act-label{position:fixed;bottom:18px;left:24px;font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--text-3);z-index:60}
+#score-chip{position:fixed;top:16px;right:22px;z-index:60;font-family:var(--font-mono);font-size:.82rem;font-weight:700;
+  background:var(--surface);border:1px solid var(--border-strong);border-radius:999px;padding:.4rem .9rem;color:var(--yellow);
+  box-shadow:var(--shadow);transition:transform .25s var(--ease)}
+#score-chip.bump{transform:scale(1.18)}
+#help-hint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);font-size:.7rem;color:var(--text-3);z-index:60;font-family:var(--font-mono)}
+
+/* notes drawer */
+#notes-drawer{position:fixed;left:0;right:0;bottom:0;max-height:34vh;overflow:auto;background:var(--surface-2);
+  border-top:2px solid var(--blue);padding:1rem 2.2rem 1.4rem;z-index:80;transform:translateY(100%);transition:transform .3s var(--ease)}
+#notes-drawer.open{transform:translateY(0)}
+#notes-drawer .nd-tag{font-size:.7rem;font-weight:800;letter-spacing:.2em;color:var(--blue);text-transform:uppercase;margin-bottom:.4rem}
+#notes-drawer p{margin:.3rem 0;font-size:.95rem;color:var(--text-2)}
+
+/* ===================== ANIMATIONS ===================== */
+@keyframes fadeUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+@keyframes popIn{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:scale(1)}}
+@keyframes slideL{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:none}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+.slide.is-active [data-anim="fade-up"]{animation:fadeUp .7s var(--ease) both}
+.slide.is-active [data-anim="pop"]{animation:popIn .55s var(--ease) both}
+.slide.is-active [data-anim="slide-l"]{animation:slideL .6s var(--ease) both}
+.slide.is-active [data-stagger]>*{animation:fadeUp .55s var(--ease) both}
+.slide.is-active [data-stagger]>*:nth-child(1){animation-delay:.05s}
+.slide.is-active [data-stagger]>*:nth-child(2){animation-delay:.15s}
+.slide.is-active [data-stagger]>*:nth-child(3){animation-delay:.25s}
+.slide.is-active [data-stagger]>*:nth-child(4){animation-delay:.35s}
+.slide.is-active [data-stagger]>*:nth-child(5){animation-delay:.45s}
+.slide.is-active [data-stagger]>*:nth-child(6){animation-delay:.55s}
+.slide.is-active [data-stagger]>*:nth-child(7){animation-delay:.65s}
+.slide.is-active [data-stagger]>*:nth-child(8){animation-delay:.75s}
+
+/* ===================== CODE ===================== */
+pre.code{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:1rem 1.2rem;font-size:clamp(.76rem,1.18vw,.96rem);line-height:1.68;overflow:auto;margin:0;
+  box-shadow:var(--shadow);white-space:pre}
+.tk-k{color:var(--purple)} .tk-s{color:var(--green)} .tk-n{color:var(--orange)}
+.tk-b{color:var(--orange)} .tk-f{color:var(--blue)} .tk-c{color:var(--text-3);font-style:italic}
+.code-window{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.code-window .cw-bar{display:flex;align-items:center;gap:.45rem;padding:.6rem .9rem;background:var(--surface-2);border-bottom:1px solid var(--border)}
+.cw-bar .dot{width:11px;height:11px;border-radius:50%}
+.cw-bar .dot:nth-child(1){background:#f7768e}.cw-bar .dot:nth-child(2){background:#e0af68}.cw-bar .dot:nth-child(3){background:#9ece6a}
+.cw-bar .cw-title{margin-left:.5rem;font-family:var(--font-mono);font-size:.74rem;color:var(--text-3)}
+.code-window pre.code{border:none;border-radius:0;box-shadow:none}
+
+.cmd{display:flex;align-items:center;gap:.7rem;background:#0d0d14;border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm);padding:.6rem 1rem;margin:.45rem 0;cursor:pointer;transition:border-color .2s,transform .15s}
+.cmd:hover{border-color:var(--cyan);transform:translateX(3px)}
+.cmd .ps{color:var(--cyan);font-family:var(--font-mono);font-size:.85rem;flex:0 0 auto}
+.cmd .ct{color:var(--text-1);font-family:var(--font-mono);font-size:clamp(.78rem,1.25vw,.95rem);overflow-x:auto;white-space:nowrap}
+.cmd .copy{margin-left:auto;font-family:var(--font-mono);font-size:.68rem;color:var(--text-3);flex:0 0 auto}
+.cmd.copied{border-color:var(--green)}
+.cmd.copied .copy{color:var(--green)}
+
+/* cards / tables / callout */
+.cards{display:grid;gap:1rem}
+.cards.c3{grid-template-columns:repeat(3,1fr)}
+.cards.c2{grid-template-columns:repeat(2,1fr)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem 1.3rem;box-shadow:var(--shadow)}
+.card .ico{font-size:1.8rem;margin-bottom:.45rem}
+.card h3{margin-bottom:.3rem}
+.card p{font-size:.92rem;margin:.2rem 0}
+.card.hl{border-color:var(--blue);background:linear-gradient(160deg,rgba(122,162,247,.12),rgba(187,154,247,.08))}
+.pill{display:inline-block;font-family:var(--font-mono);font-size:.78rem;padding:.2rem .65rem;border-radius:999px;
+  background:var(--surface-2);border:1px solid var(--border-strong);color:var(--cyan);margin:.15rem .2rem}
+table.cmp{width:100%;border-collapse:collapse;font-size:clamp(.85rem,1.3vw,1.05rem)}
+table.cmp th{text-align:left;padding:.65rem .9rem;font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);border-bottom:2px solid var(--border-strong)}
+table.cmp td{padding:.6rem .9rem;border-bottom:1px solid var(--border);color:var(--text-2)}
+table.cmp td:first-child{color:var(--text-1)}
+table.cmp td code{color:var(--cyan);font-size:.9em}
+.callout{display:flex;gap:.9rem;align-items:flex-start;background:rgba(158,206,106,.1);border:1px solid rgba(158,206,106,.35);
+  border-radius:var(--radius-sm);padding:.85rem 1.1rem;margin-top:1.2rem}
+.callout.warn{background:rgba(247,118,142,.1);border-color:rgba(247,118,142,.4)}
+.callout.info{background:rgba(122,162,247,.1);border-color:rgba(122,162,247,.4)}
+.callout .co-ico{font-size:1.35rem;line-height:1.3}
+.callout p{margin:0;font-size:clamp(.88rem,1.3vw,1.05rem)}
+
+/* mission */
+.mission{background:var(--surface);border:1.5px solid var(--border-strong);border-radius:var(--radius);
+  padding:1.2rem 1.5rem 1.3rem;box-shadow:var(--shadow);width:100%;transition:border-color .3s}
+.mission.done{border-color:var(--green)}
+.m-head{display:flex;align-items:center;gap:1rem;margin-bottom:.7rem;flex-wrap:wrap}
+.m-badge{font-family:var(--font-mono);font-size:.74rem;font-weight:700;letter-spacing:.16em;
+  background:rgba(255,158,100,.14);border:1px solid rgba(255,158,100,.5);color:var(--orange);
+  border-radius:999px;padding:.3rem .9rem;flex:0 0 auto}
+.mission.done .m-badge{background:rgba(158,206,106,.14);border-color:var(--green);color:var(--green)}
+.m-head h3{margin:0;flex:1 1 auto;font-size:clamp(1.1rem,1.9vw,1.5rem)}
+.m-check{display:flex;align-items:center;gap:.5rem;cursor:pointer;font-family:var(--font-mono);font-size:.8rem;
+  color:var(--text-3);background:var(--surface-2);border:1px solid var(--border-strong);border-radius:999px;
+  padding:.4rem 1rem;flex:0 0 auto;user-select:none;transition:all .2s}
+.m-check:hover{border-color:var(--green);color:var(--green)}
+.m-check input{accent-color:#9ece6a;width:1rem;height:1rem;cursor:pointer}
+.mission.done .m-check{border-color:var(--green);color:var(--green);background:rgba(158,206,106,.1)}
+.m-obj{font-size:clamp(.92rem,1.4vw,1.1rem);color:var(--text-2);margin:.3rem 0 .8rem}
+.m-obj b{color:var(--text-1)}
+.m-crit{display:flex;gap:.7rem;align-items:flex-start;background:rgba(158,206,106,.08);border:1px dashed rgba(158,206,106,.45);
+  border-radius:var(--radius-sm);padding:.7rem 1rem;margin-top:.9rem;font-size:clamp(.85rem,1.3vw,1.02rem);color:var(--text-2)}
+.m-crit b{color:var(--green)}
+details.m-hint{margin-top:.8rem;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
+details.m-hint summary{cursor:pointer;padding:.6rem 1rem;font-size:.88rem;font-weight:600;color:var(--cyan);user-select:none;list-style:none}
+details.m-hint summary::before{content:'💡 '}
+details.m-hint[open] summary{border-bottom:1px solid var(--border)}
+details.m-hint .hint-body{padding:.7rem 1rem .9rem;font-size:.88rem;color:var(--text-2)}
+details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
+
+/* quiz */
+.quiz{max-width:880px;width:100%;margin:0 auto}
+.quiz-tag{display:inline-block;font-family:var(--font-mono);font-size:.75rem;font-weight:700;letter-spacing:.2em;
+  color:var(--yellow);background:rgba(224,175,104,.12);border:1px solid rgba(224,175,104,.4);
+  border-radius:999px;padding:.3rem .9rem;margin-bottom:1.1rem}
+.quiz-q{font-size:clamp(1.25rem,2.3vw,1.85rem);font-weight:800;margin:0 0 1.3rem;line-height:1.25}
+.quiz-opts{display:grid;gap:.8rem}
+.quiz .opt{display:flex;align-items:center;gap:1rem;text-align:left;width:100%;cursor:pointer;
+  background:var(--surface);border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);
+  padding:.95rem 1.2rem;color:var(--text-1);font-family:var(--font-sans);font-size:clamp(.92rem,1.45vw,1.12rem);
+  transition:border-color .2s,background .2s,transform .15s}
+.quiz .opt:hover{border-color:var(--blue);transform:translateX(4px)}
+.quiz .opt .key{flex:0 0 auto;font-family:var(--font-mono);font-weight:700;font-size:.8rem;width:1.8rem;height:1.8rem;
+  display:grid;place-items:center;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text-3)}
+.quiz .opt code{color:var(--cyan)}
+.quiz .opt.correct{border-color:var(--green);background:rgba(158,206,106,.14)}
+.quiz .opt.correct .key{background:var(--green);color:#16161e;border-color:var(--green)}
+.quiz .opt.wrong{border-color:var(--red);background:rgba(247,118,142,.12);animation:shake .4s}
+.quiz.locked .opt{pointer-events:none;opacity:.8}
+.quiz.locked .opt.correct{opacity:1}
+.quiz-expl{display:none;margin-top:1.2rem;background:rgba(125,207,255,.08);border:1px solid rgba(125,207,255,.3);
+  border-radius:var(--radius-sm);padding:.9rem 1.2rem;color:var(--text-2);font-size:clamp(.88rem,1.35vw,1.05rem)}
+.quiz-expl.show{display:block;animation:fadeUp .4s var(--ease)}
+
+/* KATA stack */
+.kata-stack{display:flex;flex-direction:column;gap:.5rem;max-width:580px;margin:0 auto}
+.kata-stack .layer{display:flex;align-items:center;gap:1rem;background:var(--surface);border:1.5px solid var(--border-strong);
+  border-radius:var(--radius-sm);padding:.7rem 1.2rem;font-family:var(--font-mono);font-size:clamp(.8rem,1.28vw,.98rem);color:var(--text-2)}
+.kata-stack .layer .ly-tag{font-size:.68rem;color:var(--text-3);font-weight:700;flex:0 0 auto;width:2rem}
+.kata-stack .layer .ly-note{margin-left:auto;font-family:var(--font-sans);font-size:.76rem;color:var(--text-3);text-align:right}
+.kata-stack .layer.star{border-color:var(--green);background:rgba(158,206,106,.12);color:var(--green);font-weight:700;
+  box-shadow:0 0 24px rgba(158,206,106,.15)}
+.kata-stack .layer.star .ly-note{color:var(--green)}
+.kata-stack .consumer{display:flex;align-items:center;gap:1rem;background:transparent;border:1.5px dashed var(--border-strong);
+  border-radius:var(--radius-sm);padding:.7rem 1.2rem;font-family:var(--font-mono);font-size:clamp(.8rem,1.28vw,.98rem);color:var(--text-3)}
+.kata-stack .consumer .ly-tag{font-size:.68rem;color:var(--text-3);font-weight:700;flex:0 0 auto;width:2rem}
+.kata-stack .consumer .ly-note{margin-left:auto;font-family:var(--font-sans);font-size:.76rem;color:var(--text-3);text-align:right}
+.kata-stack .arrow{text-align:center;color:var(--text-3);font-size:.78rem;line-height:1;font-family:var(--font-mono)}
+
+/* tree */
+.tree{font-family:var(--font-mono);font-size:clamp(.82rem,1.32vw,1.05rem);line-height:1.9}
+.tree .tr-c{color:var(--text-3);font-size:.8em;margin-left:1rem}
+.tree .tr-dir{color:var(--blue);font-weight:700} .tree .tr-file{color:var(--text-1)} .tree .tr-star{color:var(--yellow)}
+
+/* journey timeline */
+.journey{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center}
+.jy{background:var(--surface);border:1.5px solid var(--green);border-radius:var(--radius-sm);
+  padding:.6rem .9rem;font-family:var(--font-mono);font-size:.78rem;color:var(--green);text-align:center}
+.jy b{display:block;font-size:.85rem}
+.jy.now{border-color:var(--yellow);color:var(--yellow);box-shadow:0 0 20px rgba(224,175,104,.2)}
+
+#fx-cover{position:absolute;inset:0;z-index:0}
+.cover-inner{position:relative;z-index:2;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1.1rem}
+.cover-chips{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center}
+#confetti-canvas{position:fixed;inset:0;z-index:200;pointer-events:none}
+.slide{overflow-y:auto}
+.tour{display:grid;grid-template-columns:1fr 1fr;gap:1.6rem;align-items:start}
+.tour ul{margin:0;padding-left:1.1rem;display:flex;flex-direction:column;gap:.45rem}
+.tour li{font-size:clamp(.82rem,1.18vw,1rem);line-height:1.5}
+.tour.dense li{font-size:clamp(.74rem,1.02vw,.88rem);line-height:1.42}
+.tour.dense ul{gap:.3rem}
+.tour code,.slide li code,.slide p code{color:var(--cyan);font-size:.92em}
+.slide h2.tt{font-size:clamp(1.3rem,2.4vw,1.9rem);margin-bottom:.25em}
+.path{font-family:var(--font-mono);font-size:.8rem;color:var(--text-3);margin-bottom:.9rem}
+.codecol{display:flex;flex-direction:column;gap:.8rem;min-width:0}
+.codecol pre.code{font-size:clamp(.7rem,1vw,.86rem);line-height:1.55;max-height:62vh}
+.tour.dense .codecol pre.code{max-height:70vh}
+table.cmp td,table.cmp th{vertical-align:top}
+table.cmp.small{font-size:clamp(.74rem,1.05vw,.9rem)}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="counter">1 / 1</div>
+<div id="act-label"></div>
+<div id="help-hint">← → navigate · F fullscreen</div>
+<section class="slide" data-act="Introduction" style="align-items:center;text-align:center">
+  <div class="kicker">Code walkthrough</div>
+  <h1>KATA <span class="grad-text">Code Tour</span></h1>
+  <p style="max-width:640px;margin:0 auto">The code under <code>tests/</code> carries no comments. The explanation lives here: what each template file does and why it is written that way.</p>
+</section>
+<section class="slide" data-act="Introduction">
+  <h2>Why the code has <span class="grad-text">no comments</span></h2>
+  <div class="cards c3" data-stagger><div class="card"><h3>Critical Rule 18</h3><p>Code carries no comments. A comment ages without anyone noticing and ends up teaching something false. The explanation of the template lives in decks and in doctrine, which get reviewed as documents.</p></div><div class="card"><h3>Trust pyramid</h3><p>Whatever a machine can check is checked in lint, types and tests. A KATA rule that an ESLint rule can enforce does not need a paragraph asking people to comply.</p></div><div class="card"><h3>This deck</h3><p>What no machine checks: the reason behind each decision. Every slide names a file, shows a real excerpt and explains its reasons.</p></div></div>
+  <div class="callout info"><p>The excerpts come from the repo&#x27;s current code. When a file changes, the deck excerpt is copied from it again.</p></div>
+</section>
+<section class="slide" data-act="Map">
+  <h2 style="text-align:center">The KATA layers and where each one lives</h2>
+  <div class="kata-stack" style="max-width:900px" data-stagger><div class="layer"><span class="ly-tag">L1</span>TestContext <span class="ly-note">tests/components/TestContext.ts</span></div>
+<div class="arrow">↓ extends</div>
+<div class="layer"><span class="ly-tag">L2</span>ApiBase · UiBase <span class="ly-note">tests/components/api/ApiBase.ts · tests/components/ui/UiBase.ts</span></div>
+<div class="arrow">↓ extends</div>
+<div class="layer star"><span class="ly-tag">L3</span>Domain components <span class="ly-note">tests/components/api/ · tests/components/ui/</span></div>
+<div class="arrow">↓ injected by</div>
+<div class="layer"><span class="ly-tag">L3.5</span>Steps <span class="ly-note">tests/components/steps/</span></div>
+<div class="arrow">↓ injected by</div>
+<div class="layer"><span class="ly-tag">L4</span>Fixtures <span class="ly-note">tests/components/TestFixture.ts · ApiFixture.ts · UiFixture.ts</span></div></div>
+  <div class="callout info" style="max-width:900px;margin:1rem auto 0"><p>After the layers: specs, data, utilities, setup and teardown. At the end, which KATA rules lint checks.</p></div>
+</section>
+<section class="slide" data-act="Layer 1 · TestContext">
+  <h2 class="tt">TestContext: the base of everything</h2>
+  <div class="path">tests/components/TestContext.ts</div>
+  <div class="tour"><ul><li><code>TestContext</code> centralizes the Playwright drivers (<code>page</code>, <code>request</code>), the environment config and access to <code>DataFactory</code>.</li><li><code>UiBase</code> and <code>ApiBase</code> extend it, so UI and API operations run on the same context.</li><li><code>TestContextOptions</code>: <code>page</code> is required for UI tests, <code>request</code> for API tests, and <code>environment</code> defaults to the current one from config.</li><li><code>data</code> is both a static property and an instance getter. Any component calls <code>this.data</code> and never imports the factory itself.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/TestContext.ts</span></div><pre class="code">  readonly config = config;
+
+  static readonly data = DataFactory;
+
+  constructor(options: TestContextOptions = {}) {
+    this._page = options.page;
+    this._request = options.request;
+    this.env = options.environment ?? env.current;
+  }
+
+  get data(): typeof DataFactory {
+    return TestContext.data;
+  }</pre></div></div></div>
+</section>
+<section class="slide" data-act="Layer 2 · Bases">
+  <h2 class="tt">ApiBase: typed HTTP helpers</h2>
+  <div class="path">tests/components/api/ApiBase.ts</div>
+  <div class="tour"><ul><li><code>ApiBase</code> wraps Playwright's <code>APIRequestContext</code> and extends <code>TestContext</code>, so it inherits drivers and config.</li><li><code>apiGET</code> and <code>apiDELETE</code> return <code>[APIResponse, TBody]</code>: the ATC gets the raw response (status, headers) and the parsed body in one call.</li><li><code>apiPOST</code>, <code>apiPUT</code> and <code>apiPATCH</code> return <code>[APIResponse, TBody, TPayload]</code>. The third element is the payload actually sent, so a spec compares response against request without rebuilding it.</li><li>Always pass the response model (and the payload model for mutations) as generics so ATCs stay type-safe.</li><li>The HTTP helpers are <code>protected</code> on purpose: a test cannot skip the component layer with <code>api.apiPOST(...)</code>. It goes through an ATC or a layer 3 <code>@step</code> helper.</li><li>Every helper attaches request and response to the Allure report automatically.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/api/ApiBase.ts</span></div><pre class="code">  protected async apiGET&lt;TBody = Record&lt;string, unknown&gt;&gt;(
+    endpoint: string,
+    options: RequestOptions = {},
+  ): Promise&lt;[APIResponse, TBody]&gt; {
+    const url = this.apiEndpoint(endpoint);
+...
+    const body = await this.getResponseJsonObject&lt;TBody&gt;(response);
+
+    await attachRequestResponseToAllure({ url: endpoint, method: 'GET', responseBody: body });
+
+    return [response, body];
+  }</pre></div></div></div>
+</section>
+<section class="slide" data-act="Layer 2 · Bases">
+  <h2 class="tt">ApiBase: auth, cookies and defensive parsing</h2>
+  <div class="path">tests/components/api/ApiBase.ts</div>
+  <div class="tour dense"><ul><li><code>setAuthToken</code> stores the token and sends it as <code>Authorization: Bearer</code> on later requests. <code>clearAuthToken</code> removes it.</li><li>The <code>request</code> accessor prefers <code>page.request</code> when a page exists: it shares cookies and storage with the browser, so under the hybrid <code>{ test }</code> fixture API calls carry the cookie. API-only tests fall back to the standalone context, which has no cookie.</li><li>When there is no request context the accessor throws. A misconfigured fixture fails loudly instead of silently.</li><li><code>getResponseJsonObject</code> parses JSON defensively and returns an empty object on failure, so a non-JSON error body does not crash the ATC.</li><li><code>requestHeaders.Accept</code> is <code>*/*</code> to avoid 406 errors from servers that reject an explicit <code>application/json</code>, even though the body is still JSON.</li><li><code>apiEndpoint</code> builds the full URL from <code>config.apiUrl</code>, because Playwright's request context does not use <code>baseURL</code> here.</li><li><code>apiPOSTForm</code> sends <code>x-www-form-urlencoded</code> forms for OAuth2 and token endpoints, accepts absolute URLs and masks <code>password</code> in the Allure attachment.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/api/ApiBase.ts</span></div><pre class="code">  setAuthToken(token: string) {
+    this.authToken = token;
+  }
+
+  clearAuthToken() {
+    this.authToken = null;
+  }
+...
+  async getResponseJsonObject&lt;T = Record&lt;string, unknown&gt;&gt;(response: APIResponse): Promise&lt;T&gt; {
+    const status = response.status();
+    const endpoint = response.url().split('?')[0];
+...
+    try {
+      return (await response.json()) as T;
+    }
+    catch {
+      return {} as T;
+    }</pre></div></div></div>
+</section>
+<section class="slide" data-act="Layer 2 · Bases">
+  <h2 class="tt">UiBase: native Playwright plus network interception</h2>
+  <div class="path">tests/components/ui/UiBase.ts</div>
+  <div class="tour"><ul><li><code>UiBase</code> is the base class for UI components. It extends <code>TestContext</code> and components use Playwright's native API (<code>this.page</code>) directly: Playwright auto-waits before every action, so no wrapper layer is needed.</li><li>The <code>page</code> accessor throws when no page exists (for example in API-only tests), so a missing driver fails loudly.</li><li><code>buildUrl</code> builds the full URL from <code>config.baseUrl</code> for logging or assertions. For <code>page.goto()</code> use a relative path: Playwright's <code>baseURL</code> already resolves it.</li><li><code>interceptResponse</code> registers the response wait first, then runs the triggering action, then awaits the response. That avoids the race where the response arrives before the listener exists.</li><li><code>waitForApiResponse</code> does the same capture without triggering an action: use it when the request is already in flight.</li><li><code>matchesPattern</code> turns glob-like patterns into a regex: <code>**</code> matches any path and <code>*</code> one segment. The body parsers return <code>null</code> for non-JSON, so interception never breaks a test.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/ui/UiBase.ts</span></div><pre class="code">  async interceptResponse&lt;TRequest = unknown, TResponse = unknown&gt;(
+    args: InterceptResponseArgs,
+  ): Promise&lt;InterceptedData&lt;TRequest, TResponse&gt;&gt; {
+    const { urlPattern, action, timeout = 30000, attachToAllure = true } = args;
+...
+    const responsePromise = this.page.waitForResponse(
+      response =&gt; this.matchesPattern(response.url(), urlPattern),
+      { timeout },
+    );
+
+    await action();
+...
+    const response = await responsePromise;
+    const request = response.request();</pre></div></div></div>
+</section>
+<section class="slide" data-act="Layer 3 · Domain components">
+  <h2 class="tt">ExamplePage: the UI reference component</h2>
+  <div class="path">tests/components/ui/ExamplePage.ts</div>
+  <div class="tour dense"><ul><li>It is a reference component with a fictional <code>/example</code> page and placeholder selectors. Copy it to <code>tests/components/ui/YourPage.ts</code>, swap URLs and locators, register it in <code>UiFixture.ts</code> and run <code>bun run kata:manifest</code>.</li><li>An ATC is a complete test case, a mini-flow (navigate, act, verify), never a single interaction.</li><li>Each ATC has one unique expected output (equivalence partitioning): valid data ends on a redirect, an invalid email ends on an error message.</li><li>Locators stay inline inside the ATC. Extract them to a class field only when two or more ATCs use them (<code>emailInput</code>, <code>passwordInput</code>, <code>submitButton</code>).</li><li>Strategy 1, <code>errorMessageTestId</code>: a <code>data-testid</code> string used with <code>getByTestId</code>, the preferred option.</li><li>Strategy 2, <code>emailInput</code>: an arrow function returning a <code>Locator</code>, for complex selectors or fallbacks chained with <code>.or()</code>. An <code>.or()</code> over several selectors for the same element resolves to one element, so no <code>.first()</code> is needed.</li><li><code>@atc('PROJ-131')</code> uses a placeholder project key: replace <code>PROJ</code> with the real Jira key.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/ui/ExamplePage.ts</span></div><pre class="code">  private readonly emailInput = () =&gt;
+    this.page
+      .getByTestId('email-input')
+      .or(this.page.locator('#email'))
+      .or(this.page.locator('input[name="email"]'));
+...
+  @atc('PROJ-131')
+  async submitFormWithValidData(data: ExampleFormData) {
+    await this.goto();
+
+    await this.emailInput().fill(data.email);
+    await this.passwordInput().fill(data.password);
+    await this.submitButton().click();
+
+    await this.page.waitForURL('**/dashboard', { timeout: 10000 });
+    await expect(this.page).toHaveURL(/.*dashboard.*/);
+  }</pre></div></div></div>
+</section>
+<section class="slide" data-act="Layer 3 · Domain components">
+  <h2 class="tt">LoginPage: a real component</h2>
+  <div class="path">tests/components/ui/LoginPage.ts</div>
+  <div class="tour"><ul><li>Locators stay inline using <code>data-testid</code> (<code>login-email-input</code>, <code>login-password-input</code>, <code>login-submit-button</code>, <code>login-error</code>), the top of the locator priority.</li><li><code>fillAndSubmitLoginForm</code> is a private helper that two ATCs share. That is why it has no <code>@atc</code> and no assertions.</li><li><code>goto</code> (<code>@step</code>) is separate from the ATCs: call it before a login ATC, because ATCs do not navigate.</li><li><code>loginSuccessfully</code> waits for the URL to leave <code>/login</code> (authentication plus redirect) and then asserts it. Its unique output is the redirect.</li><li><code>loginWithInvalidCredentials</code> ends on a visible error indicator while the URL is still <code>/login</code>.</li><li><code>LoginCredentials</code> uses an <code>email</code> field instead of <code>username</code>, because the target app does.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/ui/LoginPage.ts</span></div><pre class="code">  private async fillAndSubmitLoginForm(credentials: LoginCredentials): Promise&lt;void&gt; {
+    await this.page.locator('[data-testid="login-email-input"]').fill(credentials.email);
+    await this.page.locator('[data-testid="login-password-input"]').fill(credentials.password);
+    await this.page.locator('[data-testid="login-submit-button"]').click();
+  }
+...
+  @atc('PROJ-111')
+  async loginSuccessfully(credentials: LoginCredentials): Promise&lt;void&gt; {
+    await this.fillAndSubmitLoginForm(credentials);
+
+    await this.page.waitForURL(url =&gt; !url.pathname.includes('/login'), { timeout: 15000 });
+    await expect(this.page).not.toHaveURL(/.*\/login.*/);
+  }</pre></div></div></div>
+</section>
+<section class="slide" data-act="Layer 3 · Domain components">
+  <h2 class="tt">AuthApi: authentication ATCs</h2>
+  <div class="path">tests/components/api/AuthApi.ts</div>
+  <div class="tour dense"><ul><li><code>AuthApi</code> is the API component for authentication (<code>POST /api/auth/login</code>, <code>GET /api/auth/me</code>). Endpoints come from <code>config.auth</code>.</li><li>An ATC is an ACTION plus a VERIFICATION, never a bare GET. A read-only operation is a helper with no <code>@atc</code>.</li><li><code>getCurrentUser</code> is that helper: a read-only GET used as a verification step inside ATCs or for test-level assertions. It is decorated <code>@step</code>, not <code>@atc</code>, because it retrieves data and is not a complete action flow.</li><li><code>authenticateSuccessfully</code> posts the credentials, asserts the fixed token response (200, <code>access_token</code>, <code>Bearer</code>, <code>expires_in</code>), stores the token with <code>setAuthToken</code> and verifies the session through <code>GET /auth/me</code>.</li><li><code>loginWithInvalidCredentials</code> posts bad credentials, asserts the 401 and proves no session was created by calling <code>/auth/me</code> without a token. It saves the current token, clears it for that check and restores it afterwards, so a failed login does not log out the surrounding test.</li><li>Request and response types are re-exported from <code>AuthApi</code>, so consumers do not import the schema file.</li><li>The <code>PROJ</code> prefix in <code>@atc('PROJ-101')</code> is a placeholder: use the real project key.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/api/AuthApi.ts</span></div><pre class="code">  @step
+  async getCurrentUser(): Promise&lt;[APIResponse, UserInfoResponse]&gt; {
+    const [response, body] = await this.apiGET&lt;UserInfoResponse&gt;(this.config.auth.meEndpoint);
+    return [response, body];
+...
+    expect(response.status()).toBe(401);
+    expect(response.ok()).toBe(false);
+    expect(body.error).toBeDefined();
+...
+    const savedToken = this.authToken;
+    this.clearAuthToken();
+    const [meResponse] = await this.getCurrentUser();
+    expect(meResponse.status()).toBe(401);
+    if (savedToken) {
+      this.setAuthToken(savedToken);
+    }</pre></div></div></div>
+</section>
+<section class="slide" data-act="Layer 3 · Domain components">
+  <h2 class="tt">ExampleApi: the API reference component</h2>
+  <div class="path">tests/components/api/ExampleApi.ts</div>
+  <div class="tour"><ul><li>It is a reference with fictional endpoints. Copy it to <code>tests/components/api/YourApi.ts</code>, replace endpoints and schema types, register it in <code>ApiFixture.ts</code> and run <code>bun run kata:manifest</code>.</li><li>An ATC is a complete mini-flow, not a single API call. Each ATC has a unique expected output (success 201 versus error 4xx) and fixed assertions inside the ATC that validate it succeeded.</li><li>The <code>[APIResponse, TBody, TPayload]</code> return gives type-safe access to the response, the parsed body and the sent payload.</li><li>In <code>createResourceSuccessfully</code>, when the response carries a token, the ATC stores it for later requests.</li><li><code>getResourceSuccessfully</code> is a <code>@step</code> helper: a bare read still appears in the trace and the Allure tree. An ATC, in contrast, changes state (precondition, action, assertions).</li><li>A helper may keep fixed assertions for its own contract, but it must not claim a TMS test-case id for an operation that tests nothing a user can do.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/api/ExampleApi.ts</span></div><pre class="code">  @atc('PROJ-121')
+  async createResourceSuccessfully(
+    payload: CreateExampleRequest,
+  ): Promise&lt;[APIResponse, CreateExampleResponse, CreateExampleRequest]&gt; {
+    const [response, body, sentPayload] = await this.apiPOST&lt;CreateExampleResponse, CreateExampleRequest&gt;(
+...
+    expect(response.status()).toBe(201);
+    expect(body.user).toBeDefined();
+    expect(body.user.id).toBeDefined();
+...
+    if (body.token !== undefined &amp;&amp; body.token !== '') {
+      this.setAuthToken(body.token);
+    }
+...
+  @step
+  async getResourceSuccessfully(resourceId: string): Promise&lt;[APIResponse, GetExampleResponse]&gt; {
+    const [response, body] = await this.apiGET&lt;GetExampleResponse&gt;(`/api/example/${resourceId}`);</pre></div></div></div>
+</section>
+<section class="slide" data-act="Layer 3.5 · Steps">
+  <h2 class="tt">ExampleSteps: precondition chains</h2>
+  <div class="path">tests/components/steps/ExampleSteps.ts</div>
+  <div class="tour"><ul><li>A layer 3.5 reference for reusable precondition chains that prepare test state before the real test runs. Copy it to <code>tests/components/steps/YourSteps.ts</code> and replace the fictional endpoints and auth logic.</li><li>A step has no fixed assertions and no <code>@atc</code>. It combines actions or ATCs to reach a state: authentication, data setup, navigating to a page with data.</li><li><code>authenticateUser</code> is a SETUP step: it only fetches the token and does not verify that auth worked. That verification belongs to an ATC.</li><li><code>navigateAsAuthenticatedUser</code> chains login, token into browser storage and navigation into one precondition. It takes an object because with three or more parameters bare strings read identically at the call site and swapping two is a silent bug (<code>typescript-patterns.md</code>, section 1).</li><li>Each step throws a clear error when the driver it needs (<code>request</code>, <code>page</code>) was not passed to the constructor.</li><li><code>createTestResource</code> creates data through the API so UI tests start from a known state.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/steps/ExampleSteps.ts</span></div><pre class="code">  async navigateAsAuthenticatedUser(args: { path: string, email: string, password: string }) {
+    const { path, email, password } = args;
+    if (!this._page || !this._request) {
+      throw new Error(
+        'Page and Request context must be set. Pass { page, request } in constructor options.',
+      );
+    }
+
+    const auth = await this.authenticateUser(email, password);
+...
+    await this._page.evaluate((token) =&gt; {
+      localStorage.setItem('authToken', token);
+    }, auth.token);
+
+    await this._page.goto(path);</pre></div></div></div>
+</section>
+<section class="slide" data-act="Layer 4 · Fixtures">
+  <h2 class="tt">ApiFixture and UiFixture: injection containers</h2>
+  <div class="path">tests/components/ApiFixture.ts · tests/components/UiFixture.ts</div>
+  <div class="tour"><ul><li><code>ApiFixture</code> is a dependency-injection container for all API components. Each gets the same options, so they share one request context and consistent auth.</li><li>To add an API component: create it in <code>tests/components/api/YourApi.ts</code>, import it in the fixture, add a <code>readonly</code> property and initialize it in the constructor with the shared options.</li><li><code>setAuthToken</code> and <code>clearAuthToken</code> are overridden: the token is held per component, so the fixture fans the call out to every child to keep them on one token.</li><li><code>UiFixture</code> is the container for UI components. All share the same page context, so browser state is consistent across components.</li><li>Adding a UI component follows the same path: create it in <code>tests/components/ui/YourPage.ts</code>, import it, add the <code>readonly</code> property and initialize it with the shared options.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/ApiFixture.ts</span></div><pre class="code">export class ApiFixture extends ApiBase {
+  readonly auth: AuthApi;
+
+  readonly example: ExampleApi;
+...
+  constructor(options: TestContextOptions) {
+    super(options);
+
+    this.auth = new AuthApi(options);
+    this.example = new ExampleApi(options);
+  }
+...
+  override setAuthToken(token: string) {
+    super.setAuthToken(token);
+    this.auth.setAuthToken(token);
+    this.example.setAuthToken(token);
+  }</pre></div></div></div>
+</section>
+<section class="slide" data-act="Layer 4 · Fixtures">
+  <h2 class="tt">TestFixture: which fixture to ask for</h2>
+  <div class="path">tests/components/TestFixture.ts</div>
+  <div class="tour"><ul><li><code>test</code> is the hybrid fixture with UI and API, <code>ui</code> is UI-only and <code>api</code> is API-only. All share one <code>TestContext</code>, so a hybrid test uses the same Playwright drivers.</li><li>Playwright fixtures are lazy: a test that only asks for <code>api</code> never opens a browser, and one that asks for <code>ui</code> or <code>test</code> does.</li><li>Typical use. Hybrid E2E: <code>test.ui.login.loginSuccessfully(...)</code> then <code>test.api.auth.getCurrentUser()</code>. API-only: <code>api.auth.authenticateSuccessfully(...)</code>.</li><li><code>setAuthToken</code> and <code>clearAuthToken</code> refresh the token mid-test (after a re-login) or clear it to test unauthenticated scenarios.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/TestFixture.ts</span></div><pre class="code">  test: async ({ page, request }, use) =&gt; {
+    const fixture = new TestFixture(page, request);
+    await use(fixture);
+  },
+...
+  ui: async ({ page, request }, use) =&gt; {
+    const uiFixture = new UiFixture({ page, request });
+    await use(uiFixture);
+  },
+...
+  api: async ({ request }, use) =&gt; {
+    const apiFixture = new ApiFixture({ request });</pre></div></div></div>
+</section>
+<section class="slide" data-act="Layer 4 · Fixtures">
+  <h2 class="tt">TestFixture: token loading and the Allure layer</h2>
+  <div class="path">tests/components/TestFixture.ts</div>
+  <div class="tour"><ul><li><code>loadTokenFromFile</code> and the <code>api</code> fixture read the token from <code>api-state.json</code> (path in <code>config.auth.apiStatePath</code>) when the fixture is built. A missing or corrupt file leaves the token null instead of failing.</li><li><code>_allureLayer</code> is an auto-fixture that labels every test with its layer (<code>integration</code> or <code>e2e</code>), derived from the spec path. Allure charts (testing pyramid, durations by layer) group results without per-test boilerplate.</li><li>The <code>no-empty-pattern</code> disable exists because Playwright requires a destructured first argument for fixtures even when none is used.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/TestFixture.ts</span></div><pre class="code">  private loadTokenFromFile(): void {
+    const apiStatePath = config.auth.apiStatePath;
+    if (existsSync(apiStatePath)) {
+...
+        const content = readFileSync(apiStatePath, 'utf-8');
+        const apiState: ApiState = JSON.parse(content);
+        if (apiState.token) {
+          this.api.setAuthToken(apiState.token);
+        }
+...
+  _allureLayer: [
+...
+    async ({}, use, testInfo) =&gt; {
+      const file = testInfo.file.replace(/\\/g, '/');
+      const layer = file.includes('/integration/')
+        ? 'integration'
+        : file.includes('/e2e/') ? 'e2e' : undefined;
+      if (layer) {
+        await label('layer', layer);
+      }
+      await use();
+    },
+    { auto: true },
+  ],</pre></div></div></div>
+</section>
+<section class="slide" data-act="Specs">
+  <h2 class="tt">Dashboard E2E spec: when raw <code>page</code> is allowed</h2>
+  <div class="path">tests/e2e/dashboard/dashboard.test.ts</div>
+  <div class="tour"><ul><li>Raw <code>page</code> in a spec is only legitimate for an infrastructure check (the saved storage state from <code>ui-setup</code> loads), because no Page component exists when no feature is under test. Every product-flow test goes through <code>{ ui }</code>, <code>{ api }</code> or <code>{ test }</code>.</li><li>Choosing <code>{ api }</code> or <code>{ test }</code>: a test that never touches the UI uses <code>{ api }</code>. The hybrid <code>{ test }</code> fixture would open a browser for nothing.</li><li><code>api.auth.getCurrentUser</code>: the API fixture carries the Bearer token saved by <code>api-setup</code>, not the browser cookie.</li><li>A read-only verification calls a helper (not an ATC), and the spec asserts on the returned tuple <code>[response, body]</code>.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/e2e/dashboard/dashboard.test.ts</span></div><pre class="code">  test('UPEX-200: should load dashboard when a saved session is restored', async ({ page }) =&gt; {
+    await page.goto('/');
+...
+  test('UPEX-200: should return the current user when the API session is valid', async ({ api }) =&gt; {
+    const [response, userInfo] = await api.auth.getCurrentUser();
+
+    expect(response.ok()).toBe(true);</pre></div></div></div>
+</section>
+<section class="slide" data-act="Specs">
+  <h2 class="tt">E2E example spec: the spec orchestrates</h2>
+  <div class="path">tests/e2e/module-example/example.test.ts</div>
+  <div class="tour"><ul><li>The spec orchestrates ATCs and adds test-level assertions. The ATC holds the fixed assertions for its flow.</li><li>Three phases: arrange (test data from <code>ui.data.createCredentials()</code>), act and assert (one ATC call) and, when needed, extra test-level assertions.</li><li>Mark smoke tests with the <code>tag: ['@critical']</code> property, never in the title.</li><li><code>DataFactory</code> is reachable from the fixture as <code>ui.data</code> (and <code>api.data</code>).</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/e2e/module-example/example.test.ts</span></div><pre class="code">  test('PROJ-200: should complete example flow successfully', { tag: ['@critical'] }, async ({ ui }) =&gt; {
+    const testData = ui.data.createCredentials();
+
+    await ui.example.submitFormWithValidData({
+      email: testData.email,
+      password: testData.password,
+    });
+
+    await expect(ui.page).toHaveURL(/.*dashboard.*/);
+  });</pre></div></div></div>
+</section>
+<section class="slide" data-act="Specs">
+  <h2 class="tt">Integration specs: no browser</h2>
+  <div class="path">tests/integration/module-example/example.test.ts · tests/integration/auth/user-session.test.ts</div>
+  <div class="tour"><ul><li>An API spec needs no browser: it uses the <code>{ api }</code> fixture directly and ATCs return the tuple <code>[response, body, sentPayload]</code>.</li><li><code>sentPayload</code> (third element) lets the spec compare the response against exactly what the ATC sent, for example <code>body.user.email</code> against <code>sentPayload.email</code>.</li><li>Error ATCs (<code>createResourceWithInvalidData</code>) validate the error response themselves, so the spec only builds the invalid payload.</li><li><code>ApiFixture</code> loads the token from <code>api-state.json</code> automatically, so specs make authenticated calls without logging in.</li><li><code>api.clearAuthToken()</code> removes the token to prove unauthenticated calls return 401. After that, <code>api.auth.authenticateSuccessfully(credentials)</code> obtains and sets a new token at runtime (refresh).</li><li>The <code>integration</code> project depends on <code>api-setup</code>.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/integration/module-example/example.test.ts</span></div><pre class="code">  test('PROJ-100: should create resource successfully', { tag: ['@critical'] }, async ({ api }) =&gt; {
+    const payload = api.data.createCredentials();
+
+    const [_response, body, sentPayload] = await api.example.createResourceSuccessfully(payload);
+
+    expect(body.user.email).toBe(sentPayload.email);
+  });</pre></div><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/integration/auth/user-session.test.ts</span></div><pre class="code">  test('UPEX-100: should fail without token', async ({ api }) =&gt; {
+    api.clearAuthToken();
+
+    const [response] = await api.auth.getCurrentUser();
+
+    expect(response.status()).toBe(401);
+    expect(response.ok()).toBe(false);
+  });</pre></div></div></div>
+</section>
+<section class="slide" data-act="Data">
+  <h2 class="tt">DataFactory and test types</h2>
+  <div class="path">tests/data/DataFactory.ts · tests/data/types.ts</div>
+  <div class="tour"><ul><li><code>DataFactory</code> is the central generator of test data. Golden rule: never static data, always dynamic with Faker, so tests do not collide and stay independent.</li><li>Access it from a component as <code>this.data.createUser()</code> (through <code>TestContext</code>) or by direct import from <code>@DataFactory</code>.</li><li><code>createUser</code> builds a full user and <code>createCredentials</code> only email plus password. Both accept overrides for the fields a test cares about.</li><li><code>uniqueId</code> generates a unique id for tagging test data, useful for cleanup and traceability. The hotel and booking generators are an example structure to expand.</li><li>The types in <code>tests/data/types.ts</code> are test-only (generated data, fixture state), not API contract types. Request and response schemas live in <code>api/schemas/{domain}.types.ts</code> and are imported from <code>@schemas/{domain}.types</code>.</li><li><code>ApiState</code> is the stored API state (token) that setup files write and <code>TestFixture</code> reads. That is how the token reaches specs.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/data/DataFactory.ts</span></div><pre class="code">export class DataFactory {
+  private static uniqueId(): string {
+    return `${Date.now()}-${faker.string.alphanumeric(6)}`;
+  }
+...
+  static createCredentials(overrides?: Partial&lt;TestCredentials&gt;): TestCredentials {
+    return {
+      email: this.testEmail(),
+      password: this.securePassword(),
+      ...overrides,
+    };
+  }</pre></div><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/data/types.ts</span></div><pre class="code">export interface ApiState {
+  token: string
+  tokenType: string
+  expiresIn: number
+  refreshToken: string | null
+  source: 'ui-login' | 'api-login'
+  createdAt: string
+}</pre></div></div></div>
+</section>
+<section class="slide" data-act="Utilities">
+  <h2 class="tt">Decorators: <code>@atc</code></h2>
+  <div class="path">tests/utils/decorators.ts</div>
+  <div class="tour dense"><ul><li><code>@atc(testId, options)</code> connects a method to a Jira or Xray test case and tracks its execution for reporting and TMS synchronization. It uses the TC39 Stage 3 decorator format.</li><li>All ATC logging happens only inside the decorator: base components never log.</li><li>An ATC is a complete mini-flow named <code>{verb}{Resource}{Scenario}</code>, never a single interaction such as <code>fillEmailSuccessfully</code>.</li><li>Options: <code>softFail</code> continues the test when the ATC fails, <code>severity</code> sets the Allure severity (<code>blocker</code> to <code>trivial</code>) and <code>description</code> adds Allure text.</li><li>The ATC body runs inside <code>test.step</code>, so it shows up in <code>KataReporter</code> and in the allure-playwright tree on its own. In the terminal it prints one line per ATC (pass, fail, soft fail) with duration and error message.</li><li>The decorator sets Allure metadata and a link to the Jira test case when <code>config.tms.jira.url</code> is set. Allure may be unavailable (setup projects), so those calls are guarded.</li><li>It pushes an <code>atc</code> annotation on the running test, which <code>KataReporter</code> reads into <code>reports/test-outcomes.json</code>. A <code>test.skip()</code> inside an ATC throws to stop the test and the decorator lets it propagate: it is NOT RUN, never a failure.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/utils/decorators.ts</span></div><pre class="code">export interface AtcOptions {
+  softFail?: boolean
+  description?: string
+  severity?: 'blocker' | 'critical' | 'normal' | 'minor' | 'trivial'
+}
+...
+      try {
+        result.playwrightTestId = test.info().testId;
+        const annotations = test.info().annotations;
+        if (!annotations.some(a =&gt; a.type === 'atc' &amp;&amp; a.description === testId)) {
+          annotations.push({ type: 'atc', description: testId });
+        }
+...
+      try {
+        const stepTitle = `ATC [${testId}]: ${methodName}${formatArgs(args)}`;
+        const returnValue = await test.step(stepTitle, async () =&gt; {
+          return originalMethod.apply(this, args);
+        });</pre></div></div></div>
+</section>
+<section class="slide" data-act="Utilities">
+  <h2 class="tt">Decorators: <code>@step</code> and result storage</h2>
+  <div class="path">tests/utils/decorators.ts</div>
+  <div class="tour"><ul><li><code>@step</code> wraps a helper in <code>test.step()</code> so it appears in the reporter with the method name and formatted arguments (terminal: <code>✓ getBookings({ start: ... })</code>).</li><li>Use it on layer 3 public read-only helpers. Never on <code>@atc</code> methods or layer 2 base methods.</li><li>The <code>ts/no-explicit-any</code> disable exists because decorators need <code>any</code> to stay generic under strict mode.</li><li>Playwright runs each project (setup, e2e, integration, teardown) in separate worker processes, so in-memory maps do not survive. Each ATC execution appends one NDJSON line to a shared file and <code>KataReporter.onEnd()</code> aggregates them.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/utils/decorators.ts</span></div><pre class="code">export function step&lt;T extends (...args: any[]) =&gt; Promise&lt;any&gt;&gt;(
+  originalMethod: T,
+  context: ClassMethodDecoratorContext,
+): T {
+...
+  async function replacement(this: unknown, ...args: any[]) {
+    const stepTitle = `${methodName}${formatArgs(args)}`;
+    return test.step(stepTitle, async () =&gt; {
+      return originalMethod.apply(this, args);
+    });
+...
+export const ATC_PARTIAL_PATH = resolve('reports/.atc_partial.ndjson');
+
+function storeResult(_testId: string, result: AtcResult) {
+  mkdirSync(dirname(ATC_PARTIAL_PATH), { recursive: true });
+  appendFileSync(ATC_PARTIAL_PATH, `${JSON.stringify(result)}\n`);
+}</pre></div></div></div>
+</section>
+<section class="slide" data-act="Utilities">
+  <h2 class="tt">Shared Allure helpers</h2>
+  <div class="path">tests/utils/allure.ts</div>
+  <div class="tour"><ul><li>The Allure helpers centralize attachments in one place (DRY). <code>ApiBase</code> uses them for request and response, as do the interception utilities and any component that attaches data.</li><li><code>generateAllureFilename</code> strips the protocol and query string, keeps the last two path segments, replaces non-alphanumerics and limits length. It gives names like <code>auth_login_POST_response</code>.</li><li><code>attachJsonToAllure</code> fails silently when Allure is unavailable (for example in setup projects) and skips empty data.</li><li><code>attachRequestResponseToAllure</code> attaches request and response bodies only when they contain data, with generated filenames.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/utils/allure.ts</span></div><pre class="code">export function generateAllureFilename(args: AllureFilenameArgs): string {
+  const { url, suffix } = args;
+
+  const cleanUrl = url.split('?')[0].replace(/^https?:\/\/[^/]+/, '');
+
+  const segments = cleanUrl.split('/').filter(Boolean).slice(-2);
+  const pathPart = segments.length &gt; 0 ? segments.join('_') : 'root';
+
+  const cleanPath = pathPart.replace(/[^a-z0-9]/gi, '_').slice(0, 50);</pre></div></div></div>
+</section>
+<section class="slide" data-act="Utilities">
+  <h2 class="tt">KataReporter: the custom reporter</h2>
+  <div class="path">tests/KataReporter.ts</div>
+  <div class="tour dense"><ul><li>A custom Playwright reporter with colored terminal output, step-by-step logging, error snippets and a summary. It is registered in <code>playwright.config.ts</code> next to the other reporters.</li><li><code>printsToStdio()</code> returns <code>true</code> to tell Playwright this reporter owns stdout, so Playwright adds no supplementary output. Test <code>console.log</code> and stderr output is always shown.</li><li>In <code>onEnd</code> it builds one outcome record per test the run knew about, from the whole suite (a test whose dependency project failed has no result at all). It writes them to <code>reports/test-outcomes.json</code> and, in GitHub Actions, to the step summary. It never changes the exit code: Playwright still owns it.</li><li>The headline comes from those records, not from Playwright's <code>ok()</code>, because a setup cascade is <code>ok()</code> there and a known defect is not a pass.</li><li>Order: outcomes are built first because they decide <code>listOnly</code>, which the ATC report reads. The run id is written to both <code>reports/atc_results.json</code> and <code>reports/test-outcomes.json</code> so a reader can tell a stale pair.</li><li><code>playwright test --list</code> reaches <code>onEnd</code> with no attempts: nothing ran, so no outcomes are recorded and the last real run's ATC report is left alone. When no ATC ran, an old report is removed so a later write-back does not import it.</li><li>Workers write partial ATC results as NDJSON and the coordinator process merges them, so the file is complete by the time <code>onEnd()</code> fires. The final status per ATC is conservative: any failed execution is FAIL, all passed is PASS. The step summary is a convenience, the records file is the contract.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/KataReporter.ts</span></div><pre class="code">  printsToStdio(): boolean {
+    return true;
+  }
+...
+    const outcomes = this.generateOutcomesReport(result);
+    this.generateAtcReport();</pre></div></div></div>
+</section>
+<section class="slide" data-act="Utilities">
+  <h2 class="tt">knownDefect and testOutcomes</h2>
+  <div class="path">tests/utils/knownDefect.ts · tests/utils/testOutcomes.ts</div>
+  <div class="tour dense"><ul><li><code>knownDefect(key)</code> marks the running test as blocked by a known product defect in one call, so the expected-failure flag and the defect key never drift apart. Put the key in the title too (<code>@blocked:BK-999</code>) and call it first in the test body.</li><li><code>KataReporter</code> classifies it as <code>known-defect</code> while it fails and as <code>unexpected-pass</code> (an action item) once it passes (ADR-0020). A bare <code>test.fail()</code> still counts as <code>known-defect</code>, but also raises the action item <code>known-defect-without-key</code>. That is why the helper takes the key.</li><li><code>testOutcomes.ts</code> gives every test a run knows about exactly one outcome class and computes the headline from those classes, not from Playwright's <code>ok()</code> or Allure's status.</li><li>It exists because a test skipped by a failed <code>beforeAll</code> is <code>ok()</code> in Playwright, a failed setup project leaves its dependents with no result, and Allure files an expected failure (<code>test.fail</code>) as passed. A headline can say everything passed while known defects and setup failures hide in it.</li><li>Setup cascade signature: <code>status: 'skipped'</code>, <code>expectedStatus: 'passed'</code> and no <code>skip</code> or <code>fixme</code> annotation. A conditional <code>test.skip()</code> does carry the annotation, so it stays skipped.</li><li>Records are built from <code>suite.allTests()</code>, never from the <code>onTestEnd</code> calls received, because a failed dependency project or <code>--max-failures</code> leaves tests with no results.</li><li><code>knownDefectKey</code> takes the key from a <code>known-defect</code> annotation whose whole value is a key, from the <code>@blocked:{BUG-KEY}</code> tag or from a <code>test.fail</code> description starting with <code>Blocked by {BUG-KEY}</code>. Free text never mints a key: fragments such as <code>UTF-8</code> or <code>SHA-256</code> are not keys.</li><li><code>TEST_STATUS_OF_CLASS</code> maps classes to TMS statuses. Failures that were not observed (the body never ran) become BLOCKED in <code>testStatusOf</code>, because PASSED and FAILED need an observation.</li><li><code>outcomeHeadline</code> is green only when nothing failed, nothing passed unexpectedly, no action item is open and every test was reached. Playwright's run status still counts: a worker crash or a global setup error fails the run while every record reads clean.</li><li>The module is pure: no Playwright runtime import, no file system and no tracker call. Its unit tests (<code>testOutcomes.test.ts</code>, <code>xrayResults.test.ts</code>) run with <code>bun test tests/utils</code>, and Playwright never collects them because every project has its own <code>testMatch</code>.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/utils/knownDefect.ts</span></div><pre class="code">export function knownDefect(defectKey: string, reason?: string): void {
+  test.info().annotations.push({ type: 'known-defect', description: defectKey });
+  test.fail(true, reason === undefined ? `Blocked by ${defectKey}` : `Blocked by ${defectKey}: ${reason}`);
+}</pre></div><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/utils/testOutcomes.ts</span></div><pre class="code">export const TEST_STATUS_OF_CLASS = {
+  'passed': 'PASSED',
+  'failed': 'FAILED',
+  'known-defect': 'FAILED',
+  'unexpected-pass': 'PASSED',
+  'skipped': 'NOT RUN',
+} as const satisfies Record&lt;OutcomeClass, TestStatus&gt;;</pre></div></div></div>
+</section>
+<section class="slide" data-act="Utilities">
+  <h2 class="tt">xrayResults: the Xray import body</h2>
+  <div class="path">tests/utils/xrayResults.ts</div>
+  <div class="tour dense"><ul><li>It builds the Xray JSON body for <code>POST /api/v2/import/execution</code> from one or more <code>reports/atc_results.json</code>. The local write-back (<code>jiraSync.ts</code>) and the CI <code>XrayImport</code> job in <code>.github/workflows/regression.yml</code> share it, so both follow one rule.</li><li>Why Xray JSON and not JUnit: Xray creates a new Generic Test for every JUnit testcase without a <code>test_key</code> property, and a Playwright testcase calls zero, one or several ATCs. Xray JSON creates a Test only when an entry carries <code>testInfo</code>, which this module never writes. So an import can only write runs onto existing Tests.</li><li>The ATC id is the Test key: one ATC is one TMS ticket, and every entry is <code>testKey: &lt;atc id&gt;</code>.</li><li><code>buildXrayTests</code> marks FAILED when any execution failed and PASSED otherwise. When every execution was a runtime skip, the ATC is left out (NOT RUN, ADR-0020).</li><li><code>addUnfinishedAtcs</code>: the <code>atc</code> annotation is pushed when an ATC starts and the record only when it ends. A test that timed out inside an ATC (for example a non-Playwright await that never reaches the decorator's catch) has the first without the second. Those ATCs are sent as FAILED using <code>test-outcomes.json</code>.</li><li>Both report files carry the run id <code>KataReporter</code> stamped: a report from another run is refused as stale.</li><li><code>AtcRun</code> declares <code>playwrightTestId</code> here because <code>bun sync</code> delivers this file while <code>decorators.ts</code> stays the project's own copy, which may predate it. That keeps this file compiling against either copy.</li><li>CLI (<code>bun run xray:payload</code>): <code>--execution &lt;KEY&gt; --out &lt;file&gt; &lt;report...&gt;</code>. It exits 1 with one line naming every unreadable or stale report or non-Test-key id, and writes nothing when no ATC result is left. Whether the key exists is Xray's call.</li><li>The import body always targets an existing Test Execution (<code>testExecutionKey</code>), never <code>info</code>.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/utils/xrayResults.ts</span></div><pre class="code">  for (const [testId, executions] of Object.entries(results)) {
+    const ran = executions.filter(e =&gt; e.status !== 'SKIP');
+    if (ran.length === 0) {
+      continue;
+    }
+    const finalStatus = ran.some(e =&gt; e.status === 'FAIL') ? 'FAILED' : 'PASSED';
+    const lastExecution = ran[ran.length - 1];
+
+...
+export function buildXrayPayload(executionKey: string, results: Record&lt;string, AtcRun[]&gt;): XrayExecutionPayload {
+  return { testExecutionKey: executionKey, tests: buildXrayTests(results) };
+}</pre></div></div></div>
+</section>
+<section class="slide" data-act="Utilities">
+  <h2 class="tt">jiraSync: the write-back to Jira and Xray</h2>
+  <div class="path">tests/utils/jiraSync.ts</div>
+  <div class="tour dense"><ul><li><code>jiraSync.ts</code> runs after the Playwright process exits (<code>bun run test</code>, then <code>bun run test:sync</code>, gated on <code>AUTO_SYNC=true</code>). It is deliberately not called from <code>global.teardown.ts</code>: <code>KataReporter.onEnd()</code> writes <code>reports/atc_results.json</code> after the teardown project, so an in-process call would read a stale file or none.</li><li>Targets: Xray Cloud (import of an Xray JSON body) and Jira Direct (a custom field per test).</li><li>Import modes (<code>XrayImportPayload</code>): <code>testExecutionKey</code> writes runs onto an existing Test Execution, and <code>info</code> lets Xray create a new one. The <code>info</code> schema is closed and has no parent field, so an Execution created that way cannot be attached to the QA Test Artifacts epic by this call.</li><li>Preferred path: write onto an Execution that already exists (the RTR created by <code>/regression-testing</code>, or the sprint-close STR). It already carries its parent epic, Test Environment, <code>testPlan</code> link and ratified title, so nothing is invented.</li><li>Fallback path (no <code>STP_EXECUTION_KEY</code>): Xray creates the Execution from <code>info</code> and it lands unparented. No later call can adopt it, because reparenting is a Jira REST <code>PUT /issue/{key}</code> that needs Atlassian credentials the Xray provider lacks. The code does what the API allows: ratified RTR title, Test Environment from the active env and the <code>testPlanKey</code> link when <code>RTP_KEY</code> is set, added only when non-empty because Xray rejects an empty string.</li><li><code>STP_EXECUTION_KEY</code> guard: it invites handing it a Test Plan key. Xray writes runs into Test Executions only and a Plan derives its status from them, so an import aimed at one lands nowhere useful. <code>readIssueType</code> is diagnostic only: missing credentials, unreachable Jira or an unexpected payload return <code>null</code>, because a diagnostic must never become a new blocker.</li><li>Each ATC is one <code>tests</code> entry with <code>testKey</code> only and no <code>testInfo</code>, so Xray cannot create a Test from the import. An id that is not a Test key stops the write-back before any network call, and when every ATC was skipped at runtime there is nothing to send, because Xray's schema needs at least one entry.</li><li>In CI a missing report means the pipeline is wired wrong (the command runs after Playwright), so it fails loudly (issue 27: the old silent return hid the broken write-back for months). Locally it is ordinary and stays a warning. When every ATC hung, <code>test-outcomes.json</code> alone is enough, because it is then the only record that they ran.</li><li><code>resolveTestStatusField</code>: Jira custom-field ids are per instance and a site migration reassigns them, so <code>.agents/jira-fields.json</code> is the single source of truth and <code>JIRA_TEST_STATUS_FIELD</code> is only an explicit override. With neither, the caller aborts instead of PUTting an empty field key, which Jira answers with an opaque 400. The title grammar is <code>{ACRONYM}: {scope-id}: {descriptor}</code>, defined in <code>.agents/skills/agentic-qa-core/references/planning-ladder.md</code>.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/utils/jiraSync.ts</span></div><pre class="code">  if (stpExecutionKey) {
+    const issueType = await readIssueType(stpExecutionKey);
+    const kind = issueType?.toLowerCase() ?? '';
+
+    if (issueType === null) {
+...
+    else if (kind.includes('test plan')) {
+      console.error(
+        `[ERROR] STP_EXECUTION_KEY=${stpExecutionKey} is a "${issueType}": that is the `
+...
+    const payload: XrayImportPayload = stpExecutionKey
+      ? { testExecutionKey: stpExecutionKey, tests }
+      : {</pre></div></div></div>
+</section>
+<section class="slide" data-act="Setup and teardown">
+  <h2 class="tt">Setup: global and authentication</h2>
+  <div class="path">tests/setup/global.setup.ts · ui-auth.setup.ts · api-auth.setup.ts</div>
+  <div class="tour"><ul><li><code>global.setup.ts</code> is the root project and runs first: it creates required directories and validates config. <code>ui-setup</code> and <code>api-setup</code> depend on it.</li><li>When <code>AUTO_SYNC</code> is enabled it validates the resolved TMS credentials from <code>config.tms</code>, the single resolution point. Local runs warn and continue, CI runs exit non-zero so missing secrets fail the workflow loudly. The Jira host message does not send the operator to edit an env var, because the host comes from <code>.agents/project.yaml</code>.</li><li><code>ui-auth.setup.ts</code> logs in once through the login page and intercepts the JWT with <code>page.waitForResponse()</code>. One authentication produces both a browser session and an API token, with no separate API call.</li><li>Outputs: <code>storageState</code> (cookies and localStorage) for UI tests and <code>api-state.json</code> (the token) for API calls made within E2E tests. It depends on <code>global-setup</code> and <code>e2e</code> depends on it.</li><li>Sequence: navigate with <code>LoginPage.goto()</code> outside the ATC, register the interception before triggering login, run the <code>loginSuccessfully()</code> ATC (it triggers login and the token fetch), capture the token, verify one was obtained, then save both states.</li><li><code>api-auth.setup.ts</code> authenticates directly through <code>AuthApi.authenticateSuccessfully()</code> (an ATC) and saves the JWT to <code>api-state.json</code> for integration tests. It depends on <code>global-setup</code> and <code>integration</code> depends on it. The target app logs in with an <code>email</code> field and the token is attached to Allure for debugging.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/setup/ui-auth.setup.ts</span></div><pre class="code">  const tokenPromise = page.waitForResponse(
+    resp =&gt; resp.url().includes(config.auth.tokenEndpoint)
+      &amp;&amp; resp.request().method() === 'POST'
+      &amp;&amp; resp.status() === 200,
+    { timeout: 30000 },
+  );
+
+  await ui.login.loginSuccessfully(credentials);</pre></div><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/setup/api-auth.setup.ts</span></div><pre class="code">  const [response, tokenData] = await api.auth.authenticateSuccessfully(credentials);</pre></div></div></div>
+</section>
+<section class="slide" data-act="Setup and teardown">
+  <h2 class="tt">Global teardown</h2>
+  <div class="path">tests/teardown/global.teardown.ts</div>
+  <div class="tour"><ul><li>It runs last, after e2e and integration, and prints the ATC coverage summary read from the NDJSON partial file, because <code>KataReporter.onEnd()</code> has not fired yet.</li><li>It does no sync: <code>reports/atc_results.json</code> is written by <code>onEnd()</code>, which fires after every project including this teardown. A sync started here would read a file that does not exist yet (CI) or the previous run's file (local). The write-back runs as <code>bun run test:sync</code> after Playwright exits.</li><li>When write-back is off it says so loudly: a silent no-op is why nobody noticed that results never reached Jira in the shipped configuration.</li><li>The message names the variable that actually applies. The jira-native modality has no Test Executions, so pointing its users at an execution key would teach a TMS model that does not exist on their instance.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/teardown/global.teardown.ts</span></div><pre class="code">teardown('Global Teardown: report ATC coverage', () =&gt; {
+...
+  if (existsSync(ATC_PARTIAL_PATH)) {
+    try {
+      const lines = readFileSync(ATC_PARTIAL_PATH, 'utf-8').split('\n').filter(Boolean);</pre></div></div></div>
+</section>
+<section class="slide" data-act="Lint">
+  <h2 class="tt">Which KATA rules <span class="grad-text">lint checks</span></h2>
+  <table class="cmp small"><thead><tr><th>Rule</th><th>What it blocks</th><th>Doctrine</th></tr></thead><tbody><tr><td><code>kata/layer-imports</code></td><td>A spec imports <code>test</code> from <code>@TestFixture</code>, not from <code>@playwright/test</code>. Faker only in <code>DataFactory</code>. <code>@openapi</code> only under <code>api/schemas/</code>. No component imports another. Layers 1 to 3 import no Fixtures or Steps. <code>TestContext</code> imports no <code>@api</code>, <code>@ui</code> or <code>@steps</code>.</td><td>kata-invariants.md §1, §2, §5</td></tr><tr><td><code>kata/atc-no-atc-call</code></td><td>An <code>@atc</code> method never calls another <code>@atc</code> method. Shared steps go to a helper or a Steps module.</td><td>kata-invariants.md §3</td></tr><tr><td><code>kata/no-decorator-in-base</code></td><td>Bases and <code>TestContext</code> carry no decorators. <code>@atc</code> and <code>@step</code> go on the domain component method.</td><td>kata-architecture.md §10</td></tr><tr><td><code>kata/no-raw-page-in-spec</code></td><td>A spec never destructures <code>page</code> from the callback. Use <code>ui</code>, <code>api</code> or <code>test</code>.</td><td>kata-invariants.md §2</td></tr><tr><td><code>max-params</code></td><td>At most 2 positional parameters on layers 2, 3 and 3.5. With 3 or more, an object. <code>ApiBase.ts</code> is exempt by contract.</td><td>kata-invariants.md §3</td></tr><tr><td><code>max-lines</code></td><td>A size cap for domain components, so they stay reviewable.</td><td>kata-invariants.md §3</td></tr><tr><td><code>no-restricted-imports</code> (<code>KATA_IMPORT_ALIASES</code>)</td><td>No relative import (<code>./</code> or <code>../</code>) under <code>tests/**</code>. Use the aliases from <code>tsconfig.base.json</code>.</td><td>kata-invariants.md §5</td></tr><tr><td><code>playwright/no-wait-for-timeout, no-wait-for-selector, no-networkidle</code></td><td>Fixed and brittle waits.</td><td>kata-invariants.md §3</td></tr><tr><td><code>playwright/no-nth-methods, no-force-option</code></td><td>Locators and clicks that break on refactor.</td><td>kata-invariants.md §3</td></tr><tr><td><code>playwright/no-conditional-expect</code></td><td>Assertions hidden inside branches.</td><td>kata-invariants.md §6</td></tr><tr><td><code>playwright/missing-playwright-await, no-useless-not, no-focused-test, no-page-pause, no-element-handle, no-skipped-test</code></td><td>General Playwright hygiene.</td><td>no section of its own</td></tr></tbody></table>
+  <div class="callout info"><p>The severity of this whole block is set by <code>KATA_ENFORCEMENT_LEVEL</code> in <code>eslint.config.base.js</code>: one constant decides whether reports are warnings or errors. The eslint-plugin-playwright rules <code>expect-expect</code>, <code>prefer-ending-with-an-expect</code>, <code>no-standalone-expect</code> and <code>no-raw-locators</code> are off on purpose, because they contradict KATA rules 4 and 6 (assertions live in ATCs and locators live in components).</p></div>
+</section>
+<section class="slide" data-act="Closing" style="align-items:center">
+  <h2 style="text-align:center">The source of truth is the <span class="grad-text">doctrine</span></h2>
+  <p style="text-align:center;max-width:720px;margin:0 auto 1.2rem">This deck explains the code. The rules live in two documents, and if anything here contradicts them, they win.</p>
+  <div class="cards c2" style="max-width:1000px;width:100%" data-stagger><div class="card hl"><h3><code>.agents/skills/test-automation/references/kata-architecture.md</code></h3><p>The layers, the folder structure, the ATC rules, fixtures, Steps and decorators.</p></div><div class="card hl"><h3><code>.agents/skills/framework-development/references/kata-invariants.md</code></h3><p>The invariants that are not negotiable and which lint rule covers each one.</p></div></div>
+  <p style="text-align:center;margin-top:1.2rem;color:var(--text-3)">The curriculum decks (KATA Bridge, Automation Patterns) teach how to think in KATA. This one walks the real template code.</p>
+</section>
+<script>
+(function(){
+'use strict';
+const $=(s,r)=>(r||document).querySelector(s);
+const $$=(s,r)=>Array.from((r||document).querySelectorAll(s));
+const slides=$$('.slide'), N=slides.length;
+let cur=0;
+const progress=$('#progress'), counter=$('#counter'), actLabel=$('#act-label');
+function go(i){
+  cur=Math.max(0,Math.min(N-1,i));
+  slides.forEach((s,k)=>s.classList.toggle('is-active',k===cur));
+  progress.style.width=((cur+1)/N*100)+'%';
+  counter.textContent=(cur+1)+' / '+N;
+  actLabel.textContent=slides[cur].dataset.act||'';
+  history.replaceState(null,'','#/'+(cur+1));
+}
+const fromHash=()=>{const m=location.hash.match(/^#\/(\d+)/);go(m?parseInt(m[1],10)-1:0);};
+window.addEventListener('hashchange',fromHash);
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();go(cur+1);}
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(cur-1);}
+  else if(e.key==='Home')go(0);
+  else if(e.key==='End')go(N-1);
+  else if(e.key==='f'||e.key==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+});
+fromHash();
+})();
+</script>
+<style id="upex-mobile-style">
+@media (max-width:768px){
+  .slide{padding:max(6vh,52px) 5vw 10vh;overflow-y:auto;justify-content:flex-start}
+  .cols,.cols-32,.tour,.cards.c3,.cards.c2{grid-template-columns:1fr}
+  #help-hint,#act-label{display:none}
+}
+@media (pointer:coarse){#help-hint{display:none}}
+</style>
+<script id="upex-mobile-nav">
+(function(){
+'use strict';
+var send=function(key){document.dispatchEvent(new KeyboardEvent('keydown',{key:key,bubbles:true}))};
+var x0=null,y0=null,skip=false;
+document.addEventListener('touchstart',function(e){
+  var t=e.target;
+  skip=!!(t&&t.closest&&t.closest('textarea,input,button,pre,table'));
+  var p=e.changedTouches[0]; x0=p.clientX; y0=p.clientY;
+},{passive:true});
+document.addEventListener('touchend',function(e){
+  if(x0===null||skip) return;
+  var p=e.changedTouches[0], dx=p.clientX-x0, dy=p.clientY-y0;
+  x0=y0=null;
+  if(Math.abs(dx)>60&&Math.abs(dx)>2*Math.abs(dy)) send(dx<0?'ArrowRight':'ArrowLeft');
+},{passive:true});
+})();
+</script>
+
+</body>
+</html>
