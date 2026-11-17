@@ -1011,6 +1011,13 @@ export const KATA_IMPORT_ALIASES = { files: ['tests/**/*.ts'], rules: {} };
     expect(validateEslintBlockWiring(root)).toEqual([]);
   });
 
+  test('KATA_ENFORCEMENT_LEVEL is a severity string, never demanded as a block', () => {
+    const root = contractFixture();
+    write(root, 'eslint.config.base.js', 'export const KATA_ENFORCEMENT_LEVEL = \'warn\';\nexport const KATA_RULES = {};\n');
+    write(root, 'eslint.config.js', 'export default antfu({}, KATA_RULES);\n');
+    expect(validateEslintBlockWiring(root)).toEqual([]);
+  });
+
   test('a repo without the split config is not a finding', () => {
     expect(validateEslintBlockWiring(contractFixture())).toEqual([]);
   });

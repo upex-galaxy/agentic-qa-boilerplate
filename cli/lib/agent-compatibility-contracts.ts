@@ -1309,11 +1309,13 @@ export function validateEslintBlockWiring(root = process.cwd()): string[] {
   catch { return []; }
 
   // Scoped blocks are SCREAMING_SNAKE exports; `BASE_ESLINT_OPTIONS` is the
-  // options object spread into the first argument, not a block, so it is
-  // excluded by name.
+  // options object spread into the first argument, and `KATA_ENFORCEMENT_LEVEL`
+  // is the severity string the KATA blocks read, so neither is a block and
+  // both are excluded by name.
+  const notBlocks = new Set(['BASE_ESLINT_OPTIONS', 'KATA_ENFORCEMENT_LEVEL']);
   const blocks = [...base.matchAll(/^export const ([A-Z][A-Z0-9_]*)\s*=/gm)]
     .map(m => m[1])
-    .filter(name => name !== 'BASE_ESLINT_OPTIONS');
+    .filter(name => !notBlocks.has(name));
 
   // Comments are stripped before the search, and the search is word-bounded.
   // Both matter, and the first one was a live hole the moment this check was
