@@ -1,23 +1,8 @@
-/**
- * KATA Architecture - Global Setup (Project)
- *
- * Runs FIRST before all other projects.
- * Prepares the test environment: creates directories, validates config.
- *
- * Dependencies: None (this is the root)
- * Dependents: ui-setup, api-setup
- */
-
 import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { test as setup } from '@playwright/test';
 import { config, env } from '@variables';
 
-/**
- * Prepare test environment
- *
- * Creates required directories and validates environment configuration.
- */
 setup('Global Setup: prepare environment', async () => {
   console.log(`\n${'='.repeat(60)}`);
   console.log('KATA Architecture - Global Setup');
@@ -26,7 +11,6 @@ setup('Global Setup: prepare environment', async () => {
   console.log(`CI Mode: ${env.isCI ? 'Yes' : 'No'}`);
   console.log(`${'='.repeat(60)}\n`);
 
-  // Ensure required directories exist
   const directories = [
     'test-results',
     'test-results/screenshots',
@@ -44,19 +28,11 @@ setup('Global Setup: prepare environment', async () => {
     }
   }
 
-  // Validate TMS configuration if AUTO_SYNC is enabled
   validateTmsConfig();
 
   console.log('[OK] Global setup complete\n');
 });
 
-/**
- * Validates resolved TMS credentials when AUTO_SYNC is enabled.
- *
- * Reads values from `config.tms`, the single resolution point for Atlassian /
- * Xray credentials. Local runs emit a warning and continue; CI runs escalate
- * to a non-zero exit code so missing secrets fail the workflow loudly.
- */
 function validateTmsConfig(): void {
   if (!config.tms.autoSync) {
     return;
@@ -74,9 +50,7 @@ function validateTmsConfig(): void {
   }
   else if (config.tms.provider === 'jira') {
     if (!config.tms.jira.url) {
-      // Not an env var: the host comes from .agents/project.yaml. Naming the
-      // variable here would send the operator to edit a file that no longer
-      // carries it.
+      // Not an env var: the host comes from .agents/project.yaml.
       missing.push('issue_tracker.atlassian_url in .agents/project.yaml (set it with `bun run agents:setup`)');
     }
     if (!config.tms.jira.user) {

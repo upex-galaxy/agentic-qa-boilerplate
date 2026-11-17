@@ -1,13 +1,3 @@
-/**
- * KATA Architecture - Custom Reporter
- *
- * Rich terminal output for test execution with colorful status indicators.
- * Provides detailed step-by-step logging, error snippets, and summary reports.
- *
- * Usage in playwright.config.ts:
- *   reporter: [['./tests/utils/KataReporter.ts'], ...otherReporters]
- */
-
 import type {
   FullConfig,
   FullResult,
@@ -39,7 +29,6 @@ import {
 } from '@utils/testOutcomes';
 import { env, config as testConfig } from '@variables';
 
-// ANSI Color Codes
 const colors = {
   reset: '\x1B[0m',
   bold: '\x1B[1m',
@@ -233,14 +222,12 @@ class KataReporter implements Reporter {
 
     console.groupEnd();
 
-    // Update test data
     const index = this.testResults.indexOf(testRun);
     this.testResults[index].testStatus = result.status;
     this.testResults[index].testDuration = result.duration;
   }
 
   onStdOut(chunk: string | Buffer, _test: void | TestCase, result: void | TestResult) {
-    // Always show stdout from tests (console.log, etc.)
     const output = chunk.toString().trim();
     if (output) {
       console.log(output);
@@ -251,7 +238,6 @@ class KataReporter implements Reporter {
   }
 
   onStdErr(chunk: string | Buffer, _test: void | TestCase, result: void | TestResult) {
-    // Always show stderr from tests
     const output = chunk.toString().trim();
     if (output) {
       console.error(output);
@@ -261,10 +247,6 @@ class KataReporter implements Reporter {
     }
   }
 
-  /**
-   * Indicates this reporter prints to stdout.
-   * When true, Playwright knows not to add its own supplementary output.
-   */
   printsToStdio(): boolean {
     return true;
   }
@@ -302,14 +284,12 @@ class KataReporter implements Reporter {
       interrupted: ' INTERRUPTED - execution was interrupted ',
     };
 
-    // Summary header
     console.log(
       `\n${colors.bgYellow}${colors.bgBlack}%s${colors.reset}`,
       '📊 TEST REPORT SUMMARY:',
       '\n',
     );
 
-    // Individual test results (sorted by execution order)
     const sorted = [...this.testResults].sort((a, b) => a.testNumber - b.testNumber);
     console.group();
     for (const test of sorted) {
@@ -330,11 +310,9 @@ class KataReporter implements Reporter {
     }
     console.groupEnd();
 
-    // Overall result
     console.log('\n', `⏰ Test Execution Ended in ${duration.toFixed(2)} seconds.`);
 
-    // The headline comes from the outcome records, never from Playwright's
-    // ok() alone: a setup cascade is ok() there, a known defect is not a pass.
+    // Headline comes from outcome records, not Playwright ok(): a setup cascade is ok() there, a known defect is not a pass.
     const headline = outcomes ? outcomeHeadline(outcomes.summary, result.status) : undefined;
     const message = headline ? ` ${headline.text} ` : resultMessages[result.status];
     const green = headline ? headline.ok : result.status === 'passed';
@@ -371,14 +349,6 @@ class KataReporter implements Reporter {
     console.log(colors.reset);
   }
 
-  // Helper Methods
-
-  /**
-   * One outcome record per test the run knew about, built from the whole
-   * suite (a test whose dependency project failed has no result at all), then
-   * written to reports/test-outcomes.json and, in GitHub Actions, the step
-   * summary. Never changes the exit code: Playwright still owns it.
-   */
   private generateOutcomesReport(result: FullResult): OutcomesDocument | undefined {
     if (this.rootSuite === undefined || this.fullConfig === undefined) {
       return undefined;
@@ -397,7 +367,6 @@ class KataReporter implements Reporter {
         id: test.id,
         title: test.title,
         titlePath: test.titlePath(),
-        // Repo-relative (the run's cwd), not relative to the config's testDir
         file: relative(process.cwd(), test.location.file),
         line: test.location.line,
         project,
@@ -414,8 +383,7 @@ class KataReporter implements Reporter {
       dependencies[project.name] = project.dependencies;
     }
 
-    // `playwright test --list` reaches onEnd too, with no attempt anywhere:
-    // nothing ran, so there is no outcome to record (and no headline to bend)
+    // `--list` reaches onEnd with no attempt: nothing ran, so there is no outcome to record.
     if (isListOnlyRun(result.status, inputs)) {
       this.listOnly = true;
       return undefined;
@@ -482,16 +450,9 @@ class KataReporter implements Reporter {
     return colors.red;
   }
 
-  /**
-   * Aggregate NDJSON partial results into the final JSON report.
-   * Runs in the coordinator process (not a worker), so the file is
-   * guaranteed to be complete by the time onEnd() fires.
-   */
   private generateAtcReport(outputPath = 'reports/atc_results.json') {
     if (!existsSync(ATC_PARTIAL_PATH)) {
-      // No ATC ran: a report left by an earlier run must not survive as this
-      // run's results (a later write-back would import it). `--list` ran
-      // nothing at all, so it leaves the last real run's report alone.
+      // No ATC ran: drop a stale report so a later write-back does not import it; `--list` leaves it alone.
       if (!this.listOnly && existsSync(outputPath)) {
         unlinkSync(outputPath);
       }
@@ -511,8 +472,6 @@ class KataReporter implements Reporter {
       }
     }
 
-    // Count unique ATCs with conservative status:
-    // ALL executions passed → PASS, ANY failed → FAIL
     let passed = 0;
     let failed = 0;
     let skipped = 0;
@@ -550,7 +509,6 @@ class KataReporter implements Reporter {
     writeFileSync(outputPath, JSON.stringify(report, null, 2));
     console.log(`📊 ATC Report generated: ${outputPath}`);
 
-    // Clean up partial NDJSON
     unlinkSync(ATC_PARTIAL_PATH);
   }
 
@@ -566,7 +524,6 @@ class KataReporter implements Reporter {
       `---- 🔎 Test Output: ${statusIcons[result.status]}${testName}`,
     );
 
-    // Guard: no error object, nothing to log
     if (result.error === undefined) {
       return;
     }
@@ -595,7 +552,6 @@ class KataReporter implements Reporter {
       timedOut: '⌛',
       interrupted: '⚠️',
     };
-    // Guard: no status provided
     if (status === undefined || status === '') {
       return '❓';
     }
@@ -605,7 +561,6 @@ class KataReporter implements Reporter {
 
 export default KataReporter;
 
-// Type declaration at end (matches working pattern)
 interface TestAttr {
   testID: string
   testNumber: number

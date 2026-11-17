@@ -1,10 +1,4 @@
-/**
- * Unit tests for the outcome classifier. Run with `bun test tests/utils`.
- *
- * The input shapes are the ones measured on @playwright/test 1.60.0 (see the
- * header of testOutcomes.ts). Playwright never collects this file: every
- * project in playwright.config.ts has its own `testMatch`.
- */
+// Unit tests (bun test tests/utils); Playwright never collects this file because every project sets its own testMatch.
 
 import type { OutcomeInput, OutcomeRecord } from '@utils/testOutcomes';
 import {

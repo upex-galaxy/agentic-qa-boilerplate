@@ -1,25 +1,8 @@
-/**
- * KATA Architecture - Layer 2: API Base Component
- *
- * ApiBase provides type-safe HTTP methods for all API components.
- * Uses Playwright's native APIRequestContext for requests.
- * Extends TestContext to inherit Playwright drivers and configuration.
- *
- * Key Pattern:
- * - GET/DELETE return: [APIResponse, TBody]
- * - POST/PUT/PATCH return: [APIResponse, TBody, TPayload]
- * - Always specify response_model (and payload_model for mutations) for type safety
- */
-
 import type { APIRequestContext, APIResponse } from '@playwright/test';
 import type { TestContextOptions } from '@TestContext';
 
 import { TestContext } from '@TestContext';
 import { attachRequestResponseToAllure } from '@utils/allure';
-
-// ============================================
-// Types
-// ============================================
 
 export interface RequestOptions {
   headers?: Record<string, string>
@@ -27,21 +10,13 @@ export interface RequestOptions {
   timeout?: number
 }
 
-// ============================================
-// API Base Class
-// ============================================
-
 export class ApiBase extends TestContext {
-  /** Base URL for API requests */
   readonly apiBaseUrl: string;
 
-  /** Authentication token for Bearer auth */
   authToken: string | null = null;
 
-  /** Default request headers */
   requestHeaders: Record<string, string> = {
-    // Use */* to avoid 406 errors on servers that don't accept application/json explicitly
-    // The response will still be JSON, but the server won't reject the request
+    // Accept */* avoids 406 from servers that reject an explicit application/json.
     'Accept': '*/*',
     'Content-Type': 'application/json',
   };
@@ -51,22 +26,12 @@ export class ApiBase extends TestContext {
     this.apiBaseUrl = this.config.apiUrl;
   }
 
-  // ============================================
-  // Request Accessor with Validation
-  // ============================================
-
-  /**
-   * Get Playwright APIRequestContext instance.
-   * Throws if request is not available.
-   */
   get request(): APIRequestContext {
-    // Prefer page.request if page is available (E2E tests)
-    // page.request shares cookies and storage with the browser
+    // page.request shares cookies and storage with the browser; standalone request otherwise.
     if (this._page) {
       return this._page.request;
     }
 
-    // Fallback to standalone request (API-only tests)
     if (!this._request) {
       throw new Error(
         'Request context is not available. ApiBase requires a request instance. '
@@ -76,33 +41,14 @@ export class ApiBase extends TestContext {
     return this._request;
   }
 
-  // ============================================
-  // Authentication Methods
-  // ============================================
-
-  /**
-   * Set authentication token for subsequent requests.
-   * Token will be included as Bearer token in Authorization header.
-   */
   setAuthToken(token: string) {
     this.authToken = token;
   }
 
-  /**
-   * Clear authentication token.
-   */
   clearAuthToken() {
     this.authToken = null;
   }
 
-  // ============================================
-  // Response Parser Helper
-  // ============================================
-
-  /**
-   * Parse response as JSON with error handling.
-   * Returns empty object if parsing fails.
-   */
   async getResponseJsonObject<T = Record<string, unknown>>(response: APIResponse): Promise<T> {
     const status = response.status();
     const endpoint = response.url().split('?')[0];
@@ -117,32 +63,7 @@ export class ApiBase extends TestContext {
     }
   }
 
-  // ============================================
-  // HTTP Methods - Type Safe with Tuples
-  // ============================================
-
-  /**
-   * Generic GET request with automatic response parsing and Allure attachment.
-   *
-   * @param endpoint - The API endpoint URL
-   * @param options - Optional request options (headers, params, timeout)
-   * @returns Tuple [APIResponse, TBody] - Response object and parsed body
-   *
-   * @example
-   * // With specific interface type
-   * const [response, userData] = await this.apiGET<UserResponse>('/api/user/123');
-   *
-   * // With query parameters
-   * const [response, results] = await this.apiGET<SearchResults>('/api/search', { params: { q: 'test' } });
-   */
-  // The six HTTP helpers below are `protected`, not public, and that is the
-  // KATA layer boundary made mechanical rather than advisory: a test must go
-  // through an ATC or a `@step` helper on a Layer-3 component, never reach
-  // past it to raw HTTP. `kata-architecture.md` §4 has always declared them
-  // `protected`; the code shipped them public, so `api.apiPOST(...)` from a
-  // test compiled fine and skipped the whole component layer with nothing
-  // objecting. Subclasses are unaffected: `this.apiGET(...)` is exactly what
-  // `protected` allows.
+  // protected on purpose: tests go through an ATC or @step helper, never raw HTTP.
   protected async apiGET<TBody = Record<string, unknown>>(
     endpoint: string,
     options: RequestOptions = {},
@@ -158,26 +79,11 @@ export class ApiBase extends TestContext {
 
     const body = await this.getResponseJsonObject<TBody>(response);
 
-    // Allure attachment
     await attachRequestResponseToAllure({ url: endpoint, method: 'GET', responseBody: body });
 
     return [response, body];
   }
 
-  /**
-   * Generic POST request with automatic response parsing and Allure attachment.
-   *
-   * @param endpoint - The API endpoint URL
-   * @param data - Request payload data
-   * @param options - Optional request options (headers, params, timeout)
-   * @returns Tuple [APIResponse, TBody, TPayload] - Response, parsed body, and original payload
-   *
-   * @example
-   * const [response, result, payload] = await this.apiPOST<CreateResponse, CreatePayload>(
-   *   '/api/users',
-   *   { name: 'John', email: 'john@example.com' }
-   * );
-   */
   protected async apiPOST<TBody = Record<string, unknown>, TPayload = Record<string, unknown>>(
     endpoint: string,
     data: TPayload,
@@ -195,7 +101,6 @@ export class ApiBase extends TestContext {
 
     const body = await this.getResponseJsonObject<TBody>(response);
 
-    // Allure attachments
     await attachRequestResponseToAllure({
       url: endpoint,
       method: 'POST',
@@ -206,20 +111,6 @@ export class ApiBase extends TestContext {
     return [response, body, data];
   }
 
-  /**
-   * Generic PUT request with automatic response parsing and Allure attachment.
-   *
-   * @param endpoint - The API endpoint URL
-   * @param data - Request payload data
-   * @param options - Optional request options (headers, params, timeout)
-   * @returns Tuple [APIResponse, TBody, TPayload] - Response, parsed body, and original payload
-   *
-   * @example
-   * const [response, updated, payload] = await this.apiPUT<UserResponse, UpdatePayload>(
-   *   '/api/user/123',
-   *   { name: 'John Updated' }
-   * );
-   */
   protected async apiPUT<TBody = Record<string, unknown>, TPayload = Record<string, unknown>>(
     endpoint: string,
     data: TPayload,
@@ -237,7 +128,6 @@ export class ApiBase extends TestContext {
 
     const body = await this.getResponseJsonObject<TBody>(response);
 
-    // Allure attachments
     await attachRequestResponseToAllure({
       url: endpoint,
       method: 'PUT',
@@ -248,20 +138,6 @@ export class ApiBase extends TestContext {
     return [response, body, data];
   }
 
-  /**
-   * Generic PATCH request with automatic response parsing and Allure attachment.
-   *
-   * @param endpoint - The API endpoint URL
-   * @param data - Request payload data
-   * @param options - Optional request options (headers, params, timeout)
-   * @returns Tuple [APIResponse, TBody, TPayload] - Response, parsed body, and original payload
-   *
-   * @example
-   * const [response, patched, payload] = await this.apiPATCH<UserResponse, PatchPayload>(
-   *   '/api/user/123',
-   *   { status: 'active' }
-   * );
-   */
   protected async apiPATCH<TBody = Record<string, unknown>, TPayload = Record<string, unknown>>(
     endpoint: string,
     data: TPayload,
@@ -279,7 +155,6 @@ export class ApiBase extends TestContext {
 
     const body = await this.getResponseJsonObject<TBody>(response);
 
-    // Allure attachments
     await attachRequestResponseToAllure({
       url: endpoint,
       method: 'PATCH',
@@ -290,26 +165,11 @@ export class ApiBase extends TestContext {
     return [response, body, data];
   }
 
-  /**
-   * Generic POST request with form-urlencoded data (for OAuth2/token endpoints).
-   *
-   * @param endpoint - The API endpoint URL (can be absolute or relative)
-   * @param formData - Form data as key-value pairs
-   * @param options - Optional request options (headers, params, timeout)
-   * @returns Tuple [APIResponse, TBody, Record<string, string>] - Response, parsed body, and form data
-   *
-   * @example
-   * const [response, token, payload] = await this.apiPOSTForm<TokenResponse>(
-   *   '/connect/token',
-   *   { grant_type: 'password', username: 'user', password: 'pass', client_id: 'public' }
-   * );
-   */
   protected async apiPOSTForm<TBody = Record<string, unknown>>(
     endpoint: string,
     formData: Record<string, string>,
     options: RequestOptions = {},
   ): Promise<[APIResponse, TBody, Record<string, string>]> {
-    // Support absolute URLs (for endpoints outside /api/)
     const url = endpoint.startsWith('http') ? endpoint : this.apiEndpoint(endpoint);
     const headers = {
       ...this.buildHeaders(options.headers),
@@ -325,7 +185,6 @@ export class ApiBase extends TestContext {
 
     const body = await this.getResponseJsonObject<TBody>(response);
 
-    // Allure attachments (mask password)
     const safeFormData = { ...formData };
     if (safeFormData.password) {
       safeFormData.password = '***';
@@ -340,16 +199,6 @@ export class ApiBase extends TestContext {
     return [response, body, formData];
   }
 
-  /**
-   * Generic DELETE request with automatic response parsing and Allure attachment.
-   *
-   * @param endpoint - The API endpoint URL
-   * @param options - Optional request options (headers, params, timeout)
-   * @returns Tuple [APIResponse, TBody] - Response object and parsed body
-   *
-   * @example
-   * const [response, result] = await this.apiDELETE<DeleteResponse>('/api/user/123');
-   */
   protected async apiDELETE<TBody = Record<string, unknown>>(
     endpoint: string,
     options: RequestOptions = {},
@@ -365,32 +214,17 @@ export class ApiBase extends TestContext {
 
     const body = await this.getResponseJsonObject<TBody>(response);
 
-    // Allure attachment
     await attachRequestResponseToAllure({ url: endpoint, method: 'DELETE', responseBody: body });
 
     return [response, body];
   }
 
-  // ============================================
-  // Helper Methods
-  // ============================================
-
-  /**
-   * Build full API URL from endpoint using config apiUrl.
-   * Required because Playwright's request context doesn't use baseURL.
-   *
-   * @example
-   * const url = this.apiEndpoint('/users'); // http://localhost:64422/api/users
-   */
   apiEndpoint(endpoint: string): string {
     const base = this.apiBaseUrl.replace(/\/$/, '');
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     return `${base}${cleanEndpoint}`;
   }
 
-  /**
-   * Build request headers with auth token if available
-   */
   buildHeaders(customHeaders?: Record<string, string>) {
     const headers: Record<string, string> = {
       ...this.requestHeaders,

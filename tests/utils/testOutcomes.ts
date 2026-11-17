@@ -1,38 +1,6 @@
-/**
- * KATA Architecture - Test Outcome Classes
- *
- * Gives every test a run knows about exactly ONE outcome class, and computes
- * the run headline from those classes instead of from Playwright's `ok()` or
- * Allure's status (ADR-0020).
- *
- * Why it exists (measured, then rule): Playwright reports a test skipped by a
- * failed `beforeAll` or a failed `describe.serial` sibling as `ok()`, and a
- * failed setup PROJECT leaves its dependents with no result at all. Allure
- * files an expected failure (`test.fail`) as passed. Either way a headline can
- * read "all passed" while known defects and setup failures hide in it.
- *
- * Measured on @playwright/test 1.60.0:
- *   - setup cascade = `status: 'skipped'` + `expectedStatus: 'passed'` + no
- *     `skip`/`fixme` annotation (beforeAll throw, serial sibling failure)
- *   - a conditional `test.skip()` in a hook or describe DOES carry a `skip`
- *     annotation, so it stays `skipped`
- *   - a failed dependency project / `--max-failures` leaves tests with ZERO
- *     results: records must come from `suite.allTests()`, never from the
- *     `onTestEnd` calls received
- *   - runtime annotations reach the reporter (the `atc` ids ride on them)
- *
- * Pure: no Playwright runtime import, no file system, no tracker call.
- * Mapping onto the doctrine's outcome vocabulary
- * (`agentic-qa-core/references/discovery-driven-doctrine.md` §5) goes through
- * the sprint source's `TestStatus`, so the board counts these records with
- * `countedOutcome` unchanged.
- */
+// Playwright reports a setup cascade as ok() and gives dependents of a failed project no result; Allure files test.fail as passed (measured on 1.60.0, ADR-0020).
 
 import type { TestStatus } from '@/cli/lib/sprint-source/types';
-
-// ============================================
-// Vocabulary
-// ============================================
 
 export const OUTCOMES_SCHEMA = 'test-outcomes/1.0';
 export const OUTCOMES_PATH = 'reports/test-outcomes.json';
@@ -40,7 +8,6 @@ export const OUTCOMES_PATH = 'reports/test-outcomes.json';
 export const OUTCOME_CLASSES = ['passed', 'failed', 'known-defect', 'unexpected-pass', 'skipped'] as const;
 export type OutcomeClass = (typeof OUTCOME_CLASSES)[number];
 
-/** Why a test landed in its class. `null` for a plain pass. */
 export type OutcomeCause
   = | 'assertion'
     | 'timeout'
@@ -52,14 +19,9 @@ export type OutcomeCause
 
 export type ActionItem = 'unexpected-pass' | 'known-defect-without-key';
 
-/** Playwright's own statuses, copied so this module needs no runtime import. */
 export type PlaywrightStatus = 'passed' | 'failed' | 'timedOut' | 'skipped' | 'interrupted';
 
-/**
- * The status each class reports to the board. The two failures that were NOT
- * observed (the body never ran because setup failed) are overridden to
- * BLOCKED in `testStatusOf`: PASSED and FAILED need an observation (D21).
- */
+// Failures that were not observed (setup failed, body never ran) are overridden to BLOCKED in testStatusOf (D21).
 export const TEST_STATUS_OF_CLASS = {
   'passed': 'PASSED',
   'failed': 'FAILED',
@@ -68,7 +30,6 @@ export const TEST_STATUS_OF_CLASS = {
   'skipped': 'NOT RUN',
 } as const satisfies Record<OutcomeClass, TestStatus>;
 
-/** Causes whose test body never executed although it was expected to. */
 const NOT_OBSERVED_CAUSES: ReadonlySet<OutcomeCause> = new Set(['setup-cascade', 'dependency-failed']);
 
 export function testStatusOf(outcome: OutcomeClass, cause: OutcomeCause | null): TestStatus {
@@ -77,10 +38,6 @@ export function testStatusOf(outcome: OutcomeClass, cause: OutcomeCause | null):
   }
   return TEST_STATUS_OF_CLASS[outcome];
 }
-
-// ============================================
-// Input and record shapes
-// ============================================
 
 export interface OutcomeAnnotation {
   type: string
@@ -93,7 +50,6 @@ export interface OutcomeAttempt {
   error?: string
 }
 
-/** What the reporter extracts from one `TestCase`; plain data so it can be unit tested. */
 export interface OutcomeInput {
   id: string
   title: string
@@ -101,15 +57,10 @@ export interface OutcomeInput {
   file: string
   line: number
   project: string
-  /**
-   * Identity of the parent suite (describe) INCLUDING the project, so the
-   * same file matched by two projects never shares a cascade root.
-   */
   parentKey: string
   expectedStatus: PlaywrightStatus
   annotations: OutcomeAnnotation[]
   tags: string[]
-  /** Every attempt, in order. Empty = the test never ran. */
   attempts: OutcomeAttempt[]
 }
 
@@ -123,7 +74,6 @@ export interface OutcomeRecord {
   class: OutcomeClass
   testStatus: TestStatus
   cause: OutcomeCause | null
-  /** The failed test that took this one down (setup cascade / dependency). */
   rootTestId: string | null
   attempts: number
   flaky: boolean
@@ -142,9 +92,7 @@ export interface OutcomeSummary {
   knownDefect: number
   unexpectedPass: number
   skipped: number
-  /** Failed tests whose body never ran (setup cascade or failed dependency). */
   setupFailures: number
-  /** Skipped tests the run never reached (max-failures, interrupt). */
   notRun: number
   flaky: number
   actionItems: number
@@ -161,20 +109,13 @@ export interface RunInfo {
 export interface OutcomesDocument {
   schema: typeof OUTCOMES_SCHEMA
   generatedAt: string
-  /** The run id KataReporter also stamps on reports/atc_results.json, so a reader can tell a stale pair. */
   runId?: string
   run: RunInfo
   summary: OutcomeSummary
   records: OutcomeRecord[]
 }
 
-// ============================================
-// Classification
-// ============================================
-
-/** A whole marker value is a key, never a key-shaped fragment of prose (`UTF-8`, `SHA-256`). */
 const DEFECT_KEY = /^[A-Z][A-Z0-9]+-\d+$/;
-/** The only form of a `test.fail` description that names a key (automation-standards §"Blocked by a known bug"). */
 const BLOCKED_BY = /^Blocked by ([A-Z][A-Z0-9]+-\d+)(?![\w-])/;
 const FAILED_STATUSES: ReadonlySet<PlaywrightStatus> = new Set(['failed', 'timedOut']);
 const MAX_ERROR_LEN = 300;
@@ -183,14 +124,7 @@ function hasAnnotation(input: OutcomeInput, ...types: string[]): boolean {
   return input.annotations.some(a => types.includes(a.type));
 }
 
-/**
- * The defect a `test.fail` names, from the first marker that holds a key:
- * a `known-defect` annotation whose whole value is a key, the
- * `@blocked:{BUG-KEY}` tag, or a `test.fail` description that starts with
- * `Blocked by {BUG-KEY}` (`test-automation/references/automation-standards.md`
- * §"Blocked by a known bug"). Free text never mints a key: a reason such as
- * "Broken UTF-8 handling" leaves the record keyless, which is an action item.
- */
+// Free text never mints a key: a reason like "Broken UTF-8 handling" leaves the record keyless, which is an action item.
 export function knownDefectKey(input: Pick<OutcomeInput, 'annotations' | 'tags'>): string | null {
   const exact = [
     ...input.annotations.filter(a => a.type === 'known-defect').map(a => (a.description ?? '').trim()),
@@ -217,7 +151,6 @@ function skipReason(input: OutcomeInput): string | null {
   return annotation.description ? `${annotation.type}: ${annotation.description}` : annotation.type;
 }
 
-/** First line of an error, ANSI-stripped and truncated: the record is a pointer, not the log. */
 export function errorLine(message: string | undefined): string | null {
   if (message === undefined || message === '') {
     return null;
@@ -233,7 +166,6 @@ interface Classified {
   cause: OutcomeCause | null
 }
 
-/** Class of a test from its own last attempt; zero-result tests are resolved by `buildOutcomeRecords`. */
 export function classifyAttempt(input: OutcomeInput): Classified {
   const last = input.attempts.at(-1);
 
@@ -261,12 +193,10 @@ export function classifyAttempt(input: OutcomeInput): Classified {
   if (last.status === 'timedOut') {
     return { outcome: 'failed', cause: 'timeout' };
   }
-  // skipped
   if (hasAnnotation(input, 'skip', 'fixme')) {
     return { outcome: 'skipped', cause: 'skip-annotation' };
   }
-  // Expected to run, skipped with no skip/fixme marker: a beforeAll or a
-  // serial sibling failed and took it down. Never a skip.
+  // Expected to run but skipped with no skip/fixme marker: a beforeAll or serial sibling failed. Never a skip.
   return { outcome: 'failed', cause: 'setup-cascade' };
 }
 
@@ -284,19 +214,13 @@ function transitiveDependencies(project: string, dependencies: Record<string, st
   return seen;
 }
 
-/**
- * One record per test, in input order. `projectDependencies` maps a project
- * name to the projects it depends on (`config.projects[].dependencies`); a
- * test with no result whose dependency failed is a setup failure, not a skip.
- */
 export function buildOutcomeRecords(
   inputs: readonly OutcomeInput[],
   projectDependencies: Record<string, string[]> = {},
 ): OutcomeRecord[] {
   const classified = inputs.map(input => ({ input, ...classifyAttempt(input) }));
 
-  // A root is any test Playwright calls `unexpected`: a plain failure or timeout,
-  // and an unexpected pass, which also stops a serial group or a setup project
+  // A root is any test Playwright calls `unexpected`: a failure, timeout or unexpected pass (which also stops a serial group).
   const isPlainFailure = (c: (typeof classified)[number]) =>
     (c.outcome === 'failed' && (c.cause === 'assertion' || c.cause === 'timeout')) || c.outcome === 'unexpected-pass';
 
@@ -335,8 +259,7 @@ export function buildOutcomeRecords(
     }
 
     const last = input.attempts.at(-1);
-    // Flaky = the last attempt matched the expectation and an earlier one did not
-    // (a `test.fail` that passed first and failed on retry is flaky too)
+    // Flaky = the last attempt matched the expectation and an earlier one did not.
     const flaky = last?.status === input.expectedStatus
       && input.attempts.slice(0, -1).some(a => a.status !== input.expectedStatus);
     const defect = finalOutcome === 'known-defect' || finalOutcome === 'unexpected-pass'
@@ -380,10 +303,6 @@ export function buildOutcomeRecords(
   });
 }
 
-// ============================================
-// Summary and headline
-// ============================================
-
 export function summarizeOutcomes(records: readonly OutcomeRecord[]): OutcomeSummary {
   const count = (predicate: (r: OutcomeRecord) => boolean) => records.filter(predicate).length;
   return {
@@ -405,20 +324,16 @@ function plural(n: number, singular: string, pluralForm = `${singular}S`): strin
 }
 
 export interface Headline {
-  /** Green only when nothing failed, nothing passed unexpectedly, no action item is open and every test was reached. */
   ok: boolean
   text: string
 }
 
-/** The one-line verdict of a run, from the records only. */
 export function outcomeHeadline(summary: OutcomeSummary, runStatus = 'passed'): Headline {
   if (summary.total === 0) {
     return { ok: false, text: 'NO TESTS RAN' };
   }
 
-  // Playwright's run status still counts: an error outside any test (a
-  // worker crash, a throw at file load, a global setup error) fails the run
-  // while every record reads clean.
+  // Playwright's run status still counts: a worker crash or global setup error fails the run while every record reads clean.
   const ok = summary.failed === 0
     && summary.unexpectedPass === 0
     && summary.actionItems === 0
@@ -463,21 +378,15 @@ export function outcomeHeadline(summary: OutcomeSummary, runStatus = 'passed'): 
   return { ok, text: `EXECUTION FAILED: ${parts.join(', ')}` };
 }
 
-/**
- * `playwright test --list` reaches the reporter's onEnd too, with no attempt
- * anywhere: nothing ran, so there is no outcome to record. The records of the
- * last real run stay where they are: a listing is not a run.
- */
+// `playwright test --list` reaches onEnd with no attempts: a listing is not a run, so the last real run's records stay.
 export function isListOnlyRun(runStatus: string, inputs: readonly Pick<OutcomeInput, 'attempts'>[]): boolean {
   return runStatus === 'passed' && inputs.length > 0 && inputs.every(i => i.attempts.length === 0);
 }
 
-/** The banner of a listing: never "passed", since nothing ran. */
 export function listedHeadline(total: number): string {
   return `LISTED ${plural(total, 'TEST')}, NONE RUN`;
 }
 
-/** One line of counts that always follows the headline. */
 export function outcomeCountsLine(summary: OutcomeSummary): string {
   return [
     `${summary.total} total`,
@@ -490,7 +399,6 @@ export function outcomeCountsLine(summary: OutcomeSummary): string {
   ].join(' · ');
 }
 
-/** Human lines for every open action item and every setup root, for the banner and the step summary. */
 export function actionItemLines(records: readonly OutcomeRecord[]): string[] {
   // The same file can run under two projects: name the project so two lines never look like a duplicate
   const named = (r: OutcomeRecord) => (r.project === '' ? r.title : `${r.title} [${r.project}]`);
@@ -519,7 +427,6 @@ export function actionItemLines(records: readonly OutcomeRecord[]): string[] {
   return lines;
 }
 
-/** Markdown block for `$GITHUB_STEP_SUMMARY`: titles and keys only, never error text. */
 export function stepSummaryMarkdown(summary: OutcomeSummary, records: readonly OutcomeRecord[], runStatus = 'passed'): string {
   const headline = outcomeHeadline(summary, runStatus);
   const rows: Array<[string, number]> = [

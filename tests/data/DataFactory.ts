@@ -1,23 +1,8 @@
-/**
- * KATA Architecture - Data Factory
- *
- * Generador centralizado de datos de prueba.
- * Regla de oro: NUNCA datos estáticos, siempre dinámicos con Faker.
- *
- * Acceso:
- *   - Desde componentes: this.data.createUser()
- *   - Import directo: import { DataFactory } from '@DataFactory'
- */
-
 import type { TestBooking, TestCredentials, TestHotel, TestUser } from '@data/types';
 
 import { faker } from '@faker-js/faker';
 
 export class DataFactory {
-  // ============================================
-  // HELPERS PRIVADOS
-  // ============================================
-
   private static uniqueId(): string {
     return `${Date.now()}-${faker.string.alphanumeric(6)}`;
   }
@@ -32,14 +17,6 @@ export class DataFactory {
     return `Test${faker.string.alphanumeric(8)}!`;
   }
 
-  // ============================================
-  // GENERADORES PRINCIPALES
-  // ============================================
-
-  /**
-   * Genera un usuario completo para testing
-   * @param overrides - Propiedades a sobreescribir
-   */
   static createUser(overrides?: Partial<TestUser>): TestUser {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
@@ -54,10 +31,6 @@ export class DataFactory {
     };
   }
 
-  /**
-   * Genera solo credenciales (email + password)
-   * @param overrides - Propiedades a sobreescribir
-   */
   static createCredentials(overrides?: Partial<TestCredentials>): TestCredentials {
     return {
       email: this.testEmail(),
@@ -66,22 +39,10 @@ export class DataFactory {
     };
   }
 
-  /**
-   * Genera un ID único para identificar datos de test
-   * Útil para cleanup y trazabilidad
-   */
   static createTestId(prefix = 'test'): string {
     return `${prefix}-${this.uniqueId()}`;
   }
 
-  // ============================================
-  // PROJECT-SPECIFIC (example structure)
-  // ============================================
-
-  /**
-   * Genera datos de Hotel para testing
-   * TODO: Expandir cuando se necesite
-   */
   static createHotel(overrides?: Partial<TestHotel>): TestHotel {
     return {
       name: `Test Hotel ${faker.location.city()}`,
@@ -91,10 +52,6 @@ export class DataFactory {
     };
   }
 
-  /**
-   * Genera datos de Booking para testing
-   * TODO: Expandir cuando se necesite
-   */
   static createBooking(overrides?: Partial<TestBooking>): TestBooking {
     return {
       confirmationNumber: `CONF-${faker.string.alphanumeric(8).toUpperCase()}`,

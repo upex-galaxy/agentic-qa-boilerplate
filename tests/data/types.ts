@@ -1,16 +1,4 @@
-/**
- * KATA Architecture - Test Data Types
- *
- * Types for test data generation and fixture state.
- * These are TEST-ONLY concepts — NOT API contract types.
- *
- * API contract types (request/response schemas) belong in:
- *   api/schemas/{domain}.types.ts → import from '@schemas/{domain}.types'
- */
-
-// ============================================
-// Generic Types
-// ============================================
+// Test-only types; API contract types live in api/schemas/{domain}.types.ts.
 
 export interface TestUser {
   email: string
@@ -24,10 +12,6 @@ export interface TestCredentials {
   email: string
   password: string
 }
-
-// ============================================
-// Project-Specific Types (example structure)
-// ============================================
 
 export interface TestHotel {
   name: string
@@ -43,14 +27,6 @@ export interface TestBooking {
   emailHash?: string
 }
 
-// ============================================
-// Auth/Fixture State Types
-// ============================================
-
-/**
- * Stored API state for test fixtures
- * Used by setup files and TestFixture for token propagation
- */
 export interface ApiState {
   token: string
   tokenType: string

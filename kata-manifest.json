@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generatedAt": "2026-09-21T13:42:36.993Z",
+  "generatedAt": "2026-11-17T16:53:47.979Z",
   "components": {
     "api": [
       {
@@ -11,12 +11,12 @@
           {
             "id": "PROJ-101",
             "method": "authenticateSuccessfully",
-            "line": 73
+            "line": 22
           },
           {
             "id": "PROJ-102",
             "method": "loginWithInvalidCredentials",
-            "line": 112
+            "line": 46
           }
         ]
       },
@@ -28,12 +28,12 @@
           {
             "id": "PROJ-121",
             "method": "createResourceSuccessfully",
-            "line": 57
+            "line": 18
           },
           {
             "id": "PROJ-122",
             "method": "createResourceWithInvalidData",
-            "line": 88
+            "line": 38
           }
         ]
       }
@@ -47,12 +47,12 @@
           {
             "id": "PROJ-131",
             "method": "submitFormWithValidData",
-            "line": 99
+            "line": 42
           },
           {
             "id": "PROJ-132",
             "method": "submitFormWithInvalidEmail",
-            "line": 122
+            "line": 54
           }
         ]
       },
@@ -64,12 +64,12 @@
           {
             "id": "PROJ-111",
             "method": "loginSuccessfully",
-            "line": 84
+            "line": 29
           },
           {
             "id": "PROJ-112",
             "method": "loginWithInvalidCredentials",
-            "line": 101
+            "line": 37
           }
         ]
       }

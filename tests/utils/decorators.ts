@@ -1,12 +1,3 @@
-/**
- * KATA Architecture - ATC Decorator & Result Tracking
- *
- * The @atc decorator connects test methods to Jira/Xray test cases
- * and tracks execution results for reporting and TMS synchronization.
- *
- * Logging happens ONLY within the decorator - not in base components.
- */
-
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
@@ -15,10 +6,6 @@ import { config } from '@variables';
 import * as allure from 'allure-js-commons';
 
 import { ContentType } from 'allure-js-commons';
-
-// ============================================
-// Types
-// ============================================
 
 export interface AtcResult {
   testId: string
@@ -29,7 +16,6 @@ export interface AtcResult {
   executedAt: string
   duration: number
   softFail: boolean
-  /** Playwright's id of the test that ran this ATC, when one was running. */
   playwrightTestId?: string
 }
 
@@ -39,67 +25,6 @@ export interface AtcOptions {
   severity?: 'blocker' | 'critical' | 'normal' | 'minor' | 'trivial'
 }
 
-// ============================================
-// ATC Decorator
-// ============================================
-
-/**
- * @atc decorator for marking methods as Acceptance Test Cases
- *
- * Connects the method to a Jira/Xray test case and tracks execution.
- * This decorator handles ALL logging - base components should NOT log.
- *
- * Uses TC39 Stage 3 decorator format (Bun/modern TypeScript).
- *
- * @param testId - The Jira/Xray Test ID (e.g., 'UPEX-101')
- * @param options - Optional configuration
- * @param options.softFail - If true, continues execution on failure (default: false)
- * @param options.severity - Allure severity level: 'blocker' | 'critical' | 'normal' | 'minor' | 'trivial'
- * @param options.description - Description for Allure report
- * @examples - Usage
- * Basic Usage - UI Component (a complete mini-flow named {verb}{Resource}{Scenario},
- * never a single interaction such as `fillEmailSuccessfully`)
- * ```typescript
- * @atc('UPEX-101')
- * async loginSuccessfully(credentials: LoginCredentials) {
- *   await this.page.locator('[data-testid="login-email-input"]').fill(credentials.email);
- *   await this.page.locator('[data-testid="login-password-input"]').fill(credentials.password);
- *   await this.page.locator('[data-testid="login-submit-button"]').click();
- *   await expect(this.page).not.toHaveURL(/\/login/);
- * }
- * ```
- *
- * Basic Usage - API Component
- * ```typescript
- *  @atc('UPEX-101')
- * async createUserSuccessfully(data: UserPayload): Promise<[APIResponse, User, UserPayload]> {
- *   const [response, body, payload] = await this.apiPOST<User, UserPayload>('/users', data);
- *   expect(response.status()).toBe(201);
- *   return [response, body, payload];
- * }
- * ```
- *
- * With Options
- * ```typescript
- * @atc('UPEX-102', {
- *   severity: 'critical',
- *   description: 'Validates the complete checkout flow'
- * })
- * async completeCheckoutSuccessfully() { ... }
- *
- * @atc('UPEX-103', { softFail: true })
- * async verifyOptionalBanner() {
- *   // Won't fail the test if this assertion fails
- * }
- * ```
- *
- * Console Output
- * ```typescript
- * ✅ [UPEX-101] loginSuccessfully - PASS (234ms)
- * ❌ [UPEX-102] completeCheckoutSuccessfully - FAIL: Element not found
- * ⚠️ [UPEX-103] Soft fail enabled - continuing execution
- * ```
- */
 export function atc(testId: string, options: AtcOptions = {}) {
   // eslint-disable-next-line ts/no-explicit-any -- Required for decorator flexibility with strict mode
   return function <T extends (...args: any[]) => Promise<any>>(
@@ -124,7 +49,6 @@ export function atc(testId: string, options: AtcOptions = {}) {
         softFail: options.softFail || false,
       };
 
-      // Add Allure metadata
       try {
         allure.label('testId', testId);
 
@@ -136,7 +60,6 @@ export function atc(testId: string, options: AtcOptions = {}) {
           allure.severity(options.severity);
         }
 
-        // Link to Jira test case
         if (config.tms.jira.url !== '') {
           allure.link(`${config.tms.jira.url}/browse/${testId}`, testId, 'tms');
         }
@@ -145,9 +68,7 @@ export function atc(testId: string, options: AtcOptions = {}) {
         // Allure might not be available in all contexts
       }
 
-      // Tag the running test with this ATC id. KataReporter reads the `atc`
-      // annotations into the outcome records (reports/test-outcomes.json),
-      // which is how a test outcome maps to its TC ids (ADR-0020).
+      // Tag the test with this ATC id so KataReporter maps outcomes to TC ids (ADR-0020).
       try {
         result.playwrightTestId = test.info().testId;
         const annotations = test.info().annotations;
@@ -160,7 +81,6 @@ export function atc(testId: string, options: AtcOptions = {}) {
       }
 
       try {
-        // Execute within test.step (visible in KataReporter + auto-captured by allure-playwright)
         const stepTitle = `ATC [${testId}]: ${methodName}${formatArgs(args)}`;
         const returnValue = await test.step(stepTitle, async () => {
           return originalMethod.apply(this, args);
@@ -178,8 +98,7 @@ export function atc(testId: string, options: AtcOptions = {}) {
         result.error = error instanceof Error ? error.message : String(error);
         result.duration = Date.now() - startTime;
 
-        // A runtime `test.skip()` inside the ATC throws to stop the test: that is
-        // NOT RUN (ADR-0020), never a failure, and it must still propagate.
+        // A runtime test.skip() throws to stop the test: NOT RUN (ADR-0020), not a failure, so it must propagate.
         if (isSkipping()) {
           result.status = 'SKIP';
           storeResult(testId, result);
@@ -213,26 +132,6 @@ export function atc(testId: string, options: AtcOptions = {}) {
   };
 }
 
-// ============================================
-// Step Decorator (helper tracing)
-// ============================================
-
-/**
- * @step decorator for helper method tracing
- *
- * Wraps the method in Playwright's test.step() so it appears in KataReporter.
- * Shows method name and formatted parameters in the terminal.
- *
- * Use on Layer 3 public helper methods (read-only queries).
- * Do NOT use on @atc methods or Layer 2 base methods.
- *
- * @example
- * @step
- * async getBookings(filters: BookingFilters) {
- *   return this.apiGET<BookingVmContainer>('/bookings', { params });
- * }
- * // Terminal: ---- ✓ getBookings({ start: "2024-09-01", end: "2024-09-30" })
- */
 // eslint-disable-next-line ts/no-explicit-any -- Required for decorator flexibility with strict mode
 export function step<T extends (...args: any[]) => Promise<any>>(
   originalMethod: T,
@@ -250,10 +149,6 @@ export function step<T extends (...args: any[]) => Promise<any>>(
 
   return replacement as T;
 }
-
-// ============================================
-// Parameter Formatting (for step titles)
-// ============================================
 
 const SENSITIVE_KEYS = new Set(['password', 'token', 'secret', 'authorization', 'access_token']);
 const MAX_STRING_LEN = 80;
@@ -302,7 +197,6 @@ function formatValue(value: unknown, key?: string): string {
   return String(value);
 }
 
-/** True when the running test was just skipped at runtime (`test.skip()` / `test.fixme()`). */
 function isSkipping(): boolean {
   try {
     return test.info().expectedStatus === 'skipped';
@@ -319,18 +213,6 @@ function formatArgs(args: unknown[]): string {
   return `(${args.map(a => formatValue(a)).join(', ')})`;
 }
 
-// ============================================
-// Result Storage Functions
-// ============================================
-
-/**
- * NDJSON file path for cross-process ATC result persistence.
- *
- * Playwright runs each project (setup, e2e, integration, teardown) in
- * separate worker processes. In-memory Maps don't survive across them.
- * Each @atc execution appends one JSON line here; KataReporter.onEnd()
- * aggregates all lines into the final report.
- */
 export const ATC_PARTIAL_PATH = resolve('reports/.atc_partial.ndjson');
 
 function storeResult(_testId: string, result: AtcResult) {
