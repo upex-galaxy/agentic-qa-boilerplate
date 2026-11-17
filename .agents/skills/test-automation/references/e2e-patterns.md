@@ -44,7 +44,7 @@ export class LoginPage extends UiBase {
   // 3. Navigation helper
   async goto(): Promise<void> {
     await this.page.goto('/login');
-    await this.page.waitForLoadState('networkidle');
+    await expect(this.page.locator('#email')).toBeVisible();
   }
 
   // 4. ATCs
@@ -186,12 +186,11 @@ Playwright auto-waits on locator actions (`click`, `fill`, `toBeVisible`). Add a
 
 ```typescript
 // Network-driven
-await this.page.waitForLoadState('networkidle');         // last resort, slow
 await this.page.waitForResponse(r => r.url().includes('/api/cart') && r.ok());
 await this.page.waitForURL(u => !u.pathname.includes('/login'));
 
 // DOM-driven
-await this.page.waitForSelector('[data-loaded="true"]');
+await expect(this.page.locator('[data-loaded="true"]')).toBeVisible();
 await expect(locator).toBeVisible();
 await expect(locator).toHaveCount(expected);
 ```
@@ -202,6 +201,8 @@ await expect(locator).toHaveCount(expected);
 // NEVER (arbitrary sleeps are flaky)
 await this.page.waitForTimeout(3000);                    // arbitrary, flaky
 await this.page.waitForTimeout(500);                     // even small values
+await this.page.waitForSelector('[data-loaded="true"]'); // use expect(locator).toBeVisible()
+await this.page.waitForLoadState('networkidle');         // never settles on apps that poll
 await setTimeout(...);                                   // node-level sleep
 ```
 
@@ -426,7 +427,6 @@ await expect(this.page.locator('[data-testid="confirm_modal"]')).not.toBeVisible
 ### Lists with dynamic count
 
 ```typescript
-await this.page.waitForSelector('[data-testid="item_list"] [data-testid="item"]');
 const items = this.page.locator('[data-testid="item_list"] [data-testid="item"]');
 await expect(items).toHaveCount(expectedCount);
 ```

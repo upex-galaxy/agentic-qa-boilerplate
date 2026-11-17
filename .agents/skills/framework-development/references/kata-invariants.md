@@ -35,6 +35,8 @@ A higher layer may use a lower layer, and never the reverse. Steps (3.5) is an o
 
 A test file is not a layer. It is a consumer of Layer 4.
 
+**Enforced by:** `kata/layer-imports` (a domain component imports no other component, Layers 1 to 3 import no Fixtures or Steps, `TestContext.ts` imports no `@api/*`, `@ui/*` or `@steps/*`), `kata/no-decorator-in-base` (no `@atc` or `@step` in the Bases or `TestContext`), `kata-manifest.ts --check` (every Domain component is fixture-registered). Review owns whether a responsibility sits in the right layer.
+
 ---
 
 ## 2. Fixture selection (INVARIANT)
@@ -49,6 +51,8 @@ The fixture decides whether a browser opens, so a wrong choice gives slow API te
 
 There is no `{ steps }` fixture. Steps modules (reusable precondition chains repeated across 3+ tests in 3+ files) live in `tests/components/steps/`, extend `TestContext`, and are instantiated directly in the test (`const steps = new {Domain}Steps({ request })`). They remove ATC-to-ATC calls (a Rule 5 violation) without making tests repeat setup, and they never enter the fixture DI surface.
 
+**Enforced by:** `kata/no-raw-page-in-spec` (a spec never destructures `page` or `request`), `kata/layer-imports` (`test` comes from `@TestFixture`). Review owns the choice between `{ api }`, `{ ui }` and `{ test }`.
+
 Hard rules: an API-only test does not request `{ ui }`, and a UI-only file under `tests/e2e/**` does not request `{ api }`. A hybrid test uses `{ test }` and does not destructure `{ api, ui }` from separate registrations, because those would not share context.
 
 ---
@@ -58,9 +62,11 @@ Hard rules: an API-only test does not request `{ ui }`, and a UI-only file under
 An ATC (Acceptance Test Case) is a complete mini-flow mapped 1:1 to a TMS ticket through `@atc('TICKET-ID')`. The four sub-rules below are not negotiable. A method that breaks one is not an ATC and has to be reclassified or refactored.
 
 - **Atomic mini-flow**: precondition, action, verification, assertions, return. A bare `page.click()` or a bare `apiGET` with no outcome assertion is not an ATC. A GET that only prepares data is a Helper (no `@atc`, optional `@step`); a GET whose response is the business outcome under test is an ATC (`test-automation/references/kata-architecture.md` Rule 7).
-- **No ATC calls another ATC.** ATCs are atomic, and reusable chains live in the Steps module (Layer 3.5). An ATC calling `this.someOtherAtc(...)` is a critical reject.
-- **At most 2 positional params; with 3 or more, use an object param.** `fn(a, b, c, d)` is forbidden; write `fn(args: Args)`. This holds for ATCs and for every Layer 2, 3 and 3.5 method.
+- **No ATC calls another ATC.** Enforced by `kata/atc-no-atc-call`. ATCs are atomic, and reusable chains live in the Steps module (Layer 3.5). An ATC calling `this.someOtherAtc(...)` is a critical reject.
+- **At most 2 positional params; with 3 or more, use an object param.** `fn(a, b, c, d)` is forbidden; write `fn(args: Args)`. This holds for ATCs and for every Layer 2, 3 and 3.5 method, except the protected HTTP primitives of `ApiBase` (`apiGET`, `apiPOST`, `apiPUT`, `apiPATCH`, `apiDELETE`), which take path, payload and options by contract (owner sweep 2026-11-17). Enforced by core `max-params` on `tests/components/{api,ui,steps}/**` with an override that turns it off for `ApiBase.ts`.
 - **Locators stay inline, and are extracted only when used twice or more.** A locator defaults to inline inside the ATC. Extract it to a `private readonly someLocator = () => this.page.locator(...)` arrow function on the class only when 2+ ATCs of the same component use it. It never goes to a separate `locators/*.ts` file.
+
+**Enforced by:** the atomic mini-flow and the locator-extraction rule are review. `playwright/no-nth-methods` and `playwright/no-force-option` cover the locator shapes that break on refactor, `playwright/no-wait-for-timeout`, `no-wait-for-selector` and `no-networkidle` cover waits, and `max-lines` on domain components covers the size cap.
 
 Two more ATC invariants come from Rule 2 (TC identity is precondition plus action) and Rule 3 (equivalence partitioning). The same precondition and the same action make ONE TC however many fields it asserts, and the same expected output with different data makes ONE parameterized ATC.
 
@@ -86,6 +92,8 @@ Each kind of code has one home. Misplacing it creates coupling and fragile tests
 
 If an API helper looks like it belongs in `tests/utils/`, it depends on `APIRequestContext`, so it belongs in `ApiBase`.
 
+**Enforced by:** `kata/layer-imports` for the two import homes (`@faker-js/faker` only in `tests/data/DataFactory.ts`, `@openapi` only under `api/schemas/`). Review owns every other row of the table.
+
 ---
 
 ## 5. Import aliases (INVARIANT)
@@ -97,6 +105,10 @@ Three facts to know before citing the rule:
 - It is core ESLint (`no-restricted-imports`), not `eslint-plugin-import`. Do not attribute it to a plugin nobody installed.
 - A dynamic `await import('./x')` is not caught. The rule matches static import and export declarations only.
 - `eslint.config.js` is project-owned and the sync never overwrites it, so a downstream project receives the exported block and not the wiring. `validateEslintBlockWiring` (`cli/lib/agent-compatibility-contracts.ts`) fails `agents:compat:check` when a block the base exports is absent from the consumer, which is what stops the rule from shipping inert.
+
+**Enforced by:** `KATA_IMPORT_ALIASES` for the relative-import ban, `kata/layer-imports` for the `@TestFixture`, `@faker-js/faker` and `@openapi` rules.
+
+The KATA blocks the base exports are `KATA_IMPORT_ALIASES`, `KATA_RULES` (the `kata` plugin), `KATA_SHAPE` (`max-params`, `max-lines`) and `KATA_PLAYWRIGHT` (the `eslint-plugin-playwright` set). `KATA_ENFORCEMENT_LEVEL` in `eslint.config.base.js` sets the severity of every block except `KATA_IMPORT_ALIASES`: `'warn'` this release, `'error'` the next. `scripts/kata-manifest.ts` mirrors the constant for its fixture-registration check, and the two values move together.
 
 Review (`/pr-review-lead`) owns the half a lint rule cannot judge: whether the alias chosen is the right one for the layer.
 
@@ -123,6 +135,8 @@ More public-surface invariants:
 - An error inside an ATC is always re-thrown, never swallowed.
 - Sensitive parameter names stay canonical (`password`, `token`, `secret`, `authorization`, `access_token`) so the `@atc` and `@step` decorators auto-mask them in trace output. Renaming these keys silently leaks credentials to Allure and NDJSON.
 - The tuple return per HTTP method is fixed: `apiGET/DELETE` return `[APIResponse, T]` and `apiPOST/PUT/PATCH` return `[APIResponse, T, P]`. Changing the tuple shape breaks every Domain ATC.
+
+**Enforced by:** the type checker for the tuple shape, `playwright/no-conditional-expect` for assertions hidden in branches, and review for the fail-fast and silent-utility split, the re-throw and the sensitive key names.
 
 ---
 
@@ -164,6 +178,7 @@ Each row gates a critical change to load-bearing surface.
 | `KataReporter` NDJSON line schema or `atc_results.json` aggregation logic | The teardown summary still parses, and TMS sync (`syncToXray`, `syncToJiraDirect`) still consumes the right fields. |
 | `tests/utils/decorators.ts` `storeResult` writer | The NDJSON file is still safe for atomic append, and the reporter `onEnd` deletes the partial file. |
 | `kata:manifest` extraction regex (`@atc\s*\(\s*['"]([^'"]+)['"]`) | It still matches every existing `@atc('...')` call. Computed or template-literal IDs stay unsupported by design. |
+| `KATA_ENFORCEMENT_LEVEL` (`eslint.config.base.js` and `scripts/kata-manifest.ts`) | Flip both places together. Run `bun run lint:check` and `bun run kata:manifest:check` on a representative suite first, and read every new finding before the flip lands. |
 | OpenAPI facade pattern (replace `paths`/`components` indexing) | Regenerate types with `bun run api:sync`; re-run `bun run types:check`. |
 | Adding a new layer between existing layers | Forbidden: it breaks the 4-layer model invariant. Reject. |
 | Replacing the Playwright dependency | A major-version bump that invalidates UiBase's entire surface. Reject without version-bump approval. |

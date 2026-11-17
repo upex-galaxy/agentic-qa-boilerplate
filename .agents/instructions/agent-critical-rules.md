@@ -102,3 +102,13 @@ Text that is committed (this file, `.agents/**`, `docs/**`, `README.md`, `INSTAL
 Write the name of the owner instead and let the reader resolve it: a file (`.mcp.json`), a command (`bun run skills:registry`), a generated artifact (`REGISTRY.md`), a constant (`CONFIG_BLOCK_READERS`). Stable names that change only by decision are fine: stage names, KATA layers, rule numbers, file and command names, "three hosts".
 
 Exempt: gitignored files and `.session/**`, generated artifacts (the business context maps inside their skills included), ADRs, changelogs and dated reports (a number "at the time" is right forever), test fixtures, code constants, and example output inside fenced blocks. A fact that must be stated with its date goes to an ADR and the doctrine links to it; the measurements behind this repo's own doctrine are in `.context/ADR/ADR-0006-forensic-measurements-ledger.md`. `scripts/lint-skills.ts` and `scripts/lint-docs.ts` flag the two regex-visible families (`FILE-LINE`, `CURRENT-STATE`); a line that must carry one is marked `volatile-ok: <reason>`. Canon and examples: `agentic-qa-core/references/volatile-facts.md`.
+
+## 18. No comments in code by default
+
+Code carries no comments. A comment stays only as a toolchain directive (`eslint-disable-next-line <rule> -- <reason>`, `@ts-expect-error`, `LINT.IfChange`/`LINT.ThenChange`) or as one line of WHY the code cannot express and a reader would otherwise get wrong.
+
+Explanations and teaching go to docs and decks, where a reader looks for them and a reviewer maintains them. A comment that restates the code, narrates a step, banners a section or leaves an example TODO costs a line on every read and drifts out of date silently.
+
+A comment never justifies skipping a rule. When a check fires, fix the cause, or disable that one rule on that one line with `eslint-disable-next-line <rule> -- <reason>` so the reason is a directive the toolchain reads.
+
+The rule binds new and edited code everywhere in the repo. Existing comments outside `tests/` are not purged retroactively; touch them only when the edit already reaches that line. Decision: owner deck `kata-review` (D2).

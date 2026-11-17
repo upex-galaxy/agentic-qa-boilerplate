@@ -257,6 +257,9 @@ import { config } from '../../../config/variables';
 
 Lint rejects relative imports: `KATA_IMPORT_ALIASES` in `eslint.config.base.js`, a core `no-restricted-imports` block scoped to `tests/**/*.ts` + `playwright.config.ts`. Dynamic `await import('./x')` is outside the rule. Fix the imports and leave the rule enabled.
 
+
+`kata/layer-imports` also checks where `@faker-js/faker`, `@openapi` and `test` may be imported from.
+
 ---
 
 ## 9. Test Design Conventions (code-level)
@@ -334,6 +337,8 @@ Both follow the same principles: complete flows, ATCs for actions and helpers fo
 ---
 
 ## 10. Quick Reference
+
+The 2-parameter limit is lint-checked by `max-params` on the component layers; the `ApiBase` HTTP primitives are exempt.
 
 | Pattern | Rule | Example |
 |---------|------|---------|

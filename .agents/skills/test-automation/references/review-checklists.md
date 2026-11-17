@@ -121,6 +121,7 @@ Exact instructions:
   1. Run the diff command from the briefing.
   2. Apply `automation-standards.md` §10, then the E2E delta (§2) or the API delta (§3), then LT-3.
   3. Skip what lint or the type checker already enforces.
+     The table `Already enforced by lint` below names the rules.
 Report format: about 400 words, each failure with its check ID, severity, file and line.
 Rules:
   - Do NOT read the spec or the ACs.
@@ -130,6 +131,22 @@ Rules:
 The reports stay separate. Do not merge or re-rank them: each axis keeps its own worst finding, and the verdict counts blockers from both. When no spec exists, say so in the report and let the Standards axis run alone.
 
 This split does not replace the required separate verifier in `SKILL.md` Phase 3 (`/pr-review-lead` or `/judgment-day`). It makes the in-skill review sharper before that verifier runs.
+
+### Already enforced by lint
+
+Rule ids are in `eslint.config.base.js` (`KATA_ENFORCEMENT_LEVEL` sets the severity). A reviewer reads the lint output for these and spends the review on what a machine cannot judge.
+
+| Checklist item | Rule |
+|---|---|
+| E-W1 arbitrary sleep, E-W2 waits | `playwright/no-wait-for-timeout`, `no-wait-for-selector`, `no-networkidle` |
+| LT-2 assertion in a branch, missing `await` on an assertion (partial) | `playwright/no-conditional-expect`, `missing-playwright-await`, `no-useless-not` |
+| LT-3 `nth` positions (partial) | `playwright/no-nth-methods` |
+| `force: true`, `.only`, `.skip`, `page.pause()`, element handles | `playwright/no-force-option`, `no-focused-test`, `no-skipped-test`, `no-page-pause`, `no-element-handle` |
+| Layer imports, faker and `@openapi` homes, `test` from `@TestFixture` | `kata/layer-imports` |
+| Rule 5, an ATC calls an ATC | `kata/atc-no-atc-call` |
+| Raw `page` or `request` in a spec | `kata/no-raw-page-in-spec` |
+| Decorators in a Base | `kata/no-decorator-in-base` |
+| More than 2 positional params, oversized component | `max-params`, `max-lines` |
 
 ### Lying tests
 
@@ -207,7 +224,7 @@ Apply these on top of the shared list for any file under `tests/e2e/**` or any `
 | ID | Check | Severity |
 |----|-------|----------|
 | E-W1 | No `page.waitForTimeout(n)` anywhere. An arbitrary sleep is a CRITICAL reject. | CRITICAL |
-| E-W2 | Waits are condition-based: `waitForSelector`, `waitForResponse`, `waitForLoadState('networkidle')`, or `expect(locator).toBeVisible()`. | CRITICAL |
+| E-W2 | Waits are condition-based: `waitForResponse`, an auto-waiting locator action or `expect(locator).toBeVisible()`. `waitForSelector` and `networkidle` are lint-flagged. | CRITICAL |
 | E-W3 | `data-loaded="true"` attributes or similar readiness flags are used where available. | MEDIUM |
 | E-W4 | No reliance on Playwright retries to mask race conditions: `retries: 0` holds locally and in CI. | HIGH |
 

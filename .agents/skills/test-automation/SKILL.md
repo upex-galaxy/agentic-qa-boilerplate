@@ -370,7 +370,7 @@ The fixture decides whether a browser opens. A wrong fixture gives slow API test
 7. **Fixed assertions go inside ATCs.** Status code, required fields and URL redirect checks live in the ATC. Test-level assertions (flow outcomes) go in the test file.
 8. **Max 2 positional parameters.** 3+ take an object parameter (`fn(args: Args)`).
 9. **Import aliases are mandatory.** `@api/`, `@ui/`, `@utils/`, `@variables`, `@TestContext`, `@schemas/`. Lint rejects relative imports (`../../../`).
-10. **No hardcoded waits.** No `page.waitForTimeout(3000)`. Wait for a specific condition: `waitForSelector`, `waitForResponse`, `waitForLoadState('networkidle')` or `data-loaded="true"` attributes.
+10. **No hardcoded waits.** No `page.waitForTimeout(3000)`. Wait for a specific condition: `waitForResponse`, `waitForURL` or a web-first assertion such as `expect(locator).toBeVisible()` on `[data-loaded="true"]`. Lint flags `waitForTimeout`, `waitForSelector` and `networkidle` (`playwright/no-wait-for-timeout`, `no-wait-for-selector`, `no-networkidle`) attributes.
 11. **No retries by default.** `retries: 0` in `playwright.config.ts`. A test that passes on retry is flaky, not passing, so investigate it.
 12. **Credentials from `.env`, never hardcoded.** `LOCAL_USER_EMAIL` / `STAGING_USER_EMAIL` and their passwords, read via `config.testUser` from `@variables`; no password, token or API key inline in a spec, fixture or data file.
 13. **Each test generates its own data.** No shared state between tests. Use `TestContext.generateUserData()` or faker helpers for unique values.

@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-11-16T15:43:14.072Z`
+> Generated: `2026-11-17T16:50:57.248Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -263,6 +263,7 @@ Skills indexed: 29
 - When the change touches `cli/`, `scripts/`, `.husky/`, `AGENTS.md` or `.agents/instructions/`, run the V5 drift sweep after the four verifiers, report-only (Phase 3). It greps the doc surface for prose that describes the old behaviour and counts the `Docs-Checked:` trailers the change used.
 - Archive the session directory only after all four verifiers pass. On REJECT it stays in place so the run can be debugged or resumed.
 - Route every change to `AGENTS.md`, a section under `.agents/instructions/`, the ROUTER or a `triggers:` list through mode `instructions`: place each sentence with `references/instructions-doctrine.md` §2 and close with `bun run instructions:check`. Section prose does not get pasted into `AGENTS.md`, and a ROUTER row needs the ADR that decides it (`--accept-router ADR-NNNN`, ADR-0013).
+- When a review finding repeats, the first remedy is a check, not a prose line: a rule in the `kata` ESLint plugin (`eslint.config.base.js`), an `eslint-plugin-playwright` rule or a `kata-manifest.ts` check, with a message that names the doctrine section and the root-cause fix. Ship it at `KATA_ENFORCEMENT_LEVEL`, and add the "Enforced by" entry in `references/kata-invariants.md`. Write a prose line only when a machine cannot judge the case.
 - When a trigger misses or over-fires, fix the section's `triggers:` and add the prompts to `cli/lib/fixtures/instruction-router-eval.json`. A prompt is never relabelled to hide a miss.
 
 **Read full SKILL.md when**: writing the plan artifact, batching Code-phase tasks, resuming an interrupted session, running mode `instructions`, writing a skill, or reading the ALLOWED/FORBIDDEN path tables themselves.

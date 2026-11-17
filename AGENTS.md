@@ -31,6 +31,7 @@ Each line is the rule's binding sentence; `Full: agent-critical-rules.md#n` = it
 15. **No global discards (multi-session safety)**: Never run repo-wide destructive git commands: `git restore .`, `git checkout -- .`, `git reset --hard`, untargeted `git stash`, `git clean -f`. Discard only explicit paths you modified in this session (`git restore <path>...`, `git stash push <path>...`). Full: agent-critical-rules.md#15
 16. **A success code describes the call, never the outcome: verify at the destination**: A write is verified by reading it back from the destination, a message by the recipient answering it, a transition by re-reading the issue's status, a file write by re-parsing the file, a dispatch by the worker's own first report. Full: agent-critical-rules.md#16
 17. **Committed prose names the source of truth, never its current value**: Text that is committed (this file, `.agents/**`, `docs/**`, `README.md`, `INSTALLER.md`, `.env.example`, the decks) never states a fact that changes with the normal life of the repo or the tracker. Full: agent-critical-rules.md#17
+18. **No comments in code by default**: Code carries no comments. A comment stays only as a toolchain directive (`eslint-disable-next-line <rule> -- <reason>`, `@ts-expect-error`, `LINT.IfChange`/`LINT.ThenChange`) or as one line of WHY the code cannot express and a reader would otherwise get wrong. Full: agent-critical-rules.md#18
 
 ---
 

@@ -335,6 +335,8 @@ test('TICKET-ID: should checkout with new user', async ({ ui }) => {
 });
 ```
 
+Lint checks this: `kata/atc-no-atc-call` flags `this.<atcMethod>(` inside another `@atc` method.
+
 ### Rule 6: fixed assertions inside, flow assertions outside
 
 Fixed assertions (status code, required fields, URL redirect) go inside the ATC. Test-level assertions, the business outcomes that combine several ATCs, go in the test file.

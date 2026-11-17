@@ -546,8 +546,7 @@ Retries mask real issues. A test that passes on retry is a red flag, so fix the 
 await page.waitForTimeout(3000);
 
 // RIGHT
-await page.waitForSelector('[data-loaded="true"]');
-await page.waitForLoadState('networkidle');
+await expect(page.locator('[data-loaded="true"]')).toBeVisible();
 await page.waitForResponse(resp => resp.url().includes('/api/data') && resp.ok());
 ```
 
