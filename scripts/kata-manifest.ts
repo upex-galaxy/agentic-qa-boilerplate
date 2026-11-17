@@ -19,6 +19,9 @@ import { basename, join } from 'node:path';
 
 import { relativePosix } from './lib/posix-path';
 
+// Moves to 'error' together with the KATA ESLint level in eslint.config.base.js next release.
+const KATA_ENFORCEMENT_LEVEL: 'warn' | 'error' = 'warn';
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -361,6 +364,54 @@ function reportDuplicateAtcIds(manifest: KataManifest, fatal: boolean): boolean 
   return fatal;
 }
 
+/**
+ * Names of manifest components that their fixture never instantiates or types.
+ *
+ * An unregistered component is unreachable from tests (kata-architecture.md §7).
+ * A component counts as registered when its class name follows `new ` or `:` in
+ * the matching fixture (`ApiFixture.ts` for api, `UiFixture.ts` for ui), which
+ * ignores the `import` line. Bases are never scanned: `scanDirectory` excludes
+ * them, and the filter below keeps that true for a hand-built manifest.
+ */
+export function findUnregisteredComponents(
+  manifest: KataManifest,
+  fixtureSources: { api: string, ui: string },
+): string[] {
+  const bases = new Set(['ApiBase', 'UiBase']);
+  const missing: string[] = [];
+  for (const kind of ['api', 'ui'] as const) {
+    for (const component of manifest.components[kind]) {
+      if (bases.has(component.name)) { continue; }
+      const registered = new RegExp(`(?:new\\s+|:\\s*)${component.name}\\b`);
+      if (!registered.test(fixtureSources[kind])) { missing.push(component.name); }
+    }
+  }
+  return missing;
+}
+
+/**
+ * Warn (or fail, at level 'error') for each unregistered component.
+ * Returns true when the caller should exit non-zero.
+ */
+async function reportUnregisteredComponents(manifest: KataManifest): Promise<boolean> {
+  const readFixture = async (name: string) => {
+    const path = join(COMPONENTS_DIR, name);
+    return existsSync(path) ? Bun.file(path).text() : '';
+  };
+  const sources = { api: await readFixture('ApiFixture.ts'), ui: await readFixture('UiFixture.ts') };
+  const missing = new Set(findUnregisteredComponents(manifest, sources));
+  if (missing.size === 0) { return false; }
+  const write = KATA_ENFORCEMENT_LEVEL === 'error' ? console.error : console.warn;
+  for (const kind of ['api', 'ui'] as const) {
+    for (const component of manifest.components[kind]) {
+      if (!missing.has(component.name)) { continue; }
+      const fixture = kind === 'api' ? 'ApiFixture.ts' : 'UiFixture.ts';
+      write(`⚠️  ${component.relativePath}: ${component.name} is not registered in tests/components/${fixture}. Add it there (kata-architecture.md §7): an unregistered component is unreachable from tests.`);
+    }
+  }
+  return KATA_ENFORCEMENT_LEVEL === 'error';
+}
+
 // ============================================================================
 // Check Mode (CI-grade freshness validator)
 // ============================================================================
@@ -400,6 +451,7 @@ async function checkManifest(): Promise<number> {
     // Freshness and uniqueness are different questions. A manifest can be
     // perfectly in sync with a tree that carries four methods on one id.
     if (reportDuplicateAtcIds(fresh, true)) { return 1; }
+    if (await reportUnregisteredComponents(fresh)) { return 1; }
     console.log('✅ kata-manifest.json is up to date.');
     return 0;
   }
@@ -444,6 +496,7 @@ async function main() {
       // Warn only here: `--check` is the gate. Mid-refactor, the second
       // method carrying a borrowed id may simply not be finished yet.
       reportDuplicateAtcIds(manifest, false);
+      await reportUnregisteredComponents(manifest);
     }
   };
 
@@ -469,4 +522,6 @@ async function main() {
   }
 }
 
-void main();
+if (import.meta.main) {
+  void main();
+}
