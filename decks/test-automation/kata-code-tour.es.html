@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KATA Code Tour: el código de la plantilla, archivo por archivo</title>
+<style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* ===================== TOKYO NIGHT TOKENS ===================== */
+:root{
+  --bg:#16161e; --bg-2:#1a1b26; --surface:#24283b; --surface-2:#1f2335;
+  --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.16);
+  --text-1:#c0caf5; --text-2:#9aa5ce; --text-3:#565f89;
+  --blue:#7aa2f7; --purple:#bb9af7; --cyan:#7dcfff; --green:#9ece6a;
+  --red:#f7768e; --orange:#ff9e64; --yellow:#e0af68;
+  --grad:linear-gradient(135deg,#7aa2f7,#bb9af7 55%,#7dcfff);
+  --radius:16px; --radius-sm:10px;
+  --shadow:0 14px 40px rgba(0,0,0,.45);
+  --font-sans:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-mono:'JetBrains Mono',Menlo,monospace;
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);
+  font-family:var(--font-sans);line-height:1.55;-webkit-font-smoothing:antialiased;overflow:hidden}
+code,pre,kbd,textarea{font-family:var(--font-mono)}
+b,strong{color:var(--text-1)}
+::selection{background:rgba(122,162,247,.35)}
+
+/* ===================== SLIDE SYSTEM ===================== */
+.slide{position:fixed;inset:0;display:none;flex-direction:column;justify-content:center;
+  padding:6vh 6.5vw 9vh;background:var(--bg)}
+.slide.is-active{display:flex}
+.slide h1{font-size:clamp(2.4rem,5.6vw,4.6rem);font-weight:900;letter-spacing:-.03em;line-height:1.05;margin:0 0 .4em}
+.slide h2{font-size:clamp(1.6rem,3.2vw,2.5rem);font-weight:800;letter-spacing:-.02em;line-height:1.12;margin:0 0 .5em}
+.slide h3{font-size:clamp(1.05rem,1.7vw,1.35rem);font-weight:700;margin:0 0 .5em}
+.slide p,.slide li{font-size:clamp(.92rem,1.4vw,1.12rem);color:var(--text-2)}
+.kicker{font-size:.78rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--blue);margin-bottom:1rem}
+.grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start}
+.cols-32{display:grid;grid-template-columns:1.25fr 1fr;gap:2rem;align-items:start}
+.notes{display:none}
+
+/* chrome */
+#progress{position:fixed;top:0;left:0;height:3px;background:var(--grad);width:0%;z-index:60;transition:width .3s var(--ease)}
+#counter{position:fixed;bottom:18px;right:24px;font-family:var(--font-mono);font-size:.75rem;color:var(--text-3);z-index:60}
+#act-label{position:fixed;bottom:18px;left:24px;font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--text-3);z-index:60}
+#score-chip{position:fixed;top:16px;right:22px;z-index:60;font-family:var(--font-mono);font-size:.82rem;font-weight:700;
+  background:var(--surface);border:1px solid var(--border-strong);border-radius:999px;padding:.4rem .9rem;color:var(--yellow);
+  box-shadow:var(--shadow);transition:transform .25s var(--ease)}
+#score-chip.bump{transform:scale(1.18)}
+#help-hint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);font-size:.7rem;color:var(--text-3);z-index:60;font-family:var(--font-mono)}
+
+/* notes drawer */
+#notes-drawer{position:fixed;left:0;right:0;bottom:0;max-height:34vh;overflow:auto;background:var(--surface-2);
+  border-top:2px solid var(--blue);padding:1rem 2.2rem 1.4rem;z-index:80;transform:translateY(100%);transition:transform .3s var(--ease)}
+#notes-drawer.open{transform:translateY(0)}
+#notes-drawer .nd-tag{font-size:.7rem;font-weight:800;letter-spacing:.2em;color:var(--blue);text-transform:uppercase;margin-bottom:.4rem}
+#notes-drawer p{margin:.3rem 0;font-size:.95rem;color:var(--text-2)}
+
+/* ===================== ANIMATIONS ===================== */
+@keyframes fadeUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+@keyframes popIn{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:scale(1)}}
+@keyframes slideL{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:none}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+.slide.is-active [data-anim="fade-up"]{animation:fadeUp .7s var(--ease) both}
+.slide.is-active [data-anim="pop"]{animation:popIn .55s var(--ease) both}
+.slide.is-active [data-anim="slide-l"]{animation:slideL .6s var(--ease) both}
+.slide.is-active [data-stagger]>*{animation:fadeUp .55s var(--ease) both}
+.slide.is-active [data-stagger]>*:nth-child(1){animation-delay:.05s}
+.slide.is-active [data-stagger]>*:nth-child(2){animation-delay:.15s}
+.slide.is-active [data-stagger]>*:nth-child(3){animation-delay:.25s}
+.slide.is-active [data-stagger]>*:nth-child(4){animation-delay:.35s}
+.slide.is-active [data-stagger]>*:nth-child(5){animation-delay:.45s}
+.slide.is-active [data-stagger]>*:nth-child(6){animation-delay:.55s}
+.slide.is-active [data-stagger]>*:nth-child(7){animation-delay:.65s}
+.slide.is-active [data-stagger]>*:nth-child(8){animation-delay:.75s}
+
+/* ===================== CODE ===================== */
+pre.code{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:1rem 1.2rem;font-size:clamp(.76rem,1.18vw,.96rem);line-height:1.68;overflow:auto;margin:0;
+  box-shadow:var(--shadow);white-space:pre}
+.tk-k{color:var(--purple)} .tk-s{color:var(--green)} .tk-n{color:var(--orange)}
+.tk-b{color:var(--orange)} .tk-f{color:var(--blue)} .tk-c{color:var(--text-3);font-style:italic}
+.code-window{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.code-window .cw-bar{display:flex;align-items:center;gap:.45rem;padding:.6rem .9rem;background:var(--surface-2);border-bottom:1px solid var(--border)}
+.cw-bar .dot{width:11px;height:11px;border-radius:50%}
+.cw-bar .dot:nth-child(1){background:#f7768e}.cw-bar .dot:nth-child(2){background:#e0af68}.cw-bar .dot:nth-child(3){background:#9ece6a}
+.cw-bar .cw-title{margin-left:.5rem;font-family:var(--font-mono);font-size:.74rem;color:var(--text-3)}
+.code-window pre.code{border:none;border-radius:0;box-shadow:none}
+
+.cmd{display:flex;align-items:center;gap:.7rem;background:#0d0d14;border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm);padding:.6rem 1rem;margin:.45rem 0;cursor:pointer;transition:border-color .2s,transform .15s}
+.cmd:hover{border-color:var(--cyan);transform:translateX(3px)}
+.cmd .ps{color:var(--cyan);font-family:var(--font-mono);font-size:.85rem;flex:0 0 auto}
+.cmd .ct{color:var(--text-1);font-family:var(--font-mono);font-size:clamp(.78rem,1.25vw,.95rem);overflow-x:auto;white-space:nowrap}
+.cmd .copy{margin-left:auto;font-family:var(--font-mono);font-size:.68rem;color:var(--text-3);flex:0 0 auto}
+.cmd.copied{border-color:var(--green)}
+.cmd.copied .copy{color:var(--green)}
+
+/* cards / tables / callout */
+.cards{display:grid;gap:1rem}
+.cards.c3{grid-template-columns:repeat(3,1fr)}
+.cards.c2{grid-template-columns:repeat(2,1fr)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem 1.3rem;box-shadow:var(--shadow)}
+.card .ico{font-size:1.8rem;margin-bottom:.45rem}
+.card h3{margin-bottom:.3rem}
+.card p{font-size:.92rem;margin:.2rem 0}
+.card.hl{border-color:var(--blue);background:linear-gradient(160deg,rgba(122,162,247,.12),rgba(187,154,247,.08))}
+.pill{display:inline-block;font-family:var(--font-mono);font-size:.78rem;padding:.2rem .65rem;border-radius:999px;
+  background:var(--surface-2);border:1px solid var(--border-strong);color:var(--cyan);margin:.15rem .2rem}
+table.cmp{width:100%;border-collapse:collapse;font-size:clamp(.85rem,1.3vw,1.05rem)}
+table.cmp th{text-align:left;padding:.65rem .9rem;font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);border-bottom:2px solid var(--border-strong)}
+table.cmp td{padding:.6rem .9rem;border-bottom:1px solid var(--border);color:var(--text-2)}
+table.cmp td:first-child{color:var(--text-1)}
+table.cmp td code{color:var(--cyan);font-size:.9em}
+.callout{display:flex;gap:.9rem;align-items:flex-start;background:rgba(158,206,106,.1);border:1px solid rgba(158,206,106,.35);
+  border-radius:var(--radius-sm);padding:.85rem 1.1rem;margin-top:1.2rem}
+.callout.warn{background:rgba(247,118,142,.1);border-color:rgba(247,118,142,.4)}
+.callout.info{background:rgba(122,162,247,.1);border-color:rgba(122,162,247,.4)}
+.callout .co-ico{font-size:1.35rem;line-height:1.3}
+.callout p{margin:0;font-size:clamp(.88rem,1.3vw,1.05rem)}
+
+/* mission */
+.mission{background:var(--surface);border:1.5px solid var(--border-strong);border-radius:var(--radius);
+  padding:1.2rem 1.5rem 1.3rem;box-shadow:var(--shadow);width:100%;transition:border-color .3s}
+.mission.done{border-color:var(--green)}
+.m-head{display:flex;align-items:center;gap:1rem;margin-bottom:.7rem;flex-wrap:wrap}
+.m-badge{font-family:var(--font-mono);font-size:.74rem;font-weight:700;letter-spacing:.16em;
+  background:rgba(255,158,100,.14);border:1px solid rgba(255,158,100,.5);color:var(--orange);
+  border-radius:999px;padding:.3rem .9rem;flex:0 0 auto}
+.mission.done .m-badge{background:rgba(158,206,106,.14);border-color:var(--green);color:var(--green)}
+.m-head h3{margin:0;flex:1 1 auto;font-size:clamp(1.1rem,1.9vw,1.5rem)}
+.m-check{display:flex;align-items:center;gap:.5rem;cursor:pointer;font-family:var(--font-mono);font-size:.8rem;
+  color:var(--text-3);background:var(--surface-2);border:1px solid var(--border-strong);border-radius:999px;
+  padding:.4rem 1rem;flex:0 0 auto;user-select:none;transition:all .2s}
+.m-check:hover{border-color:var(--green);color:var(--green)}
+.m-check input{accent-color:#9ece6a;width:1rem;height:1rem;cursor:pointer}
+.mission.done .m-check{border-color:var(--green);color:var(--green);background:rgba(158,206,106,.1)}
+.m-obj{font-size:clamp(.92rem,1.4vw,1.1rem);color:var(--text-2);margin:.3rem 0 .8rem}
+.m-obj b{color:var(--text-1)}
+.m-crit{display:flex;gap:.7rem;align-items:flex-start;background:rgba(158,206,106,.08);border:1px dashed rgba(158,206,106,.45);
+  border-radius:var(--radius-sm);padding:.7rem 1rem;margin-top:.9rem;font-size:clamp(.85rem,1.3vw,1.02rem);color:var(--text-2)}
+.m-crit b{color:var(--green)}
+details.m-hint{margin-top:.8rem;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
+details.m-hint summary{cursor:pointer;padding:.6rem 1rem;font-size:.88rem;font-weight:600;color:var(--cyan);user-select:none;list-style:none}
+details.m-hint summary::before{content:'💡 '}
+details.m-hint[open] summary{border-bottom:1px solid var(--border)}
+details.m-hint .hint-body{padding:.7rem 1rem .9rem;font-size:.88rem;color:var(--text-2)}
+details.m-hint .hint-body p{font-size:.88rem;margin:.3rem 0}
+
+/* quiz */
+.quiz{max-width:880px;width:100%;margin:0 auto}
+.quiz-tag{display:inline-block;font-family:var(--font-mono);font-size:.75rem;font-weight:700;letter-spacing:.2em;
+  color:var(--yellow);background:rgba(224,175,104,.12);border:1px solid rgba(224,175,104,.4);
+  border-radius:999px;padding:.3rem .9rem;margin-bottom:1.1rem}
+.quiz-q{font-size:clamp(1.25rem,2.3vw,1.85rem);font-weight:800;margin:0 0 1.3rem;line-height:1.25}
+.quiz-opts{display:grid;gap:.8rem}
+.quiz .opt{display:flex;align-items:center;gap:1rem;text-align:left;width:100%;cursor:pointer;
+  background:var(--surface);border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);
+  padding:.95rem 1.2rem;color:var(--text-1);font-family:var(--font-sans);font-size:clamp(.92rem,1.45vw,1.12rem);
+  transition:border-color .2s,background .2s,transform .15s}
+.quiz .opt:hover{border-color:var(--blue);transform:translateX(4px)}
+.quiz .opt .key{flex:0 0 auto;font-family:var(--font-mono);font-weight:700;font-size:.8rem;width:1.8rem;height:1.8rem;
+  display:grid;place-items:center;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text-3)}
+.quiz .opt code{color:var(--cyan)}
+.quiz .opt.correct{border-color:var(--green);background:rgba(158,206,106,.14)}
+.quiz .opt.correct .key{background:var(--green);color:#16161e;border-color:var(--green)}
+.quiz .opt.wrong{border-color:var(--red);background:rgba(247,118,142,.12);animation:shake .4s}
+.quiz.locked .opt{pointer-events:none;opacity:.8}
+.quiz.locked .opt.correct{opacity:1}
+.quiz-expl{display:none;margin-top:1.2rem;background:rgba(125,207,255,.08);border:1px solid rgba(125,207,255,.3);
+  border-radius:var(--radius-sm);padding:.9rem 1.2rem;color:var(--text-2);font-size:clamp(.88rem,1.35vw,1.05rem)}
+.quiz-expl.show{display:block;animation:fadeUp .4s var(--ease)}
+
+/* KATA stack */
+.kata-stack{display:flex;flex-direction:column;gap:.5rem;max-width:580px;margin:0 auto}
+.kata-stack .layer{display:flex;align-items:center;gap:1rem;background:var(--surface);border:1.5px solid var(--border-strong);
+  border-radius:var(--radius-sm);padding:.7rem 1.2rem;font-family:var(--font-mono);font-size:clamp(.8rem,1.28vw,.98rem);color:var(--text-2)}
+.kata-stack .layer .ly-tag{font-size:.68rem;color:var(--text-3);font-weight:700;flex:0 0 auto;width:2rem}
+.kata-stack .layer .ly-note{margin-left:auto;font-family:var(--font-sans);font-size:.76rem;color:var(--text-3);text-align:right}
+.kata-stack .layer.star{border-color:var(--green);background:rgba(158,206,106,.12);color:var(--green);font-weight:700;
+  box-shadow:0 0 24px rgba(158,206,106,.15)}
+.kata-stack .layer.star .ly-note{color:var(--green)}
+.kata-stack .consumer{display:flex;align-items:center;gap:1rem;background:transparent;border:1.5px dashed var(--border-strong);
+  border-radius:var(--radius-sm);padding:.7rem 1.2rem;font-family:var(--font-mono);font-size:clamp(.8rem,1.28vw,.98rem);color:var(--text-3)}
+.kata-stack .consumer .ly-tag{font-size:.68rem;color:var(--text-3);font-weight:700;flex:0 0 auto;width:2rem}
+.kata-stack .consumer .ly-note{margin-left:auto;font-family:var(--font-sans);font-size:.76rem;color:var(--text-3);text-align:right}
+.kata-stack .arrow{text-align:center;color:var(--text-3);font-size:.78rem;line-height:1;font-family:var(--font-mono)}
+
+/* tree */
+.tree{font-family:var(--font-mono);font-size:clamp(.82rem,1.32vw,1.05rem);line-height:1.9}
+.tree .tr-c{color:var(--text-3);font-size:.8em;margin-left:1rem}
+.tree .tr-dir{color:var(--blue);font-weight:700} .tree .tr-file{color:var(--text-1)} .tree .tr-star{color:var(--yellow)}
+
+/* journey timeline */
+.journey{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center}
+.jy{background:var(--surface);border:1.5px solid var(--green);border-radius:var(--radius-sm);
+  padding:.6rem .9rem;font-family:var(--font-mono);font-size:.78rem;color:var(--green);text-align:center}
+.jy b{display:block;font-size:.85rem}
+.jy.now{border-color:var(--yellow);color:var(--yellow);box-shadow:0 0 20px rgba(224,175,104,.2)}
+
+#fx-cover{position:absolute;inset:0;z-index:0}
+.cover-inner{position:relative;z-index:2;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1.1rem}
+.cover-chips{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center}
+#confetti-canvas{position:fixed;inset:0;z-index:200;pointer-events:none}
+.slide{overflow-y:auto}
+.tour{display:grid;grid-template-columns:1fr 1fr;gap:1.6rem;align-items:start}
+.tour ul{margin:0;padding-left:1.1rem;display:flex;flex-direction:column;gap:.45rem}
+.tour li{font-size:clamp(.82rem,1.18vw,1rem);line-height:1.5}
+.tour.dense li{font-size:clamp(.74rem,1.02vw,.88rem);line-height:1.42}
+.tour.dense ul{gap:.3rem}
+.tour code,.slide li code,.slide p code{color:var(--cyan);font-size:.92em}
+.slide h2.tt{font-size:clamp(1.3rem,2.4vw,1.9rem);margin-bottom:.25em}
+.path{font-family:var(--font-mono);font-size:.8rem;color:var(--text-3);margin-bottom:.9rem}
+.codecol{display:flex;flex-direction:column;gap:.8rem;min-width:0}
+.codecol pre.code{font-size:clamp(.7rem,1vw,.86rem);line-height:1.55;max-height:62vh}
+.tour.dense .codecol pre.code{max-height:70vh}
+table.cmp td,table.cmp th{vertical-align:top}
+table.cmp.small{font-size:clamp(.74rem,1.05vw,.9rem)}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="counter">1 / 1</div>
+<div id="act-label"></div>
+<div id="help-hint">← → navegar · F pantalla completa</div>
+<section class="slide" data-act="Introducción" style="align-items:center;text-align:center">
+  <div class="kicker">Recorrido por el código</div>
+  <h1>KATA <span class="grad-text">Code Tour</span></h1>
+  <p style="max-width:640px;margin:0 auto">El código de <code>tests/</code> no lleva comentarios. La explicación vive aquí: qué hace cada archivo de la plantilla y por qué está escrito así.</p>
+</section>
+<section class="slide" data-act="Introducción">
+  <h2>Por qué el código no tiene <span class="grad-text">comentarios</span></h2>
+  <div class="cards c3" data-stagger><div class="card"><h3>Regla crítica 18</h3><p>El código no lleva comentarios. Un comentario envejece sin que nadie lo note y termina enseñando algo falso. La explicación de la plantilla vive en decks y en la doctrina, que se revisan como documentos.</p></div><div class="card"><h3>Pirámide de confianza</h3><p>Lo que una máquina puede comprobar se comprueba en lint, tipos y tests. Una regla de KATA que se puede chequear con una regla de ESLint no necesita un párrafo que pida cumplirla.</p></div><div class="card"><h3>Este deck</h3><p>Lo que ninguna máquina chequea: el porqué de cada decisión. Cada diapositiva nombra un archivo, muestra un extracto real y explica sus razones.</p></div></div>
+  <div class="callout info"><p>Los extractos salen del código actual del repo. Si un archivo cambia, el extracto del deck se vuelve a copiar de él.</p></div>
+</section>
+<section class="slide" data-act="Mapa">
+  <h2 style="text-align:center">Las capas de KATA y dónde vive cada una</h2>
+  <div class="kata-stack" style="max-width:900px" data-stagger><div class="layer"><span class="ly-tag">L1</span>TestContext <span class="ly-note">tests/components/TestContext.ts</span></div>
+<div class="arrow">↓ extiende de</div>
+<div class="layer"><span class="ly-tag">L2</span>ApiBase · UiBase <span class="ly-note">tests/components/api/ApiBase.ts · tests/components/ui/UiBase.ts</span></div>
+<div class="arrow">↓ extiende de</div>
+<div class="layer star"><span class="ly-tag">L3</span>Componentes de dominio <span class="ly-note">tests/components/api/ · tests/components/ui/</span></div>
+<div class="arrow">↓ inyectadas por</div>
+<div class="layer"><span class="ly-tag">L3.5</span>Steps <span class="ly-note">tests/components/steps/</span></div>
+<div class="arrow">↓ inyectadas por</div>
+<div class="layer"><span class="ly-tag">L4</span>Fixtures <span class="ly-note">tests/components/TestFixture.ts · ApiFixture.ts · UiFixture.ts</span></div></div>
+  <div class="callout info" style="max-width:900px;margin:1rem auto 0"><p>Después de las capas: specs, datos, utilidades, setup y teardown. Al final, qué reglas de KATA revisa el lint.</p></div>
+</section>
+<section class="slide" data-act="Capa 1 · TestContext">
+  <h2 class="tt">TestContext: la base de todo</h2>
+  <div class="path">tests/components/TestContext.ts</div>
+  <div class="tour"><ul><li><code>TestContext</code> centraliza los drivers de Playwright (<code>page</code>, <code>request</code>), la configuración del ambiente y el acceso a <code>DataFactory</code>.</li><li><code>UiBase</code> y <code>ApiBase</code> extienden de esta clase, así que las operaciones de UI y de API corren sobre el mismo contexto.</li><li><code>TestContextOptions</code>: <code>page</code> es obligatorio para tests de UI, <code>request</code> para tests de API, y <code>environment</code> toma por defecto el ambiente actual de la config.</li><li><code>data</code> existe como propiedad estática y como getter de instancia. Cualquier componente llama <code>this.data</code> y nunca importa la fábrica por su cuenta.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/TestContext.ts</span></div><pre class="code">  readonly config = config;
+
+  static readonly data = DataFactory;
+
+  constructor(options: TestContextOptions = {}) {
+    this._page = options.page;
+    this._request = options.request;
+    this.env = options.environment ?? env.current;
+  }
+
+  get data(): typeof DataFactory {
+    return TestContext.data;
+  }</pre></div></div></div>
+</section>
+<section class="slide" data-act="Capa 2 · Bases">
+  <h2 class="tt">ApiBase: helpers HTTP tipados</h2>
+  <div class="path">tests/components/api/ApiBase.ts</div>
+  <div class="tour"><ul><li><code>ApiBase</code> envuelve <code>APIRequestContext</code> de Playwright y extiende <code>TestContext</code>, así hereda drivers y config.</li><li><code>apiGET</code> y <code>apiDELETE</code> devuelven <code>[APIResponse, TBody]</code>: el ATC recibe la respuesta cruda (status, headers) y el body ya parseado en una sola llamada.</li><li><code>apiPOST</code>, <code>apiPUT</code> y <code>apiPATCH</code> devuelven <code>[APIResponse, TBody, TPayload]</code>. El tercer elemento es el payload realmente enviado, así el spec compara respuesta contra pedido sin reconstruirlo.</li><li>Pasa siempre el modelo de respuesta (y el de payload en mutaciones) como genéricos para que los ATCs sigan tipados.</li><li>Los helpers HTTP son <code>protected</code> a propósito: un test no puede saltarse la capa de componentes con <code>api.apiPOST(...)</code>. Pasa por un ATC o por un helper <code>@step</code> de la capa 3.</li><li>Cada helper adjunta pedido y respuesta al reporte de Allure de forma automática.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/api/ApiBase.ts</span></div><pre class="code">  protected async apiGET&lt;TBody = Record&lt;string, unknown&gt;&gt;(
+    endpoint: string,
+    options: RequestOptions = {},
+  ): Promise&lt;[APIResponse, TBody]&gt; {
+    const url = this.apiEndpoint(endpoint);
+...
+    const body = await this.getResponseJsonObject&lt;TBody&gt;(response);
+
+    await attachRequestResponseToAllure({ url: endpoint, method: 'GET', responseBody: body });
+
+    return [response, body];
+  }</pre></div></div></div>
+</section>
+<section class="slide" data-act="Capa 2 · Bases">
+  <h2 class="tt">ApiBase: auth, cookies y respuestas defensivas</h2>
+  <div class="path">tests/components/api/ApiBase.ts</div>
+  <div class="tour dense"><ul><li><code>setAuthToken</code> guarda el token y lo envía como <code>Authorization: Bearer</code> en los pedidos siguientes. <code>clearAuthToken</code> lo quita.</li><li>El accessor <code>request</code> prefiere <code>page.request</code> cuando hay página: comparte cookies y storage con el navegador, así que en el fixture híbrido <code>{ test }</code> las llamadas API llevan la cookie. En tests solo API usa el contexto independiente, que no tiene cookie.</li><li>Si no hay contexto de request, el accessor lanza un error. Un fixture mal armado falla fuerte en vez de fallar en silencio.</li><li><code>getResponseJsonObject</code> parsea el JSON de forma defensiva y devuelve un objeto vacío si falla, para que un body de error que no es JSON no rompa el ATC.</li><li><code>requestHeaders.Accept</code> es <code>*/*</code> para evitar errores 406 de servidores que rechazan un <code>application/json</code> explícito, aunque el body siga siendo JSON.</li><li><code>apiEndpoint</code> arma la URL completa desde <code>config.apiUrl</code>, porque el contexto de request de Playwright no usa <code>baseURL</code> aquí.</li><li><code>apiPOSTForm</code> envía formularios <code>x-www-form-urlencoded</code> para OAuth2 y endpoints de token, acepta URLs absolutas y enmascara <code>password</code> en el adjunto de Allure.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/api/ApiBase.ts</span></div><pre class="code">  setAuthToken(token: string) {
+    this.authToken = token;
+  }
+
+  clearAuthToken() {
+    this.authToken = null;
+  }
+...
+  async getResponseJsonObject&lt;T = Record&lt;string, unknown&gt;&gt;(response: APIResponse): Promise&lt;T&gt; {
+    const status = response.status();
+    const endpoint = response.url().split('?')[0];
+...
+    try {
+      return (await response.json()) as T;
+    }
+    catch {
+      return {} as T;
+    }</pre></div></div></div>
+</section>
+<section class="slide" data-act="Capa 2 · Bases">
+  <h2 class="tt">UiBase: Playwright nativo más intercepción de red</h2>
+  <div class="path">tests/components/ui/UiBase.ts</div>
+  <div class="tour"><ul><li><code>UiBase</code> es la base de los componentes de UI. Extiende <code>TestContext</code> y los componentes usan la API nativa de Playwright (<code>this.page</code>) directo: Playwright espera solo antes de cada acción, así que no hace falta una capa de envoltorios.</li><li>El accessor <code>page</code> lanza un error si no hay página (por ejemplo en tests solo API), para que un driver faltante falle fuerte.</li><li><code>buildUrl</code> arma la URL completa desde <code>config.baseUrl</code> para logs o aserciones. Para <code>page.goto()</code> usa una ruta relativa: el <code>baseURL</code> de Playwright ya la resuelve.</li><li><code>interceptResponse</code> registra primero la espera de la respuesta, luego ejecuta la acción que la dispara y al final espera la respuesta. Así evita la carrera en la que la respuesta llega antes de que exista el listener.</li><li><code>waitForApiResponse</code> hace la misma captura sin disparar una acción: úsalo cuando el pedido ya está en vuelo.</li><li><code>matchesPattern</code> convierte patrones tipo glob a regex: <code>**</code> cubre cualquier ruta y <code>*</code> un segmento. Los parsers de body devuelven <code>null</code> si no es JSON, así la intercepción nunca rompe un test.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/ui/UiBase.ts</span></div><pre class="code">  async interceptResponse&lt;TRequest = unknown, TResponse = unknown&gt;(
+    args: InterceptResponseArgs,
+  ): Promise&lt;InterceptedData&lt;TRequest, TResponse&gt;&gt; {
+    const { urlPattern, action, timeout = 30000, attachToAllure = true } = args;
+...
+    const responsePromise = this.page.waitForResponse(
+      response =&gt; this.matchesPattern(response.url(), urlPattern),
+      { timeout },
+    );
+
+    await action();
+...
+    const response = await responsePromise;
+    const request = response.request();</pre></div></div></div>
+</section>
+<section class="slide" data-act="Capa 3 · Componentes de dominio">
+  <h2 class="tt">ExamplePage: el componente de referencia de UI</h2>
+  <div class="path">tests/components/ui/ExamplePage.ts</div>
+  <div class="tour dense"><ul><li>Es un componente de referencia con una página ficticia <code>/example</code> y selectores de relleno. Cópialo a <code>tests/components/ui/YourPage.ts</code>, cambia URLs y locators, regístralo en <code>UiFixture.ts</code> y corre <code>bun run kata:manifest</code>.</li><li>Un ATC es un caso de prueba completo, un mini flujo (navegar, actuar, verificar), nunca una sola interacción.</li><li>Cada ATC tiene un único resultado esperado (partición de equivalencia): con datos válidos termina en una redirección, con email inválido termina en un mensaje de error.</li><li>Los locators van en línea dentro del ATC. Se extraen a un campo de la clase solo cuando dos o más ATCs los usan (<code>emailInput</code>, <code>passwordInput</code>, <code>submitButton</code>).</li><li>Estrategia 1, <code>errorMessageTestId</code>: un string <code>data-testid</code> usado con <code>getByTestId</code>, la opción preferida.</li><li>Estrategia 2, <code>emailInput</code>: una función flecha que devuelve un <code>Locator</code>, para selectores complejos o respaldos encadenados con <code>.or()</code>. Un <code>.or()</code> sobre varios selectores del mismo elemento resuelve a uno solo, por eso no hace falta <code>.first()</code>.</li><li><code>@atc('PROJ-131')</code> usa una clave de proyecto de relleno: cambia <code>PROJ</code> por la clave real de Jira.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/ui/ExamplePage.ts</span></div><pre class="code">  private readonly emailInput = () =&gt;
+    this.page
+      .getByTestId('email-input')
+      .or(this.page.locator('#email'))
+      .or(this.page.locator('input[name="email"]'));
+...
+  @atc('PROJ-131')
+  async submitFormWithValidData(data: ExampleFormData) {
+    await this.goto();
+
+    await this.emailInput().fill(data.email);
+    await this.passwordInput().fill(data.password);
+    await this.submitButton().click();
+
+    await this.page.waitForURL('**/dashboard', { timeout: 10000 });
+    await expect(this.page).toHaveURL(/.*dashboard.*/);
+  }</pre></div></div></div>
+</section>
+<section class="slide" data-act="Capa 3 · Componentes de dominio">
+  <h2 class="tt">LoginPage: un componente real</h2>
+  <div class="path">tests/components/ui/LoginPage.ts</div>
+  <div class="tour"><ul><li>Los locators van en línea con <code>data-testid</code> (<code>login-email-input</code>, <code>login-password-input</code>, <code>login-submit-button</code>, <code>login-error</code>), lo más alto en la prioridad de locators.</li><li><code>fillAndSubmitLoginForm</code> es un helper privado que dos ATCs comparten. Por eso no lleva <code>@atc</code> ni aserciones.</li><li><code>goto</code> (<code>@step</code>) está separado de los ATCs: llámalo antes de un ATC de login, porque los ATCs no navegan.</li><li><code>loginSuccessfully</code> espera a que la URL salga de <code>/login</code> (autenticación más redirección) y luego lo afirma. Su resultado único es la redirección.</li><li><code>loginWithInvalidCredentials</code> termina con un indicador de error visible mientras la URL sigue en <code>/login</code>.</li><li><code>LoginCredentials</code> usa el campo <code>email</code> en lugar de <code>username</code>, porque así lo pide la app objetivo.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/ui/LoginPage.ts</span></div><pre class="code">  private async fillAndSubmitLoginForm(credentials: LoginCredentials): Promise&lt;void&gt; {
+    await this.page.locator('[data-testid="login-email-input"]').fill(credentials.email);
+    await this.page.locator('[data-testid="login-password-input"]').fill(credentials.password);
+    await this.page.locator('[data-testid="login-submit-button"]').click();
+  }
+...
+  @atc('PROJ-111')
+  async loginSuccessfully(credentials: LoginCredentials): Promise&lt;void&gt; {
+    await this.fillAndSubmitLoginForm(credentials);
+
+    await this.page.waitForURL(url =&gt; !url.pathname.includes('/login'), { timeout: 15000 });
+    await expect(this.page).not.toHaveURL(/.*\/login.*/);
+  }</pre></div></div></div>
+</section>
+<section class="slide" data-act="Capa 3 · Componentes de dominio">
+  <h2 class="tt">AuthApi: ATCs de autenticación</h2>
+  <div class="path">tests/components/api/AuthApi.ts</div>
+  <div class="tour dense"><ul><li><code>AuthApi</code> es el componente de API de autenticación (<code>POST /api/auth/login</code>, <code>GET /api/auth/me</code>). Los endpoints salen de <code>config.auth</code>.</li><li>Un ATC es una ACCIÓN más una VERIFICACIÓN, nunca un GET suelto. Una operación de solo lectura es un helper sin <code>@atc</code>.</li><li><code>getCurrentUser</code> es ese helper: un GET de lectura que se usa como paso de verificación dentro de ATCs o en aserciones del test. Lleva <code>@step</code> y no <code>@atc</code> porque recupera datos, no es un flujo de acción completo.</li><li><code>authenticateSuccessfully</code> envía las credenciales, afirma la respuesta fija (200, <code>access_token</code>, <code>Bearer</code>, <code>expires_in</code>), guarda el token con <code>setAuthToken</code> y verifica la sesión con <code>GET /auth/me</code>.</li><li><code>loginWithInvalidCredentials</code> envía credenciales malas, afirma el 401 y comprueba que no se creó sesión llamando a <code>/auth/me</code> sin token. Guarda el token actual, lo limpia para esa comprobación y lo restaura después, para que un login fallido no cierre la sesión del test que lo rodea.</li><li>Los tipos de pedido y respuesta se reexportan desde <code>AuthApi</code>, así los consumidores no importan el archivo de schemas.</li><li>El prefijo <code>PROJ</code> de <code>@atc('PROJ-101')</code> es de relleno: usa la clave real del proyecto.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/api/AuthApi.ts</span></div><pre class="code">  @step
+  async getCurrentUser(): Promise&lt;[APIResponse, UserInfoResponse]&gt; {
+    const [response, body] = await this.apiGET&lt;UserInfoResponse&gt;(this.config.auth.meEndpoint);
+    return [response, body];
+...
+    expect(response.status()).toBe(401);
+    expect(response.ok()).toBe(false);
+    expect(body.error).toBeDefined();
+...
+    const savedToken = this.authToken;
+    this.clearAuthToken();
+    const [meResponse] = await this.getCurrentUser();
+    expect(meResponse.status()).toBe(401);
+    if (savedToken) {
+      this.setAuthToken(savedToken);
+    }</pre></div></div></div>
+</section>
+<section class="slide" data-act="Capa 3 · Componentes de dominio">
+  <h2 class="tt">ExampleApi: el componente de referencia de API</h2>
+  <div class="path">tests/components/api/ExampleApi.ts</div>
+  <div class="tour"><ul><li>Es una referencia con endpoints ficticios. Cópialo a <code>tests/components/api/YourApi.ts</code>, cambia endpoints y tipos de schema, regístralo en <code>ApiFixture.ts</code> y corre <code>bun run kata:manifest</code>.</li><li>Un ATC es un mini flujo completo, no una sola llamada. Cada ATC tiene un resultado esperado único (éxito 201 contra error 4xx) y aserciones fijas dentro del ATC que validan que tuvo éxito.</li><li>El retorno <code>[APIResponse, TBody, TPayload]</code> da acceso tipado a la respuesta, al body parseado y al payload enviado.</li><li>En <code>createResourceSuccessfully</code>, si la respuesta trae un token, el ATC lo guarda para los pedidos siguientes.</li><li><code>getResourceSuccessfully</code> es un helper con <code>@step</code>: una lectura suelta aparece igual en la traza y en el árbol de Allure. Un ATC, en cambio, cambia estado (precondición, acción, aserciones).</li><li>Un helper puede mantener aserciones fijas de su propio contrato, pero no debe reclamar un id de caso de prueba del TMS para una operación que no prueba nada que un usuario pueda hacer.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/api/ExampleApi.ts</span></div><pre class="code">  @atc('PROJ-121')
+  async createResourceSuccessfully(
+    payload: CreateExampleRequest,
+  ): Promise&lt;[APIResponse, CreateExampleResponse, CreateExampleRequest]&gt; {
+    const [response, body, sentPayload] = await this.apiPOST&lt;CreateExampleResponse, CreateExampleRequest&gt;(
+...
+    expect(response.status()).toBe(201);
+    expect(body.user).toBeDefined();
+    expect(body.user.id).toBeDefined();
+...
+    if (body.token !== undefined &amp;&amp; body.token !== '') {
+      this.setAuthToken(body.token);
+    }
+...
+  @step
+  async getResourceSuccessfully(resourceId: string): Promise&lt;[APIResponse, GetExampleResponse]&gt; {
+    const [response, body] = await this.apiGET&lt;GetExampleResponse&gt;(`/api/example/${resourceId}`);</pre></div></div></div>
+</section>
+<section class="slide" data-act="Capa 3.5 · Steps">
+  <h2 class="tt">ExampleSteps: cadenas de precondición</h2>
+  <div class="path">tests/components/steps/ExampleSteps.ts</div>
+  <div class="tour"><ul><li>Es una referencia (capa 3.5) de cadenas de precondición reutilizables que preparan el estado antes del test real. Cópialo a <code>tests/components/steps/YourSteps.ts</code> y reemplaza los endpoints y la lógica de auth ficticios.</li><li>Un step no tiene aserciones fijas ni <code>@atc</code>. Combina acciones o ATCs para llegar a un estado: autenticación, datos, navegar a una página con datos.</li><li><code>authenticateUser</code> es un step de SETUP: solo obtiene el token y no verifica que la auth funcionó. Esa verificación pertenece a un ATC.</li><li><code>navigateAsAuthenticatedUser</code> encadena login, token en el storage del navegador y navegación en una sola precondición. Recibe un objeto porque con tres o más parámetros los strings sueltos se leen igual en la llamada y cambiar dos de lugar es un error silencioso (<code>typescript-patterns.md</code>, sección 1).</li><li>Cada step lanza un error claro cuando falta el driver que necesita (<code>request</code>, <code>page</code>) en el constructor.</li><li><code>createTestResource</code> crea datos por API para que los tests de UI arranquen desde un estado conocido.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/steps/ExampleSteps.ts</span></div><pre class="code">  async navigateAsAuthenticatedUser(args: { path: string, email: string, password: string }) {
+    const { path, email, password } = args;
+    if (!this._page || !this._request) {
+      throw new Error(
+        'Page and Request context must be set. Pass { page, request } in constructor options.',
+      );
+    }
+
+    const auth = await this.authenticateUser(email, password);
+...
+    await this._page.evaluate((token) =&gt; {
+      localStorage.setItem('authToken', token);
+    }, auth.token);
+
+    await this._page.goto(path);</pre></div></div></div>
+</section>
+<section class="slide" data-act="Capa 4 · Fixtures">
+  <h2 class="tt">ApiFixture y UiFixture: contenedores de inyección</h2>
+  <div class="path">tests/components/ApiFixture.ts · tests/components/UiFixture.ts</div>
+  <div class="tour"><ul><li><code>ApiFixture</code> es un contenedor de inyección de dependencias para todos los componentes de API. Cada uno recibe las mismas opciones, así comparten un contexto de request y una auth consistente.</li><li>Para sumar un componente de API: créalo en <code>tests/components/api/YourApi.ts</code>, impórtalo en el fixture, agrega una propiedad <code>readonly</code> e inicialízala en el constructor con las opciones compartidas.</li><li><code>setAuthToken</code> y <code>clearAuthToken</code> están sobreescritos: el token se guarda por componente, así que el fixture reparte la llamada a cada hijo para mantenerlos en un solo token.</li><li><code>UiFixture</code> es el contenedor de los componentes de UI. Todos comparten el mismo contexto de página, así el estado del navegador es consistente entre componentes.</li><li>Para sumar un componente de UI el camino es el mismo: créalo en <code>tests/components/ui/YourPage.ts</code>, impórtalo, agrega la propiedad <code>readonly</code> e inicialízala con las opciones compartidas.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/ApiFixture.ts</span></div><pre class="code">export class ApiFixture extends ApiBase {
+  readonly auth: AuthApi;
+
+  readonly example: ExampleApi;
+...
+  constructor(options: TestContextOptions) {
+    super(options);
+
+    this.auth = new AuthApi(options);
+    this.example = new ExampleApi(options);
+  }
+...
+  override setAuthToken(token: string) {
+    super.setAuthToken(token);
+    this.auth.setAuthToken(token);
+    this.example.setAuthToken(token);
+  }</pre></div></div></div>
+</section>
+<section class="slide" data-act="Capa 4 · Fixtures">
+  <h2 class="tt">TestFixture: qué fixture pedir</h2>
+  <div class="path">tests/components/TestFixture.ts</div>
+  <div class="tour"><ul><li><code>test</code> es el fixture híbrido con UI y API, <code>ui</code> es solo UI y <code>api</code> es solo API. Los tres comparten un <code>TestContext</code>, así que un test híbrido usa los mismos drivers de Playwright.</li><li>Los fixtures de Playwright son perezosos: un test que solo pide <code>api</code> nunca abre un navegador, y uno que pide <code>ui</code> o <code>test</code> sí.</li><li>Uso típico. E2E híbrido: <code>test.ui.login.loginSuccessfully(...)</code> y luego <code>test.api.auth.getCurrentUser()</code>. Solo API: <code>api.auth.authenticateSuccessfully(...)</code>.</li><li><code>setAuthToken</code> y <code>clearAuthToken</code> renuevan el token en mitad de un test (tras un re-login) o lo limpian para probar escenarios sin autenticar.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/TestFixture.ts</span></div><pre class="code">  test: async ({ page, request }, use) =&gt; {
+    const fixture = new TestFixture(page, request);
+    await use(fixture);
+  },
+...
+  ui: async ({ page, request }, use) =&gt; {
+    const uiFixture = new UiFixture({ page, request });
+    await use(uiFixture);
+  },
+...
+  api: async ({ request }, use) =&gt; {
+    const apiFixture = new ApiFixture({ request });</pre></div></div></div>
+</section>
+<section class="slide" data-act="Capa 4 · Fixtures">
+  <h2 class="tt">TestFixture: token y capa de Allure</h2>
+  <div class="path">tests/components/TestFixture.ts</div>
+  <div class="tour"><ul><li><code>loadTokenFromFile</code> y el fixture <code>api</code> leen el token de <code>api-state.json</code> (la ruta está en <code>config.auth.apiStatePath</code>) al construir el fixture. Si el archivo falta o está corrupto, el token queda en <code>null</code> en vez de fallar.</li><li><code>_allureLayer</code> es un auto-fixture que etiqueta cada test con su capa (<code>integration</code> o <code>e2e</code>), derivada de la ruta del spec. Los gráficos de Allure (pirámide de tests, duración por capa) agrupan resultados sin código extra en cada test.</li><li>El <code>eslint-disable no-empty-pattern</code> existe porque Playwright exige un primer argumento desestructurado en los fixtures, aunque no se use ninguno.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/components/TestFixture.ts</span></div><pre class="code">  private loadTokenFromFile(): void {
+    const apiStatePath = config.auth.apiStatePath;
+    if (existsSync(apiStatePath)) {
+...
+        const content = readFileSync(apiStatePath, 'utf-8');
+        const apiState: ApiState = JSON.parse(content);
+        if (apiState.token) {
+          this.api.setAuthToken(apiState.token);
+        }
+...
+  _allureLayer: [
+...
+    async ({}, use, testInfo) =&gt; {
+      const file = testInfo.file.replace(/\\/g, '/');
+      const layer = file.includes('/integration/')
+        ? 'integration'
+        : file.includes('/e2e/') ? 'e2e' : undefined;
+      if (layer) {
+        await label('layer', layer);
+      }
+      await use();
+    },
+    { auto: true },
+  ],</pre></div></div></div>
+</section>
+<section class="slide" data-act="Specs">
+  <h2 class="tt">Spec E2E de dashboard: cuándo se usa <code>page</code> crudo</h2>
+  <div class="path">tests/e2e/dashboard/dashboard.test.ts</div>
+  <div class="tour"><ul><li><code>page</code> crudo en un spec solo es legítimo para un chequeo de infraestructura (que cargue el storage state guardado por <code>ui-setup</code>), porque no existe un componente Page cuando no hay una feature bajo prueba. Todo test de flujo de producto pasa por <code>{ ui }</code>, <code>{ api }</code> o <code>{ test }</code>.</li><li>Elegir <code>{ api }</code> o <code>{ test }</code>: un test que nunca toca la UI usa <code>{ api }</code>. El fixture híbrido <code>{ test }</code> abriría un navegador para nada.</li><li><code>api.auth.getCurrentUser</code>: el fixture de API lleva el token Bearer que guardó <code>api-setup</code>, no la cookie del navegador.</li><li>Una verificación de solo lectura llama a un helper (no a un ATC), y el spec afirma sobre la tupla devuelta <code>[response, body]</code>.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/e2e/dashboard/dashboard.test.ts</span></div><pre class="code">  test('UPEX-200: should load dashboard when a saved session is restored', async ({ page }) =&gt; {
+    await page.goto('/');
+...
+  test('UPEX-200: should return the current user when the API session is valid', async ({ api }) =&gt; {
+    const [response, userInfo] = await api.auth.getCurrentUser();
+
+    expect(response.ok()).toBe(true);</pre></div></div></div>
+</section>
+<section class="slide" data-act="Specs">
+  <h2 class="tt">Spec E2E de ejemplo: el spec orquesta</h2>
+  <div class="path">tests/e2e/module-example/example.test.ts</div>
+  <div class="tour"><ul><li>El spec orquesta ATCs y agrega aserciones a nivel de test. El ATC guarda las aserciones fijas de su flujo.</li><li>Tres fases: arrange (datos de prueba desde <code>ui.data.createCredentials()</code>), act y assert (una llamada a un ATC) y, si hace falta, aserciones extra a nivel de test.</li><li>Marca los tests de humo con la propiedad <code>tag: ['@critical']</code>, nunca en el título.</li><li><code>DataFactory</code> es accesible desde el fixture como <code>ui.data</code> (y <code>api.data</code>).</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/e2e/module-example/example.test.ts</span></div><pre class="code">  test('PROJ-200: should complete example flow successfully', { tag: ['@critical'] }, async ({ ui }) =&gt; {
+    const testData = ui.data.createCredentials();
+
+    await ui.example.submitFormWithValidData({
+      email: testData.email,
+      password: testData.password,
+    });
+
+    await expect(ui.page).toHaveURL(/.*dashboard.*/);
+  });</pre></div></div></div>
+</section>
+<section class="slide" data-act="Specs">
+  <h2 class="tt">Specs de integración: sin navegador</h2>
+  <div class="path">tests/integration/module-example/example.test.ts · tests/integration/auth/user-session.test.ts</div>
+  <div class="tour"><ul><li>Un spec de API no necesita navegador: usa el fixture <code>{ api }</code> directo y los ATCs devuelven la tupla <code>[response, body, sentPayload]</code>.</li><li><code>sentPayload</code> (tercer elemento) permite comparar la respuesta contra exactamente lo que envió el ATC, por ejemplo <code>body.user.email</code> contra <code>sentPayload.email</code>.</li><li>Los ATCs de error (<code>createResourceWithInvalidData</code>) validan la respuesta de error por sí mismos, así el spec solo arma el payload inválido.</li><li><code>ApiFixture</code> carga el token de <code>api-state.json</code> de forma automática, por eso los specs hacen llamadas autenticadas sin loguearse.</li><li><code>api.clearAuthToken()</code> quita el token para probar que una llamada sin autenticar devuelve 401. Después, <code>api.auth.authenticateSuccessfully(credentials)</code> obtiene y fija un token nuevo en runtime (renovación).</li><li>El proyecto <code>integration</code> depende de <code>api-setup</code>.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/integration/module-example/example.test.ts</span></div><pre class="code">  test('PROJ-100: should create resource successfully', { tag: ['@critical'] }, async ({ api }) =&gt; {
+    const payload = api.data.createCredentials();
+
+    const [_response, body, sentPayload] = await api.example.createResourceSuccessfully(payload);
+
+    expect(body.user.email).toBe(sentPayload.email);
+  });</pre></div><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/integration/auth/user-session.test.ts</span></div><pre class="code">  test('UPEX-100: should fail without token', async ({ api }) =&gt; {
+    api.clearAuthToken();
+
+    const [response] = await api.auth.getCurrentUser();
+
+    expect(response.status()).toBe(401);
+    expect(response.ok()).toBe(false);
+  });</pre></div></div></div>
+</section>
+<section class="slide" data-act="Datos">
+  <h2 class="tt">DataFactory y tipos de prueba</h2>
+  <div class="path">tests/data/DataFactory.ts · tests/data/types.ts</div>
+  <div class="tour"><ul><li><code>DataFactory</code> es el generador central de datos de prueba. Regla de oro: nunca datos estáticos, siempre dinámicos con Faker, para que los tests no choquen y sigan siendo independientes.</li><li>Se accede desde un componente como <code>this.data.createUser()</code> (a través de <code>TestContext</code>) o por import directo desde <code>@DataFactory</code>.</li><li><code>createUser</code> arma un usuario completo y <code>createCredentials</code> solo email y password. Ambos aceptan overrides para los campos que le importan al test.</li><li><code>uniqueId</code> genera un id único para etiquetar datos de prueba, útil para limpieza y trazabilidad. Los generadores de hotel y reserva son una estructura de ejemplo para ampliar.</li><li>Los tipos de <code>tests/data/types.ts</code> son solo de pruebas (datos generados, estado de fixtures), no tipos del contrato de la API. Los schemas de pedido y respuesta viven en <code>api/schemas/{domain}.types.ts</code> y se importan desde <code>@schemas/{domain}.types</code>.</li><li><code>ApiState</code> es el estado de API almacenado (token) que escriben los archivos de setup y lee <code>TestFixture</code>. Así el token llega a los specs.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/data/DataFactory.ts</span></div><pre class="code">export class DataFactory {
+  private static uniqueId(): string {
+    return `${Date.now()}-${faker.string.alphanumeric(6)}`;
+  }
+...
+  static createCredentials(overrides?: Partial&lt;TestCredentials&gt;): TestCredentials {
+    return {
+      email: this.testEmail(),
+      password: this.securePassword(),
+      ...overrides,
+    };
+  }</pre></div><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/data/types.ts</span></div><pre class="code">export interface ApiState {
+  token: string
+  tokenType: string
+  expiresIn: number
+  refreshToken: string | null
+  source: 'ui-login' | 'api-login'
+  createdAt: string
+}</pre></div></div></div>
+</section>
+<section class="slide" data-act="Utilidades">
+  <h2 class="tt">Decoradores: <code>@atc</code></h2>
+  <div class="path">tests/utils/decorators.ts</div>
+  <div class="tour dense"><ul><li><code>@atc(testId, options)</code> conecta un método con un caso de prueba de Jira o Xray y registra su ejecución para el reporte y la sincronización con el TMS. Usa el formato de decoradores TC39 Stage 3.</li><li>Todo el logging de un ATC ocurre solo dentro del decorador: los componentes base nunca hacen log.</li><li>Un ATC es un mini flujo completo con nombre <code>{verbo}{Recurso}{Escenario}</code>, nunca una interacción suelta como <code>fillEmailSuccessfully</code>.</li><li>Opciones: <code>softFail</code> sigue el test aunque el ATC falle, <code>severity</code> fija la severidad de Allure (de <code>blocker</code> a <code>trivial</code>) y <code>description</code> agrega texto a Allure.</li><li>El cuerpo del ATC corre dentro de <code>test.step</code>, así aparece solo en <code>KataReporter</code> y en el árbol de allure-playwright. En terminal imprime una línea por ATC (pasa, falla, falla blanda) con duración y mensaje.</li><li>El decorador pone metadatos de Allure y un enlace al caso de Jira cuando <code>config.tms.jira.url</code> está definido. Allure puede no estar disponible (proyectos de setup), por eso esas llamadas van protegidas.</li><li>Empuja una anotación <code>atc</code> en el test en curso, que <code>KataReporter</code> lee hacia <code>reports/test-outcomes.json</code>. Un <code>test.skip()</code> dentro de un ATC lanza para frenar el test y el decorador lo deja propagar: es NOT RUN, nunca un fallo.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/utils/decorators.ts</span></div><pre class="code">export interface AtcOptions {
+  softFail?: boolean
+  description?: string
+  severity?: 'blocker' | 'critical' | 'normal' | 'minor' | 'trivial'
+}
+...
+      try {
+        result.playwrightTestId = test.info().testId;
+        const annotations = test.info().annotations;
+        if (!annotations.some(a =&gt; a.type === 'atc' &amp;&amp; a.description === testId)) {
+          annotations.push({ type: 'atc', description: testId });
+        }
+...
+      try {
+        const stepTitle = `ATC [${testId}]: ${methodName}${formatArgs(args)}`;
+        const returnValue = await test.step(stepTitle, async () =&gt; {
+          return originalMethod.apply(this, args);
+        });</pre></div></div></div>
+</section>
+<section class="slide" data-act="Utilidades">
+  <h2 class="tt">Decoradores: <code>@step</code> y almacenamiento de resultados</h2>
+  <div class="path">tests/utils/decorators.ts</div>
+  <div class="tour"><ul><li><code>@step</code> envuelve un helper en <code>test.step()</code> para que aparezca en el reporter con el nombre del método y sus argumentos formateados (en terminal, <code>✓ getBookings({ start: ... })</code>).</li><li>Úsalo en helpers públicos de solo lectura de la capa 3. Nunca sobre métodos <code>@atc</code> ni sobre métodos base de la capa 2.</li><li>El <code>eslint-disable ts/no-explicit-any</code> existe porque los decoradores necesitan <code>any</code> para seguir siendo genéricos bajo <code>strict</code>.</li><li>Playwright corre cada proyecto (setup, e2e, integration, teardown) en procesos worker separados, así que un mapa en memoria no sobrevive. Cada ejecución de un ATC agrega una línea NDJSON a un archivo compartido y <code>KataReporter.onEnd()</code> las agrega.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/utils/decorators.ts</span></div><pre class="code">export function step&lt;T extends (...args: any[]) =&gt; Promise&lt;any&gt;&gt;(
+  originalMethod: T,
+  context: ClassMethodDecoratorContext,
+): T {
+...
+  async function replacement(this: unknown, ...args: any[]) {
+    const stepTitle = `${methodName}${formatArgs(args)}`;
+    return test.step(stepTitle, async () =&gt; {
+      return originalMethod.apply(this, args);
+    });
+...
+export const ATC_PARTIAL_PATH = resolve('reports/.atc_partial.ndjson');
+
+function storeResult(_testId: string, result: AtcResult) {
+  mkdirSync(dirname(ATC_PARTIAL_PATH), { recursive: true });
+  appendFileSync(ATC_PARTIAL_PATH, `${JSON.stringify(result)}\n`);
+}</pre></div></div></div>
+</section>
+<section class="slide" data-act="Utilidades">
+  <h2 class="tt">Allure compartido</h2>
+  <div class="path">tests/utils/allure.ts</div>
+  <div class="tour"><ul><li>Los helpers de Allure centralizan los adjuntos en un solo lugar (DRY). Los usan <code>ApiBase</code> para pedido y respuesta, las utilidades de intercepción y cualquier componente que adjunte datos.</li><li><code>generateAllureFilename</code> quita el protocolo y el query string, conserva los dos últimos segmentos de la ruta, reemplaza lo no alfanumérico y limita el largo. Da nombres como <code>auth_login_POST_response</code>.</li><li><code>attachJsonToAllure</code> falla en silencio cuando Allure no está disponible (por ejemplo en proyectos de setup) y omite datos vacíos.</li><li><code>attachRequestResponseToAllure</code> adjunta body de pedido y de respuesta solo cuando traen datos, con nombres de archivo generados.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/utils/allure.ts</span></div><pre class="code">export function generateAllureFilename(args: AllureFilenameArgs): string {
+  const { url, suffix } = args;
+
+  const cleanUrl = url.split('?')[0].replace(/^https?:\/\/[^/]+/, '');
+
+  const segments = cleanUrl.split('/').filter(Boolean).slice(-2);
+  const pathPart = segments.length &gt; 0 ? segments.join('_') : 'root';
+
+  const cleanPath = pathPart.replace(/[^a-z0-9]/gi, '_').slice(0, 50);</pre></div></div></div>
+</section>
+<section class="slide" data-act="Utilidades">
+  <h2 class="tt">KataReporter: el reporter propio</h2>
+  <div class="path">tests/KataReporter.ts</div>
+  <div class="tour dense"><ul><li>Es un reporter de Playwright propio, con salida de terminal en colores, log paso a paso, fragmentos de error y un resumen. Se registra en <code>playwright.config.ts</code> junto a los otros reporters.</li><li><code>printsToStdio()</code> devuelve <code>true</code> para avisar a Playwright que este reporter es dueño de stdout, y que no agregue su salida suplementaria. El <code>console.log</code> y stderr de los tests se muestran siempre.</li><li>En <code>onEnd</code> arma un registro de outcome por cada test que la corrida conocía, desde la suite completa (un test cuyo proyecto de dependencia falló no tiene resultado alguno). Lo escribe en <code>reports/test-outcomes.json</code> y, en GitHub Actions, en el resumen del step. Nunca cambia el exit code: lo sigue manejando Playwright.</li><li>El titular sale de esos registros y no del <code>ok()</code> de Playwright, porque una cascada de setup es <code>ok()</code> allí y un defecto conocido no es un pase.</li><li>Orden: los outcomes se arman primero porque deciden <code>listOnly</code>, que lee el reporte de ATCs. El id de corrida se escribe en <code>reports/atc_results.json</code> y en <code>reports/test-outcomes.json</code>, para detectar un par viejo.</li><li><code>playwright test --list</code> llega a <code>onEnd</code> sin intentos: no corrió nada, no se registran outcomes y el reporte de ATCs de la última corrida real queda intacto. Si ningún ATC corrió, se borra un reporte viejo para que un write-back posterior no lo importe.</li><li>Los resultados parciales de ATC los escriben los workers como NDJSON y el proceso coordinador los une, así el archivo está completo cuando dispara <code>onEnd()</code>. El estado final por ATC es conservador: cualquier ejecución fallida es FAIL, todas pasadas es PASS. El resumen del step es una comodidad, el archivo de registros es el contrato.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/KataReporter.ts</span></div><pre class="code">  printsToStdio(): boolean {
+    return true;
+  }
+...
+    const outcomes = this.generateOutcomesReport(result);
+    this.generateAtcReport();</pre></div></div></div>
+</section>
+<section class="slide" data-act="Utilidades">
+  <h2 class="tt">knownDefect y testOutcomes</h2>
+  <div class="path">tests/utils/knownDefect.ts · tests/utils/testOutcomes.ts</div>
+  <div class="tour dense"><ul><li><code>knownDefect(key)</code> marca el test en curso como bloqueado por un defecto conocido en una sola llamada, así la marca de fallo esperado y la clave del defecto no se separan. Pon la clave también en el título (<code>@blocked:BK-999</code>) y llámalo primero en el cuerpo del test.</li><li><code>KataReporter</code> lo clasifica como <code>known-defect</code> mientras falla y como <code>unexpected-pass</code> (un action item) cuando pasa (ADR-0020). Un <code>test.fail()</code> pelado sigue contando como <code>known-defect</code>, pero además levanta el action item <code>known-defect-without-key</code>. Por eso el helper pide la clave.</li><li><code>testOutcomes.ts</code> da a cada test que la corrida conoce exactamente una clase de outcome y calcula el titular desde esas clases, no desde <code>ok()</code> de Playwright ni del estado de Allure.</li><li>Existe porque un test saltado por un <code>beforeAll</code> fallido es <code>ok()</code> en Playwright, un proyecto de setup caído deja a sus dependientes sin resultado y Allure archiva un fallo esperado (<code>test.fail</code>) como pasado. El titular puede decir que todo pasó mientras los defectos conocidos y los fallos de setup quedan escondidos.</li><li>Firma de una cascada de setup: <code>status: 'skipped'</code>, <code>expectedStatus: 'passed'</code> y ninguna anotación <code>skip</code> o <code>fixme</code>. Un <code>test.skip()</code> condicional sí trae la anotación, así que sigue siendo saltado.</li><li>Los registros se arman desde <code>suite.allTests()</code>, nunca desde las llamadas a <code>onTestEnd</code>, porque un proyecto de dependencia caído o <code>--max-failures</code> dejan tests sin resultados.</li><li><code>knownDefectKey</code> toma la clave de una anotación <code>known-defect</code> cuyo valor completo es una clave, del tag <code>@blocked:{BUG-KEY}</code> o de una descripción de <code>test.fail</code> que empiece con <code>Blocked by {BUG-KEY}</code>. El texto libre nunca crea una clave: fragmentos como <code>UTF-8</code> o <code>SHA-256</code> no son claves.</li><li><code>TEST_STATUS_OF_CLASS</code> mapea clases a estados del TMS. Los fallos no observados (el cuerpo nunca corrió) pasan a BLOCKED en <code>testStatusOf</code>, porque PASSED y FAILED exigen una observación.</li><li><code>outcomeHeadline</code> es verde solo si nada falló, nada pasó de forma inesperada, no hay action items abiertos y se alcanzó cada test. El estado de corrida de Playwright también cuenta: un crash de worker o un error de global setup falla la corrida aunque todos los registros se vean limpios.</li><li>El módulo es puro: sin import de runtime de Playwright, sin sistema de archivos y sin llamadas al tracker. Sus tests unitarios (<code>testOutcomes.test.ts</code>, <code>xrayResults.test.ts</code>) corren con <code>bun test tests/utils</code>, y Playwright nunca los recoge porque cada proyecto tiene su propio <code>testMatch</code>.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/utils/knownDefect.ts</span></div><pre class="code">export function knownDefect(defectKey: string, reason?: string): void {
+  test.info().annotations.push({ type: 'known-defect', description: defectKey });
+  test.fail(true, reason === undefined ? `Blocked by ${defectKey}` : `Blocked by ${defectKey}: ${reason}`);
+}</pre></div><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/utils/testOutcomes.ts</span></div><pre class="code">export const TEST_STATUS_OF_CLASS = {
+  'passed': 'PASSED',
+  'failed': 'FAILED',
+  'known-defect': 'FAILED',
+  'unexpected-pass': 'PASSED',
+  'skipped': 'NOT RUN',
+} as const satisfies Record&lt;OutcomeClass, TestStatus&gt;;</pre></div></div></div>
+</section>
+<section class="slide" data-act="Utilidades">
+  <h2 class="tt">xrayResults: el body de import a Xray</h2>
+  <div class="path">tests/utils/xrayResults.ts</div>
+  <div class="tour dense"><ul><li>Arma el body JSON de Xray para <code>POST /api/v2/import/execution</code> a partir de uno o más <code>reports/atc_results.json</code>. Lo comparten el write-back local (<code>jiraSync.ts</code>) y el job de CI <code>XrayImport</code> de <code>.github/workflows/regression.yml</code>, así ambos siguen una sola regla.</li><li>Por qué JSON de Xray y no JUnit: Xray crea un Generic Test nuevo por cada testcase de JUnit sin propiedad <code>test_key</code>, y un testcase de Playwright llama a cero, uno o varios ATCs. Xray JSON solo crea un Test cuando una entrada trae <code>testInfo</code>, que este módulo nunca escribe. Así un import solo puede escribir ejecuciones sobre Tests existentes.</li><li>El id del ATC es la clave del Test: un ATC es un ticket del TMS, y cada entrada es <code>testKey: &lt;id del atc&gt;</code>.</li><li><code>buildXrayTests</code> marca FAILED si alguna ejecución falló y PASSED en otro caso. Si toda ejecución fue un skip de runtime, el ATC se omite (NOT RUN, ADR-0020).</li><li><code>addUnfinishedAtcs</code>: la anotación <code>atc</code> se empuja cuando empieza un ATC y el registro solo cuando termina. Un test que expiró dentro de un ATC (por ejemplo un await ajeno a Playwright que nunca llega al catch del decorador) tiene lo primero sin lo segundo. Esos ATCs se envían como FAILED usando <code>test-outcomes.json</code>.</li><li>Ambos reportes llevan el id de corrida que estampó <code>KataReporter</code>: un reporte de otra corrida se rechaza por viejo.</li><li><code>AtcRun</code> declara <code>playwrightTestId</code> aquí porque <code>bun sync</code> entrega este archivo mientras <code>decorators.ts</code> es una copia propia del proyecto que puede ser anterior. Así este archivo compila contra cualquiera de las dos.</li><li>CLI (<code>bun run xray:payload</code>): <code>--execution &lt;KEY&gt; --out &lt;archivo&gt; &lt;reporte...&gt;</code>. Sale con 1 y una línea que nombra cada reporte ilegible o viejo o id que no es clave de Test, y no escribe nada si no queda ningún resultado. Si la clave existe es decisión de Xray.</li><li>El body de import apunta siempre a un Test Execution existente (<code>testExecutionKey</code>), nunca a <code>info</code>.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/utils/xrayResults.ts</span></div><pre class="code">  for (const [testId, executions] of Object.entries(results)) {
+    const ran = executions.filter(e =&gt; e.status !== 'SKIP');
+    if (ran.length === 0) {
+      continue;
+    }
+    const finalStatus = ran.some(e =&gt; e.status === 'FAIL') ? 'FAILED' : 'PASSED';
+    const lastExecution = ran[ran.length - 1];
+
+...
+export function buildXrayPayload(executionKey: string, results: Record&lt;string, AtcRun[]&gt;): XrayExecutionPayload {
+  return { testExecutionKey: executionKey, tests: buildXrayTests(results) };
+}</pre></div></div></div>
+</section>
+<section class="slide" data-act="Utilidades">
+  <h2 class="tt">jiraSync: el write-back a Jira y Xray</h2>
+  <div class="path">tests/utils/jiraSync.ts</div>
+  <div class="tour dense"><ul><li><code>jiraSync.ts</code> corre después de que termina el proceso de Playwright (<code>bun run test</code> y luego <code>bun run test:sync</code>, condicionado a <code>AUTO_SYNC=true</code>). No se llama desde <code>global.teardown.ts</code> a propósito: <code>KataReporter.onEnd()</code> escribe <code>reports/atc_results.json</code> después del proyecto de teardown, así que una llamada en proceso leería un archivo viejo o ninguno.</li><li>Destinos: Xray Cloud (import de un body JSON de Xray) y Jira Direct (un campo personalizado por test).</li><li>Modos de import (<code>XrayImportPayload</code>): <code>testExecutionKey</code> escribe ejecuciones sobre un Test Execution existente, e <code>info</code> deja que Xray cree uno nuevo. El schema de <code>info</code> es cerrado y no tiene campo padre, así que un Execution creado así no puede colgarse del epic QA Test Artifacts con esta llamada.</li><li>Camino preferido: escribir sobre un Execution que ya existe (el RTR creado por <code>/regression-testing</code> o el STR del cierre de sprint). Ya trae su epic padre, Test Environment, vínculo <code>testPlan</code> y título ratificado, así que no se inventa nada.</li><li>Camino de respaldo (sin <code>STP_EXECUTION_KEY</code>): Xray crea el Execution desde <code>info</code> y queda sin padre. Ninguna llamada posterior puede adoptarlo, porque reasignar el padre es un <code>PUT /issue/{key}</code> de Jira REST que necesita credenciales de Atlassian que el proveedor Xray no tiene. El código hace lo que la API permite: título RTR ratificado, Test Environment del ambiente activo y vínculo <code>testPlanKey</code> cuando <code>RTP_KEY</code> está definido, que se agrega solo si no está vacío porque Xray rechaza un string vacío.</li><li>Guarda de <code>STP_EXECUTION_KEY</code>: invita a pasarle la clave de un Test Plan. Xray escribe ejecuciones solo en Test Executions y un Plan deriva su estado de ellas, así que un import dirigido a uno no llega a ningún lado útil. <code>readIssueType</code> es solo diagnóstico: sin credenciales, con Jira caído o con un payload inesperado devuelve <code>null</code>, porque un diagnóstico nunca debe volverse un bloqueo nuevo.</li><li>Cada ATC es una entrada de <code>tests</code> con solo <code>testKey</code> y sin <code>testInfo</code>, así Xray no puede crear un Test desde el import. Un id que no es clave de Test frena el write-back antes de cualquier llamada de red, y si todo ATC fue skip de runtime no queda nada que enviar, porque el schema de Xray pide al menos una entrada.</li><li>Un reporte ausente en CI significa que el pipeline está mal armado (el comando corre después de Playwright), así que falla fuerte (issue 27: el retorno silencioso anterior escondió el write-back roto por meses). En local es normal y queda como advertencia. Si todos los ATCs se colgaron, <code>test-outcomes.json</code> por sí solo alcanza, porque es el único registro de que corrieron.</li><li><code>resolveTestStatusField</code>: los ids de campos personalizados de Jira son por instancia y una migración de sitio los reasigna, por eso <code>.agents/jira-fields.json</code> es la única fuente de verdad y <code>JIRA_TEST_STATUS_FIELD</code> es solo un override explícito. Sin ninguno, el llamador aborta en lugar de hacer un PUT con clave de campo vacía, que Jira contesta con un 400 opaco. La gramática del título es <code>{ACRONYM}: {scope-id}: {descriptor}</code>, definida en <code>.agents/skills/agentic-qa-core/references/planning-ladder.md</code>.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/utils/jiraSync.ts</span></div><pre class="code">  if (stpExecutionKey) {
+    const issueType = await readIssueType(stpExecutionKey);
+    const kind = issueType?.toLowerCase() ?? '';
+
+    if (issueType === null) {
+...
+    else if (kind.includes('test plan')) {
+      console.error(
+        `[ERROR] STP_EXECUTION_KEY=${stpExecutionKey} is a "${issueType}": that is the `
+...
+    const payload: XrayImportPayload = stpExecutionKey
+      ? { testExecutionKey: stpExecutionKey, tests }
+      : {</pre></div></div></div>
+</section>
+<section class="slide" data-act="Setup y teardown">
+  <h2 class="tt">Setup: global y autenticación</h2>
+  <div class="path">tests/setup/global.setup.ts · ui-auth.setup.ts · api-auth.setup.ts</div>
+  <div class="tour dense"><ul><li><code>global.setup.ts</code> es el proyecto raíz y corre primero: crea los directorios necesarios y valida la config. <code>ui-setup</code> y <code>api-setup</code> dependen de él.</li><li>Cuando <code>AUTO_SYNC</code> está activo, valida las credenciales del TMS ya resueltas desde <code>config.tms</code>, el único punto de resolución. En local avisa y sigue, en CI sale con código distinto de cero para que unos secretos faltantes rompan el workflow a la vista. El mensaje sobre el host de Jira no manda a editar una variable de entorno, porque el host viene de <code>.agents/project.yaml</code>.</li><li><code>ui-auth.setup.ts</code> hace login una sola vez por la página de login e intercepta el JWT con <code>page.waitForResponse()</code>. Una autenticación produce así una sesión de navegador y un token de API, sin una llamada de API aparte.</li><li>Salidas: <code>storageState</code> (cookies y localStorage) para los tests de UI y <code>api-state.json</code> (el token) para las llamadas de API dentro de tests E2E. Depende de <code>global-setup</code> y <code>e2e</code> depende de él.</li><li>Secuencia: navegar con <code>LoginPage.goto()</code> fuera del ATC, registrar la intercepción antes de disparar el login, ejecutar el ATC <code>loginSuccessfully()</code> (dispara el login y el pedido del token), capturar el token, verificar que se obtuvo y guardar ambos estados.</li><li><code>api-auth.setup.ts</code> se autentica directo con <code>AuthApi.authenticateSuccessfully()</code> (un ATC) y guarda el JWT en <code>api-state.json</code> para los tests de integración. Depende de <code>global-setup</code> e <code>integration</code> depende de él. La app objetivo hace login con el campo <code>email</code> y el token se adjunta a Allure para depurar.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/setup/ui-auth.setup.ts</span></div><pre class="code">  const tokenPromise = page.waitForResponse(
+    resp =&gt; resp.url().includes(config.auth.tokenEndpoint)
+      &amp;&amp; resp.request().method() === 'POST'
+      &amp;&amp; resp.status() === 200,
+    { timeout: 30000 },
+  );
+
+  await ui.login.loginSuccessfully(credentials);</pre></div><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/setup/api-auth.setup.ts</span></div><pre class="code">  const [response, tokenData] = await api.auth.authenticateSuccessfully(credentials);</pre></div></div></div>
+</section>
+<section class="slide" data-act="Setup y teardown">
+  <h2 class="tt">Teardown global</h2>
+  <div class="path">tests/teardown/global.teardown.ts</div>
+  <div class="tour"><ul><li>Corre al final, después de e2e e integration, e imprime el resumen de cobertura de ATCs leyendo el archivo parcial NDJSON, porque <code>KataReporter.onEnd()</code> todavía no disparó.</li><li>No sincroniza nada: <code>reports/atc_results.json</code> lo escribe <code>onEnd()</code>, que dispara después de todos los proyectos, teardown incluido. Un sync lanzado aquí leería un archivo que aún no existe (CI) o el de la corrida anterior (local). El write-back corre como <code>bun run test:sync</code> cuando Playwright termina.</li><li>Cuando el write-back está apagado, lo dice en voz alta: un no-op silencioso es la razón por la que nadie notó que los resultados nunca llegaban a Jira en la configuración que se entrega.</li><li>El mensaje nombra la variable que realmente aplica. La modalidad jira-native no tiene Test Executions, así que mandar a sus usuarios a una clave de ejecución enseñaría un modelo de TMS que no existe en su instancia.</li></ul><div class="codecol"><div class="code-window"><div class="cw-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cw-title">tests/teardown/global.teardown.ts</span></div><pre class="code">teardown('Global Teardown: report ATC coverage', () =&gt; {
+...
+  if (existsSync(ATC_PARTIAL_PATH)) {
+    try {
+      const lines = readFileSync(ATC_PARTIAL_PATH, 'utf-8').split('\n').filter(Boolean);</pre></div></div></div>
+</section>
+<section class="slide" data-act="Lint">
+  <h2 class="tt">Qué reglas de KATA revisa <span class="grad-text">el lint</span></h2>
+  <table class="cmp small"><thead><tr><th>Regla</th><th>Qué impide</th><th>Doctrina</th></tr></thead><tbody><tr><td><code>kata/layer-imports</code></td><td>Un spec importa <code>test</code> de <code>@TestFixture</code> y no de <code>@playwright/test</code>. Faker solo en <code>DataFactory</code>. <code>@openapi</code> solo bajo <code>api/schemas/</code>. Ningún componente importa a otro. Las capas 1 a 3 no importan Fixtures ni Steps. <code>TestContext</code> no importa <code>@api</code>, <code>@ui</code> ni <code>@steps</code>.</td><td>kata-invariants.md §1, §2, §5</td></tr><tr><td><code>kata/atc-no-atc-call</code></td><td>Un método <code>@atc</code> nunca llama a otro método <code>@atc</code>. Lo compartido va a un helper o a un módulo Steps.</td><td>kata-invariants.md §3</td></tr><tr><td><code>kata/no-decorator-in-base</code></td><td>Las bases y <code>TestContext</code> no llevan decoradores. <code>@atc</code> y <code>@step</code> van en el método del componente de dominio.</td><td>kata-architecture.md §10</td></tr><tr><td><code>kata/no-raw-page-in-spec</code></td><td>Un spec no desestructura <code>page</code> del callback. Usa <code>ui</code>, <code>api</code> o <code>test</code>.</td><td>kata-invariants.md §2</td></tr><tr><td><code>max-params</code></td><td>Como máximo 2 parámetros posicionales en capas 2, 3 y 3.5. Con 3 o más, un objeto. <code>ApiBase.ts</code> está exento por contrato.</td><td>kata-invariants.md §3</td></tr><tr><td><code>max-lines</code></td><td>Tope de tamaño para los componentes de dominio, para que se puedan revisar.</td><td>kata-invariants.md §3</td></tr><tr><td><code>no-restricted-imports</code> (<code>KATA_IMPORT_ALIASES</code>)</td><td>Ningún import relativo (<code>./</code> o <code>../</code>) en <code>tests/**</code>. Se usan los alias de <code>tsconfig.base.json</code>.</td><td>kata-invariants.md §5</td></tr><tr><td><code>playwright/no-wait-for-timeout, no-wait-for-selector, no-networkidle</code></td><td>Esperas fijas y esperas frágiles.</td><td>kata-invariants.md §3</td></tr><tr><td><code>playwright/no-nth-methods, no-force-option</code></td><td>Locators y clics que se rompen al refactorizar.</td><td>kata-invariants.md §3</td></tr><tr><td><code>playwright/no-conditional-expect</code></td><td>Aserciones escondidas dentro de ramas.</td><td>kata-invariants.md §6</td></tr><tr><td><code>playwright/missing-playwright-await, no-useless-not, no-focused-test, no-page-pause, no-element-handle, no-skipped-test</code></td><td>Higiene general de Playwright.</td><td>sin sección propia</td></tr></tbody></table>
+  <div class="callout info"><p>La severidad de todo este bloque la fija <code>KATA_ENFORCEMENT_LEVEL</code> en <code>eslint.config.base.js</code>: una sola constante decide si los reportes son avisos o errores. Las reglas <code>expect-expect</code>, <code>prefer-ending-with-an-expect</code>, <code>no-standalone-expect</code> y <code>no-raw-locators</code> de eslint-plugin-playwright están apagadas a propósito, porque contradicen las reglas 4 y 6 de KATA (las aserciones viven en los ATCs y los locators en los componentes).</p></div>
+</section>
+<section class="slide" data-act="Cierre" style="align-items:center">
+  <h2 style="text-align:center">La fuente de verdad es la <span class="grad-text">doctrina</span></h2>
+  <p style="text-align:center;max-width:720px;margin:0 auto 1.2rem">Este deck explica el código. Las reglas viven en dos documentos, y si algo aquí los contradice, ellos ganan.</p>
+  <div class="cards c2" style="max-width:1000px;width:100%" data-stagger><div class="card hl"><h3><code>.agents/skills/test-automation/references/kata-architecture.md</code></h3><p>Las capas, la estructura de carpetas, las reglas de ATC, los fixtures, los Steps y los decoradores.</p></div><div class="card hl"><h3><code>.agents/skills/framework-development/references/kata-invariants.md</code></h3><p>Los invariantes que no se negocian y qué regla de lint cubre cada uno.</p></div></div>
+  <p style="text-align:center;margin-top:1.2rem;color:var(--text-3)">Los decks de currículum (KATA Bridge, Automation Patterns) enseñan a pensar en KATA. Este recorre el código real de la plantilla.</p>
+</section>
+<script>
+(function(){
+'use strict';
+const $=(s,r)=>(r||document).querySelector(s);
+const $$=(s,r)=>Array.from((r||document).querySelectorAll(s));
+const slides=$$('.slide'), N=slides.length;
+let cur=0;
+const progress=$('#progress'), counter=$('#counter'), actLabel=$('#act-label');
+function go(i){
+  cur=Math.max(0,Math.min(N-1,i));
+  slides.forEach((s,k)=>s.classList.toggle('is-active',k===cur));
+  progress.style.width=((cur+1)/N*100)+'%';
+  counter.textContent=(cur+1)+' / '+N;
+  actLabel.textContent=slides[cur].dataset.act||'';
+  history.replaceState(null,'','#/'+(cur+1));
+}
+const fromHash=()=>{const m=location.hash.match(/^#\/(\d+)/);go(m?parseInt(m[1],10)-1:0);};
+window.addEventListener('hashchange',fromHash);
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();go(cur+1);}
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(cur-1);}
+  else if(e.key==='Home')go(0);
+  else if(e.key==='End')go(N-1);
+  else if(e.key==='f'||e.key==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+});
+fromHash();
+})();
+</script>
+<style id="upex-mobile-style">
+@media (max-width:768px){
+  .slide{padding:max(6vh,52px) 5vw 10vh;overflow-y:auto;justify-content:flex-start}
+  .cols,.cols-32,.tour,.cards.c3,.cards.c2{grid-template-columns:1fr}
+  #help-hint,#act-label{display:none}
+}
+@media (pointer:coarse){#help-hint{display:none}}
+</style>
+<script id="upex-mobile-nav">
+(function(){
+'use strict';
+var send=function(key){document.dispatchEvent(new KeyboardEvent('keydown',{key:key,bubbles:true}))};
+var x0=null,y0=null,skip=false;
+document.addEventListener('touchstart',function(e){
+  var t=e.target;
+  skip=!!(t&&t.closest&&t.closest('textarea,input,button,pre,table'));
+  var p=e.changedTouches[0]; x0=p.clientX; y0=p.clientY;
+},{passive:true});
+document.addEventListener('touchend',function(e){
+  if(x0===null||skip) return;
+  var p=e.changedTouches[0], dx=p.clientX-x0, dy=p.clientY-y0;
+  x0=y0=null;
+  if(Math.abs(dx)>60&&Math.abs(dx)>2*Math.abs(dy)) send(dx<0?'ArrowRight':'ArrowLeft');
+},{passive:true});
+})();
+</script>
+
+</body>
+</html>
