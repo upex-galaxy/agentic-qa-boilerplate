@@ -278,7 +278,7 @@ export const RETIRED_COMMAND_WRAPPERS: DeprecatedFile[] = [
 // fails skills:check.
 const RENAMED_SKILL_REASON = 'skill renamed to test-framework-adaptation (same workflow, new name)';
 const MOVED_ORCHESTRATION_REASON = 'skill renamed to the user-level agent-orchestration (bun setup installs it); orca-orchestration keeps only its SKILL.md stub, and the repo parts live in agentic-qa-core/references/fleet-*.md';
-const RETIRED_SYNC_REASON ='skill retired: bun run docs:check gates the skill router and quoted scripts; framework-development and test-framework-adaptation close the docs';
+const RETIRED_SYNC_REASON = 'skill retired: bun run docs:check gates the skill router and quoted scripts; framework-development and test-framework-adaptation close the docs';
 export const RETIRED_SKILL_FILES: DeprecatedFile[] = [
   ...[
     '.agents/skills/adapt-framework/SKILL.md',
