@@ -199,7 +199,7 @@ Run the interactive installer once after cloning:
 bun setup
 ```
 
-It bootstraps `.agents/`, records the agents you select in `harnesses:` (`.agents/project.yaml`) and offers to delete the files of the harnesses left out, asks where secret values live (`.env` by default, or a secret manager), wires Engram persistent memory into each selected agent (`engram setup`), configures the MCPs in `.mcp.json`, downloads Playwright browsers, installs the community skills `cli/install.ts` declares (`USER_LEVEL_SKILLS` + `PROJECT_LEVEL_SKILLS`), verifies the variables each MCP server's `.env` loader `--filter` names against your `.env`, and retires any plaintext MCP credential copy an older install left behind (the same thing `bun run harness:env` does). Full details in [`INSTALLER.md`](../../../INSTALLER.md).
+It bootstraps `.agents/`, records the agents you select in `harnesses:` (`.agents/project.yaml`) and offers to delete the files of the harnesses left out, asks where secret values live (`.env` by default, or a secret manager), wires Engram persistent memory into each selected agent (`engram setup`), offers RTK token savings on Claude Code (optional, user level), configures the MCPs in `.mcp.json`, downloads Playwright browsers, installs the community skills `cli/install.ts` declares (`USER_LEVEL_SKILLS` + `PROJECT_LEVEL_SKILLS`), verifies the variables each MCP server's `.env` loader `--filter` names against your `.env`, and retires any plaintext MCP credential copy an older install left behind (the same thing `bun run harness:env` does). Full details in [`INSTALLER.md`](../../../INSTALLER.md).
 
 After setup, fill `.env` with the credentials the workflow expects (see "Env vars, by scope") and restart the agent session: MCP servers read `.env` through the `.env` loader when the harness spawns them. `bun run setup:doctor` is the health check.
 
@@ -337,6 +337,32 @@ The committed skills, with their triggers and purpose, are listed in `.agents/in
 `bun setup` wires **Engram** into each selected agent with the engram binary's own `engram setup <agent>`, which registers the Engram MCP server and nothing else. On Claude Code the installer then offers the Engram plugin (`claude plugin install engram@engram`), which adds the session hooks the MCP registration does not install ([`INSTALLER.md`](../../../INSTALLER.md), "What `engram setup` adds"). The boilerplate does not use gentle-ai's workflow layer: its own workflow skills cover Plan → Code → Verify.
 
 Tell a new user two things: the agent saves memories only when it decides to (`mem_save`), and search matches keywords, not meaning, so a short keyword query finds more than a full question.
+
+## Token savings with RTK (optional, user level)
+
+RTK (`rtk-ai/rtk`) compresses the output of shell commands such as `git status` before the agent reads it, so sessions spend fewer tokens. `rtk gain` shows the savings. It installs once per machine, in the user-level Claude Code config, and works only with Claude Code here. `bun setup` already offers it in an interactive run ([`INSTALLER.md`](../../../INSTALLER.md), "RTK").
+
+Offer the prompt below only to a newcomer on Claude Code who does not have RTK (`rtk gain` fails or `rtk` is missing), and ask first: it edits `~/.claude/settings.json`. Never install it on your own, and never when the user declined it. The prompt itself shows a dry run and waits for a confirmation before it changes anything.
+
+````text
+Install RTK (rtk-ai/rtk), the token-saving output compressor, for Claude Code on this machine.
+
+First, check the machine state. If `rtk` is already installed (`rtk gain` exits 0) and its Claude Code hook is already in ~/.claude/settings.json (a PreToolUse command containing "rtk hook claude"), report that and change nothing.
+
+Otherwise:
+1. Detect the OS and the package manager, then install with the matching command:
+   - macOS or Linux with Homebrew: brew install rtk
+   - Windows: winget install rtk-ai.rtk
+   - Anything else: curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
+2. Verify with `rtk --version` and `rtk gain`. A different crate also named "rtk" exists: if `rtk gain` fails, it is the wrong binary, so stop and explain.
+3. Run `rtk -v init --global --dry-run`, show me the full output and wait for my confirmation.
+4. After I confirm, run `rtk init --global --auto-patch`.
+5. Tell me to restart Claude Code so the hook loads.
+6. Validate: `rtk rewrite "git status"` must print a rewritten command, and `rtk rewrite "supabase db diff"` must exit 1 (not rewritten, by design).
+
+Do not use rtk-proxy or any pipeline feature. If any step fails, stop and explain what happened instead of working around it.
+To uninstall later: rtk init --global --uninstall
+````
 
 ## Community skills installed at user level
 

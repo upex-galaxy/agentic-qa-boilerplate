@@ -274,16 +274,17 @@ bun setup</code></pre>
             <code>harnesses:</code> (<code>.agents/project.yaml</code>) y te ofrece borrar los
             archivos de los que dejaste fuera (por defecto los conserva). Aquí eliges también los
             skills de nivel usuario, una casilla por skill: el que desmarcas queda registrado como
-            rechazado y no se vuelve a ofrecer. También pregunta si conectar el plugin de Engram.
+            rechazado y no se vuelve a ofrecer. También pregunta si conectar el plugin de Engram y,
+            solo en Claude Code, si instalar RTK.
           </p>
         </li>
         <li>
           <strong>Instalación en segundo plano</strong>
           <p>
             Arranca en cuanto respondes Tu equipo: dependencias, los navegadores de Playwright,
-            Engram con <code>engram setup</code> en cada agente elegido, los skills de la comunidad
-            y la reparación de compatibilidad. No pregunta nada; las fases siguientes se responden
-            mientras descarga.
+            Engram con <code>engram setup</code> en cada agente elegido, RTK (solo Claude Code, si
+            dijiste que sí en Tu equipo), los skills de la comunidad y la reparación de
+            compatibilidad. No pregunta nada; las fases siguientes se responden mientras descarga.
           </p>
         </li>
         <li>
@@ -943,6 +944,13 @@ subagente (contexto limpio)
         </table>
       </div>
       <p>Si saltas Engram, todo sigue funcionando, pero cada sesión empieza sin memoria.</p>
+      <p>
+        En Claude Code, <code>bun setup</code> también ofrece RTK, un compresor de la salida de
+        comandos como <code>git status</code> que ahorra tokens (<code>rtk gain</code> muestra el
+        ahorro). Se instala una vez por máquina, a nivel de usuario, solo si respondes que sí en una
+        corrida interactiva, y si ya está instalado no toca nada. En una corrida no interactiva
+        imprime el comando manual. Para quitarlo: <code>rtk init --global --uninstall</code>.
+      </p>
 
       <h2 id="chuleta">Chuleta: quiero X, ejecuto Y</h2>
       <p>

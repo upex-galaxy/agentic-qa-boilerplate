@@ -21,7 +21,7 @@ Which AI agents this project works with: **Claude Code, OpenCode, Codex, Pi**. E
 
 Codex Desktop needs no separate entry: it consumes the same repository configuration as the CLI, so a repo that carries `.codex/config.toml` is already a valid Codex target even with no CLI installed. A Dock launch has no process environment, so each MCP server in that file starts through a `.env` loader: the desktop app needs `bun install` (for `varlock`) and a filled `.env` at the project root. A worktree the Codex app creates copies `.env` through the committed `.worktreeinclude` and then runs `bun run worktree:provision` (dependencies, git hooks, the rest of the gitignored inputs) through the committed `.codex/environments/environment.toml`.
 
-Team also asks what the Install phase needs, so the downloads can start without waiting for anyone: which user-level skills to install (one checkbox per skill, see [User-level (global)](#user-level-global)) and, on Claude Code, whether to add the Engram plugin.
+Team also asks what the Install phase needs, so the downloads can start without waiting for anyone: which user-level skills to install (one checkbox per skill, see [User-level (global)](#user-level-global)) and, on Claude Code, whether to add the Engram plugin and whether to install RTK (see [RTK](#rtk-token-savings-for-claude-code)).
 
 ### Install (in the background)
 
@@ -30,6 +30,7 @@ Starts as soon as Team is answered and runs in a background lane ("in the backgr
 - `bun install`, if the gate did not already run it
 - `bun run pw:install`: the Chromium browser for Playwright
 - `engram setup <agent>`: wires Engram persistent memory into each selected agent (one call per agent), see [What `engram setup` adds](#what-engram-setup-adds) below
+- RTK (Claude Code only): installs the token-saving output compressor if you said yes in Team, see [RTK](#rtk-token-savings-for-claude-code)
 - `bunx skills add`: project-level skills (`PROJECT_LEVEL_SKILLS` in `cli/install.ts`) and the user-level skills you kept (`USER_LEVEL_SKILLS`)
 - the agent compatibility repair (the `.claude/skills` alias, project commands named like a skill moved aside)
 
@@ -311,6 +312,7 @@ The command carries no secret: the human fills the credentials afterwards in `.e
 | `--force-step <key>`           | Re-run one step by key                        |
 | `INSTALL_FORCE_ALL=1`          | Same as `--force`                             |
 | `INSTALL_FORCE_ENGRAM=1`       | Re-run `engram setup` (legacy alias: `INSTALL_FORCE_GENTLE_AI=1`) |
+| `INSTALL_FORCE_10_RTK=1`       | Re-run the RTK step (also clears a remembered decline) |
 | `INSTALL_FORCE_COMMUNITY=1`    | Re-run community skill install (declined user-level skills stay out) |
 | `INSTALL_FORCE_GITHUB=1`       | Re-run GitHub remote setup                    |
 | `INSTALL_FORCE_AGENTS_SETUP=1` | Re-run agents:setup                           |
@@ -379,6 +381,28 @@ The plugin ships no MCP server of its own, so you need both: `engram setup` for 
 ### Re-run safety
 
 `--force-step 8-skills-gentle-ai` (or `INSTALL_FORCE_ENGRAM=1`) re-runs `engram setup` for every selected agent. `engram setup` without an agent opens an interactive menu, so the installer always passes the agent slug.
+
+---
+
+## RTK: token savings for Claude Code
+
+[RTK](https://github.com/rtk-ai/rtk) compresses the output of shell commands such as `git status` or `ls` before the agent reads it, so a session spends fewer tokens. To see what it saved on your machine, run `rtk gain`. It is optional: nothing in the repo depends on it.
+
+The installer asks once, in the Team phase, and only when Claude Code is one of the selected agents and the run is interactive. The question is skipped when RTK is already installed with its Claude Code hook. A yes installs the binary (Homebrew where available, `winget` on Windows, the upstream install script otherwise) and then runs `rtk init --global --auto-patch`, which adds the hook to your user-level `~/.claude/settings.json`. Restart Claude Code afterwards so the hook loads.
+
+- **User level, once per machine.** The hook is shared by every repo on the machine, so a machine that has both the QA and the DEV boilerplate installs it only once. When the binary and its hook are already there, the installer touches nothing.
+- **Never in a non-interactive run.** It writes your user-level Claude Code config, so the installer prints the manual prompt instead of running anything.
+- **A decline is remembered** and the question is not asked again. `INSTALL_FORCE_10_RTK=1` (or `--force-step 10-rtk`) asks again.
+- **No proxy and no pipelines.** The installer sets up the command-output hook only.
+- **It never blocks the run.** A failed install prints the reason and the same manual prompt, and the run goes on.
+
+The manual prompt (paste it into an AI session) lives in [`agentic-qa-onboard`](.agents/skills/agentic-qa-onboard/SKILL.md), section "Token savings with RTK". To remove RTK:
+
+```bash
+rtk init --global --uninstall
+```
+
+Other agents are not wired from here: RTK offers `rtk init --agent <name>` for them.
 
 ---
 
