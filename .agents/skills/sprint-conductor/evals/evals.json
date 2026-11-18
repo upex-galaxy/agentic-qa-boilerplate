@@ -3,7 +3,7 @@
     {
       "name": "should-trigger-boot",
       "prompt": "/sprint-conductor 7 --cap 3",
-      "expected_behavior": "Activates sprint-conductor. Runs the Orca gate first (binary plus reachable runtime); it passes. Phase 0 checks .session/sprint-conductor/sprint-7/kickoff.md for a previous session. Boot: loads sprint-testing with fleet-conductor.md and sprint-board.md, then orca-orchestration and the orchestrator stubs; resolves board sprint-7 (bun run board sprints, use or new), sync --discover; runs the conductor-owned pre-flight (tokens and browser states fresh, credential proven by the API login, sibling-repo fetch as a gate with both drift counts, schema sync or a logged skip, deployed build per repo); binds or creates the Run and probes the reply direction once; arms the sentinel as a background task with its baseline file; reads the mailbox, the board inbox and the listen --since replay; prints one status screen of counts. Cap 3 is used without asking.",
+      "expected_behavior": "Activates sprint-conductor. Runs the Orca gate first (binary plus reachable runtime); it passes. Phase 0 checks .session/sprint-conductor/sprint-7/kickoff.md for a previous session. Boot: loads sprint-testing with fleet-conductor.md and sprint-board.md, then agent-orchestration and the orchestrator stubs; resolves board sprint-7 (bun run board sprints, use or new), sync --discover; runs the conductor-owned pre-flight (tokens and browser states fresh, credential proven by the API login, sibling-repo fetch as a gate with both drift counts, schema sync or a logged skip, deployed build per repo); binds or creates the Run and probes the reply direction once; arms the sentinel as a background task with its baseline file; reads the mailbox, the board inbox and the listen --since replay; prints one status screen of counts. Cap 3 is used without asking.",
       "category": "positive"
     },
     {
@@ -75,7 +75,7 @@
     {
       "name": "should-not-trigger-generic-fleet",
       "prompt": "Launch three workers to refactor the cli modules in parallel worktrees.",
-      "expected_behavior": "Does NOT activate sprint-conductor: this is multi-session orchestration that is not sprint QA. Routes to orca-orchestration (with framework-development for the code).",
+      "expected_behavior": "Does NOT activate sprint-conductor: this is multi-session orchestration that is not sprint QA. Routes to agent-orchestration (with framework-development for the code).",
       "category": "negative"
     },
     {

@@ -101,8 +101,7 @@ Nothing NEW or RECHECK: go straight to §5.
      supervised dispatch.
 3. `launch.txt` regenerated whole (`fleet-conductor.md` §5), the new line under an `## Arrivals`
    group; every line syntax-checked.
-4. Launch natively and confirm on screen (`orca-orchestration/references/coordinator-playbook.md` §1
-   steps 4-6): the tab renamed to `<KEY>--<handle>` and read back with the session name, the agent footer within a short wait, credentials loaded, the prompt delivered. A harness
+4. Launch natively and confirm on screen (`/agent-orchestration`, conductor cycle §2 and §3): the tab renamed to `<KEY>--<handle>` and read back with the session name, the agent footer within a short wait, credentials loaded, the prompt delivered. A harness
    error on screen is reported, not retried blindly.
 5. Board: `bun run board start <KEY> --worker <handle> --by conductor` and
    `bun run board arrival <KEY> launched "<one line>"`.
@@ -128,12 +127,12 @@ Nothing NEW or RECHECK: go straight to §5.
    wait opened. A reply: tell the owner, `unwait`. Do not write there.
 4. Finished workers: `references/round-close.md`. The conductor reads back the final ticket status
    itself; a report is never the proof.
-5. A live worker silent for two or three passes: read its screen (`orca-orchestration` liveness
+5. A live worker silent for two or three passes: read its screen (`agent-orchestration` liveness
    sweep). A harness error on screen (an access or quota message) stops a worker that cannot send
    anything; a `continue` nudge once the error clears resumes it. A worker that reports a dead tool: query
    the same resource from the conductor first. When it answers there, the worker's own tool process died,
    and the conductor can reconnect it by driving that worker's terminal
-   (`orca-orchestration/references/gotchas.md` G76). When it fails there too, the resource is down and
+   (`/agent-orchestration` gotchas G76). When it fails there too, the resource is down and
    reconnecting the worker changes nothing.
 6. A redeploy while workers are live: compare each repository's deployed build with `kickoff.md`.
    Same build: nothing. Changed with no live worker: update `kickoff.md`. Changed with at least one live
@@ -156,7 +155,7 @@ QA call once a case cannot be recreated in the environment, not the pass's
 ## 6. What a pass reports
 
 Empty: one line, for example `watch 10:24 (recheck-sweep): 0 new, 2 recheck still held (deploy), mailbox
-empty`. Otherwise a count, not a narrative (`orca-orchestration` hard rule 23): ticket, decision, reason,
+empty`. Otherwise a count, not a narrative (`agent-orchestration` hard rule 23): ticket, decision, reason,
 who it waits on. Name the wake reason in the line, append the line to `passes.md`
 (`.session/sprint-conductor/sprint-<N>/`), then re-arm the sentinel in the same turn.
 

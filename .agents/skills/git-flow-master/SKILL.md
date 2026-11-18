@@ -521,7 +521,7 @@ When work must stay isolated from in-progress changes on the current branch (a s
 
 - Manual git (portable, any tool): `git worktree add ../dir -b feat/x main`, work, then `git worktree remove` / `prune`.
 - Claude Code harness (this agent only): `EnterWorktree` moves the session into a fresh worktree under `.claude/worktrees/`; `ExitWorktree` (`keep`/`remove`) leaves it. Other coding agents lack this and use the manual path.
-- Orchestrated (a coordinated fleet of worker sessions): the orchestration layer creates, provisions and removes one worktree per worker, outside the repo and visible to the owner. Git mechanics are identical; the lifecycle is owned by `orca-orchestration/SKILL.md`.
+- Orchestrated (a coordinated fleet of worker sessions): the orchestration layer creates, provisions and removes one worktree per worker, outside the repo and visible to the owner. Git mechanics are identical; the lifecycle is owned by `/agent-orchestration`.
 
 Gotchas: a fresh worktree contains only the tracked files of its base, so untracked WIP does not teleport (`mv` it in, or commit first) and every gitignored file is missing too (`bun run worktree:provision`). Keep the primary tree's `git status` clean, and run the orphan audit before removing a worktree, because gitignored evidence dies with it. Full lifecycle, multi-session safety rules and the decision guide: `references/worktrees.md`.
 

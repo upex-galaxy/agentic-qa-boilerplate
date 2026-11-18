@@ -1,6 +1,6 @@
 ---
 name: session-handoff
-description: "Hand a whole session to a fresh successor through a handoff file, so work continues as if the context window had been extended. Use when the context window is filling up; when work must outlive this session; when the owner asks to hand the session over or continue it in a fresh session. Not for handing a task to another agent (orca-cli) or delegating to a supervised worker (orca-orchestration)."
+description: "Hand a whole session to a fresh successor through a handoff file, so work continues as if the context window had been extended. Use when the context window is filling up; when work must outlive this session; when the owner asks to hand the session over or continue it in a fresh session. Not for handing a task to another agent (orca-cli) or delegating to a supervised worker (agent-orchestration)."
 license: MIT
 compatibility: [claude-code, copilot, cursor, codex, opencode, pi]
 complementary_categories: [meta-skill, orchestration]
@@ -18,7 +18,7 @@ The whole contract lives in `.agents/skills/session-handoff/references/capture-c
 
 | Looks similar | Actually is | Use |
 |---|---|---|
-| hand a scoped task to another session and supervise it | orchestration: Task, Dispatch, mailbox, the work comes back | `/orca-orchestration` |
+| hand a scoped task to another session and supervise it | orchestration: Task, Dispatch, mailbox, the work comes back | `/agent-orchestration` |
 | hand work away and stop caring | ownership transfer of a task, one direction, no return | the binary's own `orca-cli` guide |
 | remember a decision for next month | durable cross-session fact, project-scoped | Engram (`mem_save`) |
 | shrink the window and keep going | harness compaction: lossy, not addressable, not yours to shape | nothing to do |

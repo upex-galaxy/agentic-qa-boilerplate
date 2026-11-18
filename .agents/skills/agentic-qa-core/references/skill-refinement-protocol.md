@@ -18,7 +18,7 @@ A lesson earns a skill edit only when all four hold. Otherwise it is an Engram s
 | 3 | Changes what the agent does next time: a rule, an order, a gotcha with a fix | it is narrative ("we struggled with X") |
 | 4 | Paid for: a date, a session label, and what was measured | it is a hunch, an opinion, or something read in a blog |
 
-The entry genre already in the repo: `orca-orchestration/references/gotchas.md` rows carry `Measured` and `Verified against` columns and a section for rows that stopped being true. `acli/references/gotchas.md` and `jira-publishing-gotchas.md` have the same shape. A refinement targets that genre by default.
+The entry genre already in the repo: `/agent-orchestration` gotchas rows carry `Measured` and `Verified against` columns and a section for rows that stopped being true. `acli/references/gotchas.md` and `jira-publishing-gotchas.md` have the same shape. A refinement targets that genre by default.
 
 ## 2 · What the session writes, and when
 
@@ -29,7 +29,7 @@ The entry genre already in the repo: `orca-orchestration/references/gotchas.md` 
 | Session close | The session footer (`session-footer-contract.md` Part 2) gains one line: `Refinements proposed: N → <path>` (`0` and no path when none) | the session |
 | Review | The owner reads the file and answers apply or drop per entry. Nothing is applied automatically, and an entry without a measurement is dropped at review | human |
 
-A fleet has the same mechanism at conductor altitude: `.session/orchestration/<slug>/skill-improvements.md` (`orca-orchestration/references/coordinator-playbook.md` §9). Both use the block schema below so a harvest can merge them.
+A fleet has the same mechanism at conductor altitude: `.session/orchestration/<slug>/skill-improvements.md` (`/agent-orchestration`, conductor cycle §9). Both use the block schema below so a harvest can merge them.
 
 ## 3 · The block schema (one per lesson, append-only)
 

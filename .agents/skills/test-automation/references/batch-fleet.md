@@ -2,7 +2,7 @@
 
 By default a batch runs in this session, one Work Package at a time. This file covers the second executor: a **conductor** session partitions the batch and hands each part to a **worker**, a persistent session of its own in its own worktree that runs `/test-automation` on its slice.
 
-It is a scoping and integration contract. The transport (how a worker is launched, supervised, asked a question and closed) belongs to `orca-orchestration/SKILL.md` and is written here as `[ORCHESTRATION_TOOL] <verb>: …` pseudocode. Load that skill before firing any of it.
+It is a scoping and integration contract. The transport (how a worker is launched, supervised, asked a question and closed) belongs to `/agent-orchestration` and is written here as `[ORCHESTRATION_TOOL] <verb>: …` pseudocode. Load that skill before firing any of it.
 
 A fleet is optional. It is faster when the batch really is parallel and strictly worse when it is not, and the failure is not a slow suite: it is two sessions rewriting the same fixture file.
 
@@ -74,7 +74,7 @@ Two workers on one module collide in exactly the files with the least merge tole
 
 This skill writes code, so each worker gets its own worktree. Two sessions in one checkout contend on the single git index even when their files are disjoint, and the loser sees `index.lock` or a partially staged commit.
 
-- The conductor creates the worktree and provisions it before launching the worker: a fresh worktree has the tracked files of its base and nothing else. `bun run worktree:provision` covers the gap (`.env`, dependencies, the harness skill alias, community skills, `.auth/`); the Jira cache is rebuilt separately with `bun run context:hydrate`. Full gap table: `orca-orchestration/references/provisioning.md`.
+- The conductor creates the worktree and provisions it before launching the worker: a fresh worktree has the tracked files of its base and nothing else. `bun run worktree:provision` covers the gap (`.env`, dependencies, the harness skill alias, community skills, `.auth/`); the Jira cache is rebuilt separately with `bun run context:hydrate`. Full gap table: `agentic-qa-core/references/fleet-provisioning.md`.
 - Check the new worktree's HEAD against the remote base before handing it over. A worktree cut from a stale local ref is born behind, and the worker's first push becomes a surprise merge.
 - `.session/` is not in a worktree. Briefs, the roster and the launch file live in the primary checkout and are cited to the worker by absolute path.
 - Creating, provisioning, launching and delivering the brief are one operation. A launched worker with no brief idles, and idle looks identical to working.
@@ -99,7 +99,7 @@ A worker that needs one of these asks for it. Workers still run their own local 
 
 ## 5 · The per-worker brief
 
-The brief is the 7-component briefing from `agentic-qa-core/references/briefing-template.md` plus the fleet fields. Write it to a file in the primary checkout and give the worker its absolute path, because a long brief pasted into a message gets truncated. Fleet fields and the reporting protocol: `orca-orchestration/references/brief-template.md` and `orca-orchestration/references/worker-contract.md`.
+The brief is the 7-component briefing from `agentic-qa-core/references/briefing-template.md` plus the fleet fields. Write it to a file in the primary checkout and give the worker its absolute path, because a long brief pasted into a message gets truncated. Fleet fields and the reporting protocol: `/agent-orchestration` brief template and `/agent-orchestration` worker contract.
 
 A `/test-automation` worker's brief nails down these points beyond the generic seven:
 
@@ -147,13 +147,13 @@ Three invariants hold under every strategy: never rebase or force-push a branch 
 
 Two workers in two worktrees still hit one environment and one database. Component ownership does not isolate a seeded account, a tenant or a fixture row.
 
-Declare the intent at partition time (which WP reads which entity, which one writes it) and route the runtime arbitration through the claims protocol: `orca-orchestration/references/claims-protocol.md`. Two WPs that write the same entity either go to the same worker or serialize behind a claim. `test-data-management.md` still governs how each WP generates its own data, and the cheapest fix for a contested fixture is a WP that generates its own.
+Declare the intent at partition time (which WP reads which entity, which one writes it) and route the runtime arbitration through the claims protocol: `/agent-orchestration` claims protocol. Two WPs that write the same entity either go to the same worker or serialize behind a claim. `test-data-management.md` still governs how each WP generates its own data, and the cheapest fix for a contested fixture is a WP that generates its own.
 
 ---
 
 ## 9 · The launch file and the silence rule
 
-The conductor always writes the launch file, one self-contained line per worker, whether or not any orchestration binary exists on the machine. Supervised launch is the native path (`orca-orchestration`'s `worker-start --agent`). `launch.txt` is the payload for the human-paste fallback when nothing can launch it, and for the unsupervised custom-argv path in between. Identical payloads keep the paths from drifting; a paraphrased line is the failure this rule prevents. Shape, validation and the three gated lines: `orca-orchestration/references/launch-seam.md`.
+The conductor always writes the launch file, one self-contained line per worker, whether or not any orchestration binary exists on the machine. Supervised launch is the native path (`agent-orchestration`'s `worker-start --agent`). `launch.txt` is the payload for the human-paste fallback when nothing can launch it, and for the unsupervised custom-argv path in between. Identical payloads keep the paths from drifting; a paraphrased line is the failure this rule prevents. Shape, validation and the three gated lines: `agentic-qa-core/references/fleet-launch-seam.md`.
 
 A missing orchestration binary costs nothing and is not reported: not in the preflight gate, not in the plan, not in the review, and not to the user from this skill.
 

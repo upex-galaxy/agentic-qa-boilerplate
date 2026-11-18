@@ -106,17 +106,17 @@ conductor work, one query each; anything not verified goes into the brief marked
 ## 3. The Run (boot Step 4)
 
 1. Look for the sprint's Run id in `kickoff.md`, the roster (`fleet-conductor.md` §1) or the board
-   timeline. Found: re-bind to it (`orca-orchestration/references/coordinator-playbook.md` §8). None: create
+   timeline. Found: re-bind to it (`/agent-orchestration`, conductor cycle §8). None: create
    it with the sprint as its objective, and write its id into `kickoff.md` and the roster.
 2. Probe the reply direction once, before any worker depends on it: one `send` with a throwaway
-   subject, one `check`, one verified ack. A conductor that was itself started by a dispatch can READ its
+   subject and one `check` that returns it. A conductor that was itself started by a dispatch can READ its
    fleet's mailbox and still be refused when it WRITES to it, because a dispatch scopes a terminal's sends
-   to its own Run (`orca-orchestration/references/gotchas.md` G74). If the probe fails: say so in every brief
+   to its own Run (`/agent-orchestration` gotchas G74). If the probe fails: say so in every brief
    (answers arrive through the brief file and a terminal pointer), or ask an unbound session to post into
    the Run.
-3. Mailbox reads follow `orca-orchestration`: one waiter, verified ack in the same command, and the
-   coordinator's own read without a terminal selector, checking the call's `ok` before reading anything
-   (`orca-orchestration/references/gotchas.md` G75).
+3. Mailbox reads follow `agent-orchestration`: end the turn and let Orca wake the conductor, handle each
+   `check` batch whole (no ack), and the coordinator's own read without a terminal selector, checking the call's `ok` before reading anything
+   (`/agent-orchestration` gotchas G75).
 
 ---
 
@@ -129,8 +129,8 @@ resumed from one message each without repeating a tracker write, but one first d
 browser session, because a browser call without the named session falls back to the shared default.
 
 1. Find the workers by the label in their title, not by an old handle: handles change when the
-   runtime restarts (`orca-orchestration/references/gotchas.md` G22), and each tab title is the worker
-   name `<KEY>--<old handle>` (`orca-orchestration/references/session-identity.md` §2b). Match on the
+   runtime restarts (`/agent-orchestration` gotchas G22), and each tab title is the worker
+   name `<KEY>--<old handle>` (`/agent-orchestration` session identity §1). Match on the
    part before the last `--term_` (the ticket key, the roster label), not on the stale handle after
    it. Update the roster and the board (`bun run board worker <KEY> --name <new handle> --by conductor`),
    re-issue each tab rename as `<KEY>--<new handle>` ([ORCHESTRATION_TOOL] terminal rename), and
@@ -142,7 +142,7 @@ browser session, because a browser call without the named session falls back to 
    harness rename verb into it, Claude Code included
    (`[ORCHESTRATION_TOOL] terminal send --enter --text '/rename <KEY>--<new handle>'`; Pi
    `/name <KEY>--<new handle>`), then read it back on the status bar as a bare token
-   (`orca-orchestration/references/session-identity.md` §5). On Claude Code this makes the name human-set,
+   (`/agent-orchestration` session identity §4 and §5). On Claude Code this makes the name human-set,
    so the hook leaves it alone from then on, which is what a resume wants. An OpenCode whose `/rename` opens a dialog, or a harness that
    cannot be renamed: mark the roster row `(roster only)` as at launch. Write the new name into the
    roster's `Name` column and keep the old one in its `## Notes per worker`; every `Session:` trailer made
@@ -156,7 +156,7 @@ browser session, because a browser call without the named session falls back to 
    `bun run board listen --since <last pass or last id seen>` replay (`sprint-board.md` §3).
 5. Mailbox: read it per §3 step 3.
 6. One message per live worker, through the mailbox with a terminal pointer as the nudge
-   (`orca-orchestration/references/channel-discipline.md`), with `<KEY>` filled in:
+   (`/agent-orchestration` channel discipline), with `<KEY>` filled in:
 
    ```
    Resume after a machine reboot. Pass your named browser session (-s=<KEY>) on EVERY browser call and load

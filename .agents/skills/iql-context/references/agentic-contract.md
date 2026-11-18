@@ -159,7 +159,7 @@ Observation has no skill on the site or in the repo; the routine is its declared
 
 Repo twins: the Observation entries of `agentic-qa-core/references/stage-gates.md` (declared, no
 skill, no DoD, autonomy and verifier stated in the contract table) and the AUTOMATION mode of
-`.agents/skills/orca-orchestration/SKILL.md` (an unattended scheduled routine whose dispatcher
+`/agent-orchestration` (an unattended scheduled routine whose dispatcher
 never produces output). Neither names the four elements, so check any routine written in the repo
 against this table until the repo carries its own.
 

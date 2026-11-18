@@ -87,7 +87,7 @@ CONDUCTOR -- Run mailbox (record) + terminal pointer (nudge) -- WORKERS
 
 | # | Channel | Carries | Rule |
 |---|---|---|---|
-| 1 | Run mailbox | the worker record: status, question, escalation, done | byte-intact, the channel of record between workers and the conductor (`orca-orchestration/references/channel-discipline.md`) |
+| 1 | Run mailbox | the worker record: status, question, escalation, done | byte-intact, the channel of record between workers and the conductor (`/agent-orchestration` channel discipline) |
 | 2 | Board | the owner surface: Needs you, the inbox, drafts, holds, waits | everything the owner must decide reaches the board and the chat, so the owner never has to read a terminal |
 | 3 | Owner chat | answers when the owner cannot open the board | a chat answer is as valid as a board answer. Relay it, then mirror it: `say --reply <msg-id> "answered by chat: <text>"` for an inbox thread, `answer <KEY> "<text>" --id <need-id> --by conductor` then `resolve <KEY> --id <need-id>` for a Needs-you |
 | 4 | Slack | messages to developers | only on the owner's order. The board drafts (`ask`) and copies tables ("Copy for Slack") and sends nothing |
@@ -208,7 +208,7 @@ bun run board sentinel --baseline .session/sprint-board/sprints/<slug>/sentinel-
 
 The harness notifies the conductor when the process exits; its output is the wake. Background tasks
 die with the session, so a resumed or handed-off conductor re-arms it
-(`orca-orchestration/references/coordinator-playbook.md`). Run one sentinel per board: before arming,
+(`/agent-orchestration`, conductor cycle). Run one sentinel per board: before arming,
 make sure this session has none running. The `--baseline` file is what lets a re-arm skip what the
 last wake already reported while still catching what arrived during the pass.
 

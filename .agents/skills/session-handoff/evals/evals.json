@@ -40,7 +40,7 @@
       "name": "should-not-trigger-session-handoff-6",
       "prompt": "Launch a supervised worker for each story and report back when they finish.",
       "expected_skill": "session-handoff",
-      "expected_behavior": "Does not use session-handoff: supervised workers are orca-orchestration.",
+      "expected_behavior": "Does not use session-handoff: supervised workers are agent-orchestration.",
       "category": "negative"
     }
   ]

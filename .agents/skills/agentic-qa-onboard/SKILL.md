@@ -25,7 +25,7 @@ It is specific to **this** Playwright + KATA QA boilerplate and points at the co
 - Explain in the user's language. The visual decks are Spanish (technical terms stay English); every deck also has an English twin, `<name>.en.html`, next to the Spanish file (same slides, same shell). For an English speaker, offer the twin.
 - When the goal is unclear, ask one question first (testing a ticket, or understanding the whole flow?). Someone who asked about one stage does not need all of them.
 - Name a stage by its word (Shift-Left, Planning, Execution, Reporting, Documentation, Automation, Regression, Observation), never by number. A "Stage N" in an older doc resolves through `agentic-qa-core/references/stage-gates.md`; the why behind the stages is `iql-context`.
-- When someone asks about running several sessions at once ("parallelize the sprint", "one session per story", "fleet", "launch workers"), explain the two executors in plain words (a one-shot subagent lives inside the current turn and is the default for almost everything; a supervised worker is a persistent session you keep talking to), then hand off to `/orca-orchestration`. Its deck is `packages/decks/orca-orchestration/how-it-works.es.html` (English twin: `how-it-works.en.html`).
+- When someone asks about running several sessions at once ("parallelize the sprint", "one session per story", "fleet", "launch workers"), explain the two executors in plain words (a one-shot subagent lives inside the current turn and is the default for almost everything; a supervised worker is a persistent session you keep talking to), then hand off to `/agent-orchestration`. Its deck is https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/agent-orchestration/how-it-works.es.html (English twin: `.en.html`).
 - Explain the concept and why it matters before any command, flag or file path.
 - Ask before opening a how-it-works deck, because it launches the user's default browser. Open exactly one, then let them come back with questions before offering the next.
 - Prefer the published GitHub Pages URL over the local file: a project scaffolded from this boilerplate may not carry the HTML. Use the local copy offline or on explicit request.
@@ -72,7 +72,7 @@ Every deck has an English twin, `<name>.en.html` in the same folder (`how-it-wor
 | Adapting KATA to the target stack | `test-framework-adaptation/how-it-works.es.html` |
 | Jira Components + instance migration | `jira-administration/how-it-works.es.html` |
 | Branches, commits, PRs, worktrees | `git-flow-master/how-it-works.es.html` |
-| Multi-session orchestration | `orca-orchestration/how-it-works.es.html` |
+| Multi-session orchestration | https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/agent-orchestration/how-it-works.es.html (published from the user skill) |
 | Handing a session to a fresh one | `session-handoff/how-it-works.es.html` |
 | The user-level skills the installer adds (`mkd`, `humanizer`, `grilling`, `retro` and the rest): the portal, with what each does, who calls it and a link to its own deck | `user-level-skills/how-it-works.es.html` (English twin: `.en.html`) |
 | Evolving the boilerplate itself | `framework-development/how-it-works.es.html` |
@@ -291,11 +291,11 @@ One AI session at a time is the normal way to work. A second way exists, and a n
 
 The AI has two executors. A *one-shot subagent* lives inside the current turn: it reads, verifies or maps something and reports back, and that is the default for almost all work. A *supervised worker* is a persistent session with its own scope that the conductor session keeps talking to, for work that does not fit inside a turn (a whole story tested end to end, a module automated, a cluster of CI failures chased down).
 
-`/orca-orchestration` owns the second executor: one **conductor** (the session talking to you) coordinating a **fleet** of workers in **rounds**, with a claims protocol so two workers never fight over the same test user or fixture. Each workflow skill still owns what gets done; the orchestration skill owns how sessions are launched, briefed, supervised and closed.
+`/agent-orchestration` owns the second executor: one **conductor** (the session talking to you) coordinating a **fleet** of workers in **rounds**, with a claims protocol so two workers never fight over the same test user or fixture. Each workflow skill still owns what gets done; the orchestration skill owns how sessions are launched, briefed, supervised and closed.
 
 Tell a newcomer two things. It is optional: it needs an orchestration runtime, and without one a workflow skill writes its launch file as before and you paste the lines into your own terminals. And it is not "faster QA": the dogfooded sprint (figures in ADR-0006) showed value in three sessions measuring the same environment from three angles, including a conductor instruction that a worker rightly refused because its own measurement disagreed.
 
-Visual deck: `packages/decks/orca-orchestration/how-it-works.es.html` (same opening protocol as every other deck, so ask first).
+Visual deck: https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/agent-orchestration/how-it-works.es.html (same opening protocol as every other deck, so ask first).
 
 ---
 
@@ -438,6 +438,6 @@ The tour has two waits: the one clarifying question, and the yes before a deck o
 - Run a regression suite: `/regression-testing`
 - Discover a brand-new target project: `/project-discovery`
 - Adapt the KATA test architecture to a target stack: `/test-framework-adaptation`
-- Launch or supervise several parallel sessions: `/orca-orchestration`
+- Launch or supervise several parallel sessions: `/agent-orchestration`
 
 The tour ends once the user knows which skill to call next, and the workflow skill takes over from there.

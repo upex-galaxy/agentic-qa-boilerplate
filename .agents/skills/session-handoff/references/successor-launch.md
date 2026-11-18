@@ -8,7 +8,7 @@ A handoff transfers ownership of a whole session. There is no Task, no Dispatch,
 
 The right family is the plain terminal-and-worktree one. When the command grammar is needed, ask the binary for its own CLI guide. A copy of the grammar in this repo desynchronizes on the next release.
 
-| | Handoff (this skill) | Orchestration (`/orca-orchestration`) |
+| | Handoff (this skill) | Orchestration (`/agent-orchestration`) |
 |---|---|---|
 | what moves | the whole session | one scoped task |
 | the predecessor | ends | keeps working and supervises |
@@ -19,7 +19,7 @@ The right family is the plain terminal-and-worktree one. When the command gramma
 
 Check three preconditions before launching:
 
-1. The binary is present and the runtime is reachable (the gate in `/orca-orchestration`).
+1. The binary is present and the runtime is reachable (the gate in `/agent-orchestration`).
 2. The handoff file exists at its final path and is complete.
 3. The successor's target is the same worktree the predecessor is in, on the same harness.
 

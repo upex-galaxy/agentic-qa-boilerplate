@@ -12,7 +12,7 @@ Use subagents for reading or writing multiple files, MCP operations, research ac
 
 **A harness without subagents** (Pi ships none) runs the work inline, or uses a supervised worker when its gate allows. A brief that says "dispatch" still binds what the dispatch would have done, its report format included.
 
-**Two executors.** One-shot subagents are the default, and nothing below changes for them. A second, optional executor is the supervised worker: a persistent agent session coordinated through `/orca-orchestration` (a conductor and worker mailbox), available only when the orchestration binary exists and a runtime is reachable. When that gate fails the repo says nothing about it, and the work runs on subagents plus the launch lines a human pastes.
+**Two executors.** One-shot subagents are the default, and nothing below changes for them. A second, optional executor is the supervised worker: a persistent agent session coordinated through `/agent-orchestration` (a conductor and worker mailbox), available only when the orchestration binary exists and a runtime is reachable. When that gate fails the repo says nothing about it, and the work runs on subagents plus the launch lines a human pastes.
 
 | | One-shot subagent (default) | Supervised worker (optional) |
 |---|---|---|
@@ -22,7 +22,7 @@ Use subagents for reading or writing multiple files, MCP operations, research ac
 | Git | the orchestrator's index | own worktree, or the shared checkout under declared file ownership |
 | Best for | reading, mapping, verifying; one-shot tasks | writing and integrating alone, a whole story, work the owner wants to step into |
 
-The conductor keeps using subagents for its own reads and verifications, which keeps the coordinating context clean. A supervised worker earns its cost when the unit of work is a whole scope (one story, one module) that writes and integrates by itself. Every action on a worker is written as `[ORCHESTRATION_TOOL] <verb>: …` pseudocode. The how lives in `orca-orchestration/references/coordinator-playbook.md` and `orca-orchestration/references/worker-contract.md`.
+The conductor keeps using subagents for its own reads and verifications, which keeps the coordinating context clean. A supervised worker earns its cost when the unit of work is a whole scope (one story, one module) that writes and integrates by itself. Every action on a worker is written as `[ORCHESTRATION_TOOL] <verb>: …` pseudocode. The how lives in `/agent-orchestration` (conductor cycle) and `/agent-orchestration` worker contract.
 
 **7-COMPONENT BRIEFING (every dispatch has all seven)**:
 

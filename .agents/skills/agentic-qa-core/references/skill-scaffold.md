@@ -39,7 +39,7 @@ Only `allowed-tools, compatibility, description, license, metadata, name` are sp
 | **utility** | `-cli` / `-tool` / `-app` (mandatory) | `SKILL.md` with `allowed-tools: Bash(<binary>:*)`, `references/gotchas.md` | `## Compact Rules`, the tool's grammar (verbs, flags, auth, errors), a §6.5 row in `AGENTS.md` if a Bash binary must auto-load it |
 | **core** | none | `SKILL.md` + `references/` | no write path of its own; other skills cite its references |
 
-`references/gotchas.md` uses the measured genre (`orca-orchestration/references/gotchas.md`): columns `# · Gotcha · Symptom · Fix · Measured · Verified against`, plus a `## No longer true` section that rows move to instead of being deleted.
+`references/gotchas.md` uses the measured genre (`/agent-orchestration` gotchas): columns `# · Gotcha · Symptom · Fix · Measured · Verified against`, plus a `## No longer true` section that rows move to instead of being deleted.
 
 A skill marked `metadata.stage_owner: true` has the `## Subagent Dispatch Strategy` heading, and a workflow skill that must bind an executor with a rule puts that rule in `## Compact Rules`, because an executor sees its briefing and the registry's compact rules, not the `references/` folder (`AGENTS.md` §3 "RULE REACHABILITY").
 

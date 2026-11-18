@@ -48,7 +48,7 @@ The renderer validates the file and writes `<scope-slug>.html` next to it. A val
 
 **Language (deck decision D6).** `lang` is the conversation language, and every sentence you write (`value`, `text`, `actions`, setup `description`) is in that language. Test titles, ATC ids, method names, file paths and code stay verbatim. The renderer ships English and Spanish labels; for another language, add a `labels` object with the translated UI strings (missing keys fall back to English, and the renderer says which).
 
-**Opening.** The request was for the page, so open it without asking. With the orchestration gate ready, open it through `[ORCHESTRATION_TOOL]` as a worktree-bound tab (`orca-orchestration/references/html-surfaces.md`: a read-only page, so the `file://` route). Otherwise run the render with `--open`, which uses the system opener. A worker or routine with no screen skips the opening and reports the path.
+**Opening.** The request was for the page, so open it without asking. With the orchestration gate ready, open it through `[ORCHESTRATION_TOOL]` as a worktree-bound tab (`agentic-qa-core/references/fleet-launch-seam.md` §6: a read-only page, so the `file://` route). Otherwise run the render with `--open`, which uses the system opener. A worker or routine with no screen skips the opening and reports the path.
 
 **Chat.** Three lines at most: what the scope proves in business terms, the counts (tests, ATCs, assertions, findings), and the repo-relative path of the HTML. The page carries the detail, and its "Copy as Markdown" button gives the summary table for a PR description.
 

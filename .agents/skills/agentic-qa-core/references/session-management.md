@@ -53,7 +53,7 @@ Rules:
 
 ### Registered sibling: `.session/orchestration/<slug>/`
 
-Fleet coordination (one conductor, several launched workers) is vocabulary shared by every workflow skill's dispatch, not one skill's scope, so it does not fit the `.session/<skill-slug>/<scope>/` shape. It lives at the top-level sibling `.session/orchestration/<slug>/`, gitignored and local like every other `.session/` path, and `.agents/skills/orca-orchestration/SKILL.md` owns and documents it. It holds `run.md`, `roster.md`, `COMMON.md`, `W-<label>.md`, `launch.txt`, `claims.md`, `learnings.md`, `skill-improvements.md`, `kickoff.md` and `reports/<label>.md`. `orca-orchestration` owns the schemas and companion-file rules for that scope, not this document. `<slug>` is the run identifier a conductor picks at session start (kebab-case). The sibling is exempt from the `SESSION_RETROFITTED_SKILLS` lint (`scripts/lint-skills.ts`), which validates only the `<skill-slug>` shape: `orca-orchestration` does not write `.session/orca-orchestration/`, so its scope is not a candidate for that check.
+Fleet coordination (one conductor, several launched workers) is vocabulary shared by every workflow skill's dispatch, not one skill's scope, so it does not fit the `.session/<skill-slug>/<scope>/` shape. It lives at the top-level sibling `.session/orchestration/<slug>/`, gitignored and local like every other `.session/` path, and `/agent-orchestration` owns and documents it. It holds `run.md`, `roster.md`, `COMMON.md`, `W-<label>.md`, `launch.txt`, `claims.md`, `learnings.md`, `skill-improvements.md`, `kickoff.md` and `reports/<label>.md`. `agent-orchestration` owns the schemas and companion-file rules for that scope, not this document. `<slug>` is the run identifier a conductor picks at session start (kebab-case). The sibling is exempt from the `SESSION_RETROFITTED_SKILLS` lint (`scripts/lint-skills.ts`), which validates only the `<skill-slug>` shape: `agent-orchestration` does not write `.session/agent-orchestration/`, so its scope is not a candidate for that check.
 
 ### Companion files inside a scope
 
@@ -93,7 +93,7 @@ Rules:
 - A blocker goes in the line as a `BLOCKED_<REASON>` token, because the observer greps for `BLOCKED_`. Escalate through whatever channel the session uses as well: the token survives a dead channel, and the channel reinforces it.
 - It is a file, not a message. Nothing pushes it anywhere; an observer reads it when it wants to. Periodic "still alive" messages to a coordinator are a different thing, and the worker contract prohibits them.
 - It does not replace `progress.md` and never carries a phase entry's fields. `progress.md` stays the resume signal (§7); `## Live Progress` answers only "is this session moving, and when did it last move?". Staleness is judged from the last line's timestamp.
-- For an Orca-supervised worker the timestamp is corroboration. The primary liveness signal is the on-screen spinner line, per `orca-orchestration/references/coordinator-playbook.md` §5.
+- For an Orca-supervised worker the timestamp is corroboration. The primary liveness signal is the on-screen spinner line, per `/agent-orchestration` (conductor cycle §5)
 - It is optional by default. A skill that runs attended in the foreground has no reason to write it, and a resume never requires it.
 
 ## 4. Phase 0 — Resume contract (MANDATORY)
@@ -294,7 +294,7 @@ Each skill's `<scope>` shape is decided per skill, not per invocation, and the s
 | `sprint-conductor` | `sprint-<N>` (the session plan and the boot and resume state only: `plan.md`, `kickoff.md`, `passes.md`, `refinements.md`; the fleet files stay in `sprint-testing`'s `sprint-<N>/`) | The sprint number at boot |
 | `project-discovery` | (none, project scope) | n/a |
 
-`orca-orchestration` is not in this table: it does not write `.session/<skill-slug>/<scope>/` at all. Its scope lives under the registered sibling `.session/orchestration/<slug>/` (§3), so it is exempt from the shape check below.
+`agent-orchestration` is not in this table: it does not write `.session/<skill-slug>/<scope>/` at all. Its scope lives under the registered sibling `.session/orchestration/<slug>/` (§3), so it is exempt from the shape check below.
 
 A skill validates that its `<scope>` matches its declared shape before it writes the directory. A mismatch is a lint failure.
 

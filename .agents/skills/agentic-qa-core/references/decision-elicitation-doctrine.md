@@ -16,9 +16,9 @@ One rule covers every instrument here: the harness's question tool, the sweep (�
 | a session launched by another session: its prompt carries the fleet token `/<skill> <label> fleet worker` (a worker, or a middle conductor started with `agent launch`) | no question tool, no `mkd` deck, no sweep | to the session that launched it |
 | a subagent, an unattended routine, CI | no | listed in its report; a routine parks the item (`./decision-protocol.md` §5) |
 
-A launched session escalates to its launcher the four kinds of `./decision-protocol.md` §5 and every blocker it cannot clear inside its brief. It sends a blocking `ask`, an `escalation`, or, when it was launched without a dispatch, a `status` message whose subject starts with `BLOCKED: ` (`orca-orchestration/references/worker-contract.md` rules 2, 3 and 8). A pending that does not block it goes in a plain message or its report, and it keeps working on whatever does not depend on the answer. The launcher relays the item to the human with the instrument §1 picks or, if it was itself launched, sends it up one more level. A middle conductor relays and does not sweep.
+A launched session escalates to its launcher the four kinds of `./decision-protocol.md` §5 and every blocker it cannot clear inside its brief. It sends an `ask` (then ends its turn until the answer wakes it), an `escalation`, or, when it was launched without a dispatch, a `status` message whose subject starts with `BLOCKED: ` (`/agent-orchestration` worker contract rules 2, 3 and 8). A pending that does not block it goes in a plain message or its report, and it keeps working on whatever does not depend on the answer. The launcher relays the item to the human with the instrument §1 picks or, if it was itself launched, sends it up one more level. A middle conductor relays and does not sweep.
 
-The reason: a question prompt in a terminal nobody watches waits forever (gotcha G36 in `orca-orchestration/references/gotchas.md`), and inside Orca the `mkd` deck opens a tab and blocks its session until someone presses Send.
+The reason: a question prompt in a terminal nobody watches waits forever (gotcha G36 in `/agent-orchestration` gotchas), and inside Orca the `mkd` deck opens a tab and blocks its session until someone presses Send.
 
 The exception is per request. A launched session may ask the human directly when the human typed that request into its own terminal, or when its brief grants it in writing. It asks with the instrument §1 picks, then tells its launcher what it asked and what the answer was, so the decision lands in the run record (`./decision-protocol.md` §6). The next request that did not come from the human goes back to the launcher.
 
@@ -66,7 +66,7 @@ A deck that only lists options is worse than a terminal prompt: it costs more an
 | installed | when the ladder says deck, call the Skill tool with "mkd" and follow it |
 | not installed | say one line offering to install it, then do the step with the harness prompt and carry on |
 
-This gate speaks, unlike the orchestration gate (`orca-orchestration/SKILL.md` §The gate), whose silence comes from depending on a separate application. Here the absence means our own installer did not run or drifted, the fix is one command, and the user benefits from knowing. Say it once per session. A decision taken through the harness prompt is a real decision: the deck is a better container, not a different authority.
+This gate speaks, unlike the orchestration gate (`/agent-orchestration` §Two gates), whose silence comes from depending on a separate application. Here the absence means our own installer did not run or drifted, the fix is one command, and the user benefits from knowing. Say it once per session. A decision taken through the harness prompt is a real decision: the deck is a better container, not a different authority.
 
 ---
 
@@ -74,7 +74,7 @@ This gate speaks, unlike the orchestration gate (`orca-orchestration/SKILL.md` �
 
 By default the CLI renders the deck, opens a browser and exits; the human answers whenever they want and pastes the result back. That suits an answer not needed this turn. When it is needed this turn, serve the deck and wait: the result returns to the agent directly.
 
-With an orchestration runtime, open the deck in a worktree-bound browser tab rather than the system browser (`orca-orchestration/references/html-surfaces.md`). Measured (ADR-0006): the page renders, its storage works, and the submit returns the result with no copy step. The tab sits beside the terminals that produced it and is reachable from the owner's phone.
+With an orchestration runtime, open the deck in a worktree-bound browser tab rather than the system browser (`agentic-qa-core/references/fleet-launch-seam.md` §6). Measured (ADR-0006): the page renders, its storage works, and the submit returns the result with no copy step. The tab sits beside the terminals that produced it and is reachable from the owner's phone.
 
 Two rules follow from how browser storage works, both measured:
 

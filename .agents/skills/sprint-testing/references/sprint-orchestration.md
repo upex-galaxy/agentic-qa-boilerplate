@@ -273,7 +273,7 @@ CONDUCTOR                                   WORKERS (one per issue of the round)
     |-> Syntax-check every launch line, then launch the round
     |                                       --> each worker: Session Start -> Stage 1
     |                                           -> Stage 2 -> Stage 3, no checkpoints
-    |-> WAIT on the mailbox (one waiter, no polling, no monitor)
+    |-> WAIT on the mailbox (end the turn, Orca wakes the conductor; no polling, no monitor)
     |   `ask` -> answer it · `escalation` -> decide · `claim` -> arbitrate + broadcast
     |-> A worker reports done:
     |     verify its checklist (STEP 5)

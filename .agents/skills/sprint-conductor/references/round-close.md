@@ -89,7 +89,7 @@ board: verdict <value> · worker done
 
 After the subagent returns: read the worker's cost footer off its screen, then close it and, when it ran in
 its own worktree, remove the worktree after the orphan audit
-(`orca-orchestration/references/coordinator-playbook.md` §6). Release its claims (`fleet-conductor.md` §8).
+(`/agent-orchestration`, conductor cycle §6). Release its claims (`fleet-conductor.md` §8).
 Keep a worker open while its artifacts fail Step 1, until it answers.
 
 ## 4. The round is complete

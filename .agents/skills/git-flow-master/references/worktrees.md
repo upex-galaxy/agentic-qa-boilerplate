@@ -87,7 +87,7 @@ Golden rules:
 
 ## Approach C: orchestrated worktree (managed by the orchestration layer)
 
-When several agent sessions are coordinated (a conductor plus N workers), the orchestration layer creates and destroys the worktrees, one per worker, outside the repo. The mechanics (create, provision, launch a session into it, remove) belong to `orca-orchestration/SKILL.md`. To git it is an ordinary linked worktree, so everything else in this file applies unchanged. Write the calls as `[ORCHESTRATION_TOOL] <verb>: …` pseudocode and load that skill for the how. Topology choice per activity: `orca-orchestration/references/topologies.md`.
+When several agent sessions are coordinated (a conductor plus N workers), the orchestration layer creates and destroys the worktrees, one per worker, outside the repo. The mechanics (create, provision, launch a session into it, remove) belong to `/agent-orchestration`. To git it is an ordinary linked worktree, so everything else in this file applies unchanged. Write the calls as `[ORCHESTRATION_TOOL] <verb>: …` pseudocode and load that skill for the how. Topology choice per activity: `agentic-qa-core/references/fleet-launch-seam.md` §5.
 
 An orchestrated worktree is visible to the owner (board card, managed terminal, phone) and outlives the session that made it. A harness worktree lives inside the repo and is invisible outside the session that created it.
 
@@ -142,7 +142,7 @@ bun run context:hydrate             # rebuild the Jira cache (needs credentials,
 
 Worktrees the harness creates (Claude Code `--worktree`, subagent and desktop worktrees; Codex-managed worktrees in the Codex app) copy the gitignored inputs listed in the committed `.worktreeinclude` by themselves: `.env` and its local overrides, Claude Code's local settings, `.auth/` minus the retired plaintext MCP credential copies, the OpenAPI config and synced spec, local MCP overrides and the installer state. That is the same list `worktree:provision` copies. They do not get dependencies, the `.husky/_` hook shims or the skills alias, and without `.husky/_` every git hook is skipped and commits pass no gate. The Codex app runs `bun run worktree:provision` itself through the committed `.codex/environments/environment.toml`. In a Claude Code worktree, the prompt hook prints one `WORKTREE:` warning line until you run it. A worktree made with plain `git worktree add` or by an orchestration layer reads no `.worktreeinclude`, so `worktree:provision` is the whole story there (Orca runs it from the committed `orca.yaml`).
 
-`.session/` is deliberately not provisioned, because a plan, brief or roster written inside a worktree dies with it. Keep those in the primary checkout and cite them by absolute path. The full gap table and how to wire provisioning as an orchestration setup hook: `orca-orchestration/references/provisioning.md`.
+`.session/` is deliberately not provisioned, because a plan, brief or roster written inside a worktree dies with it. Keep those in the primary checkout and cite them by absolute path. The full gap table and how to wire provisioning as an orchestration setup hook: `agentic-qa-core/references/fleet-provisioning.md`.
 
 ---
 
@@ -187,7 +187,7 @@ bun run worktree:audit <worktree> --rescue      # copy the STATE class into the 
 - DISPOSABLE is test output, editor litter, and the test-run outputs the owner accepted losing: Allure history, `reports/`, refreshed `.auth/` tokens.
 - UNKNOWN means no rule matched.
 
-It exits 1 while STATE or UNKNOWN exists only in the worktree. `--rescue` copies STATE to the same path under the primary. A file the primary already holds with different bytes is a CONFLICT left for you, and every UNKNOWN entry is decided by hand. A durable document belongs in the primary checkout or in the tracker, never only in a worktree. Remove the worktree only on exit 0. The classification table and class definitions: `orca-orchestration/references/provisioning.md` §5.
+It exits 1 while STATE or UNKNOWN exists only in the worktree. `--rescue` copies STATE to the same path under the primary. A file the primary already holds with different bytes is a CONFLICT left for you, and every UNKNOWN entry is decided by hand. A durable document belongs in the primary checkout or in the tracker, never only in a worktree. Remove the worktree only on exit 0. The classification table and class definitions: `agentic-qa-core/references/fleet-provisioning.md` §5.
 
 Three removal paths skip the audit on their own: `git worktree remove` without `--force` exits 0 and deletes ignored files without a word; Claude Code removes a worktree it judges clean, and ignored files do not count against clean; and a subagent `isolation: "worktree"` tree is cleaned automatically, so nothing can be audited there. A subagent that must leave durable output writes it straight to the primary checkout by absolute path.
 
@@ -214,7 +214,7 @@ Three removal paths skip the audit on their own: `git worktree remove` without `
 | Claude Code, want the session moved for you | `EnterWorktree` (base `fresh` for independence) |
 | Any other agent / portable script | `git worktree add … -b …` (Approach A) |
 | Parallel subagents mutating files | `Agent`/workflow `isolation: "worktree"` |
-| A coordinated fleet of worker sessions the owner wants to watch and steer | Orchestrated worktree per worker (Approach C), `orca-orchestration/SKILL.md` |
+| A coordinated fleet of worker sessions the owner wants to watch and steer | Orchestrated worktree per worker (Approach C), `/agent-orchestration` |
 | Several sessions that only read code and write to the tracker (manual QA, AC refinement) | **No worktree**, same checkout. The isolation they need is a browser profile and a session dir, not a second tree |
 
 ---

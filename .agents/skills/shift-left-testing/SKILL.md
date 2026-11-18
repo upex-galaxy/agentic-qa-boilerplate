@@ -112,7 +112,7 @@ When a subagent fails, stop and report the partial state (Stories refined, Jira 
 Refinement is sequential by default. A fleet (one persistent worker per Story, a conductor collecting reports) is available only when the user asks for it on a large batch.
 
 - Same checkout: this skill writes only to Jira, so a worktree per Story is pure cost.
-- The conductor always writes `launch.txt` in `.session/shift-left-testing/<batch-id>/`, one self-contained line per Story, whether or not an orchestration transport exists. Launching, supervising and closing sessions belongs to `orca-orchestration/SKILL.md` (`[ORCHESTRATION_TOOL]`); `launch.txt` is the payload for the human-paste fallback.
+- The conductor always writes `launch.txt` in `.session/shift-left-testing/<batch-id>/`, one self-contained line per Story, whether or not an orchestration transport exists. Launching, supervising and closing sessions belongs to `/agent-orchestration` (`[ORCHESTRATION_TOOL]`); `launch.txt` is the payload for the human-paste fallback.
 - The per-Story user OK moves to the conductor: it presents each worker's summary as it lands and waits for approve or veto before that Story's Phase 3 runs. A fleet that skips this is this skill not running.
 - One writer per Story: every Jira write for a Story belongs to its worker. The batch report and epic comment stay with the conductor.
 - A missing orchestration transport is never named to the user, the preflight gate or the batch report.
@@ -420,7 +420,7 @@ The Phase 1 table OK and the per-Story summary OK still apply. In a fleet the co
 |-----|-------------|------------|
 | `[ISSUE_TRACKER_TOOL]` | `acli`, the Atlassian MCP, or `{{ISSUE_TRACKER_CLI}}` | `AGENTS.md` Tool Resolution |
 | `[TMS_TOOL]` | xray-cli skill (Modality jira-xray) or `acli` (Modality jira-native) | `AGENTS.md` Tool Resolution |
-| `[ORCHESTRATION_TOOL]` | the multi-session orchestration CLI (fleet seam only) | `orca-orchestration/SKILL.md` |
+| `[ORCHESTRATION_TOOL]` | the multi-session orchestration CLI (fleet seam only) | `/agent-orchestration` |
 
 Reads and writes are split (`agentic-qa-core/references/acli-integration.md` §"Reads vs writes"). Detailed reads (description, ACs, scope, comments, parent epic) go through `bun run jira:sync-issues get/jql`, then the synced `.md`. Writes (custom-field update, comment, transition, label, link) and the trivial key, summary and status candidate list go through `acli`. `acli view` is never used for a custom field.
 

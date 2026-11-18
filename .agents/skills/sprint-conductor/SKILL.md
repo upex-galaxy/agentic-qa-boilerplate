@@ -1,6 +1,6 @@
 ---
 name: sprint-conductor
-description: "Conduct a sprint QA fleet on Orca from the Sprint Board, one sprint-testing worker per ticket. Use when booting the sprint conductor; watching the test environment for arrivals; closing a round; resuming after a reboot. Not for one ticket (sprint-testing) or other fleets (orca-orchestration)."
+description: "Conduct a sprint QA fleet on Orca from the Sprint Board, one sprint-testing worker per ticket. Use when booting the sprint conductor; watching the test environment for arrivals; closing a round; resuming after a reboot. Not for one ticket (sprint-testing) or other fleets (agent-orchestration)."
 license: MIT
 compatibility: [claude-code, codex, opencode, pi]
 complementary_categories: [orchestration, issue-tracker, tms]
@@ -10,8 +10,8 @@ metadata:
 # compact_rules is consumed VERBATIM by scripts/build-skill-registry.ts (frontmatter-first,
 # no truncation). Keep in sync with the doctrine below and in references/.
 compact_rules: |
-  - Orca is required (owner decision, the one exception to the orchestrator-silence rule): run the gate of `orca-orchestration` (binary and reachable runtime) before anything else. When it fails, say ONE line and stop, writing nothing: "/sprint-conductor runs on Orca and no reachable Orca runtime is on this machine; run the sprint with /sprint-testing sprint-wide and N executors, which writes paste-ready launch lines." Every other workflow skill keeps its silence unchanged.
-  - Split of duties: this skill owns the maneuver (boot, watch pass, round close, resume); `sprint-testing/references/fleet-conductor.md` owns the fleet, `sprint-testing/references/sprint-board.md` the board, `orca-orchestration` the transport. Cite them, do not restate them.
+  - Orca is required (owner decision, the one exception to the orchestrator-silence rule): run the gate of `agent-orchestration` (binary and reachable runtime) before anything else. When it fails, say ONE line and stop, writing nothing: "/sprint-conductor runs on Orca and no reachable Orca runtime is on this machine; run the sprint with /sprint-testing sprint-wide and N executors, which writes paste-ready launch lines." Every other workflow skill keeps its silence unchanged.
+  - Split of duties: this skill owns the maneuver (boot, watch pass, round close, resume); `sprint-testing/references/fleet-conductor.md` owns the fleet, `sprint-testing/references/sprint-board.md` the board, `agent-orchestration` the transport. Cite them, do not restate them.
   - Ask the owner only what the board, the tracker and the files cannot decide: the sprint when the CURRENT board and the tracker disagree or no board exists, and the worker cap when the ticket count exceeds it and the owner named none (held for this session, never persisted as a new default). Everything else is decided and reported.
   - The conductor does not test and does not investigate a ticket. The line is fixture versus finding: seeding data, verifying with ONE query that a fixture exists and belongs to whom the brief says, and creating an owner-approved fixture user are conductor work; what a case asserts, the code behind it and any id the test needs are the worker's.
   - Conductor-owned pre-flight, before EVERY launch (a watch-pass launch included): the conductor alone mints tokens and browser states and refreshes them when stale; a credential is proven with the cheap API login before any browser login, stopping after 3 failed attempts; the sibling-repo fetch is a gate (a non-zero exit stops and escalates, it never falls through to the counts) and its two drift counts go into every brief; the schema sync runs from a current checkout or is skipped with the skip written into every brief. Full: `references/boot-and-resume.md` §2.
@@ -48,7 +48,7 @@ The skill is thin on purpose: almost everything it does has a canonical home, an
 |---|---|
 | Fleet mode: worker identity, briefs, `launch.txt`, rounds, auth one-writer, claims, ad-hoc retest, Live Progress, the dashboard, the sprint record | `sprint-testing/references/fleet-conductor.md` |
 | The board: commands per stage, the block a worker's brief carries, the four channels, drafts, decision cards, evidence, fixtures, the sentinel wake table, staged artifacts | `sprint-testing/references/sprint-board.md`, command reference `cli/sprint-board/README.md` |
-| The transport: Run, Tasks, native launch, the mailbox, liveness, closing, the conductor handoff | `orca-orchestration` (`SKILL.md`, `references/coordinator-playbook.md`, `references/gotchas.md`) |
+| The transport: Run, Tasks, native launch, the mailbox, liveness, closing, the conductor handoff | `agent-orchestration` (its `SKILL.md`, conductor cycle, Orca provider and gotchas) |
 | The deploy check (the deployed environment is truth, the tracker is a hint) | `sprint-testing/references/session-entry-points.md` Step 1c |
 | This skill: the boot, one watch pass, the round close, the resume | `references/boot-and-resume.md`, `references/watch-pass.md`, `references/round-close.md` |
 
@@ -68,24 +68,24 @@ The binding rules are the `compact_rules` block above, which `.agents/skills/REG
 every briefing.
 
 **Read full SKILL.md when**: booting a conductor cold, resuming one after a reboot, or deciding whether a
-request belongs here, in `sprint-testing` or in `orca-orchestration`.
+request belongs here, in `sprint-testing` or in `agent-orchestration`.
 
 ---
 
 ## Preflight: Orca is required
 
-Run the gate as `orca-orchestration` §"The gate: three states" defines it: binary present and runtime
+Run the gate as `agent-orchestration` §"Two gates" defines it: binary present and runtime
 reachable (on Linux outside an Orca terminal the binary is `orca-ide`). This is the one workflow skill
 that names the orchestrator, because the owner invoked it to run on Orca.
 
 | Gate | This skill |
 |---|---|
 | state C, ready | continue with Phase 0 |
-| state B, binary with an unreachable runtime | open the app once and re-check once, as `orca-orchestration` says; still unreachable means state A |
+| state B, binary with an unreachable runtime | open the app once and re-check once, as `agent-orchestration` says; still unreachable means state A |
 | state A, no binary | ONE line, then stop, nothing written: "/sprint-conductor runs on Orca and no reachable Orca runtime is on this machine; run the sprint with /sprint-testing sprint-wide and N executors, which writes paste-ready launch lines." |
 
 The conductor runs as a top-level session. Started as a supervised worker of another conductor, it has no
-fleet wherever the app's nested-worker depth is 1 (`orca-orchestration/references/gotchas.md` G77): a
+fleet wherever the app's nested-worker depth is 1 (`/agent-orchestration` gotchas G77): a
 session above it launches it with `agent launch` and reads its reports from that session's own Run inbox.
 
 The one line is the whole report, with no install walkthrough. `sprint-testing`, `fleet-conductor.md`
@@ -121,7 +121,7 @@ canon owns:
 
 The fleet files (`launch.txt`, `roster.md`, `claims.md`, each `<KEY>/brief.md`, the reports) stay in
 `.session/sprint-testing/sprint-<N>/` (`fleet-conductor.md` §4-§5, §8), the Run files in
-`.session/orchestration/<slug>/` (`orca-orchestration` §Quick start), the board's data in
+`.session/orchestration/<slug>/` (`agent-orchestration` §Quick start), the board's data in
 `.session/sprint-board/`.
 
 ---
@@ -130,10 +130,10 @@ The fleet files (`launch.txt`, `roster.md`, `claims.md`, each `<KEY>/brief.md`, 
 
 | Step | Does | Owner of the detail |
 |---|---|---|
-| 1 | Load the skills: this one, then `sprint-testing` with `references/fleet-conductor.md` and `references/sprint-board.md`, then `orca-orchestration` with every stub in `orchestration.orchestrator_skills` | `orca-orchestration` §Quick start step 2 |
+| 1 | Load the skills: this one, then `sprint-testing` with `references/fleet-conductor.md` and `references/sprint-board.md`, then `agent-orchestration` (it loads the vendor guides by name) and `agentic-qa-core/references/fleet-project-profile.md` | `agent-orchestration` §Quick start step 2 |
 | 2 | Resolve the sprint and the board (`board sprints`, `use` or `new`, people), `sync --discover`, `add` late tickets, start the server when the page does not answer | `sprint-board.md` §1 row "0 boot" |
 | 3 | The conductor-owned pre-flight: tokens, browser states, the credential check, the sibling-repo fetch gate and drift counts, the schema sync or its logged skip, the deployed build per repo | `references/boot-and-resume.md` §2 |
-| 4 | Bind the sprint's Run (its id from `kickoff.md`, the roster or the board timeline) or create it; probe the reply direction ONCE before any worker depends on it | `references/boot-and-resume.md` §3, `orca-orchestration/references/coordinator-playbook.md` §8 |
+| 4 | Bind the sprint's Run (its id from `kickoff.md`, the roster or the board timeline) or create it; probe the reply direction ONCE before any worker depends on it | `references/boot-and-resume.md` §3, `/agent-orchestration` (conductor cycle §8) |
 | 5 | Arm the sentinel (skip with `--no-watch`) | `sprint-board.md` §7 |
 | 6 | Read what waits: the Run mailbox, the board inbox plus the bounded `listen --since` replay, answers the owner gave in chat (relay, then mirror to the board), then the first watch pass | `sprint-board.md` §3, `references/watch-pass.md` |
 | 7 | One status screen for the owner | §"Status screen" below |
@@ -148,7 +148,7 @@ goes to a developer without the owner's order (`sprint-board.md` §3-§4).
 
 ### Status screen
 
-In the owner's language, counts and tables, no narrative (`orca-orchestration` hard rule 23):
+In the owner's language, counts and tables, no narrative (`agent-orchestration` hard rule 23):
 
 - In the test environment: each ticket launched, held (and on whom), skipped or new, one reason each.
 - Who waits on whom: workers waiting on the owner, the owner waiting on developers (open waits and
@@ -171,7 +171,7 @@ Full procedure: `references/watch-pass.md`. The wake reasons and what each asks 
 ## Closing a worker and a round
 
 When a worker reports done, read back its ticket's final status yourself, read its cost footer, close it
-(`orca-orchestration/references/coordinator-playbook.md` §6), then let the round-close subagent verify
+(`/agent-orchestration`, conductor cycle §6), then let the round-close subagent verify
 the artifacts and write the sprint record. When every issue of the round is closed, say "round complete"
 in the status and form the next round (`fleet-conductor.md` §6). Full procedure:
 `references/round-close.md`.
@@ -200,7 +200,7 @@ This skill is **per-sprint scope**: `<scope>` = `sprint-<N>`. Session state live
 `<<PRIMARY_ROOT>>/.session/sprint-conductor/sprint-<N>/` per `agentic-qa-core/references/session-management.md`
 §3 + §9. Every dispatch follows the 7-component briefing (`agentic-qa-core/references/briefing-template.md`);
 the pattern per step follows `agentic-qa-core/references/dispatch-patterns.md`. Workers are supervised
-sessions launched through `orca-orchestration` (`fleet-conductor.md` §2), not subagents.
+sessions launched through `agent-orchestration` (`fleet-conductor.md` §2), not subagents.
 
 | Step | Pattern | Subagent role | Reference |
 |---|---|---|---|
@@ -225,7 +225,7 @@ sessions launched through `orca-orchestration` (`fleet-conductor.md` §2), not s
 | Skill | Load when |
 |---|---|
 | `sprint-testing` (+ `references/fleet-conductor.md`, `references/sprint-board.md`) | boot Step 1, always |
-| `orca-orchestration` + the stubs in `orchestration.orchestrator_skills` | boot Step 1, always (the gate passed) |
+| `agent-orchestration` + `agentic-qa-core/references/fleet-project-profile.md` | boot Step 1, always (the gate passed) |
 | `acli` / `xray-cli` | reading or writing the sprint record and reading back a ticket's status (`[ISSUE_TRACKER_TOOL]`, `[TMS_TOOL]`) |
 | `evidence-artifact` | the round close finds a ticket or bug without its evidence page and the conductor builds it from the worker's pack (`sprint-board.md` §6) |
 | `git-flow-master` | before reading a merge or Merge Line state for the deploy check (`git-flow-master/references/observer.md`) |
@@ -234,7 +234,7 @@ sessions launched through `orca-orchestration` (`fleet-conductor.md` §2), not s
 
 | Tag | Resolves to | Defined in |
 |---|---|---|
-| `[ORCHESTRATION_TOOL]` | the orchestration CLI: Run, launch, mailbox, terminal read and close | `orca-orchestration/SKILL.md` |
+| `[ORCHESTRATION_TOOL]` | the orchestration CLI: Run, launch, mailbox, terminal read and close | `/agent-orchestration` |
 | `[ISSUE_TRACKER_TOOL]` | `acli`, or `{{ISSUE_TRACKER_CLI}}` | `AGENTS.md` Tool Resolution |
 | `[TMS_TOOL]` | `xray-cli` (jira-xray) or `acli` (jira-native) | `AGENTS.md` Tool Resolution |
 
@@ -245,9 +245,9 @@ sessions launched through `orca-orchestration` (`fleet-conductor.md` §2), not s
 The conductor's session closes when the owner ends the run or the sprint closes (the board's
 `snapshot --mode report` and `archive`, `sprint-board.md` §1). Before the closing message:
 
-1. Every live worker is closed or listed with its reason to stay open (`orca-orchestration`
+1. Every live worker is closed or listed with its reason to stay open (`agent-orchestration`
    hard rule 1), and every granted write claim shows a release (`fleet-conductor.md` §13).
-2. `kickoff.md` is current, so the next conductor resumes from it (`orca-orchestration/references/coordinator-playbook.md` §8).
+2. `kickoff.md` is current, so the next conductor resumes from it (`/agent-orchestration`, conductor cycle §8).
 3. The session footer (`agentic-qa-core/references/session-footer-contract.md`): the screenshot list
    (usually none of the conductor's own) and the skills, MCPs and CLIs used. Under "Execution through
    workers", the testing levels the fleet's ATRs exercised, read from the round-close reports, with "none"
@@ -261,7 +261,7 @@ The conductor's session closes when the owner ends the run or the sprint closes 
 
 The three files under `references/` are loaded as the Concern table says: `boot-and-resume.md` at boot
 Steps 3-4 and on resume, `watch-pass.md` on every sentinel wake, `round-close.md` when a worker reports
-done or a round ends. The `sprint-testing` and `orca-orchestration` canon are read for the steps that
+done or a round ends. The `sprint-testing` and `agent-orchestration` canon are read for the steps that
 cite them.
 
 ---

@@ -124,7 +124,7 @@ On a subagent failure, report the partial state (which surfaces and findings com
 Recon runs on in-turn subagents by default. A sweep large enough to outgrow one turn may run one persistent worker per module, only when the user asks for it:
 
 - Same checkout. Recon writes nothing to the repository, only the session directory (one `recon/<surface>.json` per worker), so no worktree is needed.
-- The conductor always writes `launch.txt` in the session directory, one self-contained line per module. Launching and supervising those sessions is `orca-orchestration/SKILL.md` (`[ORCHESTRATION_TOOL]`); `launch.txt` is the payload for the human-paste fallback.
+- The conductor always writes `launch.txt` in the session directory, one self-contained line per module. Launching and supervising those sessions is `/agent-orchestration` (`[ORCHESTRATION_TOOL]`); `launch.txt` is the payload for the human-paste fallback.
 - Refute, Tie-break and Handoff stay with the conductor. Workers return Recon reports and their `created_rows`; they do not file, ask the person or tie-break.
 - The absence of an orchestration transport is not mentioned to the user and does not appear in the charter or the session record.
 
@@ -248,7 +248,7 @@ This skill produces no ATP, ATR or TC, scores no ROI and writes no test code. A 
 | `[AUTOMATION_TOOL]` | `/playwright-cli` | `AGENTS.md` Tool Resolution |
 | `[ISSUE_TRACKER_TOOL]` | `acli`, or `{{ISSUE_TRACKER_CLI}}` | `AGENTS.md` Tool Resolution |
 | `[TMS_TOOL]` | `xray-cli` (jira-xray) or `acli` (jira-native) | `AGENTS.md` Tool Resolution |
-| `[ORCHESTRATION_TOOL]` | the multi-session orchestration CLI (fleet seam only) | `orca-orchestration/SKILL.md` |
+| `[ORCHESTRATION_TOOL]` | the multi-session orchestration CLI (fleet seam only) | `/agent-orchestration` |
 
 ---
 

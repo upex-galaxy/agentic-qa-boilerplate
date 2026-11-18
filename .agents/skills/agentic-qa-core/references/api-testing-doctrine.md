@@ -83,7 +83,7 @@ It authenticates the env and role's credentials (from `.env`) and writes:
 
 Naming: the token env var is `API_TOKEN_<ROLE>_<ENV>`, uppercase (e.g. `API_TOKEN_ADMIN_STAGING`, `API_TOKEN_USER_LOCAL`). The default role is `user`, and multiple roles and envs coexist in the same files.
 
-`--profile <name>` writes `tokens.env` and `tokens.json` under `.auth/profiles/<name>/` instead of `.auth/` directly, an isolated token set that never overwrites the default one. An orchestration conductor uses it to mint one credential set per worker or session (see `orca-orchestration`), and a worker then sources its own `.auth/profiles/<name>/tokens.env` instead of the shared file.
+`--profile <name>` writes `tokens.env` and `tokens.json` under `.auth/profiles/<name>/` instead of `.auth/` directly, an isolated token set that never overwrites the default one. An orchestration conductor uses it to mint one credential set per worker or session (see `agent-orchestration`), and a worker then sources its own `.auth/profiles/<name>/tokens.env` instead of the shared file.
 
 Nothing is written to `.env`, and no credential enters any MCP, so there is no restart after login.
 
