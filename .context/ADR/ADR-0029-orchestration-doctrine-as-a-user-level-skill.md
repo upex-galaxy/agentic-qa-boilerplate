@@ -28,7 +28,7 @@ Router lock fingerprint for this change: `c42ccf96078c`.
 ## Consequences
 
 - **Positive:** one source for the doctrine, with its own tests and history; a fix lands in every repo through the skill update instead of a sync per repo.
-- **Negative / trade-offs:** a repo that synced and never re-ran `bun setup` has the stub and no skill until it does; `bun run setup:doctor` reports it. A downstream copy of the old `SKILL.md` that the project edited is not fast-forwarded by `bun sync --auto` and keeps the old body until it is replaced by hand. Anyone citing the old skill's files by path must rewrite the citation.
+- **Negative / trade-offs:** a repo that synced and never re-ran `bun setup` has the stub and no skill until it does; `bun run setup:doctor` reports it. `bun sync` replaces an edited downstream copy of the old `SKILL.md` with the stub (backup first), but a project that lists that path in `updater.protected_paths` keeps the old body, citing deleted files, until the path leaves the list or the file is replaced by hand. Anyone citing the old skill's files by path must rewrite the citation.
 - **Neutral / follow-ups:** the profile keys `orchestrator_skills`, `message_verb` and `terminal_verb` are no longer read by the skill and stay in `.agents/project.yaml` until the owner retires them; the Dev boilerplate mirrors this change.
 
 ## Alternatives considered
