@@ -842,7 +842,7 @@ $ bun run git:policy apply --yes      # writes the ruleset
     <h2 class="h2">Worktrees: one session, one tree, one <span class="grad">branch</span></h2>
     <table class="tt tight mt-m">
       <tr><th style="width:190px"></th><th>Manual</th><th>Claude Code</th><th>Orchestrated</th></tr>
-      <tr><td class="small"><b>How</b></td><td class="small mono">git worktree add ../dir -b feat/x main</td><td class="small"><span class="mono">EnterWorktree</span> / <span class="mono">ExitWorktree</span></td><td class="small">the orchestration layer, one per worker (<span class="mono">/orca-orchestration</span>)</td></tr>
+      <tr><td class="small"><b>How</b></td><td class="small mono">git worktree add ../dir -b feat/x main</td><td class="small"><span class="mono">EnterWorktree</span> / <span class="mono">ExitWorktree</span></td><td class="small">the orchestration layer, one per worker (<span class="mono">/agent-orchestration</span>)</td></tr>
       <tr><td class="small"><b>Where</b></td><td class="small">wherever you choose</td><td class="small"><span class="mono">.claude/worktrees/</span></td><td class="small">outside the repo, visible to the owner</td></tr>
       <tr><td class="small"><b>For whom</b></td><td class="small">any agent or person</td><td class="small">Claude Code only</td><td class="small">a fleet the owner wants to see and steer</td></tr>
     </table>
@@ -898,7 +898,7 @@ $ bun run git:policy apply --yes      # writes the ruleset
         <div class="card"><p class="lbl" style="color:var(--warn)">The updater refuses</p><p class="small mt-s"><span class="mono">bun sync</span> keeps backups, markers and prompts inside the checkout: in a worktree it aborts and asks you to run it in the primary.</p></div>
       </div>
     </div>
-    <div class="notes">A worktree removed with git worktree remove deletes ignored files without warning, and the Orca CLI skips archive hooks unless --run-hooks is passed. That is why the audit comes before any removal. Provisioning doctrine: orca-orchestration/references/provisioning.md.</div>
+    <div class="notes">A worktree removed with git worktree remove deletes ignored files without warning, and the Orca CLI skips archive hooks unless --run-hooks is passed. That is why the audit comes before any removal. Provisioning doctrine: agentic-qa-core/references/fleet-provisioning.md.</div>
   </section>
 
   <!-- 17. CONFLICTOS -->
@@ -962,7 +962,7 @@ $ bun run git:policy apply --yes      # writes the ruleset
       </div>
       <div class="card">
         <p class="lbl">Who calls it</p>
-        <p class="small mt-s"><span class="mono">/test-automation</span> ends in a clean local review and hands over the delivery.<br><span class="mono">/framework-development</span> dispatches the verified code.<br><span class="mono">/orca-orchestration</span> cites it as the canon for the trailers and the flat worktree.<br><span class="mono">/agentic-qa-onboard</span> uses it for Strategy Setup.</p>
+        <p class="small mt-s"><span class="mono">/test-automation</span> ends in a clean local review and hands over the delivery.<br><span class="mono">/framework-development</span> dispatches the verified code.<br><span class="mono">/agent-orchestration</span> cites it as the canon for the trailers and the flat worktree.<br><span class="mono">/agentic-qa-onboard</span> uses it for Strategy Setup.</p>
       </div>
       <div class="card">
         <p class="lbl">Who it calls</p>

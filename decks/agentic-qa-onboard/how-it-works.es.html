@@ -465,7 +465,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td class="small">Documentar casos de prueba en el TMS</td><td class="small mono">/test-documentation</td></tr>
       <tr><td class="small">Escribir tests automatizados</td><td class="small mono">/test-automation</td></tr>
       <tr><td class="small">Correr una suite de regresión</td><td class="small mono">/regression-testing</td></tr>
-      <tr><td class="small">Lanzar o supervisar varias sesiones en paralelo</td><td class="small"><span class="mono">/orca-orchestration</span> (el onboard solo te cuenta que existe)</td></tr>
+      <tr><td class="small">Lanzar o supervisar varias sesiones en paralelo</td><td class="small"><span class="mono">/agent-orchestration</span> (el onboard solo te cuenta que existe)</td></tr>
     </table>
     <div class="notes">Las tres primeras filas son las ramas de la description del SKILL.md (recién llegado o perdido, cómo funciona una skill de workflow, setup completo de un proyecto nuevo). El resto sale de la sección "What this skill does not do". El onboard nunca hace el trabajo de esas skills: te lleva hasta ellas.</div>
   </section>
@@ -520,7 +520,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <text class="t-b" x="814" y="188">Te pasa a la skill que toca y se hace a un lado</text>
       <text class="t-m" x="814" y="216">/shift-left-testing · /sprint-testing</text>
       <text class="t-m" x="814" y="238">/project-discovery · /test-framework-adaptation</text>
-      <text class="t-m" x="814" y="260">/orca-orchestration · ...</text>
+      <text class="t-m" x="814" y="260">/agent-orchestration · ...</text>
       <text class="t-s" x="814" y="280">la que corresponda a lo que querés hacer</text>
       <text class="t-s" x="0" y="425">El tour termina cuando sabés qué skill llamar. Un deck por vez, siempre con tu OK.</text>
     </svg>
@@ -683,14 +683,14 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><th style="width:22%"></th><th>Subagente de un solo uso</th><th>Worker supervisado</th></tr>
       <tr><td class="small"><b>Vive</b></td><td class="small">dentro del turno actual; su memoria muere con el reporte</td><td class="small">como sesión persistente, con su propio alcance</td></tr>
       <tr><td class="small"><b>Sirve para</b></td><td class="small">leer, verificar o mapear algo; casi todo el trabajo</td><td class="small">lo que no entra en un turno: una historia entera, un módulo automatizado e integrado</td></tr>
-      <tr><td class="small"><b>Estado</b></td><td class="small" style="color:var(--good)">el default</td><td class="small" style="color:var(--warn)">opcional, vía <span class="mono">/orca-orchestration</span></td></tr>
+      <tr><td class="small"><b>Estado</b></td><td class="small" style="color:var(--good)">el default</td><td class="small" style="color:var(--warn)">opcional, vía <span class="mono">/agent-orchestration</span></td></tr>
     </table>
     <div class="grid g3 mt-m" style="gap:20px;align-items:start">
       <div class="card card-accent"><p class="lbl">Cómo se organiza</p><p class="small mt-s">Una sesión conductora coordina una flota de workers, por rondas. Cada skill de flujo sigue mandando en el <i>qué</i>; la orquestación, en el <i>cómo</i>.</p></div>
       <div class="card"><p class="lbl">Es opcional</p><p class="small mt-s">Necesita un runtime de orquestación instalado y alcanzable. Sin él, las skills ni lo mencionan: escriben su archivo de lanzamiento y vos pegás las líneas en tus terminales.</p></div>
       <div class="card card-soft"><p class="lbl">No es "QA más rápida"</p><p class="small mt-s">En un sprint real, el valor fue ver el mismo entorno desde varios ángulos, incluso un worker que se negó a seguir una instrucción equivocada. Las cifras: ADR-0006.</p></div>
     </div>
-    <div class="notes">Fuente: "Running several sessions at once (optional)" del SKILL.md y su Compact Rule sobre los dos ejecutores. El onboard explica y hace el handoff; nunca lanza una flota. Deck de la skill: ../orca-orchestration/how-it-works.es.html.</div>
+    <div class="notes">Fuente: "Running several sessions at once (optional)" del SKILL.md y su Compact Rule sobre los dos ejecutores. El onboard explica y hace el handoff; nunca lanza una flota. Deck de la skill: https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/agent-orchestration/how-it-works.es.html.</div>
   </section>
 
   <!-- 11. MCPs Y VARIABLES -->
@@ -754,7 +754,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td style="padding:8px 16px" class="small">Sugerir cambiar el stack</td><td style="padding:8px 16px" class="small">Playwright, KATA, Allure, TypeScript y bun están fijos; KATA depende de Playwright</td></tr>
       <tr><td style="padding:8px 16px" class="small">Volcarte el pipeline entero si preguntaste por una parte</td><td style="padding:8px 16px" class="small">arranca donde estás; ante la duda, una sola pregunta</td></tr>
       <tr><td style="padding:8px 16px" class="small">Darte un comando antes del concepto</td><td style="padding:8px 16px" class="small">primero qué es y por qué importa; después la ruta o el flag</td></tr>
-      <tr><td style="padding:8px 16px" class="small">Lanzar o supervisar una flota de sesiones</td><td style="padding:8px 16px" class="small">solo explica que la opción existe; eso es <span class="mono">/orca-orchestration</span></td></tr>
+      <tr><td style="padding:8px 16px" class="small">Lanzar o supervisar una flota de sesiones</td><td style="padding:8px 16px" class="small">solo explica que la opción existe; eso es <span class="mono">/agent-orchestration</span></td></tr>
       <tr><td style="padding:8px 16px" class="small">Darte solo el checklist en un proyecto nuevo</td><td style="padding:8px 16px" class="small">cubre la fase 1; un proyecto nuevo recorre las fases 1 a 4 en orden</td></tr>
     </table>
     <div class="notes">Fuente: Compact Rules del SKILL.md (la viñeta sobre varias sesiones a la vez), "Opening protocol" y "What this skill does not do".</div>
@@ -783,7 +783,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <p class="lbl">Canon</p>
       <p class="small mt-s"><span class="mono">.agents/skills/agentic-qa-onboard/SKILL.md</span> (tour, modo enseñanza, protocolo de decks, camino de proyecto nuevo, checklist). Las skills de flujo son dueñas de su propio detalle: el onboard las presenta, no las reescribe.</p>
     </div>
-    <p class="small dim mt-m">Siguientes decks: <a href="../shift-left-testing/how-it-works.es.html" class="mono">/shift-left-testing</a> · <a href="../sprint-testing/how-it-works.es.html" class="mono">/sprint-testing</a> · <a href="../jira-administration/how-it-works.es.html" class="mono">/jira-administration</a> · <a href="../project-discovery/how-it-works.es.html" class="mono">/project-discovery</a> · <a href="../test-framework-adaptation/how-it-works.es.html" class="mono">/test-framework-adaptation</a> · <a href="../git-flow-master/how-it-works.es.html" class="mono">/git-flow-master</a> · <a href="../orca-orchestration/how-it-works.es.html" class="mono">/orca-orchestration</a> · <a href="../agentic-qa-core/skills-io-flow.es.html">entradas y salidas por skill</a></p>
+    <p class="small dim mt-m">Siguientes decks: <a href="../shift-left-testing/how-it-works.es.html" class="mono">/shift-left-testing</a> · <a href="../sprint-testing/how-it-works.es.html" class="mono">/sprint-testing</a> · <a href="../jira-administration/how-it-works.es.html" class="mono">/jira-administration</a> · <a href="../project-discovery/how-it-works.es.html" class="mono">/project-discovery</a> · <a href="../test-framework-adaptation/how-it-works.es.html" class="mono">/test-framework-adaptation</a> · <a href="../git-flow-master/how-it-works.es.html" class="mono">/git-flow-master</a> · <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/agent-orchestration/how-it-works.es.html" class="mono">/agent-orchestration</a> · <a href="../agentic-qa-core/skills-io-flow.es.html">entradas y salidas por skill</a></p>
     <div class="notes">Fin del recorrido. El mapa del slide 3 lo resume: una duda entra, como mucho una pregunta para ubicarte, el camino que te toca, explicado en palabras simples, y un handoff. La skill no tiene "## Mode routing": se invoca por nombre.</div>
   </section>
 

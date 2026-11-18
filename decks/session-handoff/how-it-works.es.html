@@ -457,7 +457,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <h2 class="h2">Parecidas por fuera, <span class="grad">distintas</span> por dentro</h2>
     <table class="tt tight mt-m">
       <tr><th style="width:36%">Lo que querés hacer</th><th style="width:36%">Qué es en realidad</th><th>Con qué</th></tr>
-      <tr><td class="small">Pasarle una tarea acotada a otra sesión y supervisarla</td><td class="small">Orquestación: Task, Dispatch, mailbox; el trabajo vuelve</td><td class="small mono">/orca-orchestration</td></tr>
+      <tr><td class="small">Pasarle una tarea acotada a otra sesión y supervisarla</td><td class="small">Orquestación: Task, Dispatch, mailbox; el trabajo vuelve</td><td class="small mono">/agent-orchestration</td></tr>
       <tr><td class="small">Entregar un trabajo y desentenderte</td><td class="small">Transferencia de una TAREA, en una dirección, sin retorno</td><td class="small">la guía <span class="mono">orca-cli</span> del binario</td></tr>
       <tr><td class="small">Recordar una decisión el mes que viene</td><td class="small">Hecho durable entre sesiones, por proyecto</td><td class="small">Engram (<span class="mono">mem_save</span>)</td></tr>
       <tr><td class="small">Achicar la ventana y seguir</td><td class="small">Compactación del harness: con pérdida, no direccionable, no la controlás</td><td class="small">nada que hacer</td></tr>
@@ -638,7 +638,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <div class="card card-soft"><p class="lbl">El primer prompt</p><p class="small mt-s mono" style="font-size:15px;line-height:1.5">Read `&lt;absolute path to the handoff&gt;` top to bottom and continue that session exactly where it stopped.</p><p class="small mt-s">Si §0 exige un orden, se repite en el prompt: un puntero a un archivo se lee como referencia; una instrucción en el prompt, como instrucción.</p></div>
       </div>
     </div>
-    <div class="notes">La gramática del comando no se copia al repo: se le pide al binario su propia guía de CLI cuando hace falta, porque una copia se desincroniza en la próxima versión. El gate de "binario presente y runtime alcanzable" es el mismo que usa /orca-orchestration. Mecánica completa: references/successor-launch.md.</div>
+    <div class="notes">La gramática del comando no se copia al repo: se le pide al binario su propia guía de CLI cuando hace falta, porque una copia se desincroniza en la próxima versión. El gate de "binario presente y runtime alcanzable" es el mismo que usa /agent-orchestration. Mecánica completa: references/successor-launch.md.</div>
   </section>
 
   <!-- 11. NO ES ORQUESTACIÓN -->
@@ -646,7 +646,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <p class="kicker">Límites · 11 de 13</p>
     <h2 class="h2">Un handoff <span class="grad">no</span> es orquestación</h2>
     <table class="tt mt-m" style="font-size:18px">
-      <tr><th style="width:200px"></th><th>Handoff (esta skill)</th><th>Orquestación (<span class="mono">/orca-orchestration</span>)</th><th>Memoria (Engram)</th></tr>
+      <tr><th style="width:200px"></th><th>Handoff (esta skill)</th><th>Orquestación (<span class="mono">/agent-orchestration</span>)</th><th>Memoria (Engram)</th></tr>
       <tr><td class="small"><b>Qué se mueve</b></td><td class="small">la sesión entera</td><td class="small">una tarea acotada</td><td class="small">un hecho durable</td></tr>
       <tr><td class="small"><b>La que la origina</b></td><td class="small">termina</td><td class="small">sigue trabajando y supervisa</td><td class="small">sigue igual</td></tr>
       <tr><td class="small"><b>Canal después</b></td><td class="small">ninguno, por diseño</td><td class="small">mailbox, preguntas, respuestas</td><td class="small">búsqueda en próximas sesiones</td></tr>
@@ -656,7 +656,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="card" style="border-color:var(--bad)"><p class="lbl" style="color:var(--bad)">El error típico</p><p class="small mt-s">Usar los verbos de orquestación para lanzar la sucesora crea un worker supervisado que después tenés que liberar y cerrar, sin motivo. La familia correcta es la de terminal y worktree.</p></div>
       <div class="card card-soft"><p class="lbl">Y no es un briefing</p><p class="small mt-s">Un briefing de 7 componentes acota una tarea; un handoff trasplanta una sesión. Lo durable igual se guarda en memoria al final, porque el handoff es descartable y la memoria no.</p></div>
     </div>
-    <div class="notes">Si querés ver la orquestación en detalle, está su propio deck: ../orca-orchestration/how-it-works.es.html. Las columnas de handoff y orquestación salen de references/successor-launch.md; la de memoria, de la tabla "What this is not" del SKILL.md.</div>
+    <div class="notes">Si querés ver la orquestación en detalle, está su propio deck: https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/agent-orchestration/how-it-works.es.html. Las columnas de handoff y orquestación salen de references/successor-launch.md; la de memoria, de la tabla "What this is not" del SKILL.md.</div>
   </section>
 
   <!-- 12. SALVAGUARDAS -->
@@ -700,7 +700,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <p class="lbl">Canon</p>
       <p class="small mt-s"><span class="mono">.agents/skills/session-handoff/SKILL.md</span> y sus referencias: <span class="mono">capture-contract.md</span> (las secciones), <span class="mono">successor-launch.md</span> (el lanzamiento), <span class="mono">auto-trigger.md</span> (qué expone cada harness), <span class="mono">templates/handoff.md</span> (el esqueleto).</p>
     </div>
-    <p class="small dim mt-m">Relacionadas: <a href="../orca-orchestration/how-it-works.es.html" class="mono">/orca-orchestration</a> para delegar una tarea y supervisarla · <span class="mono">agentic-qa-core/references/session-footer-contract.md</span> para lo que una sesión reporta al cerrar.</p>
+    <p class="small dim mt-m">Relacionadas: <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/agent-orchestration/how-it-works.es.html" class="mono">/agent-orchestration</a> para delegar una tarea y supervisarla · <span class="mono">agentic-qa-core/references/session-footer-contract.md</span> para lo que una sesión reporta al cerrar.</p>
     <div class="notes">Fin del recorrido. El mapa del slide 3 lo resume: capturar, escribir y recién después lanzar. Si la ventana todavía tiene lugar para lo que falta, la mejor decisión es no escribir el handoff.</div>
   </section>
 
