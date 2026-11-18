@@ -1,11 +1,11 @@
-# ADR-0029 — The orchestration doctrine moves to the user-level skill `agent-orchestration`
+# ADR-0029: The orchestration doctrine moves to the user-level skill `agent-orchestration`
 
 - **Status:** Accepted (by the owner, 2026-11-18)
 - **Date:** 2026-11-18
 - **Deciders:** framework owner (boilerplate maintainer)
 - **Tags:** orchestration, skills, installer, router
-- **Supersedes:** —
-- **Superseded by:** —
+- **Supersedes:** none
+- **Superseded by:** none
 
 ---
 
@@ -33,9 +33,9 @@ Router lock fingerprint for this change: `c42ccf96078c`.
 
 ## Alternatives considered
 
-- **Keep the skill in the boilerplate and sync it** — rejected: the copies had already drifted, and the doctrine is not specific to a QA repo.
-- **Move everything, project parts included** — rejected: a user-level skill must not name a host repo's scripts, paths or rule numbers.
-- **List the user skill in `REGISTRY.md`** — rejected by D3: the registry indexes committed skills only.
+- **Keep the skill in the boilerplate and sync it**. Rejected: the copies had already drifted, and the doctrine is not specific to a QA repo.
+- **Move everything, project parts included**. Rejected: a user-level skill must not name a host repo's scripts, paths or rule numbers.
+- **List the user skill in `REGISTRY.md`**. Rejected by D3: the registry indexes committed skills only.
 
 ## References
 

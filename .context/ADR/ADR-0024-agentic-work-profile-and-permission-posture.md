@@ -66,3 +66,7 @@ We will run agentic work in three tiers configured from one profile inside the e
 - `.agents/skills/agentic-qa-core/references/decision-protocol.md` §5 and `decision-elicitation-doctrine.md`: what reaches a person and how it is asked.
 - ADR-0018 (the sweep), ADR-0006 (the forensic measurements ledger).
 - Owner decisions: `.session/decisions/doctrine-alignment-2026-10-28.json` (gitignored; restated above). Plan: `.session/orchestration/doctrine-alignment/plan.md` steps 6 to 8 (local session material).
+
+---
+
+**Note (2026-11-18):** the orchestration doctrine moved to the user-level skill `agent-orchestration` (ADR-0029). `orca-orchestration` is a stub, so the paths this ADR cites under `.agents/skills/orca-orchestration/` no longer exist: the generic parts are in `agent-orchestration` under the same rule, worker-rule and gotcha numbers, and the parts this repo owns are in `.agents/skills/agentic-qa-core/references/fleet-launch-seam.md`, `fleet-provisioning.md` and `fleet-project-profile.md`. The per-harness translation table is the user skill's machine setup §3.

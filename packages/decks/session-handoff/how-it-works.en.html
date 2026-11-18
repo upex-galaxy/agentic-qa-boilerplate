@@ -457,7 +457,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <h2 class="h2">Similar on the outside, <span class="grad">different</span> inside</h2>
     <table class="tt tight mt-m">
       <tr><th style="width:36%">What you want to do</th><th style="width:36%">What it really is</th><th>With what</th></tr>
-      <tr><td class="small">Hand a scoped task to another session and supervise it</td><td class="small">Orchestration: Task, Dispatch, mailbox; the work comes back</td><td class="small mono">/orca-orchestration</td></tr>
+      <tr><td class="small">Hand a scoped task to another session and supervise it</td><td class="small">Orchestration: Task, Dispatch, mailbox; the work comes back</td><td class="small mono">/agent-orchestration</td></tr>
       <tr><td class="small">Hand off a job and walk away</td><td class="small">Transfer of one task, in one direction, no return</td><td class="small">the binary's <span class="mono">orca-cli</span> guide</td></tr>
       <tr><td class="small">Remember a decision next month</td><td class="small">A durable fact across sessions, per project</td><td class="small">Engram (<span class="mono">mem_save</span>)</td></tr>
       <tr><td class="small">Shrink the window and carry on</td><td class="small">Harness compaction: lossy, not addressable, not under your control</td><td class="small">nothing to do</td></tr>
@@ -638,7 +638,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <div class="card card-soft"><p class="lbl">The first prompt</p><p class="small mt-s mono" style="font-size:15px;line-height:1.5">Read `&lt;absolute path to the handoff&gt;` top to bottom and continue that session exactly where it stopped.</p><p class="small mt-s">If §0 requires an order, it is repeated in the prompt: a pointer to a file reads as a reference; an instruction in the prompt reads as an instruction.</p></div>
       </div>
     </div>
-    <div class="notes">The command grammar is not copied into the repo: the binary is asked for its own CLI guide when needed, because a copy drifts out of sync with the next version. The "binary present and runtime reachable" gate is the same one /orca-orchestration uses. Full mechanics: references/successor-launch.md.</div>
+    <div class="notes">The command grammar is not copied into the repo: the binary is asked for its own CLI guide when needed, because a copy drifts out of sync with the next version. The "binary present and runtime reachable" gate is the same one /agent-orchestration uses. Full mechanics: references/successor-launch.md.</div>
   </section>
 
   <!-- 11. NO ES ORQUESTACIÓN -->
@@ -646,7 +646,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <p class="kicker">Limits · 11 of 13</p>
     <h2 class="h2">A handoff is <span class="grad"> not</span> orchestration</h2>
     <table class="tt mt-m" style="font-size:18px">
-      <tr><th style="width:200px"></th><th>Handoff (esta skill)</th><th>Orchestration (<span class="mono">/orca-orchestration</span>)</th><th>Memory (Engram)</th></tr>
+      <tr><th style="width:200px"></th><th>Handoff (esta skill)</th><th>Orchestration (<span class="mono">/agent-orchestration</span>)</th><th>Memory (Engram)</th></tr>
       <tr><td class="small"><b>What moves</b></td><td class="small">the whole session</td><td class="small">a scoped task</td><td class="small">a durable fact</td></tr>
       <tr><td class="small"><b>The one that originates it</b></td><td class="small">finishes</td><td class="small">keeps working and supervises</td><td class="small">carries on as before</td></tr>
       <tr><td class="small"><b>Channel afterwards</b></td><td class="small">none, by design</td><td class="small">mailbox, questions, answers</td><td class="small">search in later sessions</td></tr>
@@ -656,7 +656,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <div class="card" style="border-color:var(--bad)"><p class="lbl" style="color:var(--bad)">The typical mistake</p><p class="small mt-s">Using the orchestration verbs to launch the successor creates a supervised worker that you then have to release and close, for no reason. The right family is terminal and worktree.</p></div>
       <div class="card card-soft"><p class="lbl">And it is not a briefing</p><p class="small mt-s">A 7-component briefing scopes a task; a handoff transplants a session. What is durable still gets saved to memory at the end, because the handoff is disposable and memory is not.</p></div>
     </div>
-    <div class="notes">If you want orchestration in detail, it has its own deck: ../orca-orchestration/how-it-works.en.html. The handoff and orchestration columns come from references/successor-launch.md; the memory one, from the "What this is not" table of SKILL.md.</div>
+    <div class="notes">If you want orchestration in detail, it has its own deck: https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/agent-orchestration/how-it-works.en.html. The handoff and orchestration columns come from references/successor-launch.md; the memory one, from the "What this is not" table of SKILL.md.</div>
   </section>
 
   <!-- 12. SALVAGUARDAS -->
@@ -700,7 +700,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <p class="lbl">Canon</p>
       <p class="small mt-s"><span class="mono">.agents/skills/session-handoff/SKILL.md</span> and its references: <span class="mono">capture-contract.md</span> (the sections), <span class="mono">successor-launch.md</span> (the launch), <span class="mono">auto-trigger.md</span> (what each harness exposes), <span class="mono">templates/handoff.md</span> (the skeleton).</p>
     </div>
-    <p class="small dim mt-m">Related: <a href="../orca-orchestration/how-it-works.en.html" class="mono">/orca-orchestration</a> for delegating a task and supervising it · <span class="mono">agentic-qa-core/references/session-footer-contract.md</span> for what a session reports when it closes.</p>
+    <p class="small dim mt-m">Related: <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/agent-orchestration/how-it-works.en.html" class="mono">/agent-orchestration</a> for delegating a task and supervising it · <span class="mono">agentic-qa-core/references/session-footer-contract.md</span> for what a session reports when it closes.</p>
     <div class="notes">End of the tour. The map on slide 3 sums it up: capture, write and only then launch. If the window still has room for what is left, the best decision is not to write the handoff.</div>
   </section>
 

@@ -82,3 +82,7 @@ Every row is a snapshot at its date. None of them is a claim about the present.
 - Canon: `.agents/skills/agentic-qa-core/references/volatile-facts.md`
 - Sweep report and owner verdicts (local, gitignored): `.session/spikes/volatile-facts/report.md`, `.session/decisions/volatile-facts-2026-09-24.json`
 - Dated ledger kept by a skill: `.agents/skills/orca-orchestration/references/gotchas.md`
+
+---
+
+**Note (2026-11-18):** the orchestration doctrine moved to the user-level skill `agent-orchestration` (ADR-0029). `orca-orchestration` is a stub, so the paths this ADR cites under `.agents/skills/orca-orchestration/` no longer exist: the generic parts are in `agent-orchestration` under the same rule, worker-rule and gotcha numbers, and the parts this repo owns are in `.agents/skills/agentic-qa-core/references/fleet-launch-seam.md`, `fleet-provisioning.md` and `fleet-project-profile.md`. The gotcha ledger is the user skill's `references/gotchas.md`; the routine cost figure stays in this ADR.

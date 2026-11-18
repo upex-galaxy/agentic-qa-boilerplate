@@ -99,3 +99,7 @@ Proposed wording.
 > A worktree YOU created for sub-work is yours to remove before `worker_done`, after copying out any gitignored evidence. Your own worktree is the conductor's to remove: leave nothing gitignored that lives only there, and say in the summary where you copied logs and evidence.
 
 This repo holds the origin copy of the skill; the webapp receives it through `bun sync`, so the edit is made here only.
+
+---
+
+**Note (2026-11-18):** the orchestration doctrine moved to the user-level skill `agent-orchestration` (ADR-0029). `orca-orchestration` is a stub, so the paths this ADR cites under `.agents/skills/orca-orchestration/` no longer exist: the generic parts are in `agent-orchestration` under the same rule, worker-rule and gotcha numbers, and the parts this repo owns are in `.agents/skills/agentic-qa-core/references/fleet-launch-seam.md`, `fleet-provisioning.md` and `fleet-project-profile.md`. The worker's `ask` no longer blocks: the worker ends its turn and Orca wakes it with the answer.

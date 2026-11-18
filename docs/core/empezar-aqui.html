@@ -850,8 +850,9 @@ subagente (contexto limpio)
       </p>
       <p>
         Existe un segundo ejecutor opcional, el worker supervisado: una sesión persistente con la
-        que sigues hablando, coordinada por <code>/orca-orchestration</code>. Solo aparece si el
-        binario <code>orca</code> está instalado y su runtime responde.
+        que sigues hablando, coordinada por <code>/agent-orchestration</code> (una skill de usuario
+        que instala <code>bun setup</code>). Solo aparece si el binario <code>orca</code> está
+        instalado y su runtime responde.
       </p>
 
       <h3 id="circuito-cli">Circuito 3: auto-carga de skills por CLI</h3>
@@ -1151,7 +1152,7 @@ subagente (contexto limpio)
             </tr>
             <tr>
               <td>Paralelizar el sprint en varias sesiones</td>
-              <td><code>/orca-orchestration</code></td>
+              <td><code>/agent-orchestration</code></td>
             </tr>
             <tr>
               <td>Preparar un worktree nuevo (o revisar uno antes de borrarlo)</td>
@@ -1409,12 +1410,12 @@ subagente (contexto limpio)
         </a>
         <a
           class="card"
-          href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/orca-orchestration/how-it-works.es.html"
+          href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/agent-orchestration/how-it-works.es.html"
           target="_blank"
           rel="noopener"
         >
           <span class="badge">Orquestación</span>
-          <h3>orca-orchestration</h3>
+          <h3>agent-orchestration</h3>
           <p>Un conductor y una flota de workers supervisados.</p>
         </a>
         <a

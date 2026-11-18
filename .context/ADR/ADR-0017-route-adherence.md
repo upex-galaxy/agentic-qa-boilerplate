@@ -59,3 +59,7 @@ The ROUTER table is untouched: lock fingerprint `f4d8c1c9bcf0` (ADR-0013) stands
 - `.agents/instructions/README.md` (scope, rank and cap, re-surface), `AGENTS.md` LOAD PROTOCOL
 - `.agents/skills/orca-orchestration/references/launch-seam.md` §2.1b, `references/worker-contract.md` rule 15, `references/brief-template.md`, `references/coordinator-playbook.md`
 - `.context/ADR/ADR-0009-progressive-disclosure-of-instructions.md`, `.context/ADR/ADR-0013-instructions-maintenance-locks.md`
+
+---
+
+**Note (2026-11-18):** the orchestration doctrine moved to the user-level skill `agent-orchestration` (ADR-0029). `orca-orchestration` is a stub, so the paths this ADR cites under `.agents/skills/orca-orchestration/` no longer exist: the generic parts are in `agent-orchestration` under the same rule, worker-rule and gotcha numbers, and the parts this repo owns are in `.agents/skills/agentic-qa-core/references/fleet-launch-seam.md`, `fleet-provisioning.md` and `fleet-project-profile.md`. The `ROUTE-SCOPE:` rule now lives in `fleet-project-profile.md` §2.

@@ -465,7 +465,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td class="small">Document test cases in the TMS</td><td class="small mono">/test-documentation</td></tr>
       <tr><td class="small">Write automated tests</td><td class="small mono">/test-automation</td></tr>
       <tr><td class="small">Run a regression suite</td><td class="small mono">/regression-testing</td></tr>
-      <tr><td class="small">Launch or supervise several sessions in parallel</td><td class="small"><span class="mono">/orca-orchestration</span> (onboard only tells you it exists)</td></tr>
+      <tr><td class="small">Launch or supervise several sessions in parallel</td><td class="small"><span class="mono">/agent-orchestration</span> (onboard only tells you it exists)</td></tr>
     </table>
     <div class="notes">The first three rows are the branches of the SKILL.md description (newcomer or lost, how a workflow skill works, full setup of a new project). The rest comes from the "What this skill does not do" section. Onboard never does the work of those skills: it takes you to them.</div>
   </section>
@@ -520,7 +520,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <text class="t-b" x="814" y="188">Hands you to the right skill and steps aside</text>
       <text class="t-m" x="814" y="216">/shift-left-testing · /sprint-testing</text>
       <text class="t-m" x="814" y="238">/project-discovery · /test-framework-adaptation</text>
-      <text class="t-m" x="814" y="260">/orca-orchestration · ...</text>
+      <text class="t-m" x="814" y="260">/agent-orchestration · ...</text>
       <text class="t-s" x="814" y="280">whichever fits what you want to do</text>
       <text class="t-s" x="0" y="425">The tour ends when you know which skill to call. One deck at a time, always with your OK.</text>
     </svg>
@@ -683,14 +683,14 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><th style="width:22%"></th><th>One-shot subagent</th><th>Supervised worker</th></tr>
       <tr><td class="small"><b>Lives</b></td><td class="small">inside the current turn; its memory dies with the report</td><td class="small">as a persistent session, with its own scope</td></tr>
       <tr><td class="small"><b>Good for</b></td><td class="small">reading, verifying or mapping something; almost all the work</td><td class="small">what doesn't fit in one turn: a whole story, an automated and integrated module</td></tr>
-      <tr><td class="small"><b>Status</b></td><td class="small" style="color:var(--good)">the default</td><td class="small" style="color:var(--warn)">optional, via <span class="mono">/orca-orchestration</span></td></tr>
+      <tr><td class="small"><b>Status</b></td><td class="small" style="color:var(--good)">the default</td><td class="small" style="color:var(--warn)">optional, via <span class="mono">/agent-orchestration</span></td></tr>
     </table>
     <div class="grid g3 mt-m" style="gap:20px;align-items:start">
       <div class="card card-accent"><p class="lbl">How it's organized</p><p class="small mt-s">A conductor session coordinates a fleet of workers, in rounds. Each workflow skill still rules the <i>what</i>; orchestration rules the <i>how</i>.</p></div>
       <div class="card"><p class="lbl">It's optional</p><p class="small mt-s">It needs an orchestration runtime installed and reachable. Without one, the skills don't even mention it: they write their launch file and you paste the lines into your own terminals.</p></div>
       <div class="card card-soft"><p class="lbl">It isn't "faster QA"</p><p class="small mt-s">In a real sprint, the value was seeing the same environment from several angles, including a worker that refused to follow a wrong instruction. The numbers: ADR-0006.</p></div>
     </div>
-    <div class="notes">Source: "Running several sessions at once (optional)" in SKILL.md and its Compact Rule about the two executors. Onboard explains and hands off; it never launches a fleet. The skill's deck: ../orca-orchestration/how-it-works.es.html.</div>
+    <div class="notes">Source: "Running several sessions at once (optional)" in SKILL.md and its Compact Rule about the two executors. Onboard explains and hands off; it never launches a fleet. The skill's deck: https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/agent-orchestration/how-it-works.es.html.</div>
   </section>
 
   <!-- 11. MCPs AND VARIABLES -->
@@ -754,7 +754,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tr><td style="padding:8px 16px" class="small">Suggest changing the stack</td><td style="padding:8px 16px" class="small">Playwright, KATA, Allure, TypeScript and bun are fixed; KATA depends on Playwright</td></tr>
       <tr><td style="padding:8px 16px" class="small">Dump the whole pipeline when you asked about one part</td><td style="padding:8px 16px" class="small">it starts where you are; when in doubt, a single question</td></tr>
       <tr><td style="padding:8px 16px" class="small">Give you a command before the concept</td><td style="padding:8px 16px" class="small">first what it is and why it matters; then the path or the flag</td></tr>
-      <tr><td style="padding:8px 16px" class="small">Launch or supervise a fleet of sessions</td><td style="padding:8px 16px" class="small">it only explains the option exists; that is <span class="mono">/orca-orchestration</span></td></tr>
+      <tr><td style="padding:8px 16px" class="small">Launch or supervise a fleet of sessions</td><td style="padding:8px 16px" class="small">it only explains the option exists; that is <span class="mono">/agent-orchestration</span></td></tr>
       <tr><td style="padding:8px 16px" class="small">Give you only the checklist on a new project</td><td style="padding:8px 16px" class="small">it covers phase 1; a new project goes through phases 1 to 4 in order</td></tr>
     </table>
     <div class="notes">Source: the Compact Rules in SKILL.md (the bullet about several sessions at once), "Opening protocol" and "What this skill does not do".</div>
@@ -783,7 +783,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <p class="lbl">Canon</p>
       <p class="small mt-s"><span class="mono">.agents/skills/agentic-qa-onboard/SKILL.md</span> (tour, teaching mode, deck protocol, new project path, checklist). The workflow skills own their own detail: onboard introduces them, it doesn't rewrite them.</p>
     </div>
-    <p class="small dim mt-m">Next decks: <a href="../shift-left-testing/how-it-works.en.html" class="mono">/shift-left-testing</a> · <a href="../sprint-testing/how-it-works.en.html" class="mono">/sprint-testing</a> · <a href="../jira-administration/how-it-works.en.html" class="mono">/jira-administration</a> · <a href="../project-discovery/how-it-works.en.html" class="mono">/project-discovery</a> · <a href="../test-framework-adaptation/how-it-works.en.html" class="mono">/test-framework-adaptation</a> · <a href="../git-flow-master/how-it-works.en.html" class="mono">/git-flow-master</a> · <a href="../orca-orchestration/how-it-works.en.html" class="mono">/orca-orchestration</a> · <a href="../agentic-qa-core/skills-io-flow.en.html">inputs and outputs per skill</a></p>
+    <p class="small dim mt-m">Next decks: <a href="../shift-left-testing/how-it-works.en.html" class="mono">/shift-left-testing</a> · <a href="../sprint-testing/how-it-works.en.html" class="mono">/sprint-testing</a> · <a href="../jira-administration/how-it-works.en.html" class="mono">/jira-administration</a> · <a href="../project-discovery/how-it-works.en.html" class="mono">/project-discovery</a> · <a href="../test-framework-adaptation/how-it-works.en.html" class="mono">/test-framework-adaptation</a> · <a href="../git-flow-master/how-it-works.en.html" class="mono">/git-flow-master</a> · <a href="https://upex-galaxy.github.io/agentic-qa-boilerplate/decks/user-level-skills/agent-orchestration/how-it-works.en.html" class="mono">/agent-orchestration</a> · <a href="../agentic-qa-core/skills-io-flow.en.html">inputs and outputs per skill</a></p>
     <div class="notes">End of the tour. The map on slide 3 sums it up: a question comes in, at most one question to place you, the path that fits you, explained in plain words, and a handoff. The skill has no "## Mode routing": it is invoked by name.</div>
   </section>
 

@@ -278,7 +278,7 @@ ul.plain b{color:var(--t1)}
 
 <span class="f2">CROSS-CUTTING</span>                    <span class="ar">spans every phase · "cross-cutting" tab</span>
       ├─ review                   <span class="ar">pr-review-lead · judgment-day</span>
-      ├─ fleet and handoff        <span class="ar">orca-orchestration (optional) · session-handoff</span>
+      ├─ fleet and handoff        <span class="ar">agent-orchestration (optional) · session-handoff</span>
       └─ git · evidence · sync    <span class="ar">git-flow-master · bug-screenshot-annotation · [SYNC]</span>
       full skill list             <span class="ar">.agents/skills/REGISTRY.md</span></div>
       <p class="lede" style="margin-top:.6rem"><b>Observation is declared, not implemented</b>: it has no skill of its own (see <code>.agents/skills/</code> for the current state). It shows up here so the map does not lie about where the system ends.</p>
@@ -605,7 +605,7 @@ ul.plain b{color:var(--t1)}
       </div>
 
       <div class="proc">
-        <div class="proc-hd"><span class="pid">⇶</span><h3>orca-orchestration · session-handoff</h3><span class="repo qa">qa</span></div>
+        <div class="proc-hd"><span class="pid">⇶</span><h3>agent-orchestration · session-handoff</h3><span class="repo qa">qa</span></div>
         <div class="io in"><span class="io-k">stdin ←</span><div><code>orchestration:</code> block of <code>.agents/project.yaml</code> · the sprint, wave or session to continue</div></div>
         <div class="io out"><span class="io-k">stdout →</span><div><b>Fleet:</b> a conductor and persistent workers (one per story or module) that talk through the run's mailbox; with no runtime, the same <code>launch.txt</code> lines are pasted by hand · <b>Handoff:</b> the session is compacted into <code>.session/handoffs/</code> and a successor continues in the same worktree and the same harness</div></div>
         <div class="io note"><span class="io-k">note</span><div>The fleet is <b>optional</b>: a turn's subagents remain the default executor.</div></div>

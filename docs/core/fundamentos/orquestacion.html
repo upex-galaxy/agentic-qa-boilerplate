@@ -549,7 +549,9 @@ Rules: no tocar archivos fuera del directorio de reportes; no correr git.</code>
         </dd>
         <dt>Los workers supervisados</dt>
         <dd>
-          <code>.agents/skills/orca-orchestration/SKILL.md</code> es la capa de transporte.
+          La skill de usuario <code>/agent-orchestration</code> es la capa de transporte (la instala
+          <code>bun setup</code>; lo que agrega este repo está en
+          <code>.agents/skills/agentic-qa-core/references/fleet-project-profile.md</code>).
           Comprueba tres estados (sin binario, binario sin runtime, listo) y en los dos primeros las
           skills de workflow no mencionan el orquestador. Sus valores por defecto (máximo de
           workers, agente, y por nivel de conductor, worker y subagente: modelo, esfuerzo, modo de
@@ -566,7 +568,7 @@ Rules: no tocar archivos fuera del directorio de reportes; no correr git.</code>
           cron, sin una persona del otro lado. Es un conductor que despacha y no produce: abre los
           workers que hacen el trabajo, no publica ni aprueba nada, y lo ambiguo lo reporta en vez
           de adivinarlo. Las recetas que encajan en este repo están en
-          <code>.agents/skills/orca-orchestration/references/automations.md</code>.
+          <code>.agents/skills/agentic-qa-core/references/fleet-project-profile.md</code>.
         </dd>
       </dl>
       <p>Cinco de las hard rules de esa skill recogen los errores de la sección anterior:</p>
@@ -575,8 +577,8 @@ Rules: no tocar archivos fuera del directorio de reportes; no correr git.</code>
           <strong>Regla 4:</strong> un mensaje, una tarea, y el canal es una asignación. El mailbox
           lleva todo mensaje entre sesiones y llega byte a byte; lo largo va en un archivo con un
           puntero de una línea; el envío a terminal sirve para manejar una terminal (comandos,
-          slash-commands, teclas). La única excepción es el prompt de arranque de un worker
-          supervisado, que no tiene otro camino y por eso es corto y apunta a un archivo.
+          slash-commands, teclas). No hay excepción: el primer prompt de un worker supervisado es la
+          especificación de su tarea, que el runtime le entrega al arrancar.
         </li>
         <li>
           <strong>Regla 17:</strong> un código de éxito describe la llamada, nunca el resultado. Se
@@ -598,8 +600,8 @@ Rules: no tocar archivos fuera del directorio de reportes; no correr git.</code>
       </ul>
       <p>
         La disciplina de canales completa, con lo que el envío a terminal sí hace bien (reactivar un
-        MCP caído en un worker, recargar plugins, interrumpir), está en
-        <code>.agents/skills/orca-orchestration/references/channel-discipline.md</code>. A nivel de
+        MCP caído en un worker, recargar plugins, interrumpir), está en la skill
+        <code>/agent-orchestration</code>, en su referencia de disciplina de canales. A nivel de
         todo el repo, la regla crítica 16 de <code>AGENTS.md</code> generaliza la regla 17 a
         cualquier escritura en Jira, llamada a un MCP o reporte de subagente, y la regla crítica 15
         prohíbe los descartes globales de git porque varias sesiones pueden compartir el mismo

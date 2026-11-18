@@ -434,7 +434,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <span class="chip"><span class="dot" style="background:var(--accent-2)"></span>The conductor never tests</span>
       </div>
     </div>
-    <div class="notes">Deck for the /sprint-conductor skill: how it boots, how it watches the test environment, how it closes each worker and how it resumes after a restart. It is a thin skill: almost everything it does already has its canon in sprint-testing, in the Sprint Board and in orca-orchestration, and the skill points there. Press the right arrow to advance, S for presenter mode, O for overview, F for fullscreen.</div>
+    <div class="notes">Deck for the /sprint-conductor skill: how it boots, how it watches the test environment, how it closes each worker and how it resumes after a restart. It is a thin skill: almost everything it does already has its canon in sprint-testing, in the Sprint Board and in agent-orchestration, and the skill points there. Press the right arrow to advance, S for presenter mode, O for overview, F for fullscreen.</div>
   </section>
 
   <!-- 2. MAP -->
@@ -466,7 +466,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       </div>
     </div>
     <p class="small dim mt-m">Conductor session in <span class="mono">.session/sprint-conductor/sprint-&lt;N&gt;/</span>: kickoff, passes and refinements. The briefs and launch.txt stay in the sprint-testing session.</p>
-    <div class="notes">The deck index. The skill repeats nothing: briefs, rounds and claims belong to fleet-conductor.md; the board belongs to sprint-board.md; transport belongs to orca-orchestration.</div>
+    <div class="notes">The deck index. The skill repeats nothing: briefs, rounds and claims belong to fleet-conductor.md; the board belongs to sprint-board.md; transport belongs to agent-orchestration.</div>
   </section>
 
   <!-- 3. WHO DOES WHAT -->
@@ -484,7 +484,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <div class="grid g3 mt-m">
       <div class="card"><p class="lbl">The WHAT</p><p class="small mt-s"><span class="mono">fleet-conductor.md</span>: briefs, launch.txt, rounds, claims, dashboard.</p></div>
       <div class="card"><p class="lbl">The board</p><p class="small mt-s"><span class="mono">sprint-board.md</span>: commands per stage, the four channels, the sentinel.</p></div>
-      <div class="card card-accent"><p class="lbl">The HOW</p><p class="small mt-s"><span class="mono">orca-orchestration</span>: Run, native launch, mailbox, close.</p></div>
+      <div class="card card-accent"><p class="lbl">The HOW</p><p class="small mt-s"><span class="mono">agent-orchestration</span>: Run, native launch, mailbox, close.</p></div>
     </div>
     <div class="notes">The line between fixture and finding: seeding data and checking with a query that a fixture exists is the conductor's job; what a case asserts and the code behind it belong to the worker.</div>
   </section>
@@ -501,7 +501,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       </div>
       <div class="callout"><h4>The one exception to the silence</h4><p>Every other workflow skill still stays quiet about the orchestrator when it is missing. This one names it because the owner invoked it to run on Orca. The fleet without Orca still exists, and it belongs to <span class="mono">sprint-testing</span>.</p></div>
     </div>
-    <div class="notes">The gate is the same as in orca-orchestration: binary plus reachable runtime, never "the vendor skill is installed". On Linux, outside an Orca terminal, the binary is orca-ide.</div>
+    <div class="notes">The gate is the same as in agent-orchestration: binary plus reachable runtime, never "the vendor skill is installed". On Linux, outside an Orca terminal, the binary is orca-ide.</div>
   </section>
 
   <!-- 5. BOOT -->
@@ -511,7 +511,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <table class="tt sm mt-m">
       <thead><tr><th>#</th><th>Does</th><th>Details in</th></tr></thead>
       <tbody>
-        <tr><td>1</td><td>loads this skill, sprint-testing with its two fleet references, orca-orchestration and its stubs</td><td><span class="mono">orca-orchestration</span></td></tr>
+        <tr><td>1</td><td>loads this skill, sprint-testing with its two fleet references, agent-orchestration and its stubs</td><td><span class="mono">agent-orchestration</span></td></tr>
         <tr><td>2</td><td>resolves the sprint and the board; <span class="mono">sync --discover</span>; starts the server if it does not respond</td><td><span class="mono">sprint-board.md</span> §1</td></tr>
         <tr><td>3</td><td>the conductor's pre-flight</td><td><span class="mono">boot-and-resume.md</span> §2</td></tr>
         <tr><td>4</td><td>links or creates the Run and tests the reply address once</td><td><span class="mono">boot-and-resume.md</span> §3</td></tr>
