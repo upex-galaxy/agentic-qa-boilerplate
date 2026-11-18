@@ -166,6 +166,9 @@ const ENV_TEMPLATE_FILES = ['.env.example'];
 const WORKTREE_INCLUDE_FILES = ['.worktreeinclude'];
 // Orca's committed repo hooks: provision a new worktree, audit it before removal.
 const ORCA_CONFIG_FILES = ['orca.yaml'];
+// Project-owned Oxlint overrides (`extends` the synced `.oxlintrc.base.json`): delivered once when
+// missing, so a project that syncs into Oxlint receives a config that `agents:compat:check` accepts.
+const OXLINT_CONFIG_FILES = ['.oxlintrc.json'];
 // The playwright-cli launch defaults (in memory, headless; ADR-0008). Delivered
 // ONCE when missing, then project-owned: a project may tune the viewport,
 // timeouts or test-id attribute. A copy that still carries the old shared
@@ -346,6 +349,7 @@ export const COMPONENTS: Component[] = [
   // `.codex/config.toml` with it.
   { name: 'worktree-include', type: 'file-list', paths: ['.'], files: WORKTREE_INCLUDE_FILES, bootstrapOnly: true },
   { name: 'orca-config', type: 'file-list', paths: ['.'], files: ORCA_CONFIG_FILES, bootstrapOnly: true },
+  { name: 'oxlint-config', type: 'file-list', paths: ['.'], files: OXLINT_CONFIG_FILES, bootstrapOnly: true },
   { name: 'playwright-cli-config', type: 'file-list', paths: ['.playwright'], files: PLAYWRIGHT_CLI_CONFIG_FILES, bootstrapOnly: true },
 ];
 

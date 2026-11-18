@@ -277,6 +277,15 @@ const MCP_HOST_FILE: Record<string, string> = {
 };
 
 /** Order of the surfaces in every table. */
+/** Every task command under the project's `lint-staged` key, or none when absent or unreadable. */
+function readLintStagedCommands(root: string): string[] {
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')) as { 'lint-staged'?: Record<string, unknown> };
+    return Object.values(pkg['lint-staged'] ?? {}).flatMap(v => (Array.isArray(v) ? v : [v])).filter((c): c is string => typeof c === 'string');
+  }
+  catch { return []; }
+}
+
 export const SURFACE_ORDER: ParitySurface[] = ['instructions', 'skills', 'hooks', 'mcp', 'env', 'components', 'package', 'git', 'gates'];
 
 /** English labels for the prompt (the AI reads it). */
@@ -1980,6 +1989,37 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
       side: 'kept',
       detail: `${appended.section}.${appended.key}:\n  ${appended.value}`,
     });
+  }
+
+  // 8b2. Dependencies appended this run exist only in package.json: the sync
+  //      never installs. Until `bun install` runs, the binary a new script or
+  //      hook calls (oxlint, say) is not on disk.
+  const addedDeps = (input.packageJsonAppended ?? []).filter(a => a.section === 'dependencies' || a.section === 'devDependencies');
+  if (addedDeps.length > 0) {
+    findings.push({
+      surface: 'package',
+      path: addedDeps[0].file,
+      evidence: `informational: this run added ${addedDeps.length} package(s) to package.json (${addedDeps.map(a => `\`${a.key}\``).join(', ')}) and installed none. Run \`bun install\` before the next commit or gate: until then a script or hook that calls them fails with "command not found".`,
+      suggested: 'decide',
+      blocking: false,
+    });
+  }
+
+  // 8b3. Oxlint ships (`.oxlintrc.base.json` is on disk) but the project's
+  //      pre-commit still runs ESLint on staged code: its `lint-staged` task is
+  //      a kept project value, so the sync cannot switch it. One row names the
+  //      exact change; nothing breaks if the project keeps ESLint there.
+  if (fs.existsSync(path.join(input.root, '.oxlintrc.base.json'))) {
+    const lintStaged = readLintStagedCommands(input.root);
+    if (lintStaged.some(c => c.includes('eslint')) && !lintStaged.some(c => c.includes('oxlint'))) {
+      findings.push({
+        surface: 'package',
+        path: 'package.json',
+        evidence: 'informational: upstream now runs Oxlint (well under a second) in pre-commit and keeps ESLint as the gate in `lint:check`, `repo:check`, `pre-push` and CI. Your `lint-staged` still runs ESLint on staged code, so commits stay correct but slow. To switch, set the `*.{ts,tsx,js,jsx}` task to `["oxlint -c .oxlintrc.json"]` (needs `bun install` first and a `.oxlintrc.json` that extends `./.oxlintrc.base.json`); `bun run lint:fix` still autofixes style.',
+        suggested: 'decide',
+        blocking: false,
+      });
+    }
   }
 
   // 8c. A protected file's test held back with it: delivering upstream's test

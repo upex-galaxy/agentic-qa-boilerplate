@@ -23,7 +23,6 @@
         "allure-js-commons": "^3.14.0",
         "allure-playwright": "^3.14.0",
         "eslint": "^10.14.0",
-        "eslint-plugin-oxlint": "^1.94.0",
         "eslint-plugin-playwright": "^2.12.2",
         "husky": "^9.1.7",
         "lint-staged": "^17.6.0",
@@ -542,8 +541,6 @@
 
     "eslint-plugin-no-only-tests": ["eslint-plugin-no-only-tests@3.4.0", "", {}, "sha512-4S3/9Nb7A2tiMcpzEQE9bQSlpeOz6WJkgryBuou/SA8W2x2c8Zf4j0NvTKBjv6qNhF9T79tmkecm/0CHqV0UGg=="],
 
-    "eslint-plugin-oxlint": ["eslint-plugin-oxlint@1.94.0", "", { "dependencies": { "jsonc-parser": "^3.3.1" }, "peerDependencies": { "oxlint": "~1.94.0" } }, "sha512-G85ciyw/h05n43cYrjkXVR8bF9mgOt+nMA/aPH3oVN59OWwLIDQB5bEguMGIeDFyQDKBDp+6HWrz5ponHqFXZA=="],
-
     "eslint-plugin-perfectionist": ["eslint-plugin-perfectionist@5.13.0", "", { "dependencies": { "@typescript-eslint/types": "^8.71.2", "@typescript-eslint/utils": "^8.71.2", "natural-orderby": "^5.0.0" }, "peerDependencies": { "eslint": "^8.45.0 || ^9.0.0 || ^10.0.0" }, "optionalPeers": ["eslint"] }, "sha512-kPlqE2Kdh0njsad9S9xL/xnq+NNVUsga/uS3yf6axE0RddACM3Q+idJyethC7R+C9b73+NRhAWvKyXPrkl0nFA=="],
 
     "eslint-plugin-playwright": ["eslint-plugin-playwright@2.12.2", "", { "dependencies": { "globals": "^17.3.0" }, "peerDependencies": { "eslint": ">=8.40.0" } }, "sha512-sYRCyAEACD3URVoFTfldZcvZNdlJ1r5414gilOTsDCu26PY7l4dUl/3o9ohIEltZgaDS1VXD1mG5xU1KlIGJSw=="],
@@ -731,8 +728,6 @@
     "json-stable-stringify-without-jsonify": ["json-stable-stringify-without-jsonify@1.0.1", "", {}, "sha512-Bdboy+l7tA3OGW6FjyFHWkP5LuByj1Tk33Ljyq0axyzdk9//JSi2u3fP1QSmd1KNwq6VOKYGlAu87CisVir6Pw=="],
 
     "jsonc-eslint-parser": ["jsonc-eslint-parser@3.3.0", "", { "dependencies": { "acorn": "^8.5.0", "eslint-visitor-keys": "^5.0.0", "verkit": "^0.3.2" } }, "sha512-hYTGkHGNRZnXOFZ1urhINADoqDrGfpy53cjw+dxk84QE0pUDujQzeUeamNs6Mz44/TKD49z2x6/GVSu4ZrtA+Q=="],
-
-    "jsonc-parser": ["jsonc-parser@3.3.1", "", {}, "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ=="],
 
     "katex": ["katex@0.16.47", "", { "dependencies": { "commander": "^8.3.0" }, "bin": { "katex": "cli.js" } }, "sha512-Eeo8Ys1doU1z+x8AZsPpQu+p/QcZBI5PeOo7QGQdy2x2m0MU/hYagBbGOmXwr5KVbEfVuWv9LpnQWeehogurjg=="],
 

@@ -1842,7 +1842,7 @@ describe('an appended script whose target file is absent', () => {
       { file: 'package.json', section: 'scripts', key: 'board', value: 'bun run cli/sprint-board/index.ts' },
       { file: 'package.json', section: 'devDependencies', key: 'x.ts', value: 'bun missing.ts' },
     ];
-    const findings = collectParityFindings({ ...base(root, upstream), packageJsonAppended: appended });
+    const findings = collectParityFindings({ ...base(root, upstream), packageJsonAppended: appended }).filter(f => f.blocking);
     expect(findings).toHaveLength(1);
     expect(findings[0]).toMatchObject({ surface: 'package', path: 'package.json', blocking: true });
     expect(findings[0].evidence).toContain('scripts.xray:payload');
@@ -1858,6 +1858,30 @@ describe('an appended script whose target file is absent', () => {
     const appended = [{ file: 'package.json', section: 'scripts', key: 'xray:payload', value: 'bun tests/utils/xrayResults.ts' }];
     expect(collectParityFindings({ ...base(root, upstream), packageJsonAppended: appended, dryRun: true })).toEqual([]);
     expect(collectParityFindings({ ...base(root, upstream), packageJsonAppended: appended })).toHaveLength(1);
+  });
+
+  test('dependencies appended this run are one informational row telling the agent to bun install', () => {
+    const root = temporaryRoot();
+    const appended = [
+      { file: 'package.json', section: 'devDependencies', key: 'oxlint', value: '1.94.0' },
+      { file: 'package.json', section: 'scripts', key: 'oxlint:check', value: 'oxlint -c .oxlintrc.json' },
+    ];
+    const findings = collectParityFindings({ ...base(root, temporaryRoot()), packageJsonAppended: appended });
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({ surface: 'package', blocking: false });
+    expect(findings[0].evidence).toContain('`oxlint`');
+    expect(findings[0].evidence).toContain('bun install');
+  });
+
+  test('a project that ships Oxlint but still runs ESLint in lint-staged gets one row naming the switch', () => {
+    const root = temporaryRoot();
+    write(root, '.oxlintrc.base.json', '{}\n');
+    write(root, 'package.json', JSON.stringify({ 'lint-staged': { '*.{ts,tsx,js,jsx}': ['eslint --fix'] } }));
+    const findings = collectParityFindings(base(root, temporaryRoot()));
+    expect(findings).toHaveLength(1);
+    expect(findings[0].evidence).toContain('oxlint -c .oxlintrc.json');
+    write(root, 'package.json', JSON.stringify({ 'lint-staged': { '*.{ts,tsx,js,jsx}': ['oxlint -c .oxlintrc.json'] } }));
+    expect(collectParityFindings(base(root, temporaryRoot()))).toEqual([]);
   });
 
   test('a held-back test sibling is one informational row naming both files', () => {

@@ -15,9 +15,7 @@
  * `antfu()` call — later blocks win.
  */
 import antfu from '@antfu/eslint-config';
-import oxlint from 'eslint-plugin-oxlint';
 
 import { BASE_ESLINT_OPTIONS, CLI_IMPORT_CLOSURE, KATA_IMPORT_ALIASES, KATA_PLAYWRIGHT, KATA_RULES, KATA_SHAPE } from './eslint.config.base.js';
 
-// The oxlint block goes first so it only switches off stock rules Oxlint already runs; the scoped blocks after it re-enable what ESLint gates in CI.
-export default antfu({ ...BASE_ESLINT_OPTIONS }, ...oxlint.buildFromOxlintConfigFile('./.oxlintrc.json'), CLI_IMPORT_CLOSURE, KATA_IMPORT_ALIASES, KATA_RULES, KATA_SHAPE, KATA_PLAYWRIGHT);
+export default antfu({ ...BASE_ESLINT_OPTIONS }, CLI_IMPORT_CLOSURE, KATA_IMPORT_ALIASES, KATA_RULES, KATA_SHAPE, KATA_PLAYWRIGHT);

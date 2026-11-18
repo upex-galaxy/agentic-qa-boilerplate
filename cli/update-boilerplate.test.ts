@@ -71,6 +71,11 @@ describe('component registry', () => {
     expect(COMPONENTS.find(c => c.name === 'worktree-include')).toMatchObject({ type: 'file-list', paths: ['.'], files: ['.worktreeinclude'], bootstrapOnly: true });
   });
 
+  test('.oxlintrc.json ships once (bootstrap-only): downstream receives a config agents:compat:check accepts, and keeps its own overrides', () => {
+    expect(COMPONENTS.find(c => c.name === 'oxlint-config')).toMatchObject({ type: 'file-list', paths: ['.'], files: ['.oxlintrc.json'], bootstrapOnly: true });
+    expect(COMPONENTS.find(c => c.name === 'tooling')?.files).toEqual(expect.arrayContaining(['.oxlintrc.base.json', 'kata-eslint-plugin.js']));
+  });
+
   test('.playwright/cli.config.json ships once (bootstrap-only): a project keeps its tuning, the legacy profile is a parity row', () => {
     expect(COMPONENTS.find(c => c.name === 'playwright-cli-config')).toMatchObject({ type: 'file-list', paths: ['.playwright'], files: ['cli.config.json'], bootstrapOnly: true });
   });
