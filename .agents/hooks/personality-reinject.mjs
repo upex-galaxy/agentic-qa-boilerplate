@@ -121,7 +121,7 @@ export const UNPROVISIONED_WORKTREE_LINE = [
  */
 export const ORCA_CONTEXT_LINE = [
   'ORCA: available.',
-  'Multi-session orchestration -> /orca-orchestration.',
+  'Multi-session orchestration -> /agent-orchestration.',
   'Independent session or conductor: ask the human directly (sweep small items, mkd deck for heavy ones).',
   'A session launched by a conductor carries "/<skill> <label> fleet worker" and reports to it instead.',
 ].join(' ');

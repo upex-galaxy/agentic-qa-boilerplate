@@ -17,7 +17,7 @@
 #          rescues instead of only warning. `orca worktree rm` skips archive
 #          hooks unless it is given --run-hooks.
 #
-# Doctrine: .agents/skills/orca-orchestration/references/provisioning.md
+# Doctrine: .agents/skills/agentic-qa-core/references/fleet-provisioning.md
 scripts:
   setup: |
     bun run worktree:provision

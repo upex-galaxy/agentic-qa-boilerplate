@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, test } from 'bun:test';
 
-import { checkoutSetupActions, envVarVerdict, orchestratorCli, orchestratorState, piTrustStatus, probeOpenApiSpec } from './doctor.ts';
+import { checkoutSetupActions, envVarVerdict, orchestratorCli, orchestratorState, piTrustStatus, probeOpenApiSpec, userSkillInstalled } from './doctor.ts';
 import { VAR_MANIFEST, varsFor } from './lib/variables-manifest.ts';
 
 function spec(overrides: Partial<VarSpec> & { name: string }): VarSpec {
@@ -180,6 +180,13 @@ describe('the Orca row (info only, /sprint-conductor needs it)', () => {
     expect(orchestratorCli(yaml, 'linux', { ORCA_TERMINAL_HANDLE: 'term_x' })).toBe('orca');
     expect(orchestratorCli('orchestration:\n  orchestrator_cli: \'\'\n', 'darwin', {})).toBeNull();
     expect(orchestratorCli('project:\n  project_name: x\n', 'darwin', {})).toBeNull();
+  });
+
+  test('the agent-orchestration skill counts as installed in the skills CLI store or the Claude Code one', () => {
+    const at = (present: string) => (path: string) => path === present;
+    expect(userSkillInstalled('/h', 'agent-orchestration', at(join('/h', '.agents', 'skills', 'agent-orchestration', 'SKILL.md')))).toBe(true);
+    expect(userSkillInstalled('/h', 'agent-orchestration', at(join('/h', '.claude', 'skills', 'agent-orchestration', 'SKILL.md')))).toBe(true);
+    expect(userSkillInstalled('/h', 'agent-orchestration', at(join('/h', '.agents', 'skills', 'mkd', 'SKILL.md')))).toBe(false);
   });
 
   const fake = (r: { error?: { code: string }, stdout?: string }) => (() => r) as unknown as Parameters<typeof orchestratorState>[1];

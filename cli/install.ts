@@ -358,13 +358,13 @@ const EXTERNAL_CLIS: ReadonlyArray<{ name: string, install?: string, docs: strin
     // Desktop app (Orca ADE) that also ships a scriptable `orca` CLI. REQUIRED
     // by `/sprint-conductor`, which runs only on it and stops with one line
     // when the gate (binary + reachable runtime) fails. Optional for everything
-    // else: `/orca-orchestration` falls back to one-shot subagents (AGENTS.md §3,
+    // else: `/agent-orchestration` falls back to one-shot subagents (AGENTS.md §3,
     // the default executor) and pasted launch lines. `setup:doctor` reports
     // the gate.
     name: 'orca',
     install: 'brew install --cask stablyai/orca/orca   # macOS. Windows/Linux: download from https://www.onorca.dev/docs/install',
     docs: 'https://www.onorca.dev/docs/cli/overview',
-    purpose: 'required by /sprint-conductor; optional for /orca-orchestration (subagents stay the default executor)',
+    purpose: 'required by /sprint-conductor; optional for /agent-orchestration (subagents stay the default executor)',
   },
   {
     // The evidence pages (`/evidence-artifact`, `bun run evidence`) run the
@@ -502,6 +502,7 @@ export const USER_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'diagnosing-bugs' },
   // Generic multi-session teaching workspace for any topic, started by hand with /teach.
   { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'teach' },
+  { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'agent-orchestration' },
 ];
 
 // Matches Claude Code ${VAR} and ${VAR:-default} placeholders in .mcp.json.

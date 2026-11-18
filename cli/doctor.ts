@@ -384,6 +384,7 @@ interface DoctorReport {
    * runtime answers. Information only, never a warning and never `status`.
    */
   orchestrator: { cli: string | null, state: OrchestratorState }
+  orchestration_skill_installed: boolean
   pending_actions: PendingAction[]
   /**
    * OPTIONAL items, reported and never blocking: they do not turn `status` to
@@ -820,7 +821,7 @@ export type OrchestratorState = 'not-configured' | 'not-installed' | 'unreachabl
  * The orchestrator CLI the project names (`orchestration.orchestrator_cli`), or
  * null when it names none. On Linux outside an Orca terminal a bare `orca` is the
  * GNOME screen reader, so the Orca CLI is probed as `orca-ide` there (the same
- * rule as the orca-orchestration gate).
+ * rule as the agent-orchestration gate).
  */
 export function orchestratorCli(yamlText: string, platform: string, env: Record<string, string | undefined>): string | null {
   const m = yamlText.match(/^[ \t]+orchestrator_cli:[ \t]*['"]?([^\s'"#]*)/m);
@@ -830,7 +831,11 @@ export function orchestratorCli(yamlText: string, platform: string, env: Record<
   return cli;
 }
 
-/** The orca-orchestration gate: the binary, then `status --json` with the NESTED `result.runtime.reachable`. */
+/** The agent-orchestration gate: the binary, then `status --json` with the NESTED `result.runtime.reachable`. */
+export function userSkillInstalled(home: string, slug: string, exists: (path: string) => boolean = existsSync): boolean {
+  return [join(home, '.agents', 'skills', slug, 'SKILL.md'), join(home, '.claude', 'skills', slug, 'SKILL.md')].some(exists);
+}
+
 export function orchestratorState(cli: string | null, spawn: typeof spawnSync = spawnSync): OrchestratorState {
   if (cli === null) { return 'not-configured'; }
   const r = spawn(cli, ['status', '--json'], { encoding: 'utf8', timeout: 5000, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -942,6 +947,7 @@ export async function runDoctor(): Promise<DoctorReport> {
       const cli = orchestratorCli(existsSync(yamlPath) ? readFileSync(yamlPath, 'utf8') : '', process.platform, process.env);
       return { cli, state: orchestratorState(cli) };
     })(),
+    orchestration_skill_installed: userSkillInstalled(homedir(), 'agent-orchestration'),
     pending_actions: [],
     warnings: [],
   };
@@ -1293,6 +1299,7 @@ function printHuman(report: DoctorReport): void {
     'ready': `${orca.cli} ready`,
   };
   checks.push(['Orca (only for /sprint-conductor)', `${tui.statusIcon(orca.state === 'ready' ? 'ok' : 'info')} ${orcaText[orca.state]}`]);
+  checks.push(['agent-orchestration skill (~/.agents or ~/.claude)', report.orchestration_skill_installed ? tui.statusIcon('ok') : `${tui.statusIcon('info')} not installed: run \`bun setup\``]);
   if (report.worktree_of !== null) {
     checks.push(['Linked worktree of', `${tui.statusIcon('info')} ${report.worktree_of}`]);
   }

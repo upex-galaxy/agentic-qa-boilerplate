@@ -6,7 +6,7 @@
  * different branch) but starts with none of the gitignored state a session
  * needs: `.env`, the `.claude/skills` alias, gitignored T3 community skills,
  * `node_modules/`, `.auth/`, and the synced `api/openapi.json`. See the gap table in
- * `.agents/skills/orca-orchestration/references/provisioning.md` for the full
+ * `.agents/skills/agentic-qa-core/references/fleet-provisioning.md` for the full
  * rationale per item.
  *
  * Usage:
@@ -16,7 +16,7 @@
  *
  * The no-argument form (target = $PWD) is what makes this script usable
  * verbatim as an Orca repo setup hook (Settings → Repo → Setup, run from the
- * worktree Orca just created) — see `orca-orchestration/references/provisioning.md`
+ * worktree Orca just created) — see `agentic-qa-core/references/fleet-provisioning.md`
  * for how to wire it in.
  *
  * Deliberately NEVER copies `.session/` — a worker inside the fresh worktree

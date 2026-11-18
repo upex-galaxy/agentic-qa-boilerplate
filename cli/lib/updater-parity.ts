@@ -424,8 +424,8 @@ export const CONFIG_BLOCK_READERS: Record<string, Record<string, ConfigBlockRead
       requiredBy: 'the branching strategy, the protected-branch list and `policy.direct_push_to_protected`, which Critical Rule #5 resolves before every push. Without the block the skill cannot tell an authorized direct push from a forbidden one, and `bun run git:policy verify` has no declared side to compare the host ruleset against',
     },
     orchestration: {
-      skill: '/orca-orchestration',
-      requiredBy: 'the fleet defaults (worktree provisioning, run mailbox, claims) the skill reads before launching a single worker',
+      skill: '/sprint-conductor',
+      requiredBy: 'the fleet defaults (worker cap, agent, model and effort per tier, permission modes) the sprint conductor and the user-level /agent-orchestration read before launching a single worker (agentic-qa-core/references/fleet-project-profile.md)',
     },
     board: {
       skill: '/sprint-conductor',
