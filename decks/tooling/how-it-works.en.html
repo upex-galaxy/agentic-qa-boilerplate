@@ -740,7 +740,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         </table>
       </div>
     </div>
-    <div class="notes">The installer never installs the external binaries (acli, playwright-cli, jq, resend, etc.): it only checks that they are there and points to the official documentation, because the command depends on the operating system. User-level skills (USER_LEVEL_SKILLS in the same file) are a different list: the agent loads without asking the ones that a repo rule or your instructions name for that moment, and asks permission for any other.</div>
+    <div class="notes">The installer never installs the Jira and test tooling binaries (acli, playwright-cli, jq, resend, etc.), with one optional exception, RTK, which it installs only when you say yes: for the rest it only checks that they are there and points to the official documentation, because the command depends on the operating system. User-level skills (USER_LEVEL_SKILLS in the same file) are a different list: the agent loads without asking the ones that a repo rule or your instructions name for that moment, and asks permission for any other.</div>
   </section>
 
   <!-- 14. PLAYWRIGHT-CLI -->
