@@ -84,6 +84,23 @@ const SKIP_DIRS = new Set([
   '.agents', // never lint our own source-of-truth
 ]);
 
+/**
+ * Variables no skill references with `{{...}}` because code reads them straight
+ * from `project.yaml`. Each entry names the file and the text that proves it, so
+ * an entry whose consumer is gone stops suppressing and the warning returns.
+ */
+const CODE_READ_VARS: Record<string, { file: string, needle: string }> = {
+  PROVIDER: { file: 'cli/install.ts', needle: 'INSTALL_SECRETS_PROVIDER' },
+  WEBAPP_DOMAIN: { file: 'scripts/agents-setup.ts', needle: 'webapp_domain' },
+};
+
+function readByCode(name: string): boolean {
+  const reader = CODE_READ_VARS[name];
+  if (!reader) { return false; }
+  try { return readFileSync(join(REPO_ROOT, reader.file), 'utf8').includes(reader.needle); }
+  catch { return false; }
+}
+
 // Allowlist: identifiers that look like variables but are documentation strings
 // describing the syntax itself. Each entry is [variableName, fileSubstring] —
 // the linter ignores matches where both conditions hold.
@@ -939,7 +956,7 @@ function main(): void {
   );
   const allDeclared = new Set<string>([...declared.flat, ...declared.envScoped]);
   const declaredButUnused = [...allDeclared]
-    .filter(d => !usedNames.has(d) && !explicitlyUsedEnvScoped.has(d))
+    .filter(d => !usedNames.has(d) && !explicitlyUsedEnvScoped.has(d) && !readByCode(d))
     .sort();
 
   // --- REVERSE DIRECTION for Jira slugs -------------------------------------
