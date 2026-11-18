@@ -113,7 +113,7 @@ import {
 import { evaluateRouter, MIN_EVAL_PROMPTS, promptsPerLabel, readRouterEvalFixture } from './lib/router-eval.ts';
 
 /** Target for the boilerplate's L0: over it is a warning, so the number stays visible. */
-export const L0_TARGET = 16 * 1024;
+export const L0_TARGET = 20 * 1024;
 /** Ceiling for the boilerplate's own L0 (the maintainers' copy): behaviour whole plus every rule's binding sentence. */
 export const L0_BUDGET = 24 * 1024;
 /** Ceiling for a project's L0, its own additions included. */

@@ -128,7 +128,7 @@ describe('lint-instructions', () => {
   });
 
   test('the budget levels nest under the Codex cut', () => {
-    expect(L0_TARGET).toBe(16384);
+    expect(L0_TARGET).toBe(20480);
     expect(L0_BUDGET).toBe(24576);
     expect(L0_PROJECT_BUDGET).toBe(28672);
     expect(CODEX_PROJECT_DOC_MAX_BYTES).toBe(32768);

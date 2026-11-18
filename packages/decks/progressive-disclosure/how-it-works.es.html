@@ -711,7 +711,7 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
       <div class="card card-accent"><p class="lbl">§2 · entero</p><h4 class="h4 mt-s">La capa comportamental</h4><p class="small mt-s">Todo lo que §2 de <code>AGENTS.md</code> fija sobre cómo razona el agente y qué dice. Qué bloques tiene lo dice §2, no este slide.</p></div>
       <div class="card"><p class="lbl">§3 · núcleo</p><h4 class="h4 mt-s">La orquestación</h4><p class="small mt-s">Qué va a subagentes y qué queda en la conversación principal, el briefing de siete componentes, la alcanzabilidad de las reglas y el protocolo de error. Gobierna cada despacho, sea cual sea el pedido.</p></div>
     </div>
-    <div class="notes">El detalle de orquestación que no es núcleo (executors, workers, gates) está en agent-orchestration-detail.md. §2 entero es la razón de que L0 pueda pasar el objetivo de 16 KiB (ADR-0009): se ve en el slide de presupuestos. Su espejo para humanos es docs/core/personalidad.html.</div>
+    <div class="notes">El detalle de orquestación que no es núcleo (executors, workers, gates) está en agent-orchestration-detail.md. §2 entero es la razón de que L0 pueda pasar el objetivo de 20 KiB (ADR-0009): se ve en el slide de presupuestos. Su espejo para humanos es docs/core/personalidad.html.</div>
   </section>
 
   <!-- 10. CÓMO SE EDITA -->
@@ -743,7 +743,7 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
     <p class="small dim mt-s">L0 tiene techo porque Codex corta sin avisar. Los valores son constantes con nombre en <code>scripts/lint-instructions.ts</code>, iguales en los dos boilerplates.</p>
     <table class="tt mt-m" style="font-size:18px">
       <tr><th style="width:330px">Nivel</th><th style="width:330px">Constante</th><th>Si se pasa</th></tr>
-      <tr><td class="small">Objetivo · 16 KiB</td><td class="small"><code>L0_TARGET</code></td><td class="small">aviso: el número queda a la vista</td></tr>
+      <tr><td class="small">Objetivo · 20 KiB</td><td class="small"><code>L0_TARGET</code></td><td class="small">aviso: el número queda a la vista</td></tr>
       <tr><td class="small">Techo · 24 KiB</td><td class="small"><code>L0_BUDGET</code></td><td class="small">error en el L0 del boilerplate: el detalle va a una sección</td></tr>
       <tr><td class="small">Con agregados del proyecto · 28 KiB</td><td class="small"><code>L0_PROJECT_BUDGET</code></td><td class="small">error en un proyecto: su texto va a <code>agent-project.md</code> o a una context skill</td></tr>
       <tr><td class="small">Tope de Codex · 32 KiB</td><td class="small"><code>CODEX_PROJECT_DOC_MAX_BYTES</code></td><td class="small">error siempre, digan lo que digan los otros: es el valor por defecto de <code>project_doc_max_bytes</code></td></tr>
