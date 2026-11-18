@@ -52,7 +52,8 @@ for each WP: modules(WP) = modules of the components its automation-plan.md crea
 group WPs by module  ->  one worker per module group
   |
   +- a worker's WPs run one after another, Plan -> Code -> Review each
-  +- two workers never share a module
+  +- two workers never share a module, not in the same round and not in different worktrees
+  +- a WP that spans two modules goes to ONE worker, which then owns both
   +- a module group larger than the rest of the batch is the batch's critical path: say so up front
 ```
 

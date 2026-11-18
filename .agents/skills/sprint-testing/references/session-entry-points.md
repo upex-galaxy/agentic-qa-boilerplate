@@ -119,7 +119,7 @@ Compare them in the SUT repository: `git merge-base --is-ancestor <merge> <deplo
 | **NOT CONTAINED** | stop before any ATP or Jira write. Surface it to the user with both ids: the tracker says ready, the environment does not have it. Do not test it and do not file a defect against the feature, because the feature is not there. The ticket is not testable yet |
 | **UNVERIFIED** (no build id exposed, or no merge linked) | do not block. Say which value was missing, record `deploy: UNVERIFIED (<what was missing>)` in `test-session-memory.md` §Environment, and include it in Step 2's explanation. Stage 2's smoke test becomes the first evidence: a smoke failure in this state is triaged as "not deployed?" before it is filed as a defect |
 
-A worker in a fleet reports the verdict in its stage report. An unattended routine that selects Stories for testing runs this check before opening a worker: `orca-orchestration/references/automations.md` §2.5.
+A worker in a fleet reports the verdict in its stage report. An unattended routine that selects Stories for testing runs this check on each candidate before opening a worker, because the deployed environment is truth and the tracker is a hint: a NOT CONTAINED candidate is a dropped item with both build ids in the routine's report and gets no worker, and an UNVERIFIED one goes to its worker with the gap named in the brief. Regression triage follows the same rule: its report names the build the run tested.
 
 ### Step 2 — Explain the story to the user (required, then wait)
 
