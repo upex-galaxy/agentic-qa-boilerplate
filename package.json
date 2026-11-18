@@ -134,7 +134,7 @@
   "devDependencies": {
     "@antfu/eslint-config": "^10.0.0",
     "@faker-js/faker": "^10.6.0",
-    "@playwright/test": "^1.65.0",
+    "@playwright/test": "^1.65.1",
     "@types/bun": "^1.4.4",
     "@types/node": "^24.19.2",
     "allure": "^3.33.0",
