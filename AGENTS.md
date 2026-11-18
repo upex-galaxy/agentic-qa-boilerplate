@@ -1,6 +1,6 @@
 # AGENTS.md: AI Persistent Memory
 
-> Always-on layer (L0). Detail lives in `.agents/instructions/` section files, loaded through the ROUTER. Edit a section file instead of pasting section prose here; project rules go in `.agents/instructions/agent-project.md`. Every instruction edit goes through `/framework-development` mode `instructions`.
+> Always-on layer (L0). Detail lives in `.agents/instructions/` section files, loaded through the ROUTER; project rules go in `agent-project.md`. Every instruction edit goes through `/framework-development` mode `instructions`.
 
 ## LOAD PROTOCOL
 
@@ -12,23 +12,23 @@ Skills and sections load by meaning in any language. Triggers are English, so fo
 
 ## 1. CRITICAL RULES: ALWAYS APPLY
 
-Each line is the rule's binding sentence; `Full: agent-critical-rules.md#n` = its full text in `.agents/instructions/agent-critical-rules.md`, under the heading `## n.`
+Each line is the rule's binding sentence; `Full: agent-critical-rules.md#n` points to its full text, heading `## n.`
 
 1. **Credentials by name, never by value**: Reference a secret only through its variable name (`$STAGING_USER_PASSWORD` expanded by the shell, `process.env.X` in code, a name in the MCP loader's `--filter` list). Never open, print or paste a secret value: no `Read`/`cat`/`grep` of `.env*` (except `.env.example` and the committed `.env*.schema` files), `.auth/**` or `.claude/settings.local.json`; no `printenv`, `env`, `echo $SECRET`, `set -x`, `curl -v`, `varlock printenv|reveal`, or `varlock load` without `--agent`. To learn whether a variable is set, run `bunx varlock load --agent`. A missing secret value is the human's to type, in a terminal or the secret manager, never through the chat. Never hardcode or guess one. Full: agent-critical-rules.md#1
 2. **Plan before coding**: Produce the test plan (`spec.md` or the implementation plan) before writing test code. Full: agent-critical-rules.md#2
 3. **No AI attribution**: Never include "Generated with AI", harness branding, or AI `Co-Authored-By` trailers in commits. The forensic trailers are the one mandatory exception and are not attribution: every commit ends with `Worktree: <name|primary>` then `Session: <label>`. Full: agent-critical-rules.md#3
 4. **Shift-left**: Evaluate ACs for clarity, testability and completeness. Full: agent-critical-rules.md#4
 5. **Push to protected = resolve `git_strategy.policy.direct_push_to_protected`**: The decision lives in `.agents/project.yaml`; the protected list is `git_strategy.protected`. `forbidden` means never direct-push, route through a PR. `confirm` means ask the user explicitly before every push. `allowed` is a standing authorization: push without asking. When the `git_strategy` block is missing or null (a fresh scaffold), behave as `confirm`, the safe default. Full: agent-critical-rules.md#5
-6. **Git history (invariants: no `git_strategy` value relaxes them)**: Never rewrite pushed history (rebase or amend on pushed commits). Never force-push a branch others may share: at minimum every branch in `git_strategy.protected`, plus the integration and ephemeral trunks in `git_strategy.branches`. Never delete remote branches without confirmation. Full: agent-critical-rules.md#6
+6. **Git history (invariants: no `git_strategy` value relaxes them)**: Never rewrite pushed history (rebase or amend on pushed commits). Never force-push a branch others may share. Never delete remote branches without confirmation. Full: agent-critical-rules.md#6
 7. **Quality verification**: After code changes, verify in order: tests, types, lint. Full: agent-critical-rules.md#7
 8. **File operations**: Read a file before editing it, preserve its formatting and indent, and never overwrite a file you have not read. Full: agent-critical-rules.md#8
 9. **Skills-first**: All workflows live in `.agents/skills/`. Never paste instructions inline: invoke the matching skill and let it load its own detail. Full: agent-critical-rules.md#9
-10. **MCP credential failure = stop immediately**: No workaround. Stop, tell the user the exact env var, point to `.env` / `.env.example`, and ask them to fix `.env` and restart the agent session (the env is cached when the MCP server spawns and does not refresh mid-session). An unavailable MCP is the same stop, at the point of use. Full: agent-critical-rules.md#10
+10. **MCP credential failure = stop immediately**: No workaround. Stop, tell the user the exact env var, point to `.env` / `.env.example`, and ask them to fix `.env` and restart the agent session. An unavailable MCP is the same stop, at the point of use. Full: agent-critical-rules.md#10
 11. **Scripts = read `package.json` directly**: Never quote test or build commands from this file or any doc, because they drift. Full: agent-critical-rules.md#11
 12. **KATA manifest = source of truth**: Before proposing a new `Page`, `Api`, `Steps` module or `@atc('PROJ-XXX')` ID, load `kata-manifest.json` and check it: this is the anti-duplication gate. Full: agent-critical-rules.md#12
-13. **Concision comes from §2, not from a plugin**: Butler and PM Voice set the content, and the user-level reply rules (`## Replies`) plus the `humanizer` skill set how it looks. No communication-mode plugin is assumed or recommended. Full: agent-critical-rules.md#13
+13. **Concision comes from §2, not from a plugin**: No communication-mode plugin is assumed or recommended. Full: agent-critical-rules.md#13
 14. **Language detection + mirroring**: Mirror that language in all conversational replies (questions, summaries, explanations, status updates). Repo artifacts are always English regardless of conversation language. Full: agent-critical-rules.md#14
-15. **No global discards (multi-session safety)**: Never run repo-wide destructive git commands: `git restore .`, `git checkout -- .`, `git reset --hard`, untargeted `git stash`, `git clean -f`. Discard only explicit paths you modified in this session (`git restore <path>...`, `git stash push <path>...`). Full: agent-critical-rules.md#15
+15. **No global discards (multi-session safety)**: Never run repo-wide destructive git commands: `git restore .`, `git checkout -- .`, `git reset --hard`, untargeted `git stash`, `git clean -f`. Discard only explicit paths you modified in this session. Full: agent-critical-rules.md#15
 16. **A success code describes the call, never the outcome: verify at the destination**: A write is verified by reading it back from the destination, a message by the recipient answering it, a transition by re-reading the issue's status, a file write by re-parsing the file, a dispatch by the worker's own first report. Full: agent-critical-rules.md#16
 17. **Committed prose names the source of truth, never its current value**: Text that is committed (this file, `.agents/**`, `docs/**`, `README.md`, `INSTALLER.md`, `.env.example`, the decks) never states a fact that changes with the normal life of the repo or the tracker. Full: agent-critical-rules.md#17
 18. **No comments in code by default**: Code carries no comments. A comment stays only as a toolchain directive (`eslint-disable-next-line <rule> -- <reason>`, `@ts-expect-error`, `LINT.IfChange`/`LINT.ThenChange`) or as one line of WHY the code cannot express and a reader would otherwise get wrong. Full: agent-critical-rules.md#18
@@ -90,17 +90,9 @@ Example: ❌ "Added `waitForResponse('**/api/auth/login')` before toast assertio
 
 Subagents take multi-file reads and writes, MCP operations, research across repos, git operations, verification (tests, types, lint), multi-file edits and long-running tasks. Quick lookups, memory reads and writes, task tracking, asking the user and planning stay in the main conversation. Delegate when the work returns a lot of tool output to this context or splits into independent units; one scripted command (bulk replace, one-line check) or a lookup of under ~5 calls stays inline.
 
-**The 7-component briefing (mandatory on every dispatch).** Template and filled examples: `agentic-qa-core/references/briefing-template.md`.
+**The 7-component briefing (mandatory on every dispatch).** Goal, Context docs, Project Standards (auto-resolved from `.agents/skills/REGISTRY.md`), Skills to load, Exact instructions, Report format, Rules. Each component and filled examples: `agentic-qa-core/references/briefing-template.md`.
 
-1. Goal: one sentence.
-2. Context docs: files to read first.
-3. Project Standards (auto-resolved): compact rules from `.agents/skills/REGISTRY.md` (`bun run skills:registry`, validated by `bun run skills:registry:check`). Subagents trust them as authoritative for the listed conventions and do not re-read the full SKILL.md unless told. Protocol: `agentic-qa-core/references/skill-resolver.md`.
-4. Skills to load: explicit (for example `/playwright-cli`).
-5. Exact instructions: step by step, not vague goals.
-6. Report format: files changed, tests passed, blockers.
-7. Rules: the relevant Critical Rules.
-
-**Rule reachability.** An executor sees its briefing, the compact rules the resolver pasted into it, and the files the briefing names. It does not browse `references/`. A rule that must bind an executor (a prohibition, gate, credential or evidence duty, cleanup duty) therefore lives in three places: its full text in the owning `references/*.md`, one bullet in the owning `SKILL.md` `## Compact Rules` (so `REGISTRY.md` carries it), and component 7 of every briefing whose dispatch can trigger it. A rule only in a reference is documentation, not a constraint.
+**Rule reachability.** An executor sees only its briefing, the compact rules pasted into it and the files it names, so a rule that must bind an executor lives in its owning reference, in one `## Compact Rules` bullet of the owning `SKILL.md`, and in component 7 of every briefing whose dispatch can trigger it (`agentic-qa-core/references/orchestration-doctrine.md`). A rule only in a reference is documentation, not a constraint.
 
 **Error protocol.** When a subagent errors, stop, report the full context, make no fix without approval, and offer retry, skip or abort. With nobody present, the brief answers when it covers the case; otherwise report and do nothing outward (`decision-protocol.md`).
 
@@ -110,7 +102,7 @@ Executors, patterns, value provenance, fail-closed gates, session material and s
 
 ## ROUTER
 
-Files live in `.agents/instructions/`. Rows are fixed request kinds, locked by `instructions:check`: a section grows through its own `triggers:` frontmatter, never through new rows.
+Files live in `.agents/instructions/`. Rows are fixed request kinds, locked by `instructions:check`: a section grows through its `triggers:`, never a new row.
 
 <!-- router:start -->
 | When the request involves | Read | Was | Then |
@@ -135,9 +127,8 @@ Files live in `.agents/instructions/`. Rows are fixed request kinds, locked by `
 
 ## 12. PROACTIVE MEMORY TRIGGERS
 
-The Engram protocol itself (tools, save format, conflict handling) arrives with the Engram MCP server's own instructions and, on Claude Code, the plugin's session hooks. Only this repo's delta lives here:
+The Engram protocol (tools, save format, conflicts) arrives with the Engram MCP server's instructions and, on Claude Code, the plugin's hooks. This repo's delta:
 
-- Save triggers: call `mem_save` without being asked after an architecture or design decision, an established convention or workflow, a completed bug fix (with root cause), or a non-obvious discovery or gotcha.
-- Not a memory: a finding already written in the repo (code or docs). Save only what the repo does not record (a decision's why, a gotcha, an owner preference).
+- Save triggers: call `mem_save` unasked after an architecture or design decision, an established convention or workflow, a bug fix (with root cause) or a non-obvious gotcha. Never a finding the repo already records: save the why, a gotcha, an owner preference.
 - Session close: call `mem_session_summary` before saying "done" / "listo".
-- Search with keywords, not questions: Engram search is lexical and every term must match by default. Query `mem_search` with two or three English keywords that would appear in a memory's title. With zero results, retry with `match_mode: "any"` or with synonyms before concluding nothing exists.
+- Search with two or three English keywords from a memory's title (search is lexical, every term must match). With zero results, retry with `match_mode: "any"` or synonyms before concluding nothing exists.
