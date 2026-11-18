@@ -39,6 +39,7 @@ The pipeline is Plan, Code, Verify, Archive. It needs nothing outside the repo.
 - Archive the session directory only after all four verifiers pass. On REJECT it stays in place so the run can be debugged or resumed.
 - Route every change to `AGENTS.md`, a section under `.agents/instructions/`, the ROUTER or a `triggers:` list through mode `instructions`: place each sentence with `references/instructions-doctrine.md` §2 and close with `bun run instructions:check`. Section prose does not get pasted into `AGENTS.md`, and a ROUTER row needs the ADR that decides it (`--accept-router ADR-NNNN`, ADR-0013).
 - When a review finding repeats, the first remedy is a check, not a prose line: a rule in the `kata` ESLint plugin (`eslint.config.base.js`), an `eslint-plugin-playwright` rule or a `kata-manifest.ts` check, with a message that names the doctrine section and the root-cause fix. Ship it at `KATA_ENFORCEMENT_LEVEL`, and add the "Enforced by" entry in `references/kata-invariants.md`. Write a prose line only when a machine cannot judge the case.
+- Critical Rule #18, no comments in code by default: new and edited code carries no comments except a toolchain directive (`eslint-disable-next-line <rule> -- <reason>`, `@ts-expect-error`, `LINT.IfChange`/`LINT.ThenChange`) or one line of WHY the code cannot express and a reader would otherwise get wrong. No JSDoc blocks, section banners, narrated steps or example TODOs; teaching goes to docs and decks. Put this rule in component 7 of every Code-phase briefing, because a plan or briefing that omits it ships comments that a later pass has to strip.
 - When a trigger misses or over-fires, fix the section's `triggers:` and add the prompts to `cli/lib/fixtures/instruction-router-eval.json`. A prompt is never relabelled to hide a miss.
 
 **Read full SKILL.md when**: writing the plan artifact, batching Code-phase tasks, resuming an interrupted session, running mode `instructions`, writing a skill, or reading the ALLOWED/FORBIDDEN path tables themselves.
@@ -199,6 +200,7 @@ Rules:
   - ALLOWED paths only (kata-invariants.md §10). FORBIDDEN → abort.
   - Do NOT modify generated artifacts (api/openapi-types.ts, kata-manifest.json, reports/).
   - If strict TDD is ON (read from plan §"Strict TDD flag"), every production-code task is preceded by a failing test in the same batch.
+  - Critical Rule #18 (no comments): new and edited code carries no comments except a toolchain directive (`eslint-disable-next-line <rule> -- <reason>`, `@ts-expect-error`, `LINT.IfChange`/`LINT.ThenChange`) or one line of WHY the code cannot express. No JSDoc blocks, banners or narrated steps.
   - Decisions: agentic-qa-core/references/decision-protocol.md before any question. A technical call inside the approved plan is decided and reported as DECIDED with the option it beat; escalate to the orchestrator only the four §5 kinds (product behaviour, a new security posture, an irreversible or outward action, what the owner reserved). Never widen the scope beyond the plan.
 ```
 

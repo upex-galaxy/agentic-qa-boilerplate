@@ -34,6 +34,7 @@ Requires `agentic-qa-core`. Loads on demand:
 
 **Test-design doctrine (binding, full canon: `agentic-qa-core/references/test-design-doctrine.md`):**
 
+- Critical Rule #18, no comments in code by default: new and edited code carries no comments except a toolchain directive (`eslint-disable-next-line <rule> -- <reason>`, `@ts-expect-error`, `LINT.IfChange`/`LINT.ThenChange`) or one line of WHY the code cannot express and a reader would otherwise get wrong. No JSDoc blocks, section banners, narrated steps or example TODOs; teaching goes to docs and decks. Put this rule in component 7 of every briefing that writes tests or components.
 - "All ACs covered" is the floor, not the success bar. The ATC set also covers risk beyond the AC: invalid and boundary inputs, auth and error paths, state transitions, and anomalies the AC is silent on.
 - 1:N is the default: one AC maps to several ATCs. EP-merge collapses same-behavior inputs inside one partition into a parameterized ATC; it never collapses across distinct partitions, boundaries or states. BVA cases are required wherever a range, limit, length or date window exists, because EP alone misses off-by-one.
 - Apply techniques by trigger: EP always; BVA on ranges and limits; State-Transition for stateful flows; Decision Table when 2+ conditions interact; Pairwise when 3+ combinable factors (log the reduction).

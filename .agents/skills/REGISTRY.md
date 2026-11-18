@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-11-18T05:41:49.467Z`
+> Generated: `2026-11-18T06:23:44.329Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -264,6 +264,7 @@ Skills indexed: 29
 - Archive the session directory only after all four verifiers pass. On REJECT it stays in place so the run can be debugged or resumed.
 - Route every change to `AGENTS.md`, a section under `.agents/instructions/`, the ROUTER or a `triggers:` list through mode `instructions`: place each sentence with `references/instructions-doctrine.md` §2 and close with `bun run instructions:check`. Section prose does not get pasted into `AGENTS.md`, and a ROUTER row needs the ADR that decides it (`--accept-router ADR-NNNN`, ADR-0013).
 - When a review finding repeats, the first remedy is a check, not a prose line: a rule in the `kata` ESLint plugin (`eslint.config.base.js`), an `eslint-plugin-playwright` rule or a `kata-manifest.ts` check, with a message that names the doctrine section and the root-cause fix. Ship it at `KATA_ENFORCEMENT_LEVEL`, and add the "Enforced by" entry in `references/kata-invariants.md`. Write a prose line only when a machine cannot judge the case.
+- Critical Rule #18, no comments in code by default: new and edited code carries no comments except a toolchain directive (`eslint-disable-next-line <rule> -- <reason>`, `@ts-expect-error`, `LINT.IfChange`/`LINT.ThenChange`) or one line of WHY the code cannot express and a reader would otherwise get wrong. No JSDoc blocks, section banners, narrated steps or example TODOs; teaching goes to docs and decks. Put this rule in component 7 of every Code-phase briefing, because a plan or briefing that omits it ships comments that a later pass has to strip.
 - When a trigger misses or over-fires, fix the section's `triggers:` and add the prompts to `cli/lib/fixtures/instruction-router-eval.json`. A prompt is never relabelled to hide a miss.
 
 **Read full SKILL.md when**: writing the plan artifact, batching Code-phase tasks, resuming an interrupted session, running mode `instructions`, writing a skill, or reading the ALLOWED/FORBIDDEN path tables themselves.
@@ -664,6 +665,7 @@ Skills indexed: 29
 **Purpose**: Plan, write and review KATA tests on Playwright and TypeScript, or explain existing automated tests read-only.
 
 **Compact Rules**:
+- Critical Rule #18, no comments in code by default: new and edited code carries no comments except a toolchain directive (`eslint-disable-next-line <rule> -- <reason>`, `@ts-expect-error`, `LINT.IfChange`/`LINT.ThenChange`) or one line of WHY the code cannot express and a reader would otherwise get wrong. No JSDoc blocks, section banners, narrated steps or example TODOs; teaching goes to docs and decks. Put this rule in component 7 of every briefing that writes tests or components.
 - "All ACs covered" is the floor, not the success bar. The ATC set also covers risk beyond the AC: invalid and boundary inputs, auth and error paths, state transitions, and anomalies the AC is silent on.
 - 1:N is the default: one AC maps to several ATCs. EP-merge collapses same-behavior inputs inside one partition into a parameterized ATC; it never collapses across distinct partitions, boundaries or states. BVA cases are required wherever a range, limit, length or date window exists, because EP alone misses off-by-one.
 - Apply techniques by trigger: EP always; BVA on ranges and limits; State-Transition for stateful flows; Decision Table when 2+ conditions interact; Pairwise when 3+ combinable factors (log the reduction).
