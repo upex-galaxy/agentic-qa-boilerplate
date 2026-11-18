@@ -22,7 +22,8 @@
     "playwright.config.ts",
     "env.d.ts",
     "eslint.config.js",
-    "eslint.config.base.js"
+    "eslint.config.base.js",
+    "kata-eslint-plugin.js"
   ],
   "exclude": [
     "node_modules",

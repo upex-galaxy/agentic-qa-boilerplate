@@ -1,0 +1,150 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "jsPlugins": ["./kata-eslint-plugin.js", "eslint-plugin-playwright"],
+  "categories": {
+    "correctness": "off"
+  },
+  "ignorePatterns": [
+    "node_modules",
+    "dist",
+    "test-results",
+    "playwright-report",
+    "allure-results",
+    "allure-report",
+    "reports",
+    "cli/legacy/**",
+    "cli/slack-clip.js",
+    "**/*.min.js",
+    "**/*.md",
+    ".github/**",
+    "api/openapi-types.ts",
+    ".claude/worktrees/**",
+    ".agents/skills/**",
+    "docs/mcp/**"
+  ],
+  "overrides": [
+    {
+      "files": ["tests/**/*.ts", "playwright.config.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["./**", "../**"],
+                "message": "KATA test code imports through path aliases (@ui/ @api/ @steps/ @utils/ @data/ @schemas/ @variables @TestContext @TestFixture), never relative paths. See typescript-patterns.md \u00a78."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["cli/**/*.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "../scripts/**",
+                  "../../scripts/**",
+                  "../../../scripts/**",
+                  "../../../../scripts/**",
+                  "../config/**",
+                  "../../config/**",
+                  "../../../config/**",
+                  "../../../../config/**",
+                  "../tests/**",
+                  "../../tests/**",
+                  "../../../tests/**",
+                  "../../../../tests/**",
+                  "../api/**",
+                  "../../api/**",
+                  "../../../api/**",
+                  "../../../../api/**",
+                  "../packages/**",
+                  "../../packages/**",
+                  "../../../packages/**",
+                  "../../../../packages/**",
+                  "@/*",
+                  "@ui/*",
+                  "@api/*",
+                  "@steps/*",
+                  "@utils/*",
+                  "@data/*",
+                  "@schemas/*",
+                  "@variables",
+                  "@openapi",
+                  "@schemas",
+                  "@TestContext",
+                  "@UiFixture",
+                  "@ApiFixture",
+                  "@TestFixture",
+                  "@DataFactory"
+                ],
+                "message": "cli/ must be import-closed: the updater re-execs the new cli/ before other components are synced, so an import that escapes cli/ breaks `bun sync` for repos more than one release behind. Move the shared module into cli/lib/ instead."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["tests/**/*.ts"],
+      "rules": {
+        "kata/layer-imports": "warn",
+        "kata/atc-no-atc-call": "warn",
+        "kata/no-decorator-in-base": "warn",
+        "kata/no-raw-page-in-spec": "warn",
+        "playwright/no-wait-for-timeout": "warn",
+        "playwright/no-wait-for-selector": "warn",
+        "playwright/no-networkidle": "warn",
+        "playwright/missing-playwright-await": "warn",
+        "playwright/no-conditional-expect": "warn",
+        "playwright/no-useless-not": "warn",
+        "playwright/no-nth-methods": "warn",
+        "playwright/no-force-option": "warn",
+        "playwright/no-focused-test": "warn",
+        "playwright/no-page-pause": "warn",
+        "playwright/no-element-handle": "warn",
+        "playwright/no-skipped-test": "warn"
+      }
+    },
+    {
+      "files": [
+        "tests/components/api/**/*.ts",
+        "tests/components/ui/**/*.ts",
+        "tests/components/steps/**/*.ts"
+      ],
+      "rules": {
+        "max-params": [
+          "warn",
+          {
+            "max": 2
+          }
+        ]
+      }
+    },
+    {
+      "files": ["tests/components/api/ApiBase.ts"],
+      "rules": {
+        "max-params": "off"
+      }
+    },
+    {
+      "files": ["tests/components/api/*.ts", "tests/components/ui/*.ts"],
+      "rules": {
+        "max-lines": [
+          "warn",
+          {
+            "max": 500,
+            "skipBlankLines": true,
+            "skipComments": true
+          }
+        ]
+      }
+    }
+  ]
+}

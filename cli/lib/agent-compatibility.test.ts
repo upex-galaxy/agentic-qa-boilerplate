@@ -49,6 +49,7 @@ import {
   validateMcpParity,
   validateMcpParityFindings,
   validateOpenCodePluginEntrypoints,
+  validateOxlintWiring,
   validatePiAdapter,
 } from './agent-compatibility-contracts.ts';
 import {
@@ -1020,6 +1021,48 @@ export const KATA_IMPORT_ALIASES = { files: ['tests/**/*.ts'], rules: {} };
 
   test('a repo without the split config is not a finding', () => {
     expect(validateEslintBlockWiring(contractFixture())).toEqual([]);
+  });
+});
+
+describe('oxlint wiring', () => {
+  const BASE = JSON.stringify({ jsPlugins: ['./kata-eslint-plugin.js', 'eslint-plugin-playwright'] });
+
+  test('the real repository extends the base and ships its plugin', () => {
+    expect(validateOxlintWiring(REPO_ROOT)).toEqual([]);
+  });
+
+  test('a project config that does not extend the base is an error', () => {
+    const root = contractFixture();
+    write(root, '.oxlintrc.base.json', BASE);
+    write(root, 'kata-eslint-plugin.js', 'export default {};\n');
+    write(root, '.oxlintrc.json', '{ "rules": {} }');
+    const errors = validateOxlintWiring(root);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain('enforce nothing');
+  });
+
+  test('a missing project config is an error', () => {
+    const root = contractFixture();
+    write(root, '.oxlintrc.base.json', BASE);
+    expect(validateOxlintWiring(root)[0]).toContain('.oxlintrc.json is missing');
+  });
+
+  test('a local jsPlugin missing on disk is an error naming it', () => {
+    const root = contractFixture();
+    write(root, '.oxlintrc.base.json', BASE);
+    write(root, '.oxlintrc.json', '{ "extends": ["./.oxlintrc.base.json"] }');
+    const errors = validateOxlintWiring(root);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain('./kata-eslint-plugin.js');
+  });
+
+  test('a wired project is clean, and a repo without the base is not a finding', () => {
+    const root = contractFixture();
+    expect(validateOxlintWiring(root)).toEqual([]);
+    write(root, '.oxlintrc.base.json', BASE);
+    write(root, 'kata-eslint-plugin.js', 'export default {};\n');
+    write(root, '.oxlintrc.json', '{ "extends": ["./.oxlintrc.base.json"] }');
+    expect(validateOxlintWiring(root)).toEqual([]);
   });
 });
 

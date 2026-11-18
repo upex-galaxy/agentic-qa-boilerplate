@@ -151,7 +151,7 @@ const GATE_TIMEOUT_MS = 120_000;
  */
 export const GATE_SCRIPTS = ['types:check', 'lint:check', 'kata:manifest:check', 'skills:check'] as const;
 
-const TOOLING_FILES = ['.editorconfig', '.prettierrc', '.gitattributes', 'tsconfig.base.json', 'eslint.config.base.js', 'bunfig.toml'];
+const TOOLING_FILES = ['.editorconfig', '.prettierrc', '.gitattributes', 'tsconfig.base.json', 'eslint.config.base.js', 'kata-eslint-plugin.js', '.oxlintrc.base.json', 'bunfig.toml'];
 // The SYNCED half of the variables module. A file-list, not a directory:
 // `config/variables.ts` (watchlisted) and `config/validateTestEnv.ts` are
 // project-owned - the whole point of the split is that they are NOT synced.
@@ -1416,6 +1416,7 @@ const PROTECTED_WATCHLIST: ProtectedWatchEntry[] = [
   { path: '.agents/project.yaml', reason: 'per-project identity + env map, but upstream keeps ADDING structural blocks (e.g. git_strategy). A project scaffolded before a block existed never learns it should have one.', structural: true },
   { path: 'tsconfig.json', reason: 'project-owned `include` / `exclude`: which directories this repo type-checks. The path aliases every synced file imports through moved to the synced `tsconfig.base.json` this file extends, so a new upstream alias now arrives on its own.' },
   { path: 'eslint.config.js', reason: 'project-owned overrides; .husky/pre-commit runs eslint against this local config. The shared rules and the cli/ import-closure block that guards the updater live in the synced `eslint.config.base.js` this file spreads.' },
+  { path: '.oxlintrc.json', reason: 'project-owned Oxlint overrides; lint-staged runs oxlint against this local config. The shared rules (KATA plugin, import blocks, Playwright rules) live in the synced `.oxlintrc.base.json` it extends.' },
   // The MCP registries are project-owned since 8.2 (they used to sync
   // through `agent-root-config`): a consumer adds its own servers there.
   { path: '.mcp.json', reason: 'MCP registry with project-specific servers/vars' },
