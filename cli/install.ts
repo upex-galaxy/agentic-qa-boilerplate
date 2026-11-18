@@ -837,7 +837,6 @@ function childEnv(drop: (name: string) => boolean, add: Record<string, string> =
   for (const [k, v] of Object.entries(process.env)) {
     if (!drop(k)) { env[k] = v; }
   }
-  // eslint-disable-next-line ts/no-unnecessary-type-assertion -- a host that requires NODE_ENV on ProcessEnv (Next.js) rejects the plain object
   return { ...env, ...add } as NodeJS.ProcessEnv;
 }
 

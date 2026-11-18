@@ -19,6 +19,7 @@ below names which one it applies to:
 ### Changed (Oxlint at commit, ESLint as the gate, KATA rules default to `error`)
 - **Pre-commit runs Oxlint** on staged code (about 0.2 s against about 5 s for ESLint) with the `kata` plugin, the `eslint-plugin-playwright` set, the import blocks and `max-params`/`max-lines`. ESLint stays the gate in `lint:check`, `repo:check`, `pre-push` and CI. ADR-0028.
 - **KATA rules now default to `error`** (`KATA_ENFORCEMENT_LEVEL`, mirrored in `kata-manifest.ts` and `.oxlintrc.base.json`). A project that needs time lowers a rule in its own `eslint.config.js` and `.oxlintrc.json`. Expect the first `bun sync` on an existing suite to report direct `@faker-js/faker` imports in specs, `nth()` and `force: true`.
+- **`ts/no-unnecessary-type-assertion` is off under `cli/`** (in `CLI_IMPORT_CLOSURE`), and the host-dependent disable directives are gone: a cast that one host needs and another finds redundant made every downstream project report 4 unused-directive warnings in synced `cli/` files.
 - **New synced files** `kata-eslint-plugin.js` and `.oxlintrc.base.json`; `.oxlintrc.json` is delivered once when missing. `bun sync` installs nothing, so its report now says to run `bun install` and to switch `lint-staged` to `oxlint -c .oxlintrc.json`. `agents:compat:check` fails when `.oxlintrc.json` does not extend the base.
 
 ### Added (`bun run clean` sweeps generated files by level)

@@ -165,12 +165,17 @@ export const KATA_IMPORT_ALIASES = {
  * re-exec'd mid-run). Path aliases are listed too: they resolve into
  * `tests/`, `config/` and `api/`, which are equally absent at re-exec time.
  *
+ * `ts/no-unnecessary-type-assertion` is off here: the casts in `cli/` (`NodeJS.ProcessEnv`, `ErrnoException`) are
+ * needed or redundant depending on the host's type packages, so a disable directive would warn as unused in the hosts
+ * where the cast is needed and error in the others.
+ *
  * This block travels with the base config on purpose: it guards the updater,
  * so a project that never received it runs `bun sync` unprotected.
  */
 export const CLI_IMPORT_CLOSURE = {
   files: ['cli/**/*.ts'],
   rules: {
+    'ts/no-unnecessary-type-assertion': 'off',
     'no-restricted-imports': ['error', {
       patterns: [{
         group: [
