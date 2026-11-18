@@ -14,16 +14,17 @@
 The skill reads these keys by path. Variable syntax and each key's meaning: `.agents/README.md`
 §"`orchestration`"; the schema: `.agents/project.schema.yaml`.
 
-| Key | How the conductor applies it |
-|---|---|
-| `orchestrator_cli` | the binary the gate probes (`orca`, or `orca-ide` on Linux outside an Orca terminal) |
-| `max_workers` | the worker cap per round: one concurrency group in flight at once |
-| `default_agent`, `default_model`, `default_effort` | the worker tier: `worker-start --agent --model --effort` on the supervised path, the `launch.txt` line on the pasted one. A full model id, never an alias (G29) |
-| `conductor_model`, `conductor_effort` | the conductor tier, including a middle conductor another conductor launches (G77) |
-| `subagent_model` | one-shot subagents, in the harness's own subagent vocabulary (`sonnet`, `opus`, `haiku`, `fable` on Claude Code), never a full id |
-| `permission_modes` | the mode per tier (`conductor`, `worker`, `subagent`) in the repo vocabulary `bypass`, `auto`, `ask`, `inherit`; the posture is ADR-0024, the per-harness flags are the user skill's machine setup §3; the conductor verifies the worker's mode at readiness |
-| `model_overrides` | each entry (`topics`, `tier`, `model`, `effort`) replaces a tier default for a brief whose topics match |
-| `orchestrator_skills`, `message_verb`, `terminal_verb` | kept for older copies of the skill; `/agent-orchestration` does not read them (it loads the vendor `orchestration` guide by name and uses the literal verbs) |
+| Key | Variable | How the conductor applies it |
+|---|---|---|
+| `orchestrator_cli`, `orchestrator_name` | `{{ORCHESTRATOR_CLI}}`, `{{ORCHESTRATOR_NAME}}` | the binary the gate probes (`orca`, or `orca-ide` on Linux outside an Orca terminal) and the name the owner reads |
+| `max_workers` | `{{MAX_WORKERS}}` | the worker cap per round: one concurrency group in flight at once |
+| `default_agent`, `default_model`, `default_effort` | `{{DEFAULT_AGENT}}`, `{{DEFAULT_MODEL}}`, `{{DEFAULT_EFFORT}}` | the worker tier: `worker-start --agent --model --effort` on the supervised path, the `launch.txt` line on the pasted one. A full model id, never an alias (G29) |
+| `conductor_model`, `conductor_effort` | `{{CONDUCTOR_MODEL}}`, `{{CONDUCTOR_EFFORT}}` | the conductor tier, including a middle conductor another conductor launches (G77) |
+| `subagent_model` | `{{SUBAGENT_MODEL}}` | one-shot subagents, in the harness's own subagent vocabulary (`sonnet`, `opus`, `haiku`, `fable` on Claude Code), never a full id |
+| `permission_modes` | read by path | the mode per tier (`conductor`, `worker`, `subagent`) in the repo vocabulary `bypass`, `auto`, `ask`, `inherit`; the posture is ADR-0024, the per-harness flags are the user skill's machine setup §3; the conductor verifies the worker's mode at readiness |
+| `model_overrides` | read by path | each entry (`topics`, `tier`, `model`, `effort`) replaces a tier default for a brief whose topics match |
+| `message_verb`, `terminal_verb` | `{{MESSAGE_VERB}}`, `{{TERMINAL_VERB}}` | the session-to-session verb and the raw-input verb; `/agent-orchestration` writes the literal verbs and does not read these keys, which stay for older copies |
+| `orchestrator_skills` | read by path | the vendor guides; `/agent-orchestration` loads them by name and does not read this key |
 
 These are defaults, not policy: an explicit user instruction in the conductor session wins for that
 run. A wave is a tracker-status bucket and exists only in `sprint-testing`; rounds are numbered
