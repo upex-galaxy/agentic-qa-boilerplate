@@ -19,8 +19,8 @@ import { basename, join } from 'node:path';
 
 import { relativePosix } from './lib/posix-path';
 
-// Moves to 'error' together with the KATA ESLint level in eslint.config.base.js next release.
-const KATA_ENFORCEMENT_LEVEL: 'warn' | 'error' = 'warn';
+// Mirrors KATA_ENFORCEMENT_LEVEL in eslint.config.base.js; the two move together.
+const KATA_ENFORCEMENT_LEVEL: 'warn' | 'error' = 'error';
 
 // ============================================================================
 // Types

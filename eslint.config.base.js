@@ -222,7 +222,7 @@ export { kataPlugin };
  * Severity of every KATA enforcement rule below. One line flips the whole set
  * from `warn` to `error`: this release reports, the next one blocks.
  */
-export const KATA_ENFORCEMENT_LEVEL = 'warn';
+export const KATA_ENFORCEMENT_LEVEL = 'error';
 
 /**
  * The four `kata/*` rules on the whole test tree. They are path-aware inside, so

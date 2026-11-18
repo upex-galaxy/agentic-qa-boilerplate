@@ -108,7 +108,7 @@ Three facts to know before citing the rule:
 
 **Enforced by:** `KATA_IMPORT_ALIASES` for the relative-import ban, `kata/layer-imports` for the `@TestFixture`, `@faker-js/faker` and `@openapi` rules.
 
-The KATA blocks the base exports are `KATA_IMPORT_ALIASES`, `KATA_RULES` (the `kata` plugin), `KATA_SHAPE` (`max-params`, `max-lines`) and `KATA_PLAYWRIGHT` (the `eslint-plugin-playwright` set). `KATA_ENFORCEMENT_LEVEL` in `eslint.config.base.js` sets the severity of every block except `KATA_IMPORT_ALIASES`: `'warn'` this release, `'error'` the next. `scripts/kata-manifest.ts` mirrors the constant for its fixture-registration check, and the two values move together.
+The KATA blocks the base exports are `KATA_IMPORT_ALIASES`, `KATA_RULES` (the `kata` plugin), `KATA_SHAPE` (`max-params`, `max-lines`) and `KATA_PLAYWRIGHT` (the `eslint-plugin-playwright` set). `KATA_ENFORCEMENT_LEVEL` in `eslint.config.base.js` sets the severity of every block except `KATA_IMPORT_ALIASES`: `'error'`. A project that needs time to clean its violations lowers a rule in its own `eslint.config.js` and `.oxlintrc.json`. `scripts/kata-manifest.ts` mirrors the constant for its fixture-registration check, and the two values move together.
 
 Review (`/pr-review-lead`) owns the half a lint rule cannot judge: whether the alias chosen is the right one for the layer.
 
@@ -178,7 +178,7 @@ Each row gates a critical change to load-bearing surface.
 | `KataReporter` NDJSON line schema or `atc_results.json` aggregation logic | The teardown summary still parses, and TMS sync (`syncToXray`, `syncToJiraDirect`) still consumes the right fields. |
 | `tests/utils/decorators.ts` `storeResult` writer | The NDJSON file is still safe for atomic append, and the reporter `onEnd` deletes the partial file. |
 | `kata:manifest` extraction regex (`@atc\s*\(\s*['"]([^'"]+)['"]`) | It still matches every existing `@atc('...')` call. Computed or template-literal IDs stay unsupported by design. |
-| `KATA_ENFORCEMENT_LEVEL` (`eslint.config.base.js` and `scripts/kata-manifest.ts`) and the `warn` severities in `.oxlintrc.base.json` | Flip all three together; `scripts/oxlint-config.test.ts` fails when the Oxlint file disagrees with the constant. Run `bun run lint:check` and `bun run kata:manifest:check` on a representative suite first, and read every new finding before the flip lands. |
+| `KATA_ENFORCEMENT_LEVEL` (`eslint.config.base.js` and `scripts/kata-manifest.ts`) and the severities in `.oxlintrc.base.json` | Move all three together; `scripts/oxlint-config.test.ts` fails when the Oxlint file disagrees with the constant. Run `bun run lint:check` and `bun run kata:manifest:check` on a representative suite first, and read every new finding before the change lands. |
 | OpenAPI facade pattern (replace `paths`/`components` indexing) | Regenerate types with `bun run api:sync`; re-run `bun run types:check`. |
 | Adding a new layer between existing layers | Forbidden: it breaks the 4-layer model invariant. Reject. |
 | Replacing the Playwright dependency | A major-version bump that invalidates UiBase's entire surface. Reject without version-bump approval. |

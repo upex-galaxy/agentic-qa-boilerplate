@@ -16,6 +16,11 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Changed (Oxlint at commit, ESLint as the gate, KATA rules default to `error`)
+- **Pre-commit runs Oxlint** on staged code (about 0.2 s against about 5 s for ESLint) with the `kata` plugin, the `eslint-plugin-playwright` set, the import blocks and `max-params`/`max-lines`. ESLint stays the gate in `lint:check`, `repo:check`, `pre-push` and CI. ADR-0028.
+- **KATA rules now default to `error`** (`KATA_ENFORCEMENT_LEVEL`, mirrored in `kata-manifest.ts` and `.oxlintrc.base.json`). A project that needs time lowers a rule in its own `eslint.config.js` and `.oxlintrc.json`. Expect the first `bun sync` on an existing suite to report direct `@faker-js/faker` imports in specs, `nth()` and `force: true`.
+- **New synced files** `kata-eslint-plugin.js` and `.oxlintrc.base.json`; `.oxlintrc.json` is delivered once when missing. `bun sync` installs nothing, so its report now says to run `bun install` and to switch `lint-staged` to `oxlint -c .oxlintrc.json`. `agents:compat:check` fails when `.oxlintrc.json` does not extend the base.
+
 ### Added (`bun run clean` sweeps generated files by level)
 - **`bun run clean`** deletes what a Playwright run, `playwright-cli` or a session leaves in the repo. It is a dry run by default (path, size, age and the command that regenerates it) and deletes with `--apply`. Level `safe` is test and report output, `.playwright/output`, `playwright-cli` logs and `.DS_Store`. Opt-in levels: `--profiles` (a browser profile inside the repo), `--history` (`.allure/` and `.backups*`), `--sessions` (old scratch under `.session/`, `--older-than <days>`, default 30) and `--builds` (`node_modules`, `dist`). The list is an explicit allowlist in `cli/lib/clean.ts`, never "whatever git ignores"; `.env*`, `.auth/`, `.context/PBI/` and the `.session/` decision, handoff and resume state are refused by a guard.
 - **`test:clean` now runs `clean --apply`**, so it also clears the `playwright-cli` logs and `.DS_Store`, not only the five test-output directories. A project that already has its own `test:clean` keeps it: the updater reports a same-key script as a difference and never overwrites it.
