@@ -92,6 +92,7 @@ Who authors: a human QA architect / lead directly, **or** an AI workflow that de
 | [ADR-0026](./ADR-0026-pi-as-a-declared-harness.md) | Pi joins `HARNESSES` under the same gates; its detection reads two files only, a secret-only block stands in for a deny list, and the session-naming claim of ADR-0024 is corrected | Accepted | — | — |
 | [ADR-0027](./ADR-0027-kata-rules-as-lint-and-manifest-checks.md) | KATA rules move from prose to an inline `kata` ESLint plugin, `eslint-plugin-playwright` and manifest checks, shipped at `warn` then `error` through one level constant | Accepted | — | — |
 | [ADR-0028](./ADR-0028-oxlint-at-commit-eslint-as-gate.md) | Oxlint runs the KATA rules at commit through the shared `kata` plugin file, ESLint stays the CI gate | Accepted | — | — |
+| [ADR-0029](./ADR-0029-orchestration-doctrine-as-a-user-level-skill.md) | The orchestration doctrine moves to the user-level skill `agent-orchestration`; `orca-orchestration` becomes a stub and the repo parts live in `agentic-qa-core/references/fleet-*.md` | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 

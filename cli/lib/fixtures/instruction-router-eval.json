@@ -198,6 +198,14 @@
       "expect": ["orchestration-detail"]
     },
     {
+      "prompt": "load /agent-orchestration and plan a fleet of two workers for these stories",
+      "expect": ["orchestration-detail"]
+    },
+    {
+      "prompt": "run orca orchestration worker-start for the next worker",
+      "expect": ["orchestration-detail", "tool-resolution"]
+    },
+    {
       "prompt": "dispatch a subagent to run the verification gates",
       "expect": ["orchestration-detail", "package.json"]
     },

@@ -117,11 +117,11 @@ Files live in `.agents/instructions/`. Rows are fixed request kinds, locked by `
 | Jira or Xray reads, `.context/PBI/`, sync | `agent-local-context-pbi.md`, `agent-project-variables.md` | §9, §7 | `/acli`, `/xray-cli` |
 | writing or reviewing test code, KATA, `scripts/` paths | `agent-code-quickref.md` | §10 | `/test-automation` |
 | git: branch, commit, push, PR, conflict, strategy | `agent-git.md` | §11 | `/git-flow-master` |
-| orchestration detail: executors, workers, fleets, gates | `agent-orchestration-detail.md` | §3 | `/orca-orchestration` |
+| orchestration detail: executors, workers, fleets, gates | `agent-orchestration-detail.md` | §3 | `/agent-orchestration` |
 | a script, a command, "how do I run X" | whenever any of these apply, read @package.json first, never a command quoted in a doc | Rule #11 | - |
 | anything specific to this project | `agent-project.md` | - | project context skills |
 <!-- router:end -->
-<!-- router:lock f4d8c1c9bcf0 ADR-0013 -->
+<!-- router:lock c42ccf96078c ADR-0029 -->
 
 ---
 

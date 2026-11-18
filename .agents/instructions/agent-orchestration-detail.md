@@ -14,7 +14,7 @@ paths: []
 
 ### TWO EXECUTORS
 
-The default executor is the one-shot subagent, and nothing below changes that. The second, optional executor is the supervised worker: a persistent agent session coordinated through `/orca-orchestration` over a conductor and worker mailbox. It needs the orchestration binary and a reachable runtime. When either is missing the repo says nothing about it and the work runs on subagents plus the `launch.txt` lines a human pastes, so a workflow skill never names the worker to the user when the gate fails. The one exception is `/sprint-conductor`, which exists to run on workers and stops with one line when the gate fails.
+The default executor is the one-shot subagent, and nothing below changes that. The second, optional executor is the supervised worker: a persistent agent session coordinated through `/agent-orchestration` (a user-level skill) over a conductor and worker mailbox. It needs the orchestration binary and a reachable runtime. When either is missing the repo says nothing about it and the work runs on subagents plus the `launch.txt` lines a human pastes, so a workflow skill never names the worker to the user when the gate fails. The one exception is `/sprint-conductor`, which exists to run on workers and stops with one line when the gate fails.
 
 | | One-shot subagent (default) | Supervised worker (optional) |
 |---|---|---|
@@ -24,7 +24,7 @@ The default executor is the one-shot subagent, and nothing below changes that. T
 | Git | the orchestrator's index | own worktree, or the shared checkout under declared file ownership |
 | Best for | reading, mapping, verifying; one-shot tasks | writing and integrating alone, a whole story, work the owner wants to step into |
 
-The conductor keeps its own reads and verifications on subagents, which keeps the coordinating context clean. A worker earns its cost when the unit of work is a whole scope (one story, one module) that writes and integrates by itself. Doctrine: `agentic-qa-core/references/orchestration-doctrine.md`; transport: `/orca-orchestration`.
+The conductor keeps its own reads and verifications on subagents, which keeps the coordinating context clean. A worker earns its cost when the unit of work is a whole scope (one story, one module) that writes and integrates by itself. Doctrine: `agentic-qa-core/references/orchestration-doctrine.md`; transport: `/agent-orchestration`; this repo's fleet parts: `agentic-qa-core/references/fleet-launch-seam.md`, `fleet-provisioning.md`, `fleet-project-profile.md`.
 
 ### EXECUTION PATTERNS
 

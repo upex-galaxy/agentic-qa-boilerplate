@@ -240,7 +240,7 @@ git_strategy:
     strategy_source: inherited # inherited | chosen
 
 # Defaults for multi-session orchestration (supervised worker fleets via Orca —
-# see the orca-orchestration skill). Owned by that skill; read directly, NOT
+# see the user-level agent-orchestration skill). Read by that skill; read directly, NOT
 # {{VAR}} template references in the section-prefixed sense (leaves resolve as
 # flat {{VAR}} names like every other top-level section — see .agents/README.md
 # §"orchestration" for the exact declared names). An explicit user instruction
@@ -266,7 +266,7 @@ orchestration:
   subagent_model: sonnet # e.g. sonnet
   # Permission mode per tier, in the repo vocabulary bypass | auto | ask | inherit.
   # Translated per harness in ONE table:
-  # .agents/skills/orca-orchestration/references/orca-machine-setup.md §3.1.
+  # the agent-orchestration skill, machine setup section 3.
   # A supervised worker's REAL mode comes from the orchestrator app's per-agent
   # default arguments (the native launch takes no argv); this map declares what
   # the conductor verifies at readiness. Why these defaults and the security
@@ -299,16 +299,15 @@ orchestration:
   #   typo rather than a missing message.
   # The test: if a HUMAN would read it, it does not go through `terminal_verb`.
   # If a shell or a TUI would EXECUTE it, that is what the verb is for.
-  # One structural exception: a supervised worker's FIRST prompt must go
-  # through `terminal_verb`, because the native launch has no argv. Keep it
-  # short and pointing at a file.
+  # A supervised worker's first prompt is its task spec, never `terminal_verb`.
+  # agent-orchestration does not read these two keys; they stay for older copies.
   message_verb: orca orchestration # session-to-session messages ONLY
   terminal_verb: orca terminal # commands and keystrokes ONLY
   # Vendor skills the orchestrator installs at USER level. Loaded ALONGSIDE
-  # this repo's own `orca-orchestration` skill, never instead of it: the repo
+  # the user-level `agent-orchestration` skill, never instead of it: that
   # skill owns WHEN and WHAT, these own the command grammar. They are small
   # enough to load rather than fetch on demand. Empty list = none installed;
-  # the repo skill then asks the binary for its grammar.
+  # the skill then asks the binary for its grammar.
   # Measurements and dates: .context/ADR/ADR-0006-forensic-measurements-ledger.md.
   orchestrator_skills: [orca-cli, orchestration]
 
