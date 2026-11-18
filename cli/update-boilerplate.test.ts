@@ -129,7 +129,8 @@ describe('component registry', () => {
     expect(retired).toContain('.agents/skills/sync-ai-context/SKILL.md');
     expect(retired).toContain('.agents/skills/sync-ai-context/references/sync.md');
     for (const d of RETIRED_SKILL_FILES) {
-      expect(d.reason).toContain(d.path.includes('/adapt-framework/') ? 'test-framework-adaptation' : 'docs:check');
+      const expected = d.path.includes('/adapt-framework/') ? 'test-framework-adaptation' : d.path.includes('/orca-orchestration/') ? 'agent-orchestration' : 'docs:check';
+      expect(d.reason).toContain(expected);
     }
 
     const root = temporaryRoot();
@@ -154,6 +155,27 @@ describe('component registry', () => {
     cleanupDeprecated(cfg, kept, false);
     expect(existsSync(join(kept, '.agents/skills/adapt-framework/references/our-notes.md'))).toBe(true);
     expect(existsSync(join(kept, '.agents/skills/adapt-framework/SKILL.md'))).toBe(false);
+  });
+
+  test('the renamed orca-orchestration skill keeps its stub and sheds every other file, each one backed up first', () => {
+    const moved = RETIRED_SKILL_FILES.filter(d => d.path.startsWith('.agents/skills/orca-orchestration/'));
+    expect(moved).toHaveLength(20);
+    expect(moved.map(d => d.path)).not.toContain('.agents/skills/orca-orchestration/SKILL.md');
+    expect(moved.every(d => d.backup === true)).toBe(true);
+    expect(moved.map(d => d.path)).toContain('.agents/skills/orca-orchestration/references/coordinator-playbook.md');
+
+    const root = temporaryRoot();
+    for (const d of moved) {
+      mkdirSync(join(root, d.path, '..'), { recursive: true });
+      writeFileSync(join(root, d.path), 'locally edited\n');
+    }
+    writeFileSync(join(root, '.agents/skills/orca-orchestration/SKILL.md'), 'stub\n');
+    const backups = temporaryRoot();
+    const cfg = { deprecatedFiles: moved } as Parameters<typeof cleanupDeprecated>[0];
+    expect(cleanupDeprecated(cfg, root, false, undefined, () => backups)).toBe(20);
+    expect(existsSync(join(root, '.agents/skills/orca-orchestration/references'))).toBe(false);
+    expect(existsSync(join(root, '.agents/skills/orca-orchestration/SKILL.md'))).toBe(true);
+    expect(existsSync(join(backups, '.agents/skills/orca-orchestration/references/gotchas.md'))).toBe(true);
   });
 
   test('the framework helpers under tests/utils sync as a file-list; the project\'s own helpers and the watched ones are never walked', () => {
