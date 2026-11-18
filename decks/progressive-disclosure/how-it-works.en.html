@@ -711,7 +711,7 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
       <div class="card card-accent"><p class="lbl">§2 · whole</p><h4 class="h4 mt-s">The behavioral layer</h4><p class="small mt-s">Everything that §2 of <code>AGENTS.md</code> sets about how the agent reasons and what it says. Which blocks it has is for §2 to say, not this slide.</p></div>
       <div class="card"><p class="lbl">§3 · core</p><h4 class="h4 mt-s">Orchestration</h4><p class="small mt-s">What goes to subagents and what stays in the main conversation, the seven-component briefing, rule reachability and the error protocol. It governs every dispatch, whatever the request.</p></div>
     </div>
-    <div class="notes">The orchestration detail that is not core (executors, workers, gates) is in agent-orchestration-detail.md. All of §2 is the reason L0 can go past the 16 KiB target (ADR-0009): you see it in the budgets slide. Its human mirror is docs/core/personalidad.html.</div>
+    <div class="notes">The orchestration detail that is not core (executors, workers, gates) is in agent-orchestration-detail.md. All of §2 is the reason L0 can go past the 20 KiB target (ADR-0009): you see it in the budgets slide. Its human mirror is docs/core/personalidad.html.</div>
   </section>
 
   <!-- 10. HOW IT IS EDITED -->
@@ -743,7 +743,7 @@ whenever any of these apply, read <span class="k">@package.json</span> first, ne
     <p class="small dim mt-s">L0 has a ceiling because Codex cuts without warning. The values are named constants in <code>scripts/lint-instructions.ts</code>, the same in both boilerplates.</p>
     <table class="tt mt-m" style="font-size:18px">
       <tr><th style="width:330px">Level</th><th style="width:330px">Constant</th><th>If exceeded</th></tr>
-      <tr><td class="small">Target · 16 KiB</td><td class="small"><code>L0_TARGET</code></td><td class="small">warning: the number stays in view</td></tr>
+      <tr><td class="small">Target · 20 KiB</td><td class="small"><code>L0_TARGET</code></td><td class="small">warning: the number stays in view</td></tr>
       <tr><td class="small">Ceiling · 24 KiB</td><td class="small"><code>L0_BUDGET</code></td><td class="small">error in the boilerplate's L0: the detail goes to a section</td></tr>
       <tr><td class="small">With project additions · 28 KiB</td><td class="small"><code>L0_PROJECT_BUDGET</code></td><td class="small">error in a project: its text goes to <code>agent-project.md</code> or a context skill</td></tr>
       <tr><td class="small">Codex cap · 32 KiB</td><td class="small"><code>CODEX_PROJECT_DOC_MAX_BYTES</code></td><td class="small">always an error, whatever the others say: it is the default value of <code>project_doc_max_bytes</code></td></tr>
