@@ -65,6 +65,7 @@ Every deck has an English twin, `<name>.en.html` in the same folder (`how-it-wor
 | Automation (KATA) | `test-automation/how-it-works.es.html` |
 | Regression + GO / CAUTION / NO-GO | `regression-testing/how-it-works.es.html` |
 | Annotated bug screenshots | `bug-screenshot-annotation/how-it-works.es.html` |
+| Building and publishing a ticket's evidence page | `evidence-artifact/how-it-works.es.html` |
 | Reviewing a test-automation PR | `pr-review-lead/how-it-works.es.html` |
 | Blind dual review | `judgment-day/how-it-works.es.html` |
 | Discovering a new target repo | `project-discovery/how-it-works.es.html` |
