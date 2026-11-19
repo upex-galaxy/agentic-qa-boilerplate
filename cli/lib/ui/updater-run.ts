@@ -30,6 +30,7 @@ import { decideUi, parseUiFlags } from './env-detect.ts';
 import { handoffEnv, Journal, readHandoffEnv } from './events.ts';
 import { openBrowser } from './open-browser.ts';
 import { renderPage } from './page.ts';
+import { readSecretValues } from './redaction.ts';
 import { Reporter } from './reporter.ts';
 import { pickLang } from './strings.ts';
 import { writeSummary } from './summary.ts';
@@ -203,6 +204,7 @@ export async function startUpdaterUi(o: UpdaterUiOptions): Promise<UpdaterUi | n
   const auto = mode === 'readonly' || o.argv.includes('--auto') || o.argv.includes('--force');
 
   const journal = new Journal({ resume: resumed });
+  for (const value of readSecretValues(process.cwd())) { journal.redactor.add(value); }
   let pageSink: UpdaterPageSink | null = null;
   const reporter = new Reporter({
     cmd: 'up',

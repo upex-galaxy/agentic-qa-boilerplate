@@ -26,6 +26,7 @@ import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSy
 import { isAbsolute, join, normalize, relative, resolve } from 'node:path';
 import { validateEslintBlockWiring, validateHookCompatibility, validateMcpParityFindings, validateOxlintWiring } from './agent-compatibility-contracts.ts';
 import { declaredHarnesses, skippedHarnessNotes } from './harness-selection.ts';
+import { readSecretValues, redactAll } from './ui/redaction.ts';
 
 export const CLAUDE_INSTRUCTIONS_SHIM = '@AGENTS.md\n';
 
@@ -425,14 +426,18 @@ export function checkAgentCompatibility(
     errors.push(error instanceof Error ? error.message : String(error));
   }
 
-  const result = (status: CompatibilityCheck['alias']['status']): CompatibilityCheck => ({
-    ok: errors.length === 0,
-    errors,
-    warnings,
-    notes,
-    harnesses,
-    alias: { path: paths.claudeSkills, target, type, status },
-  });
+  const result = (status: CompatibilityCheck['alias']['status']): CompatibilityCheck => {
+    const values = readSecretValues(paths.root);
+    const clean = (lines: string[]): string[] => lines.map(line => redactAll(line, values));
+    return {
+      ok: errors.length === 0,
+      errors: clean(errors),
+      warnings: clean(warnings),
+      notes: clean(notes),
+      harnesses,
+      alias: { path: paths.claudeSkills, target, type, status },
+    };
+  };
 
   if (!usesClaude) { return result('not-used'); }
 

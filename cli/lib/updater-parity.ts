@@ -49,6 +49,7 @@ import { hasDeepWalk, SCHEMA_SOURCE, schemaExemptions, walkGovernedFile } from '
 import { contextMapAdvice, contextMapStatuses, mapRelPath } from './context-maps.ts';
 import { HARNESS_LEVEL_MCPS } from './harness-level-mcps.ts';
 import { declaredHarnesses } from './harness-selection.ts';
+import { harvestSecretValues, holdsEnvValues, readSecretValues, redactAll, redactSecretText } from './ui/redaction.ts';
 import { CLAUDE_SETTINGS_FILE, DECLINED_DENIES_KEY, DECLINED_HOOKS_KEY, OPENCODE_SETTINGS_FILE, opencodeDenyGap } from './updater-settings';
 
 // ============================================================================
@@ -685,7 +686,21 @@ export function diffNoIndex(a: string, b: string, labels: { a: string, b: string
   };
   relabel(a, labels.a);
   relabel(b, labels.b);
-  return out;
+  const envFile = holdsEnvValues(a) || holdsEnvValues(b);
+  const values = envFile ? [a, b].flatMap(file => (fs.existsSync(file) && fs.statSync(file).isFile() ? harvestSecretValues(fs.readFileSync(file, 'utf8'), file) : [])) : [];
+  return redactAll(out, values.sort((x, y) => y.length - x.length), { envKeys: envFile });
+}
+
+function redactFindings<T extends Omit<ParityFinding, 'id'>>(findings: T[], root: string): T[] {
+  const values = readSecretValues(root);
+  const clean = (text: string | undefined): string | undefined => (text === undefined ? undefined : redactAll(text, values));
+  return findings.map(f => ({
+    ...f,
+    evidence: clean(f.evidence) ?? '',
+    ...(f.note === undefined ? {} : { note: clean(f.note) }),
+    ...(f.detail === undefined ? {} : { detail: clean(f.detail) }),
+    ...(f.diff === undefined ? {} : { diff: clean(f.diff) }),
+  }));
 }
 
 function formatStats(stats: DiffStats): string {
@@ -2140,7 +2155,7 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
     }
   }
 
-  return findings.map((f, i) => ({ id: i + 1, ...f }));
+  return redactFindings(findings, input.root).map((f, i) => ({ id: i + 1, ...f }));
 }
 
 // ============================================================================
@@ -2237,7 +2252,7 @@ export function renderParityReport(findings: ParityFinding[], meta: ParityMeta):
  * protected file it kept, the likely cause; one for `cli/` when none was kept.
  */
 export function selfUpdateBlockedFindings(blocked: { protectedPaths: string[], error: string }): ParityFinding[] {
-  const loader = blocked.error.split('\n').find(line => line.trim() !== '') ?? 'the entry did not load';
+  const loader = redactSecretText(blocked.error.split('\n').find(line => line.trim() !== '') ?? 'the entry did not load');
   const paths = blocked.protectedPaths.length > 0 ? blocked.protectedPaths : ['cli/'];
   return paths.map((p, i) => ({
     id: i + 1,

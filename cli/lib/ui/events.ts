@@ -20,6 +20,8 @@
 
 import { chmodSync, readFileSync, writeFileSync } from 'node:fs';
 
+import { redactSecretText } from './redaction.ts';
+
 // ----------------------------------------------------------------------------
 // Event shapes
 // ----------------------------------------------------------------------------
@@ -193,7 +195,7 @@ export class Redactor {
     for (const v of this.values) {
       if (out.includes(v)) { out = out.split(v).join(MASK); }
     }
-    return out;
+    return redactSecretText(out);
   }
 
   /** Deep copy with every string redacted (object keys included). */

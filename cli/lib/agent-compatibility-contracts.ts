@@ -30,9 +30,10 @@
 import type { Harness } from './harness-selection.ts';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
-
 import { isSchemaOwner } from './agents-schema.ts';
+
 import { canonicalMcpHarness, declaredHarnesses, HARNESSES } from './harness-selection.ts';
+import { isSecretKey, readSecretValues, redactAll, REDACTED, redactParseError, redactSecretText, redactValue } from './ui/redaction.ts';
 
 /**
  * Servers whose per-host shape this boilerplate pins (`EXPECTED_MCP`). The
@@ -629,12 +630,26 @@ function sameServer(actual: NormalizedMcpServer, expected: NormalizedMcpServer):
   return JSON.stringify(canonical(actual)) === JSON.stringify(canonical(expected));
 }
 
-function describeServer(server: NormalizedMcpServer): string {
-  return JSON.stringify(canonical(server));
+function maskedArgs(args: string[] | undefined, pinned: string[] | undefined): string[] | undefined {
+  return args?.map((arg, i) => {
+    if (pinned?.[i] === arg) { return arg; }
+    const flag = args[i - 1];
+    return flag !== undefined && /^--?[a-z]/i.test(flag) && isSecretKey(flag) ? REDACTED : redactSecretText(arg);
+  });
+}
+
+function describeServer(server: NormalizedMcpServer, pinned?: NormalizedMcpServer): string {
+  const literalEnv = Object.fromEntries(Object.entries(server.literalEnv).map(([key, value]) => [key, pinned?.literalEnv[key] === value ? value : redactValue(key, value)]));
+  const url = server.url === undefined ? undefined : redactSecretText(server.url);
+  return JSON.stringify(canonical({ ...server, literalEnv, args: maskedArgs(server.args, pinned?.args), url }));
 }
 
 function describeContract(server: NormalizedMcpServer): string {
-  return JSON.stringify({ dependsOn: server.dependsOn, literalEnv: server.literalEnv });
+  return redactSecretText(JSON.stringify({ dependsOn: server.dependsOn, literalEnv: server.literalEnv }), { envKeys: true });
+}
+
+function literalValuesDiffer(a: NormalizedMcpServer, b: NormalizedMcpServer): string[] {
+  return Object.keys(a.literalEnv).filter(key => key in b.literalEnv && a.literalEnv[key] !== b.literalEnv[key]).sort();
 }
 
 const MCP_CONFIG_FILE: Record<McpHost, string> = {
@@ -762,11 +777,18 @@ const PARSE: Record<McpHost, (path: string) => JsonObject> = {
 export function readHostMcpConfig(root: string, host: McpHost): NormalizedMcpConfig | null {
   const path = join(resolve(root), MCP_CONFIG_FILE[host]);
   if (!existsSync(path)) { return null; }
-  return NORMALIZE[host](PARSE[host](path));
+  try { return NORMALIZE[host](PARSE[host](path)); }
+  catch (error) { throw new Error(redactParseError(error instanceof Error ? error.message : String(error))); }
 }
 
 // LINT.IfChange(mcp-parity)
 export function validateMcpParityFindings(root = process.cwd(), options: McpParityOptions = {}): McpParityFindings {
+  const found = mcpParityFindings(root, options);
+  const values = readSecretValues(resolve(root));
+  return { errors: found.errors.map(e => redactAll(e, values)), warnings: found.warnings.map(w => redactAll(w, values)) };
+}
+
+function mcpParityFindings(root: string, options: McpParityOptions): McpParityFindings {
   const resolvedRoot = resolve(root);
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -830,7 +852,7 @@ export function validateMcpParityFindings(root = process.cwd(), options: McpPari
         launchWarned.add(`${host}:${id}`);
         continue;
       }
-      errors.push(`${host} MCP ${id} mismatch: expected ${describeServer(expected)}, found ${describeServer(actual)}`);
+      errors.push(`${host} MCP ${id} mismatch: expected ${describeServer(expected, expected)}, found ${describeServer(actual, expected)}`);
     }
   }
 
@@ -868,9 +890,9 @@ export function validateMcpParityFindings(root = process.cwd(), options: McpPari
     for (const host of adapters) {
       const server = configs[host]![id];
       if (!server) { continue; }
-      const contract = describeContract(server);
-      if (contract !== baseline) {
-        errors.push(`MCP ${id} env contract differs between ${canonicalHost} and ${host}: ${baseline} vs ${contract}`);
+      if (JSON.stringify({ d: server.dependsOn, l: server.literalEnv }) !== JSON.stringify({ d: canonicalConfig[id].dependsOn, l: canonicalConfig[id].literalEnv })) {
+        const differ = literalValuesDiffer(canonicalConfig[id], server);
+        errors.push(`MCP ${id} env contract differs between ${canonicalHost} and ${host}: ${baseline} vs ${describeContract(server)}${differ.length > 0 ? ` (literal values differ at: ${differ.join(', ')})` : ''}`);
       }
     }
   }
