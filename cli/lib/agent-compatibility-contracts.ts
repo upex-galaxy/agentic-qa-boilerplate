@@ -29,8 +29,9 @@
 
 import type { Harness } from './harness-selection.ts';
 import { existsSync, readFileSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { isAbsolute, join, relative, resolve } from 'node:path';
 import { isSchemaOwner } from './agents-schema.ts';
+import { readChecks } from './check-scope.ts';
 
 import { canonicalMcpHarness, declaredHarnesses, HARNESSES } from './harness-selection.ts';
 import { isSecretKey, readSecretValues, redactAll, REDACTED, redactParseError, redactSecretText, redactValue } from './ui/redaction.ts';
@@ -781,6 +782,79 @@ export function readHostMcpConfig(root: string, host: McpHost): NormalizedMcpCon
   catch (error) { throw new Error(redactParseError(error instanceof Error ? error.message : String(error))); }
 }
 
+const RELAY_KEYS = new Set(['command', 'args', 'type', 'exposure', 'toolExposure', 'description']);
+
+type RelayVerdict = { kind: 'relay' } | { kind: 'direct' } | { kind: 'error', message: string };
+
+/**
+ * A relay entry is exactly `[...prefix, <its own id>]` with nothing else that
+ * could start, configure or feed the server: the launcher starts the canonical
+ * entry with that entry's own values.
+ */
+function relayVerdict(raw: unknown, id: string, prefix: readonly string[]): RelayVerdict {
+  if (typeof raw !== 'object' || raw === null) { return { kind: 'direct' }; }
+  const server = raw as JsonObject;
+  const args = Array.isArray(server.args) ? server.args : [];
+  const argv = [server.command, ...args];
+  if (!prefix.every((part, index) => argv[index] === part)) { return { kind: 'direct' }; }
+  const where = `pi MCP ${id} relay in ${MCP_CONFIG_FILE.pi}`;
+  const shape = `[${[...prefix, id].join(', ')}]`;
+  if (argv.length !== prefix.length + 1 || typeof argv[prefix.length] !== 'string') {
+    return { kind: 'error', message: `${where}: the launch must be exactly ${shape}` };
+  }
+  if (argv[prefix.length] !== id) {
+    return { kind: 'error', message: `${where}: relays ${String(argv[prefix.length])} but is declared as ${id}; the launch must be exactly ${shape}` };
+  }
+  const extra = Object.keys(server).filter(key => !RELAY_KEYS.has(key)).sort();
+  if (extra.length > 0) {
+    return { kind: 'error', message: `${where}: carries ${extra.join(', ')}; a relay entry holds only command and args, because the launcher delivers the canonical entry's own values` };
+  }
+  if (server.type !== undefined && server.type !== 'stdio') {
+    return { kind: 'error', message: `${where}: type must be stdio (the relay is a stdio launcher)` };
+  }
+  return { kind: 'relay' };
+}
+
+function git(root: string, args: string[]): { code: number, out: string } {
+  const result = Bun.spawnSync(['git', ...args], { cwd: root, stdout: 'pipe', stderr: 'ignore' });
+  return { code: result.exitCode ?? 1, out: result.stdout.toString() };
+}
+
+function tracked(root: string, path: string): boolean {
+  return git(root, ['ls-files', '--error-unmatch', '--', path]).code === 0;
+}
+
+/** Why the local canonical file is not safely per-machine, or null when a committed `.gitignore` ignores it. */
+function localCanonicalProblem(root: string, file: string): string | null {
+  const why = `checks.mcp_parity.mode is local-only, so ${file} holds literal values`;
+  if (tracked(root, file)) {
+    return `MCP ${file} is tracked by git, but ${why}: untrack it and ignore it in the committed .gitignore`;
+  }
+  const ignored = git(root, ['check-ignore', '-v', '--no-index', '--', file]);
+  const [rule = ''] = ignored.out.split('\t');
+  const [source = '', , pattern = ''] = rule.split(':');
+  if (ignored.code !== 0 || pattern.startsWith('!')) {
+    return `MCP ${file} is not git-ignored, but ${why}: ignore it in the committed .gitignore`;
+  }
+  if (source.startsWith('.git/') || isAbsolute(source) || source.startsWith('~') || !tracked(root, source)) {
+    return `MCP ${file} is ignored by ${source}, a per-machine rule, but ${why}: ignore it in the committed .gitignore so every clone ignores it`;
+  }
+  return null;
+}
+
+function relayLauncherProblem(root: string, prefix: readonly string[]): string | null {
+  const launcher = prefix[prefix.length - 1];
+  const where = `checks.mcp_parity.relay.pi launcher ${launcher}`;
+  if (isAbsolute(launcher) || launcher.split('/').includes('..')) { return `${where}: must be a repo-relative path`; }
+  if (!existsSync(join(root, launcher))) { return `${where}: not found`; }
+  if (!tracked(root, launcher)) { return `${where}: not tracked by git; a relay launcher is reviewed like any committed code`; }
+  return null;
+}
+
+function rawPiServers(root: string): JsonObject {
+  return object(parseJson(join(root, MCP_CONFIG_FILE.pi)).mcpServers, `${MCP_CONFIG_FILE.pi} mcpServers`);
+}
+
 // LINT.IfChange(mcp-parity)
 export function validateMcpParityFindings(root = process.cwd(), options: McpParityOptions = {}): McpParityFindings {
   const found = mcpParityFindings(root, options);
@@ -794,6 +868,32 @@ function mcpParityFindings(root: string, options: McpParityOptions): McpParityFi
   const warnings: string[] = [];
   const schemaOwner = options.schemaOwner ?? readSchemaOwner(resolvedRoot);
   const hosts = options.harnesses ?? declaredHarnesses(resolvedRoot, { schemaOwner: options.schemaOwner }).harnesses;
+  const canonicalHost = canonicalMcpHarness(hosts);
+  const checks = readChecks(resolvedRoot);
+  if (checks.errors.mcpParity.length > 0) { return { errors: checks.errors.mcpParity, warnings }; }
+  const local = checks.config.mcpParity.mode === 'local-only';
+  const relay = checks.config.mcpParity.relay;
+  const relayHosts = Object.keys(relay);
+  if (schemaOwner && (local || relayHosts.length > 0)) {
+    return { errors: ['checks.mcp_parity: the boilerplate checks strict parity; keep mode: strict and relay: {}'], warnings };
+  }
+  for (const host of relayHosts) {
+    const problem = host !== 'pi'
+      ? `checks.mcp_parity.relay.${host}: only pi is supported as a relay host`
+      : !hosts.includes('pi')
+          ? 'checks.mcp_parity.relay.pi: pi is not a harness in use'
+          : canonicalHost === 'pi'
+            ? `checks.mcp_parity.relay.pi: pi holds the canonical set (${MCP_CONFIG_FILE.pi}), and a relay points at the canonical set`
+            : relayLauncherProblem(resolvedRoot, relay.pi);
+    if (problem !== null) { errors.push(problem); }
+  }
+  if (local) {
+    const problem = localCanonicalProblem(resolvedRoot, MCP_CONFIG_FILE[canonicalHost]);
+    if (problem !== null) { errors.push(problem); }
+  }
+  if (errors.length > 0) { return { errors, warnings }; }
+  const relayPrefix = relayHosts.includes('pi') ? relay.pi : null;
+  let canonicalAbsent = false;
   // Only the harnesses in use are read: a project on one harness has deleted
   // the other two's files on purpose. A declared host whose file is missing or
   // malformed fails here, under the MCP group.
@@ -801,6 +901,10 @@ function mcpParityFindings(root: string, options: McpParityOptions): McpParityFi
   for (const host of hosts) {
     try {
       const config = readHostMcpConfig(resolvedRoot, host);
+      if (config === null && local && host === canonicalHost) {
+        canonicalAbsent = true;
+        continue;
+      }
       if (config === null) {
         const why = schemaOwner ? 'the boilerplate checks every harness' : 'a harness in use; declare `harnesses:` in .agents/project.yaml to drop it';
         errors.push(`MCP config missing for ${host}: ${MCP_CONFIG_FILE[host]} (${why})`);
@@ -817,16 +921,46 @@ function mcpParityFindings(root: string, options: McpParityOptions): McpParityFi
   }
   if (errors.length > 0) { return { errors, warnings }; }
 
+  if (canonicalAbsent) {
+    warnings.push(`MCP parity unverified: ${MCP_CONFIG_FILE[canonicalHost]} is absent (checks.mcp_parity.mode: local-only), so the server set and the env contract are not compared; the committed hosts are checked on their own.`);
+  }
   // The canonical host defines the set; every other host in use must match it exactly.
-  const canonicalHost = canonicalMcpHarness(hosts);
-  const canonicalConfig = configs[canonicalHost]!;
+  const canonicalConfig: NormalizedMcpConfig = configs[canonicalHost] ?? {};
   const declared = Object.keys(canonicalConfig).sort();
   const adapters = hosts.filter(host => host !== canonicalHost);
-  for (const host of adapters) {
+  const idsOf = (host: McpHost): string[] => canonicalAbsent ? Object.keys(configs[host] ?? {}).sort() : declared;
+
+  const relayed = new Set<string>();
+  if (relayPrefix !== null && configs.pi !== undefined) {
+    const raw = rawPiServers(resolvedRoot);
+    for (const id of Object.keys(configs.pi).sort()) {
+      const verdict = relayVerdict(raw[id], id, relayPrefix);
+      if (verdict.kind === 'direct') { continue; }
+      relayed.add(`pi:${id}`);
+      if (verdict.kind === 'error') { errors.push(verdict.message); continue; }
+      const target = canonicalConfig[id];
+      if (canonicalAbsent || target === undefined) { continue; }
+      const reason = target.transport !== 'stdio'
+        ? 'is not a stdio server'
+        : !target.enabled
+            ? 'is disabled'
+            : (target.hostRefs ?? []).length > 0
+                ? `takes ${(target.hostRefs ?? []).join(', ')} from the host, which the launcher does not expand`
+                : null;
+      if (reason !== null) {
+        errors.push(`pi MCP ${id} cannot be relayed: its ${MCP_CONFIG_FILE[canonicalHost]} entry ${reason}; the launcher starts an enabled stdio entry with literal values only`);
+      }
+    }
+  }
+
+  for (const host of canonicalAbsent ? [] : adapters) {
     const actual = new Set(Object.keys(configs[host]!));
     for (const id of declared) {
       if (!actual.has(id)) {
-        errors.push(`MCP ${id} missing from ${host}: declared in ${MCP_CONFIG_FILE[canonicalHost]}, absent from ${MCP_CONFIG_FILE[host]}`);
+        const hint = host === 'pi' && relayPrefix !== null && canonicalConfig[id].transport === 'http'
+          ? ' (the relay carries stdio only: connect this server at user level, ADR-0005, or declare it in the relay host directly)'
+          : '';
+        errors.push(`MCP ${id} missing from ${host}: declared in ${MCP_CONFIG_FILE[canonicalHost]}, absent from ${MCP_CONFIG_FILE[host]}${hint}`);
       }
     }
     for (const id of [...actual].sort()) {
@@ -841,9 +975,10 @@ function mcpParityFindings(root: string, options: McpParityOptions): McpParityFi
   // in a launch detail is a warning (see `McpParityOptions`).
   const launchWarned = new Set<string>();
   for (const [host, config] of Object.entries(configs) as Array<[McpHost, NormalizedMcpConfig]>) {
-    for (const id of declared) {
+    if (local && host === canonicalHost) { continue; }
+    for (const id of idsOf(host)) {
       const actual = config[id];
-      if (!actual || !isKnownMcpId(id)) { continue; }
+      if (!actual || !isKnownMcpId(id) || relayed.has(`${host}:${id}`)) { continue; }
       const expected = EXPECTED_MCP[host][id];
       if (sameServer(actual, expected)) { continue; }
       const gaps = schemaOwner ? null : launchGaps(actual, expected);
@@ -861,9 +996,9 @@ function mcpParityFindings(root: string, options: McpParityOptions): McpParityFi
   // one takes nothing from the host. Both are what lets a desktop launch get its
   // credentials with no plaintext copy on disk.
   for (const [host, config] of Object.entries(configs) as Array<[McpHost, NormalizedMcpConfig]>) {
-    for (const id of declared) {
+    for (const id of idsOf(host)) {
       const server = config[id];
-      if (!server || server.transport !== 'stdio' || server.dependsOn.length === 0 || launchWarned.has(`${host}:${id}`)) { continue; }
+      if (!server || server.transport !== 'stdio' || server.dependsOn.length === 0 || launchWarned.has(`${host}:${id}`) || relayed.has(`${host}:${id}`)) { continue; }
       const hostRefs = server.hostRefs ?? [];
       const problem = server.envLoader !== true
         ? `${host} MCP ${id} must launch through the .env loader in ${MCP_CONFIG_FILE[host]}: ${loaderFix(server.dependsOn)} (${LOADER_REASON}).`
@@ -883,13 +1018,24 @@ function mcpParityFindings(root: string, options: McpParityOptions): McpParityFi
     else { warnings.push(problem); }
   }
 
+  if (local) {
+    for (const host of adapters) {
+      for (const [id, server] of Object.entries(configs[host] ?? {}).sort(([a], [b]) => a.localeCompare(b))) {
+        const secret = Object.keys(server.literalEnv).filter(isSecretKey);
+        if (secret.length > 0) {
+          errors.push(`${host} MCP ${id} holds a literal ${secret.join(', ')} in ${MCP_CONFIG_FILE[host]}: with checks.mcp_parity.mode: local-only, literal values live only in the local ${MCP_CONFIG_FILE[canonicalHost]}; reference the variable by name or relay the server`);
+        }
+      }
+    }
+  }
+
   // Cross-host contract for EVERY declared server: same `.env` dependencies and
   // same literal settings, whatever the transport or command each host uses.
   for (const id of declared) {
     const baseline = describeContract(canonicalConfig[id]);
     for (const host of adapters) {
       const server = configs[host]![id];
-      if (!server) { continue; }
+      if (!server || relayed.has(`${host}:${id}`)) { continue; }
       if (JSON.stringify({ d: server.dependsOn, l: server.literalEnv }) !== JSON.stringify({ d: canonicalConfig[id].dependsOn, l: canonicalConfig[id].literalEnv })) {
         const differ = literalValuesDiffer(canonicalConfig[id], server);
         errors.push(`MCP ${id} env contract differs between ${canonicalHost} and ${host}: ${baseline} vs ${describeContract(server)}${differ.length > 0 ? ` (literal values differ at: ${differ.join(', ')})` : ''}`);

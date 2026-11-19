@@ -2,6 +2,8 @@
   "description": "Files byte-identical in agentic-qa-boilerplate and agentic-dev-boilerplate (installer-ui owner answer Q8). Checked by `bun run shared:check`; re-hash with `--write`; header of scripts/shared-check.ts says how a change travels.",
   "files": {
     "cli/lib/__snapshots__/install-terminal.test.ts.snap": "072bd7a77d085a26f9865319bd7330fb5a4d497f2c999746fb140be8f4a86343",
+    "cli/lib/check-scope.test.ts": "ff208dac5260c03d55d0f28a169127d2189970a3ee9a76b37d8b5f19acc47f97",
+    "cli/lib/check-scope.ts": "f54ce76784ee021d2fc96d9302f7fa51844fc26f890ccc94456f1a638c9b16d4",
     "cli/lib/install-terminal.test.ts": "725cb6974b24cc8dbd52ef9103f9effa27cb112a2576bbd28fb1fbb62605ccf5",
     "cli/lib/install-terminal.ts": "cbc62c227443367a0adf952813fd8c85f50a0abb537053cd685ddac051a5b76d",
     "cli/lib/playwright-cache.ts": "71c1902a63ffeeb738834a272efc02e5da4bcf2dca2a752f1a82bcf19613bd23",

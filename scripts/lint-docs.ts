@@ -77,6 +77,7 @@ import type { VolatileKind } from './lib/volatile-facts.ts';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { isBoilerplateOnlyPath } from '../cli/lib/boilerplate-only.ts';
+import { matchesAny, readChecks, unmatchedGlobs } from '../cli/lib/check-scope.ts';
 import { isProjectLocalSkillPath } from '../cli/lib/updater-core.ts';
 import { contractsEnforced, scanContracts } from './lib/doc-contracts.ts';
 import { listSections, projectSkillRows, SKILL_ROUTER_HEADING, skillRouterSource, skillTableRows } from './lib/instructions.ts';
@@ -461,8 +462,35 @@ export function isBoilerplateAdr(repoRelative: string): boolean {
   return /^\.context\/ADR\/ADR-\d+-/.test(repoRelative);
 }
 
-export function lintDocs(root: string): { files: number, findings: DocFinding[] } {
-  const files = collectDocFiles(root);
+export interface DocScope {
+  files: string[]
+  outOfScope: number
+  errors: string[]
+}
+
+/**
+ * `checks.docs_check` applied to the doc pages (`collectDocFiles`) only: the
+ * link-only markdown, the roster, the contracts and the `bun run` check of
+ * `AGENTS.md` and the instruction sections are never scoped, and an
+ * out-of-scope page still counts as a link target.
+ */
+export function scopeDocFiles(root: string, all: string[]): DocScope {
+  const checks = readChecks(root);
+  const { docsInclude: include, docsExclude: exclude } = checks.config;
+  if (include.length === 0 && exclude.length === 0) { return { files: all, outOfScope: 0, errors: checks.errors.docsCheck }; }
+  const rels = all.map(file => relativePosix(root, file));
+  const errors = [
+    ...checks.errors.docsCheck,
+    ...unmatchedGlobs(include, rels).map(glob => `checks.docs_check.include: ${glob} matches no scanned page (a folder needs /**)`),
+    ...unmatchedGlobs(exclude, rels).map(glob => `checks.docs_check.exclude: ${glob} matches no scanned page (a folder needs /**)`),
+  ];
+  const files = all.filter((_file, index) => (include.length === 0 || matchesAny(include, rels[index])) && !matchesAny(exclude, rels[index]));
+  return { files, outOfScope: all.length - files.length, errors };
+}
+
+export function lintDocs(root: string): { files: number, findings: DocFinding[], outOfScope: number, scopeErrors: string[] } {
+  const scope = scopeDocFiles(root, collectDocFiles(root));
+  const files = scope.files;
   const linkOnly = collectLinkOnlyFiles(root, files);
   const raw = [...files.flatMap(file => lintDocFile(root, file)), ...linkOnly.flatMap(file => lintDocFile(root, file, { linksOnly: true }))];
   const isRef = (f: DocFinding): boolean => f.kind === 'link' || f.kind === 'path';
@@ -488,13 +516,14 @@ export function lintDocs(root: string): { files: number, findings: DocFinding[] 
   findings.push(...lintRoster(root));
   findings.push(...lintScripts(root, [...(existsSync(agentsFile) ? [agentsFile] : []), ...instructionFiles, ...files]));
   findings.push(...lintContracts(root));
-  return { files: files.length + linkOnly.length, findings };
+  return { files: files.length + linkOnly.length, findings, outOfScope: scope.outOfScope, scopeErrors: scope.errors };
 }
 
 if (import.meta.main) {
   const root = process.cwd();
   if (!statSync(root).isDirectory()) { process.exit(2); }
-  const { files, findings } = lintDocs(root);
+  const { files, findings, outOfScope, scopeErrors } = lintDocs(root);
+  const scoped = outOfScope > 0 ? `, ${outOfScope} out of scope (checks.docs_check)` : '';
   const label = (f: DocFinding): string => {
     switch (f.kind) {
       case 'link': return 'dead link';
@@ -515,12 +544,15 @@ if (import.meta.main) {
   for (const f of warnings) {
     console.warn(`  ! ${f.file}:${f.line}  ${label(f)}  ${f.target} ${note(f)}`);
   }
-  if (errors.length === 0) {
+  if (errors.length === 0 && scopeErrors.length === 0) {
     const tail = warnings.length > 0 ? `, ${warnings.length} warning(s)` : '';
-    console.log(`✓ docs:check passed (${files} files, no dead links or paths${tail})`);
+    console.log(`✓ docs:check passed (${files} files, no dead links or paths${tail}${scoped})`);
     process.exit(0);
   }
-  console.error(`✗ docs:check found ${errors.length} problem(s) in ${files} files:\n`);
+  console.error(`✗ docs:check found ${errors.length + scopeErrors.length} problem(s) in ${files} files${scoped}:\n`);
+  for (const message of scopeErrors) {
+    console.error(`  .agents/project.yaml  checks config  ${message}`);
+  }
   for (const f of errors) {
     console.error(`  ${f.file}:${f.line}  ${label(f)}  ${f.target}`);
   }

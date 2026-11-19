@@ -355,3 +355,59 @@ describe('lint-docs agent markdown (links only)', () => {
     expect(lintDocs(root).findings).toEqual([]);
   });
 });
+
+describe('lint-docs checks.docs_check scope', () => {
+  const LINT_DOCS = join(import.meta.dir, 'lint-docs.ts');
+  const cli = (): { code: number, out: string } => {
+    const result = Bun.spawnSync(['bun', LINT_DOCS], { cwd: root, stdout: 'pipe', stderr: 'pipe' });
+    return { code: result.exitCode ?? 1, out: result.stdout.toString() + result.stderr.toString() };
+  };
+  const seed = (): void => {
+    write('README.md', '# Readme\nSee [guide](docs/adr/0001.md).\n');
+    write('docs/adr/0001.md', '# ADR\nOk.\n');
+    write('docs/todo/plan.md', '# Todo\nSee [gone](missing.md) and `docs/nope.md`.\n');
+    write('.agents/instructions/agent-x.md', '# Inst\nSee [x](../../nowhere.md).\n');
+  };
+  const tag = (f: { file: string, line: number, kind: string, target: string }): string => `${f.file}:${f.line}:${f.kind}:${f.target}`;
+  const GOLDEN = '✗ docs:check found 2 problem(s) in 3 files:\n\n  docs/todo/plan.md:2  dead link  missing.md\n  docs/todo/plan.md:2  missing path  docs/nope.md\n';
+
+  test('without the key, and with the shipped empty lists, the output is byte for byte the one before the key existed', () => {
+    seed();
+    expect(cli()).toEqual({ code: 1, out: GOLDEN });
+    write('.agents/project.yaml', 'checks:\n  docs_check:\n    include: []\n    exclude: []\n');
+    expect(cli()).toEqual({ code: 1, out: GOLDEN });
+  });
+
+  test('exclude drops a page from every kind and says so', () => {
+    seed();
+    write('.agents/project.yaml', 'checks:\n  docs_check:\n    exclude: [docs/todo/**]\n');
+    expect(lintDocs(root).findings).toEqual([]);
+    expect(cli()).toEqual({ code: 0, out: '✓ docs:check passed (2 files, no dead links or paths, 1 out of scope (checks.docs_check))\n' });
+  });
+
+  test('include keeps only the pages it names', () => {
+    seed();
+    write('docs/marketing/a.md', 'Dead [x](nowhere.md).');
+    write('.agents/project.yaml', 'checks:\n  docs_check:\n    include: [README.md, docs/adr/**]\n');
+    expect(lintDocs(root)).toMatchObject({ findings: [], outOfScope: 2, scopeErrors: [] });
+  });
+
+  test('an out-of-scope page is still a link target, and the link-only markdown is never scoped', () => {
+    seed();
+    write('.agents/skills/own/SKILL.md', '[gone](./references/gone.md) and [todo](../../../docs/todo/plan.md)');
+    write('.agents/project.yaml', 'checks:\n  docs_check:\n    include: [README.md]\n    exclude: [docs/todo/**]\n');
+    for (const args of [['init', '-q'], ['add', '.']]) { Bun.spawnSync(['git', ...args], { cwd: root, stdout: 'ignore', stderr: 'ignore' }); }
+    expect(lintDocs(root).findings.map(tag)).toEqual(['.agents/skills/own/SKILL.md:1:link:./references/gone.md']);
+  });
+
+  test('a glob that matches no page, or a malformed list, fails the gate', () => {
+    seed();
+    write('.agents/project.yaml', 'checks:\n  docs_check:\n    exclude: [docs/todo, docs/todo/**]\n');
+    expect(lintDocs(root).scopeErrors).toEqual(['checks.docs_check.exclude: docs/todo matches no scanned page (a folder needs /**)']);
+    const { code, out } = cli();
+    expect(code).toBe(1);
+    expect(out).toContain('  .agents/project.yaml  checks config  checks.docs_check.exclude: docs/todo matches no scanned page (a folder needs /**)');
+    write('.agents/project.yaml', 'checks:\n  docs_check:\n    exclude: docs/todo/**\n');
+    expect(lintDocs(root).scopeErrors).toEqual(['checks.docs_check.exclude: must be a list of repo-relative globs']);
+  });
+});

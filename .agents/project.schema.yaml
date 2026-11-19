@@ -339,6 +339,53 @@ updater:
   # by the updater (`readDeclinedHooks` in cli/lib/updater-settings.ts), skipped by vars:check.
   declined_hooks: [] # e.g. ['node "$CLAUDE_PROJECT_DIR/.agents/hooks/doc-contracts.mjs"']
 
+# How this project scopes three gates. Absent or empty = every gate behaves exactly as
+# shipped. A malformed value fails the gate that owns the key, naming the key. Read
+# directly by cli/lib/check-scope.ts (not a {{VAR}} token) -> skipped by vars:check.
+# The boilerplate itself keeps the defaults.
+checks:
+  # agents:compat:check MCP parity (cli/lib/agent-compatibility-contracts.ts).
+  mcp_parity:
+    # strict: every host's MCP file is committed and compared as shipped.
+    # local-only: the canonical file (.mcp.json while Claude is in use) is per-machine
+    # and holds literal values. It must be ignored by the committed .gitignore (tracked,
+    # or ignored only by .git/info/exclude or a global rule, fails); its own runner
+    # (npx or bunx) is not compared against the pinned shape; a committed host may hold
+    # no literal secret-named value; when the file is absent (CI, a fresh clone) the set
+    # and the env contract are skipped with a warning and the committed hosts are still
+    # checked on their own.
+    mode: strict # strict | local-only
+    # Hosts that reach MCP through a project launcher instead of their own copy of
+    # each server. Supported host: pi. The value is the exact argv prefix; an entry
+    # whose command plus args are that prefix plus its own server id, with no other
+    # key, is a relay entry: the launcher (the prefix's last element, repo-relative
+    # and tracked by git) starts the canonical entry with that entry's own values, so
+    # the pinned shape, the loader rule and the env contract are not compared for it.
+    # The canonical entry must be an enabled stdio server whose values are literal.
+    # The relay carries stdio only: a canonical HTTP server is still required in the
+    # relay host, or connected at user level (ADR-0005).
+    relay: {} # e.g. { pi: [bun, scripts/mcp-launch.ts] }
+  # vars:check (scripts/lint-vars.ts).
+  vars_check:
+    # Repo-relative globs of project-owned folders that use their own {{...}} syntax
+    # (a vendored skill whose placeholders are not project variables). Inside them an
+    # UNDECLARED bare {{NAME}} is ignored and counted in one INFO line; a declared name
+    # still counts as a use, and every other reference is checked as usual. A glob
+    # that covers AGENTS.md, an instruction section, REGISTRY.md or every skill at
+    # once, or that matches no scanned file, fails the gate.
+    skip_paths: [] # e.g. [.agents/skills/<slug>/**]
+  # docs:check (scripts/lint-docs.ts).
+  docs_check:
+    # Repo-relative globs over the doc pages it scans (docs/, the root and nested
+    # READMEs, the Pages HTML): with include set, only matching pages are checked;
+    # exclude then drops pages. The agent-facing markdown (.agents/, .context/,
+    # .claude/), the skill roster, the doc contracts and the `bun run` check of
+    # AGENTS.md and the instruction sections are never scoped, and an out-of-scope
+    # page is still a valid link target. A glob that matches no page fails the gate;
+    # the result line says how many pages were out of scope.
+    include: [] # e.g. [README.md, docs/adr/**]
+    exclude: [] # e.g. [docs/todo/**, docs/marketing/**]
+
 # Where SECRET values come from. `local` (the default) = .env / .env.local.
 # A secret manager is the ADVANCED option (ADR-0010): `bun setup` writes the
 # committed overlay .env.provider.schema (references only, never values).

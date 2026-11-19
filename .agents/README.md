@@ -134,6 +134,29 @@ harnesses: [claude] # e.g. a team on Claude Code only
 - **The boilerplate itself** checks every harness, whatever its own yaml says.
 - Read directly by `cli/lib/harness-selection.ts`, so `vars:check` skips it.
 
+## `checks` (block inside `project.yaml`)
+
+How a project scopes three gates whose shipped rules do not fit an adopted app. Each key is documented in `project.schema.yaml`; the reader is `cli/lib/check-scope.ts`. Absent or empty, every gate behaves exactly as shipped, and the boilerplate itself keeps the defaults.
+
+```yaml
+checks:
+  mcp_parity:
+    mode: local-only # strict (default) | local-only
+    relay:
+      pi: [bun, scripts/mcp-launch.ts] # exact argv prefix; the server id follows it
+  vars_check:
+    skip_paths: [.agents/skills/<slug>/**]
+  docs_check:
+    include: []
+    exclude: [docs/todo/**]
+```
+
+- **`mcp_parity`** (`agents:compat:check`): `local-only` treats the canonical `.mcp.json` as a per-machine file a committed `.gitignore` must ignore; `relay` accepts Pi entries that start each stdio server through one tracked launcher instead of copying it.
+- **`vars_check.skip_paths`**: inside a project-owned folder with its own `{{...}}` syntax, an undeclared bare `{{NAME}}` is ignored; everything else is checked as usual.
+- **`docs_check.include` / `exclude`**: scope the doc pages only. The agent-facing markdown, the roster, the contracts and the `bun run` check of `AGENTS.md` are never scoped.
+- **Fail closed**: a malformed value, a glob that matches nothing, or a skip path over the framework surface fails the gate that owns the key, naming it.
+- **Not a `{{VAR}}` source**: `vars:check` skips the block.
+
 ## `secrets` (block inside `project.yaml`)
 
 Where secret VALUES come from (ADR-0010). `.env` / `.env.local` is the default; a secret manager is the advanced option.

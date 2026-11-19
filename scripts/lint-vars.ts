@@ -44,6 +44,8 @@ import { existsSync, lstatSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 
+import { CHECKS_KEY, matchesAny, readChecks, refusedSkipPaths, unmatchedGlobs } from '../cli/lib/check-scope.ts';
+
 // -----------------------------------------------------------------------------
 // Configuration
 // -----------------------------------------------------------------------------
@@ -175,6 +177,7 @@ function loadDeclaredVariables(yamlPath: string): DeclaredVars {
     // `board` is read directly by cli/lib/sprint-source/config.ts (ADR-0019),
     // not as {{VAR}} leaves: `timezone` must not become `{{TIMEZONE}}`.
     if (sectionName === 'board') { continue; }
+    if (sectionName === CHECKS_KEY) { continue; }
     if (sectionName === 'environments') {
       // Nested: each child is an environment whose leaves are env-scoped vars.
       if (!sectionVal || typeof sectionVal !== 'object' || Array.isArray(sectionVal)) {
@@ -924,14 +927,27 @@ function main(): void {
   ];
   const files = collectFiles();
   const result = scanFiles(files);
+  const checks = readChecks(REPO_ROOT);
+  const skipPaths = checks.config.varsSkipPaths;
+  const relFiles = files.map(file => relative(REPO_ROOT, file));
+  const checksErrors = [
+    ...checks.errors.varsCheck,
+    ...refusedSkipPaths(skipPaths).map(glob => `checks.vars_check.skip_paths: ${glob} covers the framework surface (AGENTS.md, .agents/instructions/, REGISTRY.md or every skill); name one skill folder, e.g. .agents/skills/<slug>/**`),
+    ...unmatchedGlobs(skipPaths, relFiles).map(glob => `checks.vars_check.skip_paths: ${glob} matches no scanned file (a folder needs /**)`),
+  ];
 
   // Bare {{VAR}} validation: must be declared either as flat or env-scoped.
   const undeclared: ProjectVarHit[] = [];
+  const skippedUndeclared: ProjectVarHit[] = [];
   const usedNames = new Set<string>();
   for (const hit of result.projectVarHits) {
     usedNames.add(hit.name);
     if (declared.flat.has(hit.name)) { continue; }
     if (declared.envScoped.has(hit.name)) { continue; }
+    if (skipPaths.length > 0 && matchesAny(skipPaths, relative(REPO_ROOT, hit.file))) {
+      skippedUndeclared.push(hit);
+      continue;
+    }
     undeclared.push(hit);
   }
 
@@ -1263,7 +1279,7 @@ function main(): void {
 
   const filesWithProjectHits = new Set(result.projectVarHits.map(h => h.file)).size;
 
-  const totalErrors = undeclared.length + invalidExplicitEnv.length + invalidJiraHits.length + workTypeIssues.length + linkTypeIssues.length;
+  const totalErrors = undeclared.length + invalidExplicitEnv.length + invalidJiraHits.length + workTypeIssues.length + linkTypeIssues.length + checksErrors.length;
 
   // ----- output -----
   const envList = [...declared.envNames].sort().join(', ') || '(none)';
@@ -1290,6 +1306,9 @@ function main(): void {
     for (const hit of undeclared) {
       const rel = relative(REPO_ROOT, hit.file);
       console.log(`  - UNDECLARED: {{${hit.name}}} at ${rel}:${hit.line}`);
+    }
+    for (const message of checksErrors) {
+      console.log(`  - CHECKS_CONFIG: ${message}`);
     }
     for (const hit of invalidExplicitEnv) {
       const rel = relative(REPO_ROOT, hit.file);
@@ -1419,6 +1438,9 @@ function main(): void {
   const totalInvalidJira = invalidJiraHits.length + workTypeIssues.length + linkTypeIssues.length;
   console.log(`  - ${totalValidJira} valid {{jira.*}} references (${optionRefCount} option-value refs, ${cascadingRefCount} cascading, ${validWorkTypeCount} work_type refs, ${validStatusCount} status refs, ${validTransitionCount} transition refs, ${validLinkTypeCount} link_type refs); ${totalInvalidJira} invalid (errors above)`);
   console.log(`  - ${result.metaSkippedCount} documentation meta-references skipped (allowlisted)`);
+  if (skipPaths.length > 0) {
+    console.log(`  - ${skippedUndeclared.length} undeclared bare {{VAR}} ignored in ${new Set(skippedUndeclared.map(h => h.file)).size} files (checks.vars_check.skip_paths)`);
+  }
 
   process.exit(totalErrors > 0 ? 1 : 0);
 }
