@@ -630,3 +630,26 @@ describe('lint-skills T4 loaders (check 24, T4-LOADER)', () => {
     expect(exitCode).toBe(1);
   });
 });
+
+describe('lint-skills STALE-PATH on boilerplate-only files', () => {
+  const testCite = 'See `scripts/oxlint-config.test.ts` for the proof.';
+
+  test('in the boilerplate checkout a cite of a boilerplate-only file is an error, even though the file exists', () => {
+    const root = fixture({ listCommunityInAgentsMd: true, extraSkills: [{ slug: 'acme-flow', kind: 'workflow', body: testCite }] });
+    write(root, 'package.json', JSON.stringify({ name: 'agentic-qa-boilerplate' }));
+    write(root, '.agents/project.yaml', '# MAINTAINER COPY: fixture\nproject:\n  project_name: x\n');
+    write(root, 'scripts/oxlint-config.test.ts', '');
+    const { exitCode, output } = runLint(root);
+
+    expect(output).toContain('[acme-flow] STALE-PATH: `scripts/oxlint-config.test.ts`');
+    expect(output).toContain('never reaches a project');
+    expect(exitCode).toBe(1);
+  });
+
+  test('in a project the same cite is exempt: the file was never delivered', () => {
+    const { exitCode, output } = runLint(fixture({ listCommunityInAgentsMd: true, extraSkills: [{ slug: 'acme-flow', kind: 'workflow', body: testCite }] }));
+
+    expect(output).not.toContain('STALE-PATH:');
+    expect(exitCode).toBe(0);
+  });
+});

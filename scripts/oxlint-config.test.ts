@@ -23,8 +23,10 @@ function lint(path: string, code: string): string {
   const file = join(scratch, path);
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, code);
-  const result = Bun.spawnSync([OXLINT, '-c', '.oxlintrc.json', path], { cwd: scratch });
-  return `${result.stdout.toString()}${result.stderr.toString()}`;
+  const result = Bun.spawnSync([OXLINT, '-c', '.oxlintrc.json', '--format=json', path], { cwd: scratch });
+  const report = JSON.parse(result.stdout.toString()) as { diagnostics: { code: string }[] };
+  if (result.exitCode !== 0 && report.diagnostics.length === 0) { throw new Error(`oxlint exited ${result.exitCode}: ${result.stderr.toString()}`); }
+  return report.diagnostics.map(d => d.code).join('\n');
 }
 
 describe('oxlint severity follows KATA_ENFORCEMENT_LEVEL', () => {
@@ -66,6 +68,6 @@ describe('oxlint runs the KATA rules', () => {
   });
 
   it('a clean spec is silent', () => {
-    expect(lint('tests/e2e/g.spec.ts', 'import { expect, test } from \'@TestFixture\';\ntest(\'x\', async ({ ui }) => { await expect(ui).toBeVisible(); });\n')).not.toContain('warning');
+    expect(lint('tests/e2e/g.spec.ts', 'import { expect, test } from \'@TestFixture\';\ntest(\'x\', async ({ ui }) => { await expect(ui).toBeVisible(); });\n')).toBe('');
   });
 });

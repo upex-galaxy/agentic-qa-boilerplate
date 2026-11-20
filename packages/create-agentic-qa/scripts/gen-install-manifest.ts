@@ -90,6 +90,7 @@ const PURPOSES: Record<string, string> = {
   'github-actions-docs': 'GitHub Actions documentation and workflow patterns.',
   'html-ppt': 'Create HTML-based presentations.',
   'mkd': 'Decision-deck CLI — the AI asks, the user answers point by point in a browser deck.',
+  'agent-orchestration': 'Fleet orchestration doctrine: conductor, workers and their mailbox.',
 };
 
 function purposeOr(name: string, fallback = `Community skill: ${name}`): string {
@@ -126,12 +127,14 @@ export const PHASE_STEPS: Record<string, StepSpec[]> = {
   team: [
     { step: 'AI agents', what: 'Which agents the project supports (Claude Code, OpenCode, Codex, Pi), recorded in .agents/project.yaml `harnesses:`; the files of an agent you drop can be removed.', probes: ['askAgents(', 'recordHarnessSelection('], prompts: ['agents', 'drop-*'] },
     { step: 'Engram', what: 'Detects Engram 3.0+ and, for Claude Code, offers its plugin (session hooks, installed once per machine).', probes: ['detectEngram('], prompts: ['engram-incompatible', 'engram-plugin'] },
+    { step: 'RTK', what: 'Claude Code only, interactive runs only: offers RTK, an output compressor that saves tokens, installed once per machine at user level; skipped when it is already installed with its hook or was declined before.', probes: ['askRtk('], prompts: ['rtk-install'] },
     { step: 'User-level skills', what: 'Which user-level community skills to install, one by one; a declined skill is left out of later runs.', probes: ['askUserLevelSkills('], prompts: ['user-skills'] },
   ],
   install: [
     { step: 'Dependencies', what: 'bun install when node_modules is missing or stale. Runs in the background while the next phases ask their questions.', probes: ['runDepsStep('] },
     { step: 'Chromium', what: 'Downloads the Playwright test browser (bunx playwright install chromium).', probes: ['runPlaywrightStep('] },
     { step: 'Engram wiring', what: 'engram setup for each selected agent, plus the Claude Code plugin when accepted.', probes: ['runEngramStep('] },
+    { step: 'RTK install', what: 'Installs RTK and its Claude Code user-level hook when accepted in Team; never installs in a non-interactive run, where it prints the manual prompt instead.', probes: ['runRtkStep('] },
     { step: 'Community skills', what: 'bunx skills add: project-level skills into .agents/skills/, the chosen user-level skills globally.', probes: ['runCommunityStep('] },
     { step: 'Link the skills', what: 'Repairs the agent contract: the .claude/skills alias onto .agents/skills/ and the CLAUDE.md shim.', probes: ['compatibilityStep('] },
   ],

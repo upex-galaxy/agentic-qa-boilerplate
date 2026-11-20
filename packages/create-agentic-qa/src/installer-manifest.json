@@ -126,7 +126,7 @@
       ]
     },
     "communityUserSkills": {
-      "count": 14,
+      "count": 15,
       "items": [
         {
           "name": "find-skills",
@@ -196,6 +196,11 @@
         {
           "name": "teach",
           "purpose": "Community skill: teach",
+          "source": "https://github.com/upex-galaxy/agentic-user-skills"
+        },
+        {
+          "name": "agent-orchestration",
+          "purpose": "Fleet orchestration doctrine: conductor, workers and their mailbox.",
           "source": "https://github.com/upex-galaxy/agentic-user-skills"
         }
       ]
@@ -312,6 +317,12 @@
           "prompts": ["engram-incompatible", "engram-plugin"]
         },
         {
+          "step": "RTK",
+          "what": "Claude Code only, interactive runs only: offers RTK, an output compressor that saves tokens, installed once per machine at user level; skipped when it is already installed with its hook or was declined before.",
+          "interactive": true,
+          "prompts": ["rtk-install"]
+        },
+        {
           "step": "User-level skills",
           "what": "Which user-level community skills to install, one by one; a declined skill is left out of later runs.",
           "interactive": true,
@@ -337,6 +348,11 @@
         {
           "step": "Engram wiring",
           "what": "engram setup for each selected agent, plus the Claude Code plugin when accepted.",
+          "interactive": false
+        },
+        {
+          "step": "RTK install",
+          "what": "Installs RTK and its Claude Code user-level hook when accepted in Team; never installs in a non-interactive run, where it prints the manual prompt instead.",
           "interactive": false
         },
         {
@@ -486,6 +502,7 @@
   ],
   "prompts": [
     "agents",
+    "rtk-install",
     "user-skills",
     "retired-keys",
     "var-*",

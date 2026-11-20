@@ -173,6 +173,7 @@ import type { VolatileKind } from './lib/volatile-facts';
 import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
 
 import { dirname, join } from 'node:path';
+import { isBoilerplateOnlyPath } from '../cli/lib/boilerplate-only';
 import { contractsEnforced } from './lib/doc-contracts';
 import { skillRouterSource } from './lib/instructions';
 import { relativePosix } from './lib/posix-path';
@@ -943,6 +944,12 @@ function checkStalePaths(
     if (isExampleArtifact(path)) { continue; } // shipped here, deleted once adapted
     if (path.startsWith('.context/') && isGeneratedContextPath(path, strictContext)) { continue; } // written per project by a generator
     if (isPrunedBoilerplateAdr(path, repoRoot)) { continue; } // pruned by the scaffolder, cited as the why
+    if (isBoilerplateOnlyPath(path)) {
+      if (contractsEnforced(repoRoot)) {
+        result.push({ severity: 'ERROR', scope: skillSlug, msg: `STALE-PATH: \`${path}\` in ${sourceFile} is boilerplate-only (cli/lib/boilerplate-only.ts) and never reaches a project, so the cite is stale in every project: name it without the path` });
+      }
+      continue;
+    }
     // Skill-dir-first resolution: shorthand like `scripts/foo.ts` inside a skill
     // body should resolve against the skill's own directory; fall back to repo
     // root for paths that are genuinely repo-rooted (e.g. `.agents/skills/...`).
