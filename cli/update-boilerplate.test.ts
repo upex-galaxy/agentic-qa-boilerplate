@@ -13,7 +13,7 @@ import { unusedHarnessPaths } from './lib/harness-selection.ts';
 import { loadBoardConfig } from './lib/sprint-source/index.ts';
 import { cleanupDeprecated, componentOwnedPaths, isRepoOnlyForRun, isRepoOnlyPath, validateComponentRegistry } from './lib/updater-core.ts';
 import { RETIRED_SECTION_FILES } from './lib/updater-instructions.ts';
-import { backfillProjectYamlFromSchema, BOILERPLATE_TEST_PATHS, BOILERPLATE_TEST_PATTERNS, COMPONENTS, DEPRECATED_FILES, extractIndentedYamlBlock, GATE_SCRIPTS, gatesSummaryLine, parseArgs, resolveProtectedWatchlist, RETIRED_COMMAND_WRAPPERS, RETIRED_SKILL_FILES, runGate, summarizeGates, sweepStaleCloneDirs, TEMP_DIR, worktreeRefusal } from './update-boilerplate.ts';
+import { backfillProjectYamlFromSchema, BOILERPLATE_TEST_PATHS, BOILERPLATE_TEST_PATTERNS, COMPONENTS, DEPRECATED_FILES, extractIndentedYamlBlock, GATE_SCRIPTS, gatesSummaryLine, parseArgs, resolveProtectedWatchlist, RETIRED_COMMAND_WRAPPERS, RETIRED_ORCHESTRATION_FILES, RETIRED_SKILL_FILES, runGate, summarizeGates, sweepStaleCloneDirs, TEMP_DIR, worktreeRefusal } from './update-boilerplate.ts';
 
 /**
  * The boilerplate's own checkout: the package name AND the maintainer sentinel
@@ -125,11 +125,11 @@ describe('component registry', () => {
     const retired = RETIRED_SKILL_FILES.map(d => d.path);
     expect(retired).toContain('.agents/skills/adapt-framework/SKILL.md');
     expect(retired).toContain('.agents/skills/adapt-framework/references/adaptation-workflow.md');
-    expect(DEPRECATED_FILES.map(d => d.path)).toEqual([...RETIRED_COMMAND_WRAPPERS, ...RETIRED_SKILL_FILES, ...RETIRED_SECTION_FILES].map(d => d.path));
+    expect(DEPRECATED_FILES.map(d => d.path)).toEqual([...RETIRED_COMMAND_WRAPPERS, ...RETIRED_SKILL_FILES, ...RETIRED_ORCHESTRATION_FILES, ...RETIRED_SECTION_FILES].map(d => d.path));
     expect(retired).toContain('.agents/skills/sync-ai-context/SKILL.md');
     expect(retired).toContain('.agents/skills/sync-ai-context/references/sync.md');
     for (const d of RETIRED_SKILL_FILES) {
-      const expected = d.path.includes('/adapt-framework/') ? 'test-framework-adaptation' : d.path.includes('/orca-orchestration/') ? 'agent-orchestration' : 'docs:check';
+      const expected = d.path.includes('/adapt-framework/') ? 'test-framework-adaptation' : 'docs:check';
       expect(d.reason).toContain(expected);
     }
 
@@ -158,7 +158,7 @@ describe('component registry', () => {
   });
 
   test('the renamed orca-orchestration skill keeps its stub and sheds every other file, each one backed up first', () => {
-    const moved = RETIRED_SKILL_FILES.filter(d => d.path.startsWith('.agents/skills/orca-orchestration/'));
+    const moved = RETIRED_ORCHESTRATION_FILES;
     expect(moved).toHaveLength(20);
     expect(moved.map(d => d.path)).not.toContain('.agents/skills/orca-orchestration/SKILL.md');
     expect(moved.every(d => d.backup === true)).toBe(true);

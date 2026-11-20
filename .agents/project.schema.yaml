@@ -290,26 +290,6 @@ orchestration:
   # falls back to the pasted-launch-line path and says NOTHING about it.
   orchestrator_name: Orca # the application the operator sees
   orchestrator_cli: orca # the binary on PATH (Linux outside a managed terminal: orca-ide)
-  # THE TWO VERBS ARE NOT INTERCHANGEABLE, and this is the pair that the
-  # channel-discipline doctrine exists to keep apart.
-  # `message_verb` carries every message BETWEEN sessions. Byte-intact.
-  # `terminal_verb` DRIVES a terminal: commands, CLI calls, harness
-  #   slash-commands, keystrokes. It truncates a long payload silently, keeps
-  #   only the TAIL, and still reports success — so the damage reads like a
-  #   typo rather than a missing message.
-  # The test: if a HUMAN would read it, it does not go through `terminal_verb`.
-  # If a shell or a TUI would EXECUTE it, that is what the verb is for.
-  # A supervised worker's first prompt is its task spec, never `terminal_verb`.
-  # agent-orchestration does not read these two keys; they stay for older copies.
-  message_verb: orca orchestration # session-to-session messages ONLY
-  terminal_verb: orca terminal # commands and keystrokes ONLY
-  # Vendor skills the orchestrator installs at USER level. Loaded ALONGSIDE
-  # the user-level `agent-orchestration` skill, never instead of it: that
-  # skill owns WHEN and WHAT, these own the command grammar. They are small
-  # enough to load rather than fetch on demand. Empty list = none installed;
-  # the skill then asks the binary for its grammar.
-  # Measurements and dates: .context/ADR/ADR-0006-forensic-measurements-ledger.md.
-  orchestrator_skills: [orca-cli, orchestration]
 
 # Files `bun sync` must keep as THIS project's own. Read by `cli/update-boilerplate.ts`
 # at the start of every run and merged into the protected watchlist

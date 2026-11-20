@@ -23,8 +23,6 @@ The skill reads these keys by path. Variable syntax and each key's meaning: `.ag
 | `subagent_model` | `{{SUBAGENT_MODEL}}` | one-shot subagents, in the harness's own subagent vocabulary (`sonnet`, `opus`, `haiku`, `fable` on Claude Code), never a full id |
 | `permission_modes` | read by path | the mode per tier (`conductor`, `worker`, `subagent`) in the repo vocabulary `bypass`, `auto`, `ask`, `inherit`; the posture is ADR-0024, the per-harness flags are the user skill's machine setup §3; the conductor verifies the worker's mode at readiness |
 | `model_overrides` | read by path | each entry (`topics`, `tier`, `model`, `effort`) replaces a tier default for a brief whose topics match |
-| `message_verb`, `terminal_verb` | `{{MESSAGE_VERB}}`, `{{TERMINAL_VERB}}` | the session-to-session verb and the raw-input verb; `/agent-orchestration` writes the literal verbs and does not read these keys, which stay for older copies |
-| `orchestrator_skills` | read by path | the vendor guides; `/agent-orchestration` loads them by name and does not read this key |
 
 These are defaults, not policy: an explicit user instruction in the conductor session wins for that
 run. A wave is a tracker-status bucket and exists only in `sprint-testing`; rounds are numbered

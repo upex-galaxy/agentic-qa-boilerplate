@@ -277,7 +277,7 @@ export const RETIRED_COMMAND_WRAPPERS: DeprecatedFile[] = [
 // also removes the folders it empties, because a skill folder with no SKILL.md
 // fails skills:check.
 const RENAMED_SKILL_REASON = 'skill renamed to test-framework-adaptation (same workflow, new name)';
-const MOVED_ORCHESTRATION_REASON = 'skill renamed to the user-level agent-orchestration (bun setup installs it); orca-orchestration keeps only its SKILL.md stub, and the repo parts live in agentic-qa-core/references/fleet-*.md';
+const RETIRED_ORCHESTRATION_REASON = 'skill renamed to the user-level agent-orchestration (bun setup installs it); orca-orchestration keeps only its SKILL.md stub, and the repo parts live in agentic-qa-core/references/fleet-*.md';
 const RETIRED_SYNC_REASON = 'skill retired: bun run docs:check gates the skill router and quoted scripts; framework-development and test-framework-adaptation close the docs';
 export const RETIRED_SKILL_FILES: DeprecatedFile[] = [
   ...[
@@ -288,35 +288,37 @@ export const RETIRED_SKILL_FILES: DeprecatedFile[] = [
     '.agents/skills/sync-ai-context/SKILL.md',
     '.agents/skills/sync-ai-context/references/sync.md',
   ].map(path => ({ path, component: 'skills', reason: RETIRED_SYNC_REASON, deprecatedSince: '8.5' })),
-  ...[
-    'evals/evals.json',
-    'references/automations.md',
-    'references/brief-template.md',
-    'references/channel-discipline.md',
-    'references/claims-protocol.md',
-    'references/coordinator-playbook.md',
-    'references/gotchas.md',
-    'references/html-surfaces.md',
-    'references/launch-seam.md',
-    'references/orca-machine-setup.md',
-    'references/provisioning.md',
-    'references/session-identity.md',
-    'references/standby-report-contract.md',
-    'references/topologies.md',
-    'references/worker-contract.md',
-    'templates/COMMON.md',
-    'templates/launch.txt',
-    'templates/roster.md',
-    'templates/run.md',
-    'templates/W-brief.md',
-  ].map(rel => ({ path: `.agents/skills/orca-orchestration/${rel}`, component: 'skills', reason: MOVED_ORCHESTRATION_REASON, deprecatedSince: '2026-11-18', backup: true })),
 ];
+
+// Backed up first: `cleanupDeprecated` deletes a retired file even when the project edited it.
+export const RETIRED_ORCHESTRATION_FILES: DeprecatedFile[] = [
+  'evals/evals.json',
+  'references/automations.md',
+  'references/brief-template.md',
+  'references/channel-discipline.md',
+  'references/claims-protocol.md',
+  'references/coordinator-playbook.md',
+  'references/gotchas.md',
+  'references/html-surfaces.md',
+  'references/launch-seam.md',
+  'references/orca-machine-setup.md',
+  'references/provisioning.md',
+  'references/session-identity.md',
+  'references/standby-report-contract.md',
+  'references/topologies.md',
+  'references/worker-contract.md',
+  'templates/COMMON.md',
+  'templates/launch.txt',
+  'templates/roster.md',
+  'templates/run.md',
+  'templates/W-brief.md',
+].map(rel => ({ path: `.agents/skills/orca-orchestration/${rel}`, component: 'skills', reason: RETIRED_ORCHESTRATION_REASON, deprecatedSince: '2026-11-18', backup: true }));
 
 // The instruction sections once carried a number (`80-git.md`): the renamed
 // files arrive through the `instructions` component, the numbered copies leave
 // here, each saved to `.backups/` first because a project may have kept a merge
 // in one (`updater.protected_paths`).
-export const DEPRECATED_FILES: DeprecatedFile[] = [...RETIRED_COMMAND_WRAPPERS, ...RETIRED_SKILL_FILES, ...RETIRED_SECTION_FILES];
+export const DEPRECATED_FILES: DeprecatedFile[] = [...RETIRED_COMMAND_WRAPPERS, ...RETIRED_SKILL_FILES, ...RETIRED_ORCHESTRATION_FILES, ...RETIRED_SECTION_FILES];
 
 export const COMPONENTS: Component[] = [
   // `skills` stays its own component (not folded into `agent-compatibility` as

@@ -153,9 +153,6 @@ orchestration:
       effort: high
   orchestrator_name: Orca
   orchestrator_cli: orca
-  message_verb: orca orchestration
-  terminal_verb: orca terminal
-  orchestrator_skills: [orca-cli, orchestration]
 
 updater:
   protected_paths: []

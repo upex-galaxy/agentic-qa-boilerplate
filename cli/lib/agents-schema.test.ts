@@ -677,7 +677,7 @@ describe('changedDefaults', () => {
     '    pair_mode: null # asked once',
     'orchestration:',
     '  max_workers: 4 # doc',
-    '  orchestrator_skills: [orca-cli, orchestration] # doc',
+    '  default_agent: claude # doc',
     'git_strategy:',
     '  policy:',
     '    direct_push_to_protected: confirm # doc',
@@ -687,12 +687,12 @@ describe('changedDefaults', () => {
   ].join('\n');
 
   test('a methodology value the project changed is listed with both values', () => {
-    const project = upstream.replace('max_workers: 4', 'max_workers: 6').replace('[orca-cli, orchestration]', '[]');
+    const project = upstream.replace('max_workers: 4', 'max_workers: 6').replace('default_agent: claude', 'default_agent: codex');
     const { changed, error } = changedDefaults(project, upstream);
     expect(error).toBeNull();
     expect(changed.map(describeChangedDefault)).toEqual([
       'orchestration.max_workers: yours 6, upstream default 4',
-      'orchestration.orchestrator_skills: yours [], upstream default [orca-cli, orchestration]',
+      'orchestration.default_agent: yours codex, upstream default claude',
     ]);
   });
 
@@ -714,7 +714,7 @@ describe('changedDefaults', () => {
       '  schema_exempt: [board]',
       '',
     ].join('\n');
-    // tc_creation_stage is missing (a gap, not a change); orchestrator_skills too.
+    // tc_creation_stage is missing (a gap, not a change); default_agent too.
     expect(changedDefaults(project, upstream).changed).toEqual([]);
   });
 
