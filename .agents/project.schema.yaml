@@ -339,9 +339,10 @@ updater:
   # by the updater (`readDeclinedHooks` in cli/lib/updater-settings.ts), skipped by vars:check.
   declined_hooks: [] # e.g. ['node "$CLAUDE_PROJECT_DIR/.agents/hooks/doc-contracts.mjs"']
 
-# How this project scopes three gates. Absent or empty = every gate behaves exactly as
-# shipped. A malformed value fails the gate that owns the key, naming the key. Read
-# directly by cli/lib/check-scope.ts (not a {{VAR}} token) -> skipped by vars:check.
+# How this project scopes its gates. Absent or empty = every gate behaves exactly as
+# shipped. A malformed value fails the gate that owns the key, naming the key (hooks.scope
+# warns and runs every gate). Read directly by cli/lib/check-scope.ts and, for hooks, by
+# .husky/framework-gates.sh (not a {{VAR}} token) -> skipped by vars:check.
 # The boilerplate itself keeps the defaults.
 checks:
   # agents:compat:check MCP parity (cli/lib/agent-compatibility-contracts.ts).
@@ -380,6 +381,18 @@ checks:
     # id is still warned, as unverified (an unknown id fails only where .mcp.json exists).
     # An empty list is the same as leaving the host out.
     unrelayed: {} # e.g. { pi: [instance-n8n-mcp] }
+  # The git-hook gates (.husky/framework-gates.sh).
+  hooks:
+    # full: every commit runs types:check, vars:check and skills:check, and every push
+    # runs the whole pre-push chain, as before this key existed.
+    # staged: each of those gates runs only when the staged files (commit) or the files of
+    # the push range (from the refs git hands pre-push) touch its inputs; the tooling,
+    # .agents/, package.json, the lockfile and .gitignore count for every gate, so a
+    # content-only change (docs or app content) skips them and the hook names what it
+    # skipped. A push with no readable refs, or a git error, runs everything. The gates
+    # that already run on matching paths only are unchanged. An unknown value warns and
+    # runs everything. Read by the hook itself (block form, or one-line flow form).
+    scope: full # full | staged
   # vars:check (scripts/lint-vars.ts).
   vars_check:
     # Repo-relative globs of project-owned folders that use their own {{...}} syntax

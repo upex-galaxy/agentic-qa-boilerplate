@@ -24,13 +24,182 @@
 # note in `framework_gates_pre_push`), no project-specific paths, POSIX sh only.
 # Adding a gate here is how it reaches every downstream repo on the next sync.
 
+# SCOPE KNOB. `checks.hooks.scope` in `.agents/project.yaml` (documented in
+# `.agents/project.schema.yaml`): `full`, the default, runs every gate below as
+# it always has; `staged` runs each always-on gate only when the staged files
+# (pre-commit) or the push range (pre-push) touch its inputs, and names what it
+# skipped. Read with awk, never a `bun` process, so `full` makes exactly the
+# calls it made before the knob existed. Anything unreadable means `full`.
+_fg_scope_value() {
+  [ -f .agents/project.yaml ] || return 0
+  awk '
+    { sub(/\r$/, "") }
+    /^[^[:space:]#]/ { inchecks = ($0 ~ /^checks:[[:space:]]*(#.*)?$/); inhooks = 0; cind = -1; next }
+    !inchecks { next }
+    /^[[:space:]]*(#.*)?$/ { next }
+    { match($0, /^[[:space:]]*/); ind = RLENGTH }
+    cind < 0 { cind = ind }
+    ind == cind {
+      inhooks = 0
+      if ($0 ~ /^[[:space:]]*hooks:[[:space:]]*\{/) {
+        v = $0
+        if (match(v, /scope:[[:space:]]*[^,}#[:space:]]+/)) { v = substr(v, RSTART, RLENGTH); sub(/scope:[[:space:]]*/, "", v); gsub(/["\047]/, "", v); print v; exit }
+        next
+      }
+      if ($0 ~ /^[[:space:]]*hooks:[[:space:]]*(#.*)?$/) { inhooks = 1; hind = -1 }
+      next
+    }
+    inhooks && ind > cind {
+      if (hind < 0) { hind = ind }
+      if (ind == hind && $0 ~ /^[[:space:]]*scope:/) {
+        v = $0; sub(/^[[:space:]]*scope:[[:space:]]*/, "", v); sub(/[[:space:]]+#.*$/, "", v); sub(/[[:space:]]+$/, "", v); gsub(/["\047]/, "", v)
+        print v; exit
+      }
+    }
+  ' .agents/project.yaml
+}
+
+# Sets `_fg_mode` (full|staged). An unknown value warns and runs every gate.
+_fg_resolve_scope() {
+  _fg_mode=full
+  _fg_skipped=
+  _fg_value=$(_fg_scope_value 2>/dev/null) || _fg_value=
+  case "$_fg_value" in
+    ''|full) ;;
+    staged) _fg_mode=staged ;;
+    *) echo "⚠️  checks.hooks.scope in .agents/project.yaml is \"$_fg_value\", not full or staged: every gate runs (full)." ;;
+  esac
+}
+
+# What every gate reads besides its own files: the tooling, its config and the
+# install. A change outside this set and each gate's own inputs is content.
+_FG_COMMON='^(cli/|scripts/|\.agents/|\.template/)|^(AGENTS\.md|CLAUDE\.md|\.gitignore|package\.json|bun\.lockb?)$'
+
+# _fg_touches <ERE>: true in `full`; in `staged`, true when a file of the set
+# matches the common inputs or <ERE>.
+_fg_touches() {
+  [ "$_fg_mode" = staged ] || return 0
+  printf '%s\n' "$_fg_files" | grep -qE "$_FG_COMMON|$1"
+}
+
+# _fg_gate <name> <ERE> <command...>: run the command, or record it as skipped.
+# The command's status is the function's, so it works inside an `&&` chain.
+_fg_gate() {
+  _fg_name=$1
+  _fg_re=$2
+  shift 2
+  if _fg_touches "$_fg_re"; then
+    "$@"
+    return
+  fi
+  _fg_skipped="${_fg_skipped:+$_fg_skipped, }$_fg_name"
+  return 0
+}
+
+# A deletion can break a link or a cited path anywhere, so it counts for the
+# gates that check those (`skills:check`, `docs:check`).
+_fg_deleted_or() {
+  if [ "$_fg_mode" = staged ] && [ -n "$_fg_deleted" ]; then
+    printf '%s' '.'
+  else
+    printf '%s' "$1"
+  fi
+}
+
+_fg_report_skipped() {
+  if [ -n "$_fg_skipped" ]; then
+    echo "ℹ️  checks.hooks.scope: staged. Skipped (no $1 touches their inputs): $_fg_skipped."
+  fi
+  return 0
+}
+
+_FG_TYPES='\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|json)$'
+_FG_LINT='\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|json|jsonc|json5|ya?ml|toml)$|(^|/)eslint\.config'
+_FG_KATA='^tests/components/|^kata-manifest\.json$'
+
+_FG_VARS='^\.context/'
+_FG_SKILLS='^\.context/|^(tests|api)/'
+_FG_FORMAT='\.(json|ya?ml|css|scss|html)$|(^|/)\.prettier'
+_FG_ENV='^\.env\.example$|^\.env[^/]*\.schema$'
+_FG_DOCS='\.(md|mdx|html)$'
+# The cross-harness contract, shared by the pre-commit gate and the pre-push one.
+_FG_COMPAT='^(\.agents/hooks/|\.claude/commands/|\.opencode/commands/|\.opencode/plugins/|\.codex/|\.claude/settings\.json$|\.mcp\.json$|opencode\.jsonc$|\.pi/mcp\.json$|\.pi/extensions/agentic-qa\.js$|cli/lib/agent-compatibility.*\.ts$|scripts/agent-compatibility.*\.ts$)'
+_FG_ZERO_OID='^0+$'
+
+# The files of the push range, from the refs git writes on the hook's stdin.
+# It reads stdin here, in the function body: inside `$(...)` the caller's stdin
+# would be lost. The same lines are handed back as stdin, so a project gate
+# after `framework_gates_pre_push` can still read them. No refs (a terminal, an
+# empty stdin, a caller that already read it) or any git failure means `full`.
+_fg_push_range() {
+  _fg_files=
+  _fg_deleted=
+  _fg_refs=
+  if [ -t 0 ]; then
+    _fg_mode=full
+    return 0
+  fi
+  while IFS= read -r _fg_line || [ -n "$_fg_line" ]; do
+    [ -n "$_fg_line" ] && _fg_refs="${_fg_refs:+$_fg_refs
+}$_fg_line"
+  done
+  if [ -z "$_fg_refs" ]; then
+    _fg_mode=full
+    return 0
+  fi
+  exec 0<<_FG_REFS_EOF
+$_fg_refs
+_FG_REFS_EOF
+  set -f
+  _fg_ifs=$IFS
+  IFS='
+'
+  for _fg_line in $_fg_refs; do
+    IFS=' '
+    # shellcheck disable=SC2086
+    set -- $_fg_line
+    IFS='
+'
+    if [ "$#" -lt 4 ] || printf '%s\n' "$2" | grep -qE "$_FG_ZERO_OID"; then continue; fi
+    if ! printf '%s\n' "$4" | grep -qE "$_FG_ZERO_OID" && git cat-file -e "$4^{commit}" 2>/dev/null; then
+      _fg_out=$(git diff --name-only --no-renames "$4" "$2") \
+        && _fg_del=$(git diff --name-only --no-renames --diff-filter=D "$4" "$2") \
+        || { _fg_mode=full; break; }
+    else
+      _fg_out=$(git log -m --format= --name-only --no-renames "$2" --not --remotes) \
+        && _fg_del=$(git log -m --format= --name-only --no-renames --diff-filter=D "$2" --not --remotes) \
+        || { _fg_mode=full; break; }
+    fi
+    _fg_files="${_fg_files:+$_fg_files
+}$_fg_out"
+    _fg_deleted="$_fg_deleted$_fg_del"
+  done
+  IFS=$_fg_ifs
+  set +f
+  return 0
+}
+
+_fg_vars_env_check() {
+  VARS_ENV_CHECK_DRIFT=warn bun run vars:env:check
+}
+
 # Gates that run on EVERY commit. Fast, full-repo, plus the freshness checks
 # that only matter when the staged set touches what they guard.
 framework_gates_pre_commit() {
-  # Light-weight repo health checks on every commit (fast, cover full repo).
-  bun run types:check
-  bun run vars:check
-  bun run skills:check
+  _fg_resolve_scope
+  if [ "$_fg_mode" = staged ]; then
+    # No renames: a moved file counts at its old path too.
+    _fg_files=$(git diff --cached --name-only --no-renames --diff-filter=ACMRD) \
+      && _fg_deleted=$(git diff --cached --name-only --no-renames --diff-filter=D) \
+      || _fg_mode=full
+  fi
+
+  # Light-weight repo health checks (fast, cover full repo): on every commit,
+  # or with `checks.hooks.scope: staged` only when the staged set touches them.
+  _fg_gate types:check "$_FG_TYPES" bun run types:check
+  _fg_gate vars:check "$_FG_VARS" bun run vars:check
+  _fg_gate skills:check "$(_fg_deleted_or "$_FG_SKILLS")" bun run skills:check
+  _fg_report_skipped "staged file"
 
   _fg_staged=$(git diff --cached --name-only --diff-filter=ACMRD)
 
@@ -98,7 +267,7 @@ framework_gates_pre_commit() {
   # skill, the hook adapters and MCP parity across the host configs.
   # Everything it guards is generated or mirrored, so a hand-edit is invisible to
   # every other check.
-  if echo "$_fg_staged" | grep -qE '^(\.agents/hooks/|\.claude/commands/|\.opencode/commands/|\.opencode/plugins/|\.codex/|\.claude/settings\.json$|\.mcp\.json$|opencode\.jsonc$|\.pi/mcp\.json$|\.pi/extensions/agentic-qa\.js$|cli/lib/agent-compatibility.*\.ts$|scripts/agent-compatibility.*\.ts$)'; then
+  if echo "$_fg_staged" | grep -qE "$_FG_COMPAT"; then
     bun run agents:compat:check || {
       echo ""
       echo "❌ Cross-harness compatibility is out of contract. Fix:"
@@ -122,7 +291,10 @@ framework_gates_pre_commit() {
 #     vars:schema:check, skills:registry:check, agents:compat:check), each only
 #     when the staged files affect what it guards
 #   + the documentation-contract reminder, warn-only.
-# pre-push adds the full-repo checks pre-commit skips for speed:
+# pre-push adds the full-repo checks pre-commit skips for speed. With
+# `checks.hooks.scope: staged` each one below runs only when the push range
+# touches its inputs (SCOPE KNOB above); the doc contracts and the git policy
+# check always run:
 #   - format:check / lint:check  full repo (lint-staged only touches staged files at commit)
 #   - vars:env:check             not run at commit time. Runs with
 #                                VARS_ENV_CHECK_DRIFT=warn: the manifest/.env.example parity
@@ -179,16 +351,20 @@ framework_gates_pre_commit() {
 # sync phase. The full suite (incl. types/vars/skills) lives in `repo:check` for
 # CI / manual runs.
 framework_gates_pre_push() {
-  bun run format:check \
-    && bun run lint:check \
-    && VARS_ENV_CHECK_DRIFT=warn bun run vars:env:check \
-    && bun run skills:registry:check \
-    && bun run kata:manifest:check \
-    && bun run agents:compat:check \
-    && framework_gate_docs_check \
+  _fg_resolve_scope
+  if [ "$_fg_mode" = staged ]; then _fg_push_range; fi
+  # `git:policy verify` reads the host, not the range: it always runs.
+  _fg_gate format:check "$_FG_FORMAT" bun run format:check \
+    && _fg_gate lint:check "$_FG_LINT" bun run lint:check \
+    && _fg_gate vars:env:check "$_FG_ENV" _fg_vars_env_check \
+    && _fg_gate skills:registry:check '^\.agents/skills/' bun run skills:registry:check \
+    && _fg_gate kata:manifest:check "$_FG_KATA" bun run kata:manifest:check \
+    && _fg_gate agents:compat:check "$_FG_COMPAT" bun run agents:compat:check \
+    && _fg_gate docs:check "$(_fg_deleted_or "$_FG_DOCS")" framework_gate_docs_check \
     && framework_gate_doc_contracts --push \
     && bun run git:policy verify \
-    && framework_gate_varlock_warn
+    && _fg_gate varlock "$_FG_ENV" framework_gate_varlock_warn \
+    && _fg_report_skipped "file in the push range"
 }
 
 # Gate that runs on the COMMIT MESSAGE (`.husky/commit-msg`, which passes the

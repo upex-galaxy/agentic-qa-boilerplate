@@ -16,6 +16,9 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Added (hook gates follow their inputs)
+- **`checks.hooks.scope: full | staged`** in `.agents/project.yaml` (default `full`, byte for byte as before). With `staged`, `.husky/framework-gates.sh` runs `types:check`, `vars:check` and `skills:check` only when the staged files touch their inputs, and each pre-push gate only when the files of the push range do (the range comes from the refs git writes on stdin, which the hook hands back to any later project gate). The tooling, `.agents/`, `package.json`, the lockfile and `.gitignore` count for every gate, so a content-only change skips them and the hook names what it skipped. `git:policy verify` reads the host and always runs. No readable refs or a git error runs everything; an unknown value warns and runs everything. Shared with the Dev boilerplate.
+
 ### Added (MCP parity records what a relay cannot carry)
 - **`checks.mcp_parity.unrelayed: { <host>: [<server ids>] }`** records the canonical servers a relay host cannot carry (an http server, one disabled in the canonical file, or one that takes a value from the host, which the launcher does not expand). Each one is left out of the set comparison and warned by name on every run. An unknown id, an id the relay host declares, a relayable stdio server, or a host without a relay fails and names the key. With `.mcp.json` absent (CI) an id is warned as unverified. Shared with the Dev boilerplate.
 
