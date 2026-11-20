@@ -462,6 +462,7 @@ export const TEMPLATE_EXCLUDES = [
   'cli/lib/sprint-source/fixtures/recorded',
   'cli/sprint-board/fixtures',
   'cli/sprint-board/test-fixtures.ts',
+  'scripts/lib/heavy-e2e.ts',
   'scripts/lib/ui-up-transcript.ts',
   'scripts/ui-record-up.ts',
   'scripts/ui-replay.ts',

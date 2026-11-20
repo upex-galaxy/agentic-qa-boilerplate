@@ -3,6 +3,7 @@
  * delivery 3, plan §12): the page answered over its real HTTP contract, and
  * `--headless` with nobody to answer. Network and user-level steps are switched
  * off (`fixtureEnv`), so the run touches nothing outside its temp directory.
+ * Runs only in CI or with `HEAVY_E2E=1`.
  */
 
 import type { JournalEntry } from '../cli/lib/ui/events.ts';
@@ -15,6 +16,7 @@ import { join } from 'node:path';
 
 import { afterAll, describe, expect, test } from 'bun:test';
 
+import { HEAVY_E2E } from './lib/heavy-e2e.ts';
 import { buildSetupFixture, fixtureEnv } from './ui-setup-fixture.ts';
 
 const SECRET = 'atl-fixture-token-7c1e-not-real';
@@ -94,9 +96,9 @@ const ANSWERS: Record<string, unknown> = {
 // Every fixture of this file sits under one temp root, removed in afterAll
 // (it fires whether the tests passed or failed): left behind, each run kept
 // tens of MB in the temp dir.
-const root = mkdtempSync(join(tmpdir(), 'ui-setup-e2e-'));
+const root = HEAVY_E2E ? mkdtempSync(join(tmpdir(), 'ui-setup-e2e-')) : '';
 
-describe('bun setup on a throwaway project', () => {
+describe.if(HEAVY_E2E)('bun setup on a throwaway project', () => {
   afterAll(() => { rmSync(root, { recursive: true, force: true }); });
 
   test('the page: every question answered in it, phases in order, yaml and .env written, no secret anywhere but .env', async () => {
@@ -174,6 +176,6 @@ describe('bun setup on a throwaway project', () => {
 });
 
 // Declared after the describe on purpose: it runs once that afterAll has fired.
-test('the fixture projects leave nothing behind in the temp dir', () => {
+test.if(HEAVY_E2E)('the fixture projects leave nothing behind in the temp dir', () => {
   expect(existsSync(root)).toBe(false);
 });

@@ -4,8 +4,9 @@
  * flow without the flag (headless parity), and `--auto` read-only in the page.
  *
  * The fixture is a local clone of this repo (`scripts/ui-up-fixture.ts`), so no
- * gh session and no network are needed. Skipped on a history too short for it
- * (a shallow clone); `unit-tests.yml` checks out the full history so it runs in CI.
+ * gh session and no network are needed. Runs only in CI or with `HEAVY_E2E=1`
+ * (about 412 MB of clones a run), and skips on a history too short for it (a
+ * shallow clone); `unit-tests.yml` checks out the full history.
  * The fixture clones the COMMITTED HEAD: a working-tree change to the updater
  * only shows here after a commit.
  */
@@ -21,13 +22,14 @@ import { join, resolve } from 'node:path';
 import { afterAll, describe, expect, test } from 'bun:test';
 
 import { contractsEnforced } from './lib/doc-contracts.ts';
+import { HEAVY_E2E } from './lib/heavy-e2e.ts';
 import { buildUpFixture } from './ui-up-fixture.ts';
 
 const REPO = resolve(import.meta.dir, '..');
 // The fixture rolls THIS repo back 30 commits and syncs it forward from itself:
 // it needs that much history, and it means something only in the boilerplate's
 // own checkout (a scaffolded project is not an upstream of anything).
-const deep = contractsEnforced(REPO) && spawnSync('git', ['-C', REPO, 'rev-parse', '--verify', '-q', 'HEAD~30']).status === 0;
+const deep = HEAVY_E2E && contractsEnforced(REPO) && spawnSync('git', ['-C', REPO, 'rev-parse', '--verify', '-q', 'HEAD~30']).status === 0;
 // Built at runtime so this file never holds the literal: the fixture syncs
 // `scripts/`, and a hunk of this very file in the summary would read as a leak.
 const SECRET = ['fixture', 'secret', 'value-9f3a'].join('-');
