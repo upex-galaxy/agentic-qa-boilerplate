@@ -1282,6 +1282,30 @@ export interface InsertionPlan {
   error: string | null
 }
 
+interface PlannedBlock { block: string, topLevel: boolean }
+
+/**
+ * The text spliced in between `before` and `after`. A top-level block is
+ * separated from its neighbours by exactly one blank line, the way every
+ * hand-formatted section of the file reads: none is added where one already
+ * is (CRLF counts), and a file without a final newline gets that newline
+ * first. Nested blocks never get one, and go first so a top-level block placed
+ * at the same offset cannot adopt them.
+ */
+function joinAtOffset(before: string, after: string, blocks: readonly PlannedBlock[]): string {
+  const ordered = [...blocks.filter(b => !b.topLevel), ...blocks.filter(b => b.topLevel)];
+  const endsBlank = (t: string): boolean => t.replace(/\r/g, '').endsWith('\n\n');
+  let text = before.length > 0 && !before.endsWith('\n') ? '\n' : '';
+  let seen = before + text;
+  for (const { block, topLevel } of ordered) {
+    const gap = topLevel && /\S/.test(seen) && !endsBlank(seen) ? '\n' : '';
+    text += gap + block;
+    seen += gap + block;
+  }
+  if (ordered.at(-1)?.topLevel === true && /\S/.test(after) && !/^\r?\n/.test(after)) { text += '\n'; }
+  return text;
+}
+
 /**
  * Where a new key goes, and the text that goes there.
  *
@@ -1313,7 +1337,7 @@ export function planInsertions(
   const edits: SpliceEdit[] = [];
   const inserted: string[] = [];
   const skipped: Array<{ path: string, reason: string }> = [];
-  const anchors = new Map<number, string[]>();
+  const anchors = new Map<number, PlannedBlock[]>();
 
   // The diff reports LEAVES. A leaf whose parent container is missing too
   // (`testing.browser.pair_mode` in a project that has `testing:` but no
@@ -1365,24 +1389,21 @@ export function planInsertions(
       }
     }
 
-    // A top-level block is separated from its neighbour by a blank line in
-    // every hand-formatted section of this file. Insert one when the anchor
-    // does not already end in one, or the sections stop reading as sections.
-    if (!target.includes('.') && offset > 1 && !projectText.slice(0, offset).endsWith('\n\n')) {
-      block = `\n${block}`;
-    }
+    if (!block.endsWith('\n')) { block = `${block}\n`; }
+    // A top-level block whose anchor is followed only by blank lines goes
+    // after them: at the true end, the file keeps one blank line and none trails.
+    if (!target.includes('.') && !/\S/.test(projectText.slice(offset))) { offset = projectText.length; }
 
     // Several keys anchored to the same spot keep the schema's order, and one
     // splice carries them all: two edits at the same offset would overlap.
     const bucket = anchors.get(offset) ?? [];
-    bucket.push(offset === projectText.length && !projectText.endsWith('\n') ? `\n${block}` : block);
+    bucket.push({ block, topLevel: !target.includes('.') });
     anchors.set(offset, bucket);
     inserted.push(target);
   }
 
   for (const [offset, blocks] of anchors) {
-    const isAppend = offset === projectText.length;
-    edits.push({ range: [offset, offset], text: isAppend ? `\n${blocks.join('')}` : blocks.join('') });
+    edits.push({ range: [offset, offset], text: joinAtOffset(projectText.slice(0, offset), projectText.slice(offset), blocks) });
   }
 
   return { edits, inserted, skipped, error: null };
@@ -1422,6 +1443,8 @@ export function applyInsertions(projectText: string, plan: InsertionPlan): { tex
       return { text: projectText, error: `the insertion changed the existing value at \`${path}\`` };
     }
   }
+  const misplaced = plan.inserted.find(p => !after.entries.has(p));
+  if (misplaced) { return { text: projectText, error: `the inserted key \`${misplaced}\` did not land at its path` }; }
   return { text: next, error: null };
 }
 

@@ -936,3 +936,64 @@ describe('schemaKeyPaths', () => {
     expect(schemaKeyPaths(SAMPLE)!.get('top.nested')).toBe(false);
   });
 });
+
+// Live finding (2026-11-20, a downstream sync): the `checks:` block landed after
+// TWO blank lines, which fails `style/no-multiple-empty-lines` in the project.
+describe('insertion at the end of the file keeps exactly one blank line', () => {
+  const schema = 'kept:\n  a: 1\n\nchecks:\n  hooks:\n    scope: full\n\nlast:\n  b: 2\n';
+  const insert = (project: string, paths: string[]): string => {
+    const { text, error } = applyInsertions(project, planInsertions(project, schema, paths));
+    expect(error).toBeNull();
+    return text;
+  };
+  const CHECKS = 'checks:\n  hooks:\n    scope: full\n';
+
+  test('a file ending with a newline gets one blank line, never two', () => {
+    expect(insert('kept:\n  a: 9\n', ['checks.hooks.scope'])).toBe(`kept:\n  a: 9\n\n${CHECKS}`);
+  });
+
+  test('a file without a final newline gets the newline, then one blank line', () => {
+    expect(insert('kept:\n  a: 9', ['checks.hooks.scope'])).toBe(`kept:\n  a: 9\n\n${CHECKS}`);
+  });
+
+  test('a file already ending with a blank line gets none added, and none trails', () => {
+    expect(insert('kept:\n  a: 9\n\n', ['checks.hooks.scope'])).toBe(`kept:\n  a: 9\n\n${CHECKS}`);
+    expect(insert('kept:\n  a: 9\r\n\r\n', ['checks.hooks.scope'])).toBe(`kept:\n  a: 9\r\n\r\n${CHECKS}`);
+  });
+
+  test('a second run is a no-op, and a later block still gets exactly one blank line', () => {
+    const missing = (text: string): string[] => projectDelta(text, schema).gaps.flatMap(g => g.paths).filter(p => p.startsWith('checks.'));
+    const once = insert('kept:\n  a: 9\n', ['checks.hooks.scope']);
+    expect(missing(once)).toEqual([]);
+    expect(insert(once, missing(once))).toBe(once);
+    expect(insert(once, ['last.b'])).toBe(`${once}\nlast:\n  b: 2\n`);
+  });
+
+  test('two top-level blocks placed at the same end are each separated by one blank line', () => {
+    expect(insert('kept:\n  a: 9\n', ['checks.hooks.scope', 'last.b'])).toBe(`kept:\n  a: 9\n\n${CHECKS}\nlast:\n  b: 2\n`);
+  });
+
+  test('a block whose anchor swallowed the blank line still gets one on each side', () => {
+    expect(insert('kept:\n  a: 9\n  # note\nlast:\n  b: 3\n', ['checks.hooks.scope'])).toBe(`kept:\n  a: 9\n  # note\n\n${CHECKS}\nlast:\n  b: 3\n`);
+  });
+
+  test('a nested key and a top-level block at the same end keep their parents', () => {
+    const nested = 'first:\n  f: 1\nenv:\n  local:\n    u: 1\n  staging:\n    u: 2\n';
+    const project = 'env:\n  local:\n    u: 9\n';
+    const { text, error } = applyInsertions(project, planInsertions(project, nested, ['first', 'env.staging']));
+    expect(error).toBeNull();
+    expect(text).toBe('env:\n  local:\n    u: 9\n  staging:\n    u: 2\n\nfirst:\n  f: 1\n');
+  });
+
+  test('an inserted key that lands under the wrong parent is refused', () => {
+    const project = 'env:\n  local:\n    u: 9\n';
+    const plan = { edits: [{ range: [project.length, project.length] as [number, number], text: '\nfirst:\n  f: 1\n  staging:\n    u: 2\n' }], inserted: ['first', 'env.staging'], skipped: [], error: null };
+    expect(applyInsertions(project, plan)).toEqual({ text: project, error: 'the inserted key `env.staging` did not land at its path' });
+  });
+
+  test('a nested key at the end of the file gets no blank line', () => {
+    const nested = 'env:\n  local:\n    u: 1\n  staging:\n    u: 2\n';
+    expect(applyInsertions('env:\n  local:\n    u: 9\n', planInsertions('env:\n  local:\n    u: 9\n', nested, ['env.staging.u'])).text).toBe('env:\n  local:\n    u: 9\n  staging:\n    u: 2\n');
+    expect(applyInsertions('env:\n  local:\n    u: 9', planInsertions('env:\n  local:\n    u: 9', nested, ['env.staging.u'])).text).toBe('env:\n  local:\n    u: 9\n  staging:\n    u: 2\n');
+  });
+});

@@ -1730,10 +1730,16 @@ function makeParityHook(sink: ReportSink, priorLockSha: string, dryRun: boolean,
     }
 
     const lock = readLock(cwd);
-    const heldBack: HeldBackComponent[] = summary.componentsHeldBack.map(component => ({
-      component,
-      lockCommit: lock.perComponentCommit[component] ?? null,
-    }));
+    const heldBack: HeldBackComponent[] = summary.componentsHeldBack.map((component) => {
+      const skippedHere = summary.skipped.filter(e => e.component === component);
+      return {
+        component,
+        lockCommit: lock.perComponentCommit[component] ?? null,
+        deletions: skippedHere.filter(e => e.classification === 'deleted-upstream').map(e => e.path),
+        skipped: skippedHere.filter(e => e.classification !== 'deleted-upstream').map(e => e.path),
+        failed: summary.failed.filter(f => f.entry.component === component).map(f => f.entry.path),
+      };
+    });
     // Archived skills nudge once too: this run's (the migration result, also
     // handed to the re-exec child) plus any archive entry never reported.
     const archivedSkillsDir = path.join(cwd, MIGRATION_BACKUP_DIR, 'skills');
@@ -1785,6 +1791,7 @@ function makeParityHook(sink: ReportSink, priorLockSha: string, dryRun: boolean,
       doctrineDebt: runFacts.doctrineDebt,
       doctrineFile: DOCTRINE_FILE,
       instructionRows: runFacts.instructionRows,
+      keptDeletions: (summary.keptDeletions ?? []).map(k => ({ path: k.path, reason: k.reason })),
       localEdits: (summary.localEditsOverwritten ?? []).map(edit => ({
         ...edit,
         backupPath: summary.backupDir ? path.join(summary.backupDir, edit.path) : null,

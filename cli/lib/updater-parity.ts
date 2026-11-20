@@ -151,6 +151,35 @@ export interface ParityDriftInput {
 export interface HeldBackComponent {
   component: string
   lockCommit: string | null
+  /** Upstream deletions of unedited copies left unconfirmed (`--auto`, a skipped scope or an unselected file). */
+  deletions?: string[]
+  /** Other entries skipped this run (an unselected file, a declined two-sided change). */
+  skipped?: string[]
+  /** Entries whose write failed. */
+  failed?: string[]
+}
+
+/** An upstream deletion settled by keeping the file (`RunSummary.keptDeletions`). */
+export interface KeptDeletionInput {
+  path: string
+  reason: 'answered' | 'edited'
+}
+
+function listPaths(label: string, paths: readonly string[] | undefined): string | null {
+  if (!paths || paths.length === 0) { return null; }
+  const shown = paths.slice(0, 3).join(', ');
+  return `${paths.length} ${label}: ${shown}${paths.length > 3 ? ` +${paths.length - 3} more` : ''}`;
+}
+
+/** `agent-compatibility@d6da55a (1 upstream deletion awaiting confirmation: <path>)`. */
+function describeHeldBack(h: HeldBackComponent): string {
+  const at = `${h.component}@${h.lockCommit ? h.lockCommit.slice(0, 7) : 'no lock'}`;
+  const why = [
+    listPaths('upstream deletion(s) awaiting confirmation', h.deletions),
+    listPaths('skipped', h.skipped),
+    listPaths('failed', h.failed),
+  ].filter((p): p is string => p !== null);
+  return why.length > 0 ? `${at} (${why.join('; ')})` : at;
 }
 
 export interface ParityInput {
@@ -193,6 +222,8 @@ export interface ParityInput {
   instructionRows?: InstructionRowInput[]
   /** Project-edited synced files this run overwrote. */
   localEdits?: LocalEditInput[]
+  /** Upstream deletions settled this run by keeping the file. */
+  keptDeletions?: KeptDeletionInput[]
   /** `package.json` keys kept at the project's value while upstream differs. */
   packageJsonKept?: PackageJsonKeptInput[]
   /** `package.json` keys appended this run (planned, on a dry-run): a script whose target file is absent becomes a row. */
@@ -1784,13 +1815,26 @@ export function collectParityFindings(input: ParityInput): ParityFinding[] {
     });
   }
 
-  // 5. Components held back this run, with the lock cursor each one stays at.
+  // 5. Components held back this run, with the lock cursor each one stays at
+  //    and the entries that keep it there.
   if (input.heldBack.length > 0) {
+    const anyDeletion = input.heldBack.some(h => (h.deletions ?? []).length > 0);
     findings.push({
       surface: 'components',
       path: '.template/boilerplate.lock.json',
-      evidence: `held back: ${input.heldBack.map(h => `${h.component}@${h.lockCommit ? h.lockCommit.slice(0, 7) : 'no lock'}`).join(', ')}`,
+      evidence: `held back: ${input.heldBack.map(describeHeldBack).join('; ')}; their other files still sync, and the lock's templateCommit waits for every component${anyDeletion ? '; a deletion is settled by answering it in an interactive `bun sync` (delete or keep, either releases it) or by deleting the file' : ''}`,
       suggested: 'decide',
+      blocking: false,
+    });
+  }
+
+  // 5a. Upstream deletions settled by keeping the file: the project's now.
+  for (const kept of input.keptDeletions ?? []) {
+    findings.push({
+      surface: kept.path.startsWith('.agents/skills/') ? 'skills' : 'components',
+      path: kept.path,
+      evidence: `informational: upstream deleted this file and the project keeps it (${kept.reason === 'edited' ? 'its copy matches no upstream release: project content' : 'kept by your answer'}); later syncs no longer offer its deletion, delete it yourself if it is obsolete`,
+      suggested: 'keep project',
       blocking: false,
     });
   }

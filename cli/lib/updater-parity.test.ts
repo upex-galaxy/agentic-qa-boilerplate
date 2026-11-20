@@ -373,7 +373,7 @@ describe('collectParityFindings', () => {
 
     const held = byPath('.template/boilerplate.lock.json');
     expect(held.surface).toBe('components');
-    expect(held.evidence).toBe('held back: cli@deadbee, docs@no lock');
+    expect(held.evidence).toBe('held back: cli@deadbee; docs@no lock; their other files still sync, and the lock\'s templateCommit waits for every component');
 
     const env = byPath('.env');
     expect(env.surface).toBe('env');

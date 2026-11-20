@@ -214,6 +214,18 @@ export interface LocalEditOverwritten {
   component: string
 }
 
+/**
+ * A file upstream deleted that the project keeps: the person answered "keep",
+ * or (`--auto`) the local copy matches no upstream release of the path, so it
+ * is the project's own content. Either way the deletion is settled: the
+ * component advances and later syncs no longer offer it.
+ */
+export interface KeptDeletion {
+  path: string
+  component: string
+  reason: 'answered' | 'edited'
+}
+
 /** A `package.json` key kept at the project's value although upstream differs (Phase 4.5b, `skip` or `mine`). */
 export interface PackageJsonKeptKey {
   file: string
@@ -237,6 +249,8 @@ export interface RunSummary {
   newHeadSha: string
   componentsAdvanced: string[]
   componentsHeldBack: string[]
+  /** Upstream deletions settled by keeping the file (see `KeptDeletion`). */
+  keptDeletions?: KeptDeletion[]
   /**
    * True when a preflight refusal ended the run before any sync (dirty tree,
    * corrupt lock, clone failure, a declined migration or self-update). The
