@@ -16,6 +16,13 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Added (MCP parity records what a relay cannot carry)
+- **`checks.mcp_parity.unrelayed: { <host>: [<server ids>] }`** records the canonical servers a relay host cannot carry (an http server, one disabled in the canonical file, or one that takes a value from the host, which the launcher does not expand). Each one is left out of the set comparison and warned by name on every run. An unknown id, an id the relay host declares, a relayable stdio server, or a host without a relay fails and names the key. With `.mcp.json` absent (CI) an id is warned as unverified. Shared with the Dev boilerplate.
+
+### Changed (a Pi relay may be disabled; local-only scans headers and urls)
+- **A Pi relay entry may carry `enabled`.** `enabled: false` passes with a warning naming the server; a non-boolean value fails; an entry whose id the canonical file lacks still fails as before.
+- **`local-only` scans every committed MCP entry for literal credentials**, not only secret-named env keys: header values (`headers`, Codex `http_headers`, a `--header` in args), url userinfo, secret or token-shaped query, fragment and matrix parameters and path segments (also when the url's host is a variable), secret flags in args, token-shaped env values and any other secret-named key such as OpenCode `oauth.clientSecret`. Findings name the server and the key, never the value. With no `checks:` block, or under `strict`, the output is unchanged.
+
 ### Added (a project can scope MCP parity, vars:check and docs:check)
 - **`checks:` in `.agents/project.yaml`** lets an adopted app get three gates green without hiding real defects. Absent or empty, every gate is byte for byte as before, and the boilerplate keeps the defaults. Shared with the Dev boilerplate (`cli/lib/check-scope.ts`).
   - `checks.mcp_parity.mode: local-only`: the canonical `.mcp.json` is a per-machine file holding literal values. A committed `.gitignore` must ignore it, its local runner is not compared against the pinned shape, a committed host may hold no literal secret-named value, and an absent file (CI, a fresh clone) skips the set and the env contract with a warning while the committed hosts are still checked.

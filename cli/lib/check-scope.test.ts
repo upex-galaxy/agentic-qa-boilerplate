@@ -31,15 +31,15 @@ describe('readChecks', () => {
   });
 
   test('the shipped default block reads as the defaults', () => {
-    const yaml = 'checks:\n  mcp_parity:\n    mode: strict\n    relay: {}\n  vars_check:\n    skip_paths: []\n  docs_check:\n    include: []\n    exclude: []\n';
+    const yaml = 'checks:\n  mcp_parity:\n    mode: strict\n    relay: {}\n    unrelayed: {}\n  vars_check:\n    skip_paths: []\n  docs_check:\n    include: []\n    exclude: []\n';
     expect(readChecks(project(yaml))).toEqual({ config: defaultChecks(), errors: NO_ERRORS });
   });
 
   test('reads every key', () => {
-    const yaml = 'checks:\n  mcp_parity:\n    mode: local-only\n    relay:\n      pi: [bun, scripts/mcp-launch.ts]\n  vars_check:\n    skip_paths: [.agents/skills/cinetic/**]\n  docs_check:\n    include: [docs/adr/**]\n    exclude: [docs/todo/**]\n';
+    const yaml = 'checks:\n  mcp_parity:\n    mode: local-only\n    relay:\n      pi: [bun, scripts/mcp-launch.ts]\n    unrelayed:\n      pi: [zeta-mcp, instance-n8n-mcp]\n  vars_check:\n    skip_paths: [.agents/skills/cinetic/**]\n  docs_check:\n    include: [docs/adr/**]\n    exclude: [docs/todo/**]\n';
     expect(readChecks(project(yaml))).toEqual({
       config: {
-        mcpParity: { mode: 'local-only', relay: { pi: ['bun', 'scripts/mcp-launch.ts'] } },
+        mcpParity: { mode: 'local-only', relay: { pi: ['bun', 'scripts/mcp-launch.ts'] }, unrelayed: { pi: ['instance-n8n-mcp', 'zeta-mcp'] } },
         varsSkipPaths: ['.agents/skills/cinetic/**'],
         docsInclude: ['docs/adr/**'],
         docsExclude: ['docs/todo/**'],
@@ -57,7 +57,21 @@ describe('parseChecks errors name the key and stay with the gate that owns it', 
       'checks.mcp_parity.relay.pi: must be the relay\'s argv prefix, at least [command, launcher] (e.g. [bun, scripts/mcp-launch.ts])',
     ]);
     expect(read.errors.varsCheck).toEqual([]);
-    expect(read.config.mcpParity).toEqual({ mode: 'strict', relay: {} });
+    expect(read.config.mcpParity).toEqual({ mode: 'strict', relay: {}, unrelayed: {} });
+  });
+
+  test('mcp_parity.unrelayed', () => {
+    expect(parseChecks({ mcp_parity: { unrelayed: ['instance-n8n-mcp'] } }).errors.mcpParity).toEqual([
+      'checks.mcp_parity.unrelayed: must be a mapping of relay host to a list of server ids',
+    ]);
+    const read = parseChecks({ mcp_parity: { unrelayed: { pi: 'instance-n8n-mcp', codex: ['a', ''], opencode: ['b', 'c', 'b'] } } });
+    expect(read.errors.mcpParity).toEqual([
+      'checks.mcp_parity.unrelayed.pi: must be a list of server ids (e.g. [instance-n8n-mcp])',
+      'checks.mcp_parity.unrelayed.codex: must be a list of server ids (e.g. [instance-n8n-mcp])',
+      'checks.mcp_parity.unrelayed.opencode: lists b more than once',
+    ]);
+    expect(read.config.mcpParity.unrelayed).toEqual({});
+    expect(parseChecks({ mcp_parity: { unrelayed: { pi: [] } } })).toEqual({ config: parseChecks({}).config, errors: parseChecks({}).errors });
   });
 
   test('glob lists', () => {

@@ -351,20 +351,35 @@ checks:
     # and holds literal values. It must be ignored by the committed .gitignore (tracked,
     # or ignored only by .git/info/exclude or a global rule, fails); its own runner
     # (npx or bunx) is not compared against the pinned shape; a committed host may hold
-    # no literal secret-named value; when the file is absent (CI, a fresh clone) the set
-    # and the env contract are skipped with a warning and the committed hosts are still
-    # checked on their own.
+    # no literal credential (a secret-named env, header or other key, a token-shaped
+    # value, url userinfo, a secret or token-shaped url parameter or path segment, also
+    # behind a host written as a variable, a secret flag or a --header in args);
+    # findings name the server and the key, never the value; a
+    # header named only by AUTH, SESSION or PASS with a plain lowercase setting such as
+    # none passes. When the file is absent (CI, a fresh clone) the set and the env
+    # contract are skipped with a warning and the committed hosts are still checked on
+    # their own.
     mode: strict # strict | local-only
     # Hosts that reach MCP through a project launcher instead of their own copy of
     # each server. Supported host: pi. The value is the exact argv prefix; an entry
     # whose command plus args are that prefix plus its own server id, with no other
-    # key, is a relay entry: the launcher (the prefix's last element, repo-relative
+    # key than type: stdio, enabled (true or false; false is warned by name) and Pi's
+    # display keys, is a relay entry: the launcher (the prefix's last element, repo-relative
     # and tracked by git) starts the canonical entry with that entry's own values, so
     # the pinned shape, the loader rule and the env contract are not compared for it.
     # The canonical entry must be an enabled stdio server whose values are literal.
     # The relay carries stdio only: a canonical HTTP server is still required in the
-    # relay host, or connected at user level (ADR-0005).
+    # relay host, connected at user level (ADR-0005), or recorded in unrelayed.
     relay: {} # e.g. { pi: [bun, scripts/mcp-launch.ts] }
+    # Relay host -> canonical server ids that host cannot carry: an http server, one
+    # disabled in the canonical file, or one that takes a value from the host (${VAR}),
+    # which the launcher does not expand. Each listed id is left out of the set comparison
+    # and warned by name on every run, never silent. An id the canonical file does not
+    # declare, one the relay host declares, an enabled stdio server (relay it), or a
+    # host without a relay fails, naming the key. With the canonical file absent each
+    # id is still warned, as unverified (an unknown id fails only where .mcp.json exists).
+    # An empty list is the same as leaving the host out.
+    unrelayed: {} # e.g. { pi: [instance-n8n-mcp] }
   # vars:check (scripts/lint-vars.ts).
   vars_check:
     # Repo-relative globs of project-owned folders that use their own {{...}} syntax

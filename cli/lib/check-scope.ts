@@ -24,6 +24,8 @@ export interface McpParityScope {
   mode: McpParityMode
   /** Host -> the exact argv prefix of a relay entry; the server id follows it. */
   relay: Record<string, string[]>
+  /** Relay host -> the canonical server ids that host cannot carry (warned, never silent). */
+  unrelayed: Record<string, string[]>
 }
 
 export interface ChecksConfig {
@@ -39,7 +41,7 @@ export interface ChecksRead {
 }
 
 export function defaultChecks(): ChecksConfig {
-  return { mcpParity: { mode: 'strict', relay: {} }, varsSkipPaths: [], docsInclude: [], docsExclude: [] };
+  return { mcpParity: { mode: 'strict', relay: {}, unrelayed: {} }, varsSkipPaths: [], docsInclude: [], docsExclude: [] };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -80,7 +82,7 @@ function section(raw: Record<string, unknown>, key: string, errors: string[]): R
 function parseMcpParity(raw: Record<string, unknown>, errors: string[]): McpParityScope {
   const path = `${CHECKS_KEY}.mcp_parity`;
   const block = section(raw, 'mcp_parity', errors);
-  const scope: McpParityScope = { mode: 'strict', relay: {} };
+  const scope: McpParityScope = { mode: 'strict', relay: {}, unrelayed: {} };
   const mode = block.mode;
   if (mode !== undefined && mode !== null) {
     if (typeof mode === 'string' && (MCP_PARITY_MODES as readonly string[]).includes(mode)) { scope.mode = mode as McpParityMode; }
@@ -96,6 +98,24 @@ function parseMcpParity(raw: Record<string, unknown>, errors: string[]): McpPari
         const valid = Array.isArray(prefix) && prefix.length >= 2 && prefix.every(part => typeof part === 'string' && part.trim() !== '');
         if (valid) { scope.relay[host] = prefix as string[]; }
         else { errors.push(`${path}.relay.${host}: must be the relay's argv prefix, at least [command, launcher] (e.g. [bun, scripts/mcp-launch.ts])`); }
+      }
+    }
+  }
+  const unrelayed = block.unrelayed;
+  if (unrelayed !== undefined && unrelayed !== null) {
+    if (!isRecord(unrelayed)) {
+      errors.push(`${path}.unrelayed: must be a mapping of relay host to a list of server ids`);
+    }
+    else {
+      for (const [host, ids] of Object.entries(unrelayed)) {
+        const valid = Array.isArray(ids) && ids.every(id => typeof id === 'string' && id.trim() !== '');
+        if (!valid) {
+          errors.push(`${path}.unrelayed.${host}: must be a list of server ids (e.g. [instance-n8n-mcp])`);
+          continue;
+        }
+        const repeated = [...new Set((ids as string[]).filter((id, index) => ids.indexOf(id) !== index))].sort();
+        if (repeated.length > 0) { errors.push(`${path}.unrelayed.${host}: lists ${repeated.join(', ')} more than once`); }
+        else if (ids.length > 0) { scope.unrelayed[host] = [...(ids as string[])].sort(); }
       }
     }
   }

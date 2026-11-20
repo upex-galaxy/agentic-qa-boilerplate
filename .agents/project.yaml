@@ -166,6 +166,7 @@ checks:
   mcp_parity:
     mode: strict
     relay: {}
+    unrelayed: {}
   vars_check:
     skip_paths: []
   docs_check:
