@@ -68,13 +68,20 @@ export interface LaunchDeps {
   err: (line: string) => void
 }
 
+/** Windows `bunx --bun` misresolves the Playwright worker entry as an installable package; drop the flag there only. */
+function winSafeArgs(platform: NodeJS.Platform, bin: string, args: string[]): string[] {
+  if (platform !== 'win32' || basename(bin) !== 'bunx' || args[0] !== '--bun') { return args; }
+  return args.slice(1);
+}
+
 /** Prints the drift notice, then runs the binary through varlock. Returns the exit code. */
 export function launch(argv: string[], deps: LaunchDeps): number {
-  const [bin, ...args] = argv[0] === '--warn' ? argv.slice(1) : argv;
+  const [bin, ...rawArgs] = argv[0] === '--warn' ? argv.slice(1) : argv;
   if (!bin) {
     deps.err('usage: bun --no-env-file scripts/launch.ts [--warn] <bin> [args...]');
     return 2;
   }
+  const args = winSafeArgs(process.platform, bin, rawArgs);
   if (HARNESS_BINARIES.includes(basename(bin))) {
     deps.err(`launch: refusing to start ${bin}. This launcher would export every .env value into the AI's own process.`);
     deps.err(`Open it directly instead (\`${bin}\` in the repo folder, or the desktop app): every MCP server loads .env itself.`);
