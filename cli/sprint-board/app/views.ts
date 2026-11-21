@@ -28,11 +28,15 @@ export interface Ctx {
 /** Shown where the evidence page link would be, so a missing page reads as missing, not as hidden. */
 const noPage = () => `<span class="ev-none" title="${esc(tr('Published in Stage 3 with the evidence-artifact skill, or on the next retest', 'Se publica en Stage 3 con el skill evidence-artifact, o en el próximo retest'))}">${tr('No evidence page', 'Sin página de evidencia')}</span>`;
 
-/** The "Open evidence page" link: a claude.ai artifact, validated when it was recorded. */
-export function pageLink(p: EvidenceArtifact | undefined, cls = 'ev-page', label = tr('Open evidence page', 'Abrir página de evidencia')): string {
+/** The "Open evidence page" link: a claude.ai artifact, validated when it was recorded.
+ * `fromParent`: the parent Story's id, when `p` is its evidence page rather than this
+ * bug's own — shown as a small badge so reviewers aren't confused about what they're seeing. */
+export function pageLink(p: EvidenceArtifact | undefined, cls = 'ev-page', label = tr('Open evidence page', 'Abrir página de evidencia'), fromParent?: string): string {
   if (!p) { return ''; }
   const when = `${day(p.at).slice(5)} ${hhmm(p.at)}${p.by ? ` · ${p.by}` : ''}${p.history.length ? ` · ${p.history.length} ${tr('earlier', 'anteriores')}` : ''}`;
-  return `<a class="${cls}" href="${esc(p.url)}" target="_blank" rel="noopener" title="${esc(`${p.title ? `${p.title} · ` : ''}${tr('recorded', 'registrada')} ${when}`)}">${esc(label)}<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3h7v7M13 3 6.5 9.5M11 9.5V13H3V5h3.5"/></svg></a>`;
+  const parentNote = fromParent ? ` · ${tr(`from ${fromParent}`, `de ${fromParent}`)}` : '';
+  const badge = fromParent ? ` <span class="pill source" title="${esc(tr(`Showing the Story's evidence page (${fromParent}); this bug has none of its own.`, `Muestra la página de evidencia de la Story (${fromParent}); este bug no tiene una propia.`))}">${esc(tr('from Story', 'de la Story'))}</span>` : '';
+  return `<a class="${cls}" href="${esc(p.url)}" target="_blank" rel="noopener" title="${esc(`${p.title ? `${p.title} · ` : ''}${tr('recorded', 'registrada')} ${when}${parentNote}`)}">${esc(label)}<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3h7v7M13 3 6.5 9.5M11 9.5V13H3V5h3.5"/></svg></a>${badge}`;
 }
 
 export const VIEWS = ['now', 'metrics', 'people', 'tickets', 'bugs', 'timeline', 'evidence', 'history', 'merge', 'report'] as const;
@@ -430,7 +434,7 @@ function bugRow(b: SprintBug, c: Ctx): string {
     <td>${esc(b.module ?? '')}${b.platform ? `<br><span class="hint">${esc(b.platform)}</span>` : ''}</td>
     <td>${blocks}</td>
     <td class="mono">${b.ageDays}d</td>
-    <td>${pageLink(b.page, 'ev-page small', tr('Evidence', 'Evidencia')) || '<span class="hint">—</span>'}</td>
+    <td>${pageLink(b.page, 'ev-page small', tr('Evidence', 'Evidencia'), b.pageFrom) || '<span class="hint">—</span>'}</td>
   </tr>`;
 }
 
@@ -517,7 +521,7 @@ function bugTable(list: SprintBug[], c: Ctx): string {
   if (!list.length) { return `<p class="hint">${tr('None.', 'Ninguno.')}</p>`; }
   const linkOf = (id: string) => c.state.tickets.find(t => t.id === id)?.link;
   return `<div class="scroll"><table class="grid rtable"><tr><th>Bug</th><th>Title</th><th>Priority</th><th>Developer</th><th>${tr(`${TRK(c)} status`, `Estado en ${TRK(c)}`)}</th><th>${tr(`${TRK(c)} sprint`, `Sprint en ${TRK(c)}`)}</th><th>${tr('Found on', 'Encontrado en')}</th><th>${tr('Evidence', 'Evidencia')}</th></tr>
-    ${list.map(b => `<tr><td>${idLink(b.id, b.link)}</td><td class="r-title">${esc(b.title ?? '')}</td><td>${prioPill(b.severity)}</td><td>${esc(devsOf(b.dev).join(', ') || 'Unassigned')}</td><td><span class="pill source">${esc(b.status ?? tr('not synced', 'sin sincronizar'))}</span></td><td>${esc(b.sprint ?? '—')}</td><td>${b.blocks.length ? b.blocks.map(x => idLink(x.id, linkOf(x.id))).join(' ') : '<span class="hint">—</span>'}</td><td>${pageLink(b.page, 'ev-page small', tr('Evidence', 'Evidencia')) || '<span class="hint">—</span>'}</td></tr>`).join('')}
+    ${list.map(b => `<tr><td>${idLink(b.id, b.link)}</td><td class="r-title">${esc(b.title ?? '')}</td><td>${prioPill(b.severity)}</td><td>${esc(devsOf(b.dev).join(', ') || 'Unassigned')}</td><td><span class="pill source">${esc(b.status ?? tr('not synced', 'sin sincronizar'))}</span></td><td>${esc(b.sprint ?? '—')}</td><td>${b.blocks.length ? b.blocks.map(x => idLink(x.id, linkOf(x.id))).join(' ') : '<span class="hint">—</span>'}</td><td>${pageLink(b.page, 'ev-page small', tr('Evidence', 'Evidencia'), b.pageFrom) || '<span class="hint">—</span>'}</td></tr>`).join('')}
   </table></div>`;
 }
 
@@ -751,7 +755,7 @@ export function drawer(t: TicketView, c: Ctx): string {
   <section><span class="lbl">Test cases · ${c2.PASSED} PASSED · ${c2.FAILED} FAILED · ${c2.DEFERRED} DEFERRED · ${c2['NOT RUN']} NOT RUN</span>${autoRun ? `<br><span class="hint">${tr('Automated run', 'Corrida automatizada')} ${esc(day(autoRun.at))} ${hhmm(autoRun.at)} · ${esc(autoRun.env)}</span>` : ''}
     ${t.tcs.length ? `<table class="grid">${t.tcs.map(x => `<tr><td class="id">${esc(x.id)}</td><td>${esc(x.name ?? '')}${x.reason ? `<br><span class="hint">${esc(x.reason)}</span>` : ''}${x.approval ? `<br><span class="hint">${tr('approved by', 'aprobado por')} ${esc(x.approval)}</span>` : ''}${x.history.length > 1 ? `<br><span class="hint">${x.history.map(h => esc(h.status)).join(' → ')}</span>` : ''}</td><td><span class="pill ${pillClass(x.status)}">${esc(x.status)}</span>${x.automated ? ` <span class="pill source" title="${esc(tr(`Automated result, ${x.automated.records} test(s); the case's status stays the one on its left`, `Resultado automatizado, ${x.automated.records} test(s); el estado del caso sigue siendo el de su izquierda`))}">automated</span> <span class="pill ${pillClass(x.automated.status)}">${esc(x.automated.status)}</span>` : ''}</td></tr>`).join('')}</table>` : `<p class="hint">${tr('No test cases on record yet.', 'Todavía no hay casos registrados.')}</p>`}
   </section>
-  ${t.bugs.length ? `<section><span class="lbl">Bugs</span><table class="grid">${t.bugs.map(b => `<tr><td class="id">${b.link ? `<a href="${esc(b.link)}" target="_blank" rel="noopener">${esc(b.id)}</a>` : esc(b.id)}</td><td>${esc(b.title ?? '')}</td><td>${esc(b.severity ?? '')}</td><td><span class="pill source">${esc(b.status ?? '?')}</span></td><td>${pageLink(b.page, 'ev-page small', tr('Evidence', 'Evidencia'))}</td></tr>`).join('')}</table></section>` : ''}
+  ${t.bugs.length ? `<section><span class="lbl">Bugs</span><table class="grid">${t.bugs.map(b => `<tr><td class="id">${b.link ? `<a href="${esc(b.link)}" target="_blank" rel="noopener">${esc(b.id)}</a>` : esc(b.id)}</td><td>${esc(b.title ?? '')}</td><td>${esc(b.severity ?? '')}</td><td><span class="pill source">${esc(b.status ?? '?')}</span></td><td>${pageLink(b.page, 'ev-page small', tr('Evidence', 'Evidencia'), b.pageFrom)}</td></tr>`).join('')}</table></section>` : ''}
   ${t.evidence.some(e => c.img(e.path)) ? `<section class="evidence"><span class="lbl">Evidence</span>${evidenceSections(t.evidence, c, false)}</section>` : ''}
   ${fixtures.length ? `<section><span class="lbl">${tr('Test data found', 'Datos de prueba encontrados')}${t.module ? ` · ${esc(t.module)}` : ''}</span>${fixtures.map(f => fixtureLine(f, c, f.ticket !== t.id)).join('')}</section>` : ''}
   ${drafts.length ? `<section><span class="lbl">${tr('Messages for this ticket', 'Mensajes de este ticket')}</span>${drafts.map(a => draftCard(a, c)).join('')}</section>` : ''}

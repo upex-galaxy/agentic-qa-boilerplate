@@ -271,7 +271,7 @@ export interface Wait { id: string, person: string, what: string, since: string 
 export interface Hold { reason: HoldReason, note: string, on?: string, since: string }
 /** A claude.ai artifact a worker (or the conductor) published as a ticket's or a bug's evidence page (`evidence-artifact` skill). */
 export interface EvidenceArtifact { url: string, title?: string, at: string, by?: string, /** Older pages for the same ticket or bug, newest first. */ history: { url: string, title?: string, at: string, by?: string }[] }
-export interface BugView { id: string, title?: string, severity?: string, status?: string, bucket?: BugBucket, sprint?: string, module?: string, dev?: string, link?: string, linkedAt?: string, page?: EvidenceArtifact }
+export interface BugView { id: string, title?: string, severity?: string, status?: string, bucket?: BugBucket, sprint?: string, module?: string, dev?: string, link?: string, linkedAt?: string, page?: EvidenceArtifact, /** Set to the parent Story's id when `page` is its evidence page, not this bug's own. */ pageFrom?: string }
 /** A ticket a bug was filed against (`bug KEY-n KEY-bug`). Still blocked = in QA scope and not Passed. */
 export interface BugBlock { id: string, title: string, lane: Lane, stillBlocked: boolean }
 /**
@@ -303,6 +303,8 @@ export interface SprintBug {
   group: BugGroup
   sources: ('linked' | 'sprint')[]
   page?: EvidenceArtifact
+  /** Set to the blocked ticket's id when `page` is that Story's evidence page, not this bug's own. */
+  pageFrom?: string
   openedInSprint: boolean
   /** Resolved or closed, with its last tracker update inside the sprint (a proxy: no resolved date is read). */
   resolvedInSprint: boolean
@@ -849,7 +851,12 @@ export function fold(input: {
     for (const id of c?.bugs ?? []) { if (!d.bugs.has(id)) { d.bugs.set(id, { id }); } }
     const bugs = [...d.bugs.values()].map((b) => {
       const cb = tracker?.bugs[b.id];
-      return { ...b, title: b.title ?? cb?.title, status: cb?.status ?? b.status, bucket: cb?.bucket ?? b.bucket, sprint: cb?.sprint ?? b.sprint, module: cb?.module, dev: cb?.dev, link: cb?.link, page: bugPages.get(b.id) };
+      // A conductor-filed bug often has no evidence pack of its own: fall back to the parent
+      // Story's already-published evidence page rather than showing no evidence at all.
+      const ownPage = bugPages.get(b.id);
+      const page = ownPage ?? ticketPages.get(d.id);
+      const pageFrom = !ownPage && page ? d.id : undefined;
+      return { ...b, title: b.title ?? cb?.title, status: cb?.status ?? b.status, bucket: cb?.bucket ?? b.bucket, sprint: cb?.sprint ?? b.sprint, module: cb?.module, dev: cb?.dev, link: cb?.link, page, pageFrom };
     });
 
     // A retest starts a new attempt: what the worker's file said before it is the previous run, not
@@ -1060,6 +1067,9 @@ export function sprintBugs(input: { sprint: Sprint, tickets: TicketView[], track
       bug.link ??= b.link;
       if (!cb?.createdAt && b.linkedAt && b.linkedAt < bug.foundAt) { bug.foundAt = b.linkedAt; }
       bug.blocks.push({ id: t.id, title: t.title, lane: t.lane, stillBlocked: t.inScope && t.lane !== 'Passed' });
+      // A conductor-filed bug often has no evidence pack of its own: fall back to the first
+      // blocked Story's already-published evidence page rather than showing no evidence at all.
+      if (!bug.page && t.evidenceArtifact) { bug.page = t.evidenceArtifact; bug.pageFrom = t.id; }
       out.set(b.id, bug);
     }
   }
