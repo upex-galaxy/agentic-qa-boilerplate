@@ -14,7 +14,7 @@ long-running server per session. Nothing in the skills requires it: `[ISSUE_TRAC
 ## The server
 
 `mcp-atlassian` is a Python package run through `uvx` (install `uv` first). Pin the version, the
-same way the committed configs pin every `bunx` package: pin the version you install
+same way the committed configs pin every package the loader runs through `bun x`: pin the version you install
 (`uvx mcp-atlassian@<version>`; check PyPI for the release) and bump it deliberately.
 
 | Variable the server reads | Where the value comes from |
@@ -47,9 +47,9 @@ table.
 
 ```json
 "atlassian": {
-  "command": "bunx",
+  "command": "bun",
   "args": [
-    "-p", "varlock@1.20.0", "varlock", "run", "--no-redact-stdout", "--inject", "vars",
+    "x", "-p", "varlock@1.20.0", "varlock", "run", "--no-redact-stdout", "--inject", "vars",
     "--filter", "ATLASSIAN_EMAIL,ATLASSIAN_API_TOKEN", "--",
     "sh", "-c",
     "JIRA_USERNAME=\"$ATLASSIAN_EMAIL\" JIRA_API_TOKEN=\"$ATLASSIAN_API_TOKEN\" exec uvx mcp-atlassian@0.23.1"
@@ -66,7 +66,7 @@ table.
 "atlassian": {
   "type": "local",
   "command": [
-    "bunx", "-p", "varlock@1.20.0", "varlock", "run", "--no-redact-stdout", "--inject", "vars",
+    "bun", "x", "-p", "varlock@1.20.0", "varlock", "run", "--no-redact-stdout", "--inject", "vars",
     "--filter", "ATLASSIAN_EMAIL,ATLASSIAN_API_TOKEN", "--",
     "sh", "-c",
     "JIRA_USERNAME=\"$ATLASSIAN_EMAIL\" JIRA_API_TOKEN=\"$ATLASSIAN_API_TOKEN\" exec uvx mcp-atlassian@0.23.1"
@@ -83,11 +83,11 @@ table.
 
 ```toml
 [mcp_servers.atlassian]
-command = "bunx"
+command = "bun"
 enabled = true
 startup_timeout_sec = 30
 args = [
-  "-p", "varlock@1.20.0", "varlock", "run", "--no-redact-stdout", "--inject", "vars",
+  "x", "-p", "varlock@1.20.0", "varlock", "run", "--no-redact-stdout", "--inject", "vars",
   "--filter", "ATLASSIAN_EMAIL,ATLASSIAN_API_TOKEN", "--",
   "sh", "-c",
   "JIRA_USERNAME=\"$ATLASSIAN_EMAIL\" JIRA_API_TOKEN=\"$ATLASSIAN_API_TOKEN\" exec uvx mcp-atlassian@0.23.1",

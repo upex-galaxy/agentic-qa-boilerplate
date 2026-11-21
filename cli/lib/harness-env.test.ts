@@ -64,9 +64,9 @@ const SERVER = ['bunx', '-y', 'some-mcp@1'];
 /** The three MCP configs on the loader shape: one server reading TOKEN_A and HOST_B through `--filter`. */
 function loaderConfigs(root: string): void {
   const args = [...mcpEnvLoaderArgs(['TOKEN_A', 'HOST_B']), ...SERVER];
-  write(root, '.mcp.json', JSON.stringify({ mcpServers: { srv: { command: 'bunx', args } } }));
-  write(root, 'opencode.jsonc', JSON.stringify({ mcp: { srv: { type: 'local', command: ['bunx', ...args], enabled: true } } }));
-  write(root, '.codex/config.toml', `[mcp_servers.srv]\ncommand = "bunx"\nargs = [${args.map(a => JSON.stringify(a)).join(', ')}]\n`);
+  write(root, '.mcp.json', JSON.stringify({ mcpServers: { srv: { command: 'bun', args } } }));
+  write(root, 'opencode.jsonc', JSON.stringify({ mcp: { srv: { type: 'local', command: ['bun', ...args], enabled: true } } }));
+  write(root, '.codex/config.toml', `[mcp_servers.srv]\ncommand = "bun"\nargs = [${args.map(a => JSON.stringify(a)).join(', ')}]\n`);
 }
 
 /** The pre-loader shape: `${VAR}` in `.mcp.json`, `{file:}` in `opencode.jsonc`. */

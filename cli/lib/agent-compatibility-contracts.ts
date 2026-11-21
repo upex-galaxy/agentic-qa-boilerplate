@@ -111,8 +111,8 @@ export const CODEX_HOOK_COMMAND_WINDOWS = 'powershell.exe -NoProfile -Command "$
  * needs it: `bunx varlock load --agent` shows which, redacted.
  */
 // LINT.IfChange(mcp-env-loader)
-export const MCP_ENV_LOADER_COMMAND = 'bunx';
-export const MCP_ENV_LOADER_HEAD = ['-p', 'varlock@1.20.0', 'varlock', 'run', '--no-redact-stdout', '--inject', 'vars', '--filter'] as const;
+export const MCP_ENV_LOADER_COMMAND = 'bun';
+export const MCP_ENV_LOADER_HEAD = ['x', '-p', 'varlock@1.20.0', 'varlock', 'run', '--no-redact-stdout', '--inject', 'vars', '--filter'] as const;
 
 /** The full loader prefix for a server that needs `names`: head, the comma-joined filter, `--`. */
 export function mcpEnvLoaderArgs(names: readonly string[]): string[] {
@@ -264,11 +264,11 @@ const server = canonical;
 
 const EVERY_HOST: Record<KnownMcpId, NormalizedMcpServer> = {
   // No `.env` dependency, so no loader: wrapping it would only add a hop.
-  'context7': server({ transport: 'stdio', command: 'bunx', args: ['-y', '@upstash/context7-mcp@4.0.3'] }),
+  'context7': server({ transport: 'stdio', command: 'bun', args: ['x', '-y', '@upstash/context7-mcp@4.0.3'] }),
   'slack-aurora': server({
     transport: 'stdio',
-    command: 'bunx',
-    args: ['-y', 'slack-mcp-server@latest', '--transport', 'stdio'],
+    command: 'bun',
+    args: ['x', '-y', 'slack-mcp-server@latest', '--transport', 'stdio'],
     // The server reads these two names itself and `.env` is the only place
     // they live: the reaction allowlist is a list of workspace channel ids,
     // never a committed value.
@@ -278,8 +278,8 @@ const EVERY_HOST: Record<KnownMcpId, NormalizedMcpServer> = {
   }),
   'dbhub': server({
     transport: 'stdio',
-    command: 'bunx',
-    args: ['-y', '@bytebase/dbhub@1.2.1', '--config', 'dbhub.toml'],
+    command: 'bun',
+    args: ['x', '-y', '@bytebase/dbhub@1.2.1', '--config', 'dbhub.toml'],
     // `dbhub.toml` interpolates these from the environment the server is
     // LAUNCHED with, and dbhub substitutes the literal `${DBHUB_HOST}` when a
     // variable is absent instead of failing at startup: the loader's filter is
@@ -289,8 +289,8 @@ const EVERY_HOST: Record<KnownMcpId, NormalizedMcpServer> = {
   }),
   'openapi': server({
     transport: 'stdio',
-    command: 'bunx',
-    args: ['-y', '@ivotoby/openapi-mcp-server@1.16.1', '--tools', 'dynamic'],
+    command: 'bun',
+    args: ['x', '-y', '@ivotoby/openapi-mcp-server@1.16.1', '--tools', 'dynamic'],
     envLoader: true,
     dependsOn: ['API_BASE_URL', 'OPENAPI_SPEC_PATH'],
   }),

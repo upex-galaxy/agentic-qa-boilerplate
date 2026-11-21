@@ -32,10 +32,11 @@ inherit = "core"
 # `bunx` fetch plus the loader hop can pass that before the first handshake.
 
 [mcp_servers.context7]
-command = "bunx"
+command = "bun"
 enabled = true
 startup_timeout_sec = 30
 args = [
+  "x",
   "-y",
   "@upstash/context7-mcp@4.0.3",
 ]
@@ -45,10 +46,11 @@ args = [
 # workspace identity, so it lives in .env only and an empty value leaves the
 # reaction tools off. The one literal setting goes in the env table.
 [mcp_servers.slack-aurora]
-command = "bunx"
+command = "bun"
 enabled = true
 startup_timeout_sec = 30
 args = [
+  "x",
   "-p",
   "varlock@1.20.0",
   "varlock",
@@ -59,7 +61,8 @@ args = [
   "--filter",
   "SLACK_MCP_XOXP_TOKEN,SLACK_MCP_REACTION_TOOL",
   "--",
-  "bunx",
+  "bun",
+  "x",
   "-y",
   "slack-mcp-server@latest",
   "--transport",
@@ -75,10 +78,11 @@ SLACK_MCP_ADD_MESSAGE_TOOL = "true"
 # literal "${DBHUB_HOST}" instead of failing, a connection error that reads like
 # bad credentials.
 [mcp_servers.dbhub]
-command = "bunx"
+command = "bun"
 enabled = true
 startup_timeout_sec = 30
 args = [
+  "x",
   "-p",
   "varlock@1.20.0",
   "varlock",
@@ -89,7 +93,8 @@ args = [
   "--filter",
   "DBHUB_TYPE,DBHUB_HOST,DBHUB_PORT,DBHUB_DATABASE,DBHUB_USER,DBHUB_PASSWORD",
   "--",
-  "bunx",
+  "bun",
+  "x",
   "-y",
   "@bytebase/dbhub@1.2.1",
   "--config",
@@ -104,10 +109,11 @@ args = [
 # Without it the server starts in Codex's own directory: start Codex from the
 # repo root so a relative OPENAPI_SPEC_PATH resolves there.
 [mcp_servers.openapi]
-command = "bunx"
+command = "bun"
 enabled = true
 startup_timeout_sec = 30
 args = [
+  "x",
   "-p",
   "varlock@1.20.0",
   "varlock",
@@ -118,7 +124,8 @@ args = [
   "--filter",
   "API_BASE_URL,OPENAPI_SPEC_PATH",
   "--",
-  "bunx",
+  "bun",
+  "x",
   "-y",
   "@ivotoby/openapi-mcp-server@1.16.1",
   "--tools",
