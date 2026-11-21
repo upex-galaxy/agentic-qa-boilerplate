@@ -910,11 +910,23 @@ function isExampleArtifact(path: string): boolean {
  * such a cite is correct and simply has no file to resolve to: left to the
  * existence check, every commit of a scaffolded project was refused by its own
  * pre-commit hook. In the boilerplate the cite must still resolve.
+ *
+ * Two more `.context/ADR/` files are maintainer-only the same way, but are not
+ * numbered ADRs so `BOILERPLATE_ADR` misses them: `README.md` (the ADR index)
+ * and `ADR-NNNN-template.md` (the literal placeholder filename for a new ADR).
+ * Both are pruned by the scaffolder alongside the numbered ADRs, so they get
+ * the identical exemption instead of widening the regex to all of
+ * `.context/ADR/*`.
  */
 const BOILERPLATE_ADR = /^\.context\/ADR\/ADR-\d+-/;
+const BOILERPLATE_ADR_EXTRAS = new Set([
+  '.context/ADR/README.md',
+  '.context/ADR/ADR-NNNN-template.md',
+]);
 
 function isPrunedBoilerplateAdr(path: string, repoRoot: string): boolean {
-  return BOILERPLATE_ADR.test(path) && !contractsEnforced(repoRoot);
+  if (contractsEnforced(repoRoot)) { return false; }
+  return BOILERPLATE_ADR.test(path) || BOILERPLATE_ADR_EXTRAS.has(path);
 }
 
 /**
