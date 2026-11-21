@@ -126,10 +126,26 @@ function main(): void {
   }
 
   // gh-pages checkout may be absent on a fresh repo (checkout step is
-  // continue-on-error). Initialize an orphan branch so the first suite run
-  // bootstraps the site, mirroring what the old action did.
-  if (!fs.existsSync(path.join(pagesDir, '.git'))) {
+  // continue-on-error). When the ref does not exist, actions/checkout still
+  // leaves a `.git` dir behind on an unborn HEAD (git init + remote add ran
+  // before the failed fetch), so presence of `.git` alone is not a reliable
+  // signal — check for an actual commit instead. Initialize an orphan branch
+  // so the first suite run bootstraps the site, mirroring what the old
+  // action did.
+  const hasGit = fs.existsSync(path.join(pagesDir, '.git'));
+  let hasBranch = false;
+  if (hasGit) {
+    try {
+      sh('git', ['rev-parse', '--verify', 'HEAD'], { cwd: pagesDir });
+      hasBranch = true;
+    }
+    catch {
+      // Unborn HEAD: leftover from a failed checkout, not a real branch.
+    }
+  }
+  if (!hasBranch) {
     console.log('gh-pages checkout not found — bootstrapping an orphan branch.');
+    if (hasGit) { fs.rmSync(pagesDir, { recursive: true, force: true }); }
     fs.mkdirSync(pagesDir, { recursive: true });
     sh('git', ['init', '-b', 'gh-pages'], { cwd: pagesDir });
     const originUrl = sh('git', ['remote', 'get-url', 'origin'], { cwd: repoRoot }).trim();
