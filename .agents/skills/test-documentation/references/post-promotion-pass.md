@@ -19,6 +19,10 @@ Load only for mode `post-promotion`. The pass moves a TC from `{{jira.status.tes
 
 ## 2. Steps
 
+0. (Optional) If step 4 would otherwise wait on the next scheduled suite run and the project ships a
+   `sanity.yml` workflow, dispatch it now for the TC's spec and let it finish: `gh workflow run sanity.yml
+   --ref <production> -f environment=staging -f test_type=e2e -f test_file=<spec path>`. Skip when no
+   `sanity.yml` workflow exists, or when CI timing already works for this project.
 1. `git fetch origin <production>`.
 2. List the TCs: `[ISSUE_TRACKER_TOOL] Search` with JQL
    `project = {{PROJECT_KEY}} AND status = "{{jira.status.test_case.pull_request}}"`, restricted to the `test_case`
