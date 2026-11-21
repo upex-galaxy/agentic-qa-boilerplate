@@ -468,10 +468,12 @@ Effort and Dependencies are divisors, so a higher score is worse.
 | > 5.0 | Automate | Excellent ROI; include in regression |
 | 3.0 - 5.0 | Automate with caution | Evaluate if a simpler alternative exists |
 | 1.5 - 3.0 | Case by case | Prior bug? Critical flow? If no, defer |
-| 0.5 - 1.5 | Probably defer | Include only if prior bug |
+| 0.5 - 1.5 | Probably defer | Include only if prior bug, and only as **Manual** — not as Candidate; otherwise Defer |
 | < 0.5 | Defer | Not worth the maintenance cost |
 
 The thresholds are strict on purpose. Every test has a maintenance cost, most bugs do not recur after the first fix, and a few well-chosen tests beat many low-value ones.
+
+The `0.5-1.5` prior-bug rescue never promotes a TC to Candidate: that rescue is reserved for `1.5-3.0` (SKILL.md Phase 2, "Three outcomes"). A `0.5-1.5` scenario with a prior bug is documented as a Manual TC in the manual regression suite; without a prior bug it is Deferred.
 
 ### Component value bonus (reusability)
 
@@ -493,9 +495,12 @@ Every Candidate and Manual TC carries one ROI comment, written when its verdict 
 
 ```
 ROI: F4 x I5 x S4 / (E2 x D2) / 10 = 2.0 (+ prior bug PROJ-7044) -> Candidate
+Band: 1.5-3.0 | In-band: yes
 Reuse: N~2 (estimated from ATP: checkout, refund). Bonus x1.4.
 Verdict signed: <person>, <where>, <YYYY-MM-DD>
 ```
+
+`Band` names the row of the "ROI decision thresholds (strict)" table the score falls in, and `In-band?` is `yes` when the verdict matches what that band and its rule (prior bug, critical flow) allow, `no` when it does not — a Candidate verdict on a `0.5-1.5` score is always `no`, since that band's rescue only reaches Manual. A batch sign-off (§"The sign-only pass") rejects any verdict carrying `In-band: no` back to Prioritize instead of signing it.
 
 `<where>` names something a reader can check, not a bare channel name:
 

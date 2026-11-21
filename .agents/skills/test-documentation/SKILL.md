@@ -362,11 +362,12 @@ Every scenario passes three gates in order. Failing any gate makes it Deferred.
 
 MTP risk orders which gaps and scopes are worked first and never sets a verdict. ROI decides per scenario, and a high-risk gap can still end Deferred, explicitly (`agentic-qa-core/references/discovery-driven-doctrine.md` §7).
 
-### Phase 0: The three filter questions
+### Phase 0: The four filter questions
 
 1. **Does it protect against FUTURE regressions?** If the bug was a one-time typo in a stable area, the answer is no. Defer.
 2. **Are there PRIOR bugs in this area?** Yes: prioritize even with moderate ROI ("it failed once, it can fail again").
 3. **Is it an APP-level concern or a FEATURE-level concern?** XSS / a11y / performance / responsive are APP-level suites, not per-feature TCs. Defer from this scope.
+4. **Does a cheaper layer already cover this risk?** If a lower-cost existing test (a component/unit test, an API-level check) already exercises the same failure mode, this E2E-level TC adds cost without closing a gap. Yes, and nothing E2E-specific is left to protect: Defer.
 
 ### ROI formula (load-bearing)
 
