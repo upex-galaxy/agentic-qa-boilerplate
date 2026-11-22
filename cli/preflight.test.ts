@@ -184,6 +184,65 @@ describe('checks for bun setup', () => {
     expect(skip.checks.find(c => c.id === 'acli')).toMatchObject({ state: 'info' });
   });
 
+  describe('the issue tracker decides what the Jira and GitHub rows ask for', () => {
+    const ENV = { HOME: '/nowhere', INSTALL_SKIP_PLAYWRIGHT: '1' };
+    const trackerYaml = (value: string): string => `project:\n  project_name: null\nissue_tracker:\n  issue_tracker: ${value}\n  atlassian_url: https://acme.atlassian.net\n`;
+    const ghStatus = (scopes: string): CmdResult => OK(`github.com\n  ✓ Logged in to github.com account octo (keyring)\n  - Active account: true\n  - Token scopes: ${scopes}\n`);
+    const probed: string[] = [];
+    const reachRecord = async (url: string): Promise<{ ok: boolean, ms: number }> => { probed.push(url); return { ok: true, ms: 1 }; };
+
+    test.each(['null', 'Jira', 'JIRA', '\'Jira Cloud\'', 'Linear'])('issue_tracker %s keeps every Jira requirement on', async (value) => {
+      probed.length = 0;
+      const r = await runSetupPreflight({ cwd: project({ yaml: trackerYaml(value) }), lang: 'en', run: machine(['acli']), reach: reachRecord, env: ENV, disk: BIG });
+      expect(r.checks.find(c => c.id === 'acli')).toMatchObject({ state: 'warn', neededBy: 'jira', fix: 'brew tap atlassian/homebrew-acli && brew install acli' });
+      expect(r.checks.find(c => c.id === 'net-atlassian')).toMatchObject({ state: 'ok', neededBy: 'jira' });
+      expect(probed).toContain('https://acme.atlassian.net/status');
+      expect(r.checks.find(c => c.id === 'gh')).toMatchObject({ state: 'ok', value: '2.63.0' });
+    });
+
+    test.each(['github', 'GitHub', 'none'])('issue_tracker %s needs neither acli nor the Atlassian site', async (value) => {
+      probed.length = 0;
+      const r = await runSetupPreflight({ cwd: project({ yaml: trackerYaml(value) }), lang: 'en', run: machine(['acli'], { 'gh auth status': ghStatus('\'project\', \'repo\'') }), reach: reachRecord, env: ENV, disk: BIG });
+      const tracker = value.toLowerCase();
+      expect(r.checks.find(c => c.id === 'acli')).toMatchObject({ state: 'info', neededBy: 'jira', value: `issue_tracker: ${tracker}: this project does not use Jira` });
+      expect(r.checks.some(c => c.id === 'net-atlassian')).toBe(false);
+      expect(probed.some(u => u.includes('atlassian'))).toBe(false);
+      expect(r.checks.filter(c => c.state === 'warn')).toEqual([]);
+    });
+
+    test('github: the active account needs the project scope, and the fix is the exact owner command', async () => {
+      const missing = await runSetupPreflight({ cwd: project({ yaml: trackerYaml('github') }), lang: 'en', run: machine([], { 'gh auth status': ghStatus('\'gist\', \'repo\'') }), reach: reachAll, env: ENV, disk: BIG });
+      const row = missing.checks.find(c => c.id === 'gh')!;
+      expect(row).toMatchObject({ state: 'warn', neededBy: 'github', fix: 'gh auth refresh -h github.com -s project' });
+      expect(plainMsg(row.msg!)).toContain('octo');
+      expect(missing.verdict).toBe('warn');
+
+      const ok = await runSetupPreflight({ cwd: project({ yaml: trackerYaml('github') }), lang: 'en', run: machine([], { 'gh auth status': ghStatus('\'project\', \'repo\'') }), reach: reachAll, env: ENV, disk: BIG });
+      expect(ok.checks.find(c => c.id === 'gh')).toMatchObject({ state: 'ok', value: '2.63.0 · project' });
+
+      const brokenOther = { ...ghStatus('\'project\''), ok: false };
+      const lenient = await runSetupPreflight({ cwd: project({ yaml: trackerYaml('github') }), lang: 'en', run: machine([], { 'gh auth status': brokenOther }), reach: reachAll, env: ENV, disk: BIG });
+      expect(lenient.checks.find(c => c.id === 'gh')).toMatchObject({ state: 'ok', value: '2.63.0 · project' });
+
+      const unknown = await runSetupPreflight({ cwd: project({ yaml: trackerYaml('github') }), lang: 'en', run: machine(), reach: reachAll, env: ENV, disk: BIG });
+      expect(unknown.checks.find(c => c.id === 'gh')).toMatchObject({ state: 'info' });
+    });
+
+    test('github: a missing gh or a missing session says the tracker needs it', async () => {
+      const gone = await runSetupPreflight({ cwd: project({ yaml: trackerYaml('github') }), lang: 'en', run: machine(['gh']), reach: reachAll, env: ENV, disk: BIG });
+      expect(plainMsg(gone.checks.find(c => c.id === 'gh')!.msg!)).toContain('tracker is GitHub');
+      const out = await runSetupPreflight({ cwd: project({ yaml: trackerYaml('github') }), lang: 'en', run: machine([], { 'gh auth status': FAIL }), reach: reachAll, env: ENV, disk: BIG });
+      expect(out.checks.find(c => c.id === 'gh')).toMatchObject({ state: 'warn', fix: 'gh auth login' });
+      expect(plainMsg(out.checks.find(c => c.id === 'gh')!.msg!)).toContain('tracker is GitHub');
+    });
+
+    test('INSTALL_SKIP_JIRA keeps its own wording on a Jira project', async () => {
+      const r = await runSetupPreflight({ cwd: project({ yaml: trackerYaml('jira') }), lang: 'en', run: machine(), reach: reachAll, env: { ...ENV, INSTALL_SKIP_JIRA: '1' }, disk: BIG });
+      expect(r.checks.find(c => c.id === 'acli')).toMatchObject({ state: 'info', value: 'INSTALL_SKIP_JIRA=1: Jira is not configured' });
+      expect(r.checks.some(c => c.id === 'net-atlassian')).toBe(false);
+    });
+  });
+
   test('Q2: offline with the downloads still to do blocks; with them done it only warns', async () => {
     const pending = await runSetupPreflight({ cwd: project(), lang: 'en', run: machine(), reach: reachNone, env: { HOME: '/nowhere', PLAYWRIGHT_BROWSERS_PATH: '/definitely/not/here' }, disk: BIG });
     expect(pending.checks.filter(c => c.state === 'block').map(c => c.id).sort()).toEqual(['net-github', 'net-npm', ...(CHROMIUM ? ['net-playwright'] : [])]);

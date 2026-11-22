@@ -36,6 +36,7 @@ import { join } from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
+import { GH_PROJECT_SCOPE_FIX, issueTrackerOf, parseGhAuthStatus } from './lib/issue-tracker.ts';
 import { playwrightBrowsersInstalled, playwrightCacheCandidates } from './lib/playwright-cache.ts';
 import { formatBytes, freeBytes, isLocalSource, parseVersion, reachable, readJson, runCmd, versionAtLeast, worktreeInfo } from './lib/probes.ts';
 import { BRAND } from './lib/ui/brand.ts';
@@ -272,6 +273,11 @@ const S = {
     agentOptional: 'No hace falta: elige solo los que usa tu equipo.',
     acliMissing: 'La fase de Jira necesita la CLI de Atlassian: <code>brew tap atlassian/homebrew-acli && brew install acli</code>. Instálala y vuelve a comprobar, o sigue y Jira se salta.',
     acliSkipped: 'INSTALL_SKIP_JIRA=1: Jira no se configura',
+    acliNotUsed: (tracker: string): string => `issue_tracker: ${tracker}: este proyecto no usa Jira`,
+    ghTrackerMissing: 'El tracker de este proyecto es GitHub (issues y un GitHub Project): la CLI de GitHub hace falta. Instálala (cli.github.com) y corre <code>gh auth login</code>.',
+    ghTrackerAuth: 'El tracker de este proyecto es GitHub y la CLI de GitHub no tiene sesión: <code>gh auth login</code>.',
+    ghProjectScope: (account: string): string => `La cuenta activa (${account}) no tiene el permiso <code>project</code> que necesita el tablero de GitHub Projects. Agrégalo con <code>${GH_PROJECT_SCOPE_FIX}</code>.`,
+    ghScopeUnknown: 'No pudimos leer los permisos del token de GitHub (una variable de entorno o un token de acceso fino). El tablero necesita el permiso <code>project</code>: revísalo con <code>gh auth status</code>.',
     engramMissing: 'Opcional. Sin él la IA no recuerda sesiones anteriores: <code>brew install gentleman-programming/tap/engram</code>. Puedes instalarlo después y volver a correr el instalador.',
     engramOld: (v: string): string => `Tu Engram es ${v} y hace falta 3.0 o más nuevo: <code>brew upgrade engram</code>. Sin él se salta la memoria entre sesiones.`,
     engramSkipped: 'INSTALL_SKIP_ENGRAM=1: se salta',
@@ -313,6 +319,11 @@ const S = {
     agentOptional: 'Not needed: pick only the ones your team uses.',
     acliMissing: 'The Jira phase needs the Atlassian CLI: <code>brew tap atlassian/homebrew-acli && brew install acli</code>. Install it and check again, or go on and Jira is skipped.',
     acliSkipped: 'INSTALL_SKIP_JIRA=1: Jira is not configured',
+    acliNotUsed: (tracker: string): string => `issue_tracker: ${tracker}: this project does not use Jira`,
+    ghTrackerMissing: 'This project\'s tracker is GitHub (issues and a GitHub Project), so GitHub CLI is needed. Install it (cli.github.com) and run <code>gh auth login</code>.',
+    ghTrackerAuth: 'This project\'s tracker is GitHub and GitHub CLI has no session: <code>gh auth login</code>.',
+    ghProjectScope: (account: string): string => `The active account (${account}) lacks the <code>project</code> scope the GitHub Projects board needs. Add it with <code>${GH_PROJECT_SCOPE_FIX}</code>.`,
+    ghScopeUnknown: 'The GitHub token\'s scopes could not be read (an environment token or a fine-grained token). The board needs the <code>project</code> scope: check it with <code>gh auth status</code>.',
     engramMissing: 'Optional. Without it the AI does not remember earlier sessions: <code>brew install gentleman-programming/tap/engram</code>. You can install it later and run the installer again.',
     engramOld: (v: string): string => `Your Engram is ${v} and 3.0 or newer is needed: <code>brew upgrade engram</code>. Without it cross-session memory is skipped.`,
     engramSkipped: 'INSTALL_SKIP_ENGRAM=1: skipped',
@@ -411,7 +422,9 @@ export async function runSetupPreflight(o: SetupPreflightOptions): Promise<Prefl
   const yamlPath = join(o.cwd, '.agents', 'project.yaml');
   const yamlText = existsSync(yamlPath) ? readFileSync(yamlPath, 'utf8') : '';
   const yaml = readYamlScalars(yamlText);
-  const skipJira = truthyEnv(env.INSTALL_SKIP_JIRA);
+  const tracker = issueTrackerOf(yamlText).tracker;
+  const skipJiraEnv = truthyEnv(env.INSTALL_SKIP_JIRA);
+  const skipJira = skipJiraEnv || tracker !== 'jira';
   // Step keys of both installers (QA `9-skills-community-project`, Dev `communitySkillsProjectRanAt`).
   const skillsDone = Boolean(steps['9-skills-community-project'] || steps.communitySkillsProjectRanAt);
   const forceSkills = truthyEnv(env.INSTALL_FORCE_COMMUNITY) || truthyEnv(env.INSTALL_FORCE_COMMUNITY_SKILLS);
@@ -445,8 +458,11 @@ export async function runSetupPreflight(o: SetupPreflightOptions): Promise<Prefl
       : { id: 'git', group: L.tools, label: 'git', value: gitV, state: 'warn', msg: L.gitIdentity, neededBy: 'github', fix: 'git config --global user.email you@example.com' });
   }
 
-  if (skipJira) {
+  if (skipJiraEnv) {
     checks.push({ id: 'acli', group: L.tools, label: 'Atlassian CLI (acli)', value: L.acliSkipped, state: 'info', neededBy: 'jira' });
+  }
+  else if (skipJira) {
+    checks.push({ id: 'acli', group: L.tools, label: 'Atlassian CLI (acli)', value: L.acliNotUsed(tracker), state: 'info', neededBy: 'jira' });
   }
   else if (onPath(run, 'acli')) {
     const v = parseVersion(run('acli', ['--version'], { timeoutMs: 3000 }).stdout);
@@ -469,15 +485,34 @@ export async function runSetupPreflight(o: SetupPreflightOptions): Promise<Prefl
       : { id: 'engram', group: L.tools, label: 'Engram', value: v ? v.join('.') : '?', state: 'warn', msg: L.engramOld(v ? v.join('.') : '?'), neededBy: 'install', fix: 'brew upgrade engram' });
   }
 
+  const onGithub = tracker === 'github';
   if (!onPath(run, 'gh')) {
-    checks.push({ id: 'gh', group: L.tools, label: 'GitHub CLI', value: '-', state: 'warn', msg: L.ghMissing, neededBy: 'github' });
+    checks.push({ id: 'gh', group: L.tools, label: 'GitHub CLI', value: '-', state: 'warn', msg: onGithub ? L.ghTrackerMissing : L.ghMissing, neededBy: 'github' });
   }
   else {
     const auth = run('gh', ['auth', 'status'], { timeoutMs: 4000 });
     const v = parseVersion(run('gh', ['--version'], { timeoutMs: 2000 }).stdout);
-    checks.push(auth.ok
-      ? { id: 'gh', group: L.tools, label: 'GitHub CLI', value: v ? v.join('.') : 'ok', state: 'ok', neededBy: 'github' }
-      : { id: 'gh', group: L.tools, label: 'GitHub CLI', value: v ? v.join('.') : '-', state: 'warn', msg: L.ghAuth, neededBy: 'github', fix: 'gh auth login' });
+    const version = v ? v.join('.') : 'ok';
+    const scope = parseGhAuthStatus(`${auth.stdout}\n${auth.stderr}`);
+    // gh exits non-zero when ANY stored account is broken; the board only needs the active one.
+    const signedIn = auth.ok || (onGithub && scope.account !== null);
+    if (!signedIn) {
+      checks.push({ id: 'gh', group: L.tools, label: 'GitHub CLI', value: v ? v.join('.') : '-', state: 'warn', msg: onGithub ? L.ghTrackerAuth : L.ghAuth, neededBy: 'github', fix: 'gh auth login' });
+    }
+    else if (!onGithub) {
+      checks.push({ id: 'gh', group: L.tools, label: 'GitHub CLI', value: version, state: 'ok', neededBy: 'github' });
+    }
+    else {
+      if (scope.hasProjectScope === true) {
+        checks.push({ id: 'gh', group: L.tools, label: 'GitHub CLI', value: `${version} · project`, state: 'ok', neededBy: 'github' });
+      }
+      else if (scope.hasProjectScope === false) {
+        checks.push({ id: 'gh', group: L.tools, label: 'GitHub CLI', value: version, state: 'warn', msg: L.ghProjectScope(scope.account ?? 'gh'), neededBy: 'github', fix: GH_PROJECT_SCOPE_FIX });
+      }
+      else {
+        checks.push({ id: 'gh', group: L.tools, label: 'GitHub CLI', value: version, state: 'info', msg: L.ghScopeUnknown, neededBy: 'github' });
+      }
+    }
   }
 
   if (yaml.secretsProvider === '1password') {

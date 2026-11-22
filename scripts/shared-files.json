@@ -6,6 +6,8 @@
     "cli/lib/check-scope.ts": "49b85bc14dcfc77c12dd69c3d1773295dcdd6ddb6d7ebffc2a0300bc5145be95",
     "cli/lib/install-terminal.test.ts": "725cb6974b24cc8dbd52ef9103f9effa27cb112a2576bbd28fb1fbb62605ccf5",
     "cli/lib/install-terminal.ts": "cbc62c227443367a0adf952813fd8c85f50a0abb537053cd685ddac051a5b76d",
+    "cli/lib/issue-tracker.test.ts": "8a850730a065fc963327a4a10ff510320557546b130e90224d673330bd0cc79d",
+    "cli/lib/issue-tracker.ts": "3b7731f23bff944cb242c8b2c8d6a40900d211c6e67fae5390c3babb6c815dc1",
     "cli/lib/playwright-cache.ts": "71c1902a63ffeeb738834a272efc02e5da4bcf2dca2a752f1a82bcf19613bd23",
     "cli/lib/probes.ts": "7beffcac3937d6c387ba3b5529db6b79d4cec953a7eeffd50d591bd21bfbbf51",
     "cli/lib/rtk-setup.test.ts": "bfbf619c23cfdbf75fcb4445dd00ae649f8c8fd01a876c1b5cc88b34b8cd8d49",
@@ -43,8 +45,8 @@
     "cli/lib/ui/updater-sink.ts": "4132405933f7f691dfbc25c5c0314f298df9c77ba9a57aaa005511fdb75ff9e0",
     "cli/lib/user-skills-update.test.ts": "bfed87298c84aa7207ac2cda62bd1198e40864ad6eb8354597f50c31bec5a225",
     "cli/lib/user-skills-update.ts": "2e0f449c1edf31761d1ee51a09d0c230cb1e080dcba2d22826e265a230f21d98",
-    "cli/preflight.test.ts": "55017ab0f7f2573984182b71be73ff122a1f628c57704bb66d954082aed02e25",
-    "cli/preflight.ts": "279e4191a68b28db11d9180be92f976495ed790459c772098fda1a977e82d37a",
+    "cli/preflight.test.ts": "cc8465e1c2e312b08ce6d00deeb8dd7bd3ff8b5b8030c110594ea6b6c1739092",
+    "cli/preflight.ts": "c12cb3e46864aa100e8dc3be13221d34600a6b5ebfc87502918cdcb988a877be",
     "scripts/lib/heavy-e2e.ts": "7bfe7f767ecac4d8ad61a3790cae7c9165521b50362d014ae0e41cee4a5fa589",
     "scripts/shared-check.ts": "a4863d03b318177a8c82b2e69b4dab2e5d4b4a3d6df7d9de94ef9a0b28e823a5"
   }

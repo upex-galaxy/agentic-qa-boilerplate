@@ -26,6 +26,7 @@
 import type { CompatibilityCheck, CompatibilityErrorGroup } from './lib/agent-compatibility.ts';
 import type { HarnessLevelVerdict } from './lib/harness-level-mcps.ts';
 import type { Harness } from './lib/harness-selection.ts';
+import type { IssueTracker } from './lib/issue-tracker.ts';
 import type { GateContext, VarSpec } from './lib/variables-manifest.ts';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, realpathSync } from 'node:fs';
@@ -63,6 +64,7 @@ import {
 } from './lib/harness-env.ts';
 import { harnessLevelMcpReport } from './lib/harness-level-mcps.ts';
 import { declaredHarnesses, HARNESS_LABEL } from './lib/harness-selection.ts';
+import { ISSUE_TRACKERS, issueTrackerOf } from './lib/issue-tracker.ts';
 import { playwrightBrowsersInstalled } from './lib/playwright-cache.ts';
 import { gateIsOn, varsFor } from './lib/variables-manifest.ts';
 import { checkoutRoots } from './lib/worktree.ts';
@@ -318,7 +320,8 @@ interface DoctorReport {
    * apart from `env_vars` because it is NOT an env var — listing it there would
    * report `missing` forever on a correctly configured repo.
    */
-  atlassian_host: { status: 'set' | 'missing', value?: string, source?: 'project.yaml' | 'env' }
+  atlassian_host: { status: 'set' | 'missing' | 'not-used', value?: string, source?: 'project.yaml' | 'env' }
+  issue_tracker: { value: string | null, tracker: IssueTracker, recognized: boolean, note: string | null }
   mcp_json_exists: boolean
   opencode_jsonc_exists: boolean
   agent_compatibility: AgentCompatibilityDiagnostic
@@ -923,6 +926,7 @@ export async function runDoctor(): Promise<DoctorReport> {
     env_vars: {},
     env_var_scopes: [],
     atlassian_host: { status: 'missing' },
+    issue_tracker: { value: null, tracker: 'jira', recognized: true, note: null },
     mcp_json_exists: existsSync(MCP_PATH),
     opencode_jsonc_exists: existsSync(OPENCODE_PATH),
     agent_compatibility: agentCompatibility,
@@ -979,11 +983,20 @@ export async function runDoctor(): Promise<DoctorReport> {
   const envValues = report.env_file_exists
     ? parseEnvFile(await readFile(ENV_PATH, 'utf8'))
     : {};
+  const projectYamlPath = join(REPO_ROOT, '.agents', 'project.yaml');
+  const reading = issueTrackerOf(existsSync(projectYamlPath) ? readFileSync(projectYamlPath, 'utf8') : '');
+  const onJira = reading.tracker === 'jira';
+  report.issue_tracker = {
+    value: reading.raw,
+    tracker: reading.tracker,
+    recognized: reading.recognized,
+    note: reading.recognized ? null : `\`${reading.raw}\` is not one of ${ISSUE_TRACKERS.join(' | ')}, so the Jira path stays on. ${/github/i.test(reading.raw ?? '') ? 'Did you mean github? ' : ''}Write jira to keep it, or github / none to switch.`,
+  };
   let atlassianHostSet = false;
   try { atlassianHostSet = resolveAtlassianInstance().baseUrl.length > 0; }
   catch { atlassianHostSet = false; }
   const gateCtx: GateContext = { env: envValues, atlassianHostSet };
-  for (const spec of varsFor('local')) {
+  for (const spec of varsFor('local').filter(sp => onJira || !sp.name.startsWith('ATLASSIAN_'))) {
     const v = spec.name;
     const value = envValues[v];
     const isSet = value !== undefined && value.trim().length > 0;
@@ -1014,37 +1027,42 @@ export async function runDoctor(): Promise<DoctorReport> {
   // would be worse than useless: the variable's absence is the desired state,
   // and its PRESENCE is the bug (a stale copy inherited from the parent shell is
   // exactly what pointed the sync scripts and the TMS provider at a dead site).
-  try {
-    const instance = resolveAtlassianInstance();
-    report.atlassian_host = { status: 'set', value: instance.baseUrl, source: instance.source };
-    const warning = formatInstanceMismatchWarning(instance);
-    if (warning !== null) {
-      report.pending_actions.push({
-        type: 'shell_command',
-        target: 'unset ATLASSIAN_URL',
-        hint: warning,
-      });
+  if (!onJira) {
+    report.atlassian_host = { status: 'not-used' };
+  }
+  else {
+    try {
+      const instance = resolveAtlassianInstance();
+      report.atlassian_host = { status: 'set', value: instance.baseUrl, source: instance.source };
+      const warning = formatInstanceMismatchWarning(instance);
+      if (warning !== null) {
+        report.pending_actions.push({
+          type: 'shell_command',
+          target: 'unset ATLASSIAN_URL',
+          hint: warning,
+        });
+      }
+      else if (instance.source === 'env') {
+        report.pending_actions.push({
+          type: 'shell_command',
+          target: 'bun run agents:setup',
+          hint: 'Atlassian host is coming from an ATLASSIAN_URL env var, not from '
+            + '.agents/project.yaml. That fallback exists for a repo that has not been set up '
+            + 'yet; write the host to the yaml so it is versioned and cannot go stale.',
+        });
+      }
     }
-    else if (instance.source === 'env') {
+    catch {
+      report.atlassian_host = { status: 'missing' };
       report.pending_actions.push({
         type: 'shell_command',
         target: 'bun run agents:setup',
-        hint: 'Atlassian host is coming from an ATLASSIAN_URL env var, not from '
-          + '.agents/project.yaml. That fallback exists for a repo that has not been set up '
-          + 'yet; write the host to the yaml so it is versioned and cannot go stale.',
+        hint: 'Atlassian host not set. Fill `issue_tracker.atlassian_url` in '
+          + '.agents/project.yaml — it is the source of truth for every jira:sync-* script, for '
+          + '`acli --site`, and for the Jira-Direct TMS provider that writes results back to '
+          + 'issues. Read it back with `bun run --silent jira:url`.',
       });
     }
-  }
-  catch {
-    report.atlassian_host = { status: 'missing' };
-    report.pending_actions.push({
-      type: 'shell_command',
-      target: 'bun run agents:setup',
-      hint: 'Atlassian host not set. Fill `issue_tracker.atlassian_url` in '
-        + '.agents/project.yaml — it is the source of truth for every jira:sync-* script, for '
-        + '`acli --site`, and for the Jira-Direct TMS provider that writes results back to '
-        + 'issues. Read it back with `bun run --silent jira:url`.',
-    });
   }
 
   // Warn about legacy JIRA_* credential keys that no longer have any effect.
@@ -1283,6 +1301,7 @@ function printHuman(report: DoctorReport): void {
   // "configured" is exactly what let a dead instance go unnoticed.
   const hostRow = ((): string => {
     const host = report.atlassian_host;
+    if (host.status === 'not-used') { return `${tui.statusIcon('info')} not used (issue_tracker: ${report.issue_tracker.tracker})`; }
     if (host.status !== 'set') { return tui.statusIcon('fail'); }
     const fromYaml = host.source === 'project.yaml';
     const icon = tui.statusIcon(fromYaml ? 'ok' : 'warn');
@@ -1290,6 +1309,7 @@ function printHuman(report: DoctorReport): void {
     return `${icon} ${host.value}${note}`;
   })();
   checks.push(['Atlassian host (.agents/project.yaml)', hostRow]);
+  checks.push(['Issue tracker (.agents/project.yaml)', report.issue_tracker.note !== null ? `${tui.statusIcon('warn')} ${report.issue_tracker.note}` : `${tui.statusIcon('ok')} ${report.issue_tracker.value === null ? 'jira (unset)' : report.issue_tracker.tracker}`]);
   checks.push(['Evidence builder (Python 3.9+ and Pillow)', report.evidence_builder.ready ? tui.statusIcon('ok') : `${tui.statusIcon('warn')} optional, see below`]);
   const orca = report.orchestrator;
   const orcaText: Record<OrchestratorState, string> = {
