@@ -52,7 +52,8 @@ asserting both fails one of them forever.
 One Story, or one batch of Stories, can raise many questions at once (Shift-Left refinement is the usual
 case). The order in §1 holds for the batch as a whole: no question is asked when another answer in the
 same batch already decides it, and what reaches a person is only what the record cannot resolve, in as
-few rounds as possible. Three steps, in order.
+few rounds as possible. Three steps, in order. The research that feeds them, and the check on a DECIDED answer before it is
+applied, are `./question-research.md` and `./adversarial-verification.md` §6.
 
 ### Admission
 

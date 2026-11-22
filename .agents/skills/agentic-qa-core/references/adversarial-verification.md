@@ -74,3 +74,31 @@ Traps that already produced a false positive once are recorded so the next run d
 | Schema drift | a column, enum or field that the project docs describe differently from the live store | read the live schema before writing a query that leans on a name |
 
 A verifier that hits one of these writes it into the finding's "why it was refuted" line, so the record explains itself.
+
+---
+
+## 6. Verify a DECIDED answer before applying it
+
+The refute mandate also covers a decision. Every question the researcher tiered `decide`
+(`./question-research.md`) that would change an AC, a business rule, the scope or a contract goes to one
+refutation subagent, briefed with the 7 components, before the orchestrator applies it. A `follow` answer
+is not verified, because the record already carries it.
+
+The verifier tries to kill the proposal. It checks:
+
+- a source that contradicts it;
+- a role or tenant for which it breaks;
+- an existing, different product pattern it departs from;
+- an irreversible or outward consequence nobody saw;
+- a sibling Story it collides with.
+
+Verdicts:
+
+| Verdict | Effect |
+|---|---|
+| `holds` | the orchestrator applies the decision and reports it as DECIDED |
+| `refutes` | escalate under `./decision-protocol.md` §5, with the verifier's evidence attached |
+| `doubt` | same as `refutes`: escalate with the evidence |
+
+The verifier executes what it claims (§3) and names the source of each check. A verdict that rests on an
+inference is `doubt`.
