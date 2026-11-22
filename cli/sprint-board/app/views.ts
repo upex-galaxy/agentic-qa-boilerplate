@@ -28,9 +28,11 @@ export interface Ctx {
 /** Shown where the evidence page link would be, so a missing page reads as missing, not as hidden. */
 const noPage = () => `<span class="ev-none" title="${esc(tr('Published in Stage 3 with the evidence-artifact skill, or on the next retest', 'Se publica en Stage 3 con el skill evidence-artifact, o en el próximo retest'))}">${tr('No evidence page', 'Sin página de evidencia')}</span>`;
 
-/** The "Open evidence page" link: a claude.ai artifact, validated when it was recorded.
+/**
+ * The "Open evidence page" link: a claude.ai artifact, validated when it was recorded.
  * `fromParent`: the parent Story's id, when `p` is its evidence page rather than this
- * bug's own — shown as a small badge so reviewers aren't confused about what they're seeing. */
+ * bug's own — shown as a small badge so reviewers aren't confused about what they're seeing.
+ */
 export function pageLink(p: EvidenceArtifact | undefined, cls = 'ev-page', label = tr('Open evidence page', 'Abrir página de evidencia'), fromParent?: string): string {
   if (!p) { return ''; }
   const when = `${day(p.at).slice(5)} ${hhmm(p.at)}${p.by ? ` · ${p.by}` : ''}${p.history.length ? ` · ${p.history.length} ${tr('earlier', 'anteriores')}` : ''}`;

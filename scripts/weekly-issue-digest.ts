@@ -4,7 +4,7 @@
  * Compares the current open-issue list against a saved cursor and prints only what's new since
  * the last run. Exit code 0 always; absence of output means nothing new.
  */
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 const REPO = 'upex-galaxy/agentic-qa-boilerplate';
