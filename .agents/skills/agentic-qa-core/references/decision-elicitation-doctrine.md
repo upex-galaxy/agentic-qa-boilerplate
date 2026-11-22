@@ -117,7 +117,7 @@ The sweep closes a turn that still holds small open items; the deck takes the he
 
 **When.** Before any message that would leave something waiting on the human: a decision, an unconfirmed assumption, an item left for later. In plan mode, sweep before `ExitPlanMode`, which is reserved for approving the plan itself.
 
-**Rounds.** Call the harness's question tool at its own per-call limit, each round waiting for its answers, until every pending item has been asked. Nine items on a tool that takes four per call are rounds of four, four and one. The tool's schema sets the limit, so no number is written in this repo. Blocking items go in the first round. Drop an item an earlier answer made moot, and never repeat one already answered or deferred.
+**Rounds.** Call the harness's question tool at its own per-call limit, each round waiting for its answers, until every pending item has been asked. Nine items on a tool that takes four per call are rounds of four, four and one. The tool's schema sets the limit, so no number is written in this repo. Blocking items go in the first round. When pendings depend on each other, order the rounds by dependency level, roots first (`./decision-protocol.md` §1.1). Drop an item an earlier answer made moot, and never repeat one already answered or deferred.
 
 **Shape of each question.** One pending item, a short header, the options within the tool's option limit, the recommended one first and marked, each stating its value and cost in a line. Always offer a free-text way out: the tool adds "Other" on every harness below, and where it does not, add "Other (write your own)". Add a "Later" option unless the item blocks the work.
 

@@ -47,6 +47,47 @@ asserting both fails one of them forever.
 
 ---
 
+## 1.1 A batch of questions
+
+One Story, or one batch of Stories, can raise many questions at once (Shift-Left refinement is the usual
+case). The order in §1 holds for the batch as a whole: no question is asked when another answer in the
+same batch already decides it, and what reaches a person is only what the record cannot resolve, in as
+few rounds as possible. Three steps, in order.
+
+### Admission
+
+Before a question joins the batch, drop or reshape it:
+
+- It changes nothing: no AC, outline, scope line or expected result would differ by its answer. Drop it.
+- The record already answers it (§2): follow and cite the source (§3). It is not asked.
+- It duplicates a question already open in the batch, on the Story or on a sibling. Keep one, and list
+  every place it applies.
+- A `Pending:` note whose answer is now in the record is removed silently, without a question.
+- It mixes a part the record decides with a part it does not. Split it: follow the decided part, and ask
+  only the open one.
+
+### Dependency graph
+
+Each surviving question carries `dependsOn`: the IDs of the questions whose answer could change it or make
+it moot. Order the batch topologically, roots first.
+
+- A cycle is one compound question, asked once.
+- A written tie counts as a dependency even when nobody declared it: a `Pending:` note, an outline that
+  reads "depending on the answer to...", a question that quotes another's option.
+
+### Per graph level
+
+Take one level at a time: search (§2), decide (§4) or escalate (§5), apply, then cascade before the next
+level.
+
+- The cascade re-evaluates every question that depends on what was just settled: it may now be followed,
+  decided or moot. A moot question is dropped, not asked.
+- Escalation goes in rounds by graph level, extending `./decision-elicitation-doctrine.md` §7: a round
+  holds only questions whose roots are already answered, and the sweep's own rounds follow that order,
+  not the order the questions appeared in.
+
+---
+
 ## 2. Search the record first
 
 Before deciding, before dispatching and before drafting any question for a person, check whether the
@@ -128,6 +169,14 @@ At an autonomy-3 stage the stated limits are the plan.
 
 Most calls need only a choice and one line of why in the report.
 
+Three stop rules guard the calls made at this level:
+
+- A justification that needs "probably" or "we assume" is not a decision. Escalate it.
+- A person's answer that departs from the proposal on the person's own inference, and not on a source, is
+  a contradiction with the proposal. Escalate with both readings side by side, and apply neither.
+- One decision per decision. Anything the proposal did not bring is a separate question, with its own
+  admission and place in the graph.
+
 A scored panel is optional, for a call that is close and either hard to reverse or a precedent other
 sessions will copy (an ATC naming scheme for a module, a data-isolation approach a whole suite inherits).
 Run three independent subagents in Parallel (`./dispatch-patterns.md`) with the same options and evidence
@@ -201,6 +250,10 @@ write up what it decided.
 Each entry is append-only and carries the question in the shape a later search would use, the decision as
 an instruction someone can follow, the options considered and why the loser lost, its scope and how long it
 stands, and the entry it supersedes, if any.
+
+A batch ends with one notification block, one line per question: `ID · FOLLOWED|DECIDED|ESCALATED ·
+decision · basis · rejected: <option>, why · applied in <fields>`. Under it: the fields touched, what stays
+outside the session's reach, how to revert, and the gate state.
 
 Every call the agent decided itself also appears in the stage report, as decided, with its one line of
 why, so "the agent chose" becomes "the agent chose and said so".
