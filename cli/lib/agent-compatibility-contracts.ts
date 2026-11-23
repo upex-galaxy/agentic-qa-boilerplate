@@ -1527,8 +1527,6 @@ export const HOOK_ROUTE_MARKER = 'ROUTE: read';
 export const ROUTER_START_MARKER = '<!-- router:start -->';
 /** Codex `project_doc_max_bytes` default: the always-on file past it is cut at the byte, silently. */
 export const CODEX_PROJECT_DOC_MAX_BYTES = 32 * 1024;
-/** The OpenCode 2 degradation, declared in the adapter in so many words. */
-export const OPENCODE_ROUTER_ONLY_MARKER = 'ROUTER-ONLY';
 
 /**
  * The `SessionStart` sources after which the routed sections are gone from the
@@ -1581,8 +1579,8 @@ function hasSessionStart(settings: JsonObject, matcher: string, command: string,
 /**
  * Binds once `AGENTS.md` carries the router markers (a repo still on the
  * single-file layout has nothing to route). Each command host must re-arm the
- * routes after a compaction and after `/clear`, the OpenCode adapter must classify in `chat.message`
- * (OpenCode 1) and declare its OpenCode 2 degradation, and the always-on file
+ * routes after a compaction and after `/clear`, the OpenCode adapter must classify the prompt and
+ * re-arm on compaction on both plugin generations, and the always-on file
  * must fit the Codex project-doc budget whole. Each part binds only while its
  * harness is in use (`harnesses`, default `declaredHarnesses(root)`).
  */
@@ -1628,8 +1626,11 @@ export function validateInstructionRouterHooks(root = process.cwd(), harnesses: 
     if (!plugin.includes('experimental.session.compacting') || !plugin.includes('rearmRoutes')) {
       errors.push('OpenCode personality adapter must re-arm the routes in experimental.session.compacting (OpenCode 1).');
     }
-    if (!plugin.includes(OPENCODE_ROUTER_ONLY_MARKER)) {
-      errors.push(`OpenCode personality adapter must declare the OpenCode 2 degradation (${OPENCODE_ROUTER_ONLY_MARKER}: no hook carries the prompt).`);
+    if (!/ctx\.session\.hook\(\s*['"]prompt['"]/.test(plugin)) {
+      errors.push('OpenCode personality adapter must classify the prompt in ctx.session.hook(\'prompt\') with the shared routeLines (OpenCode 2).');
+    }
+    if (!/ctx\.session\.hook\(\s*['"]compaction['"]/.test(plugin)) {
+      errors.push('OpenCode personality adapter must re-arm the routes in ctx.session.hook(\'compaction\') (OpenCode 2).');
     }
   }
 

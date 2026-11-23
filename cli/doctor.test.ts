@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, test } from 'bun:test';
 
-import { checkoutSetupActions, envVarVerdict, orchestratorCli, orchestratorState, piTrustStatus, probeOpenApiSpec, userSkillInstalled } from './doctor.ts';
+import { checkoutSetupActions, codexTrustStatus, envVarVerdict, orchestratorCli, orchestratorState, piTrustStatus, probeOpenApiSpec, userSkillInstalled } from './doctor.ts';
 import { VAR_MANIFEST, varsFor } from './lib/variables-manifest.ts';
 
 function spec(overrides: Partial<VarSpec> & { name: string }): VarSpec {
@@ -131,6 +131,46 @@ describe('checkoutSetupActions', () => {
   test('a primary checkout with dependencies but no hook shims is told to reinstall', () => {
     const { actions } = checkoutSetupActions({ ...ready, gitHooks: false });
     expect(actions.map(a => a.target)).toEqual(['bun install']);
+  });
+});
+
+describe('codexTrustStatus', () => {
+  const HOOKS = { hooks: { UserPromptSubmit: [{ hooks: [{ type: 'command', command: 'x' }] }], SessionStart: [{ matcher: 'compact', hooks: [{ type: 'command', command: 'x' }] }] } };
+  const workspace = (config?: (project: string) => string): { project: string, env: Record<string, string> } => {
+    const base = realpathSync(mkdtempSync(join(tmpdir(), 'codex-trust-')));
+    const project = join(base, 'repo');
+    mkdirSync(join(project, '.codex'), { recursive: true });
+    writeFileSync(join(project, '.codex', 'hooks.json'), JSON.stringify(HOOKS));
+    mkdirSync(join(base, 'codex-home'));
+    if (config) { writeFileSync(join(base, 'codex-home', 'config.toml'), config(project)); }
+    return { project, env: { CODEX_HOME: join(base, 'codex-home') } };
+  };
+  const trustedProject = (project: string): string => `[projects."${project}"]\ntrust_level = "trusted"\n`;
+  const hookState = (project: string, key: string, body = 'enabled = true\ntrusted_hash = "sha256:x"'): string => `[hooks.state."${join(project, '.codex', 'hooks.json')}:${key}"]\n${body}\n`;
+
+  test('no Codex config is unknown, an untrusted project says so before its hooks', () => {
+    const none = workspace();
+    expect(codexTrustStatus(none.project, none.env, '/nowhere', none.project)).toBe('unknown');
+    const untrusted = workspace(() => '');
+    expect(codexTrustStatus(untrusted.project, untrusted.env, '/nowhere', untrusted.project)).toBe('project-untrusted');
+  });
+
+  test('a trusted project whose hooks were never reviewed is hooks-untrusted', () => {
+    const fresh = workspace(trustedProject);
+    expect(codexTrustStatus(fresh.project, fresh.env, '/nowhere', fresh.project)).toBe('hooks-untrusted');
+    const partial = workspace(project => `${trustedProject(project)}${hookState(project, 'user_prompt_submit:0:0')}`);
+    expect(codexTrustStatus(partial.project, partial.env, '/nowhere', partial.project)).toBe('hooks-untrusted');
+    const disabled = workspace(project => `${trustedProject(project)}${hookState(project, 'user_prompt_submit:0:0')}${hookState(project, 'session_start:0:0', 'enabled = false\ntrusted_hash = "sha256:x"')}`);
+    expect(codexTrustStatus(disabled.project, disabled.env, '/nowhere', disabled.project)).toBe('hooks-untrusted');
+  });
+
+  test('every hook reviewed is trusted, looked up in the primary checkout a linked worktree runs', () => {
+    const primary = workspace(project => `${trustedProject(project)}${hookState(project, 'user_prompt_submit:0:0')}${hookState(project, 'session_start:0:0')}`);
+    expect(codexTrustStatus(primary.project, primary.env, '/nowhere', primary.project)).toBe('trusted');
+    const linked = join(primary.project, '..', 'linked');
+    mkdirSync(linked);
+    expect(codexTrustStatus(linked, primary.env, '/nowhere', primary.project)).toBe('trusted');
+    expect(codexTrustStatus(linked, primary.env, '/nowhere', null)).toBe('project-untrusted');
   });
 });
 

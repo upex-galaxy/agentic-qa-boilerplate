@@ -15,23 +15,28 @@ import { agentContextLines, rearmRoutes, routeLines, sessionLaunched } from '../
 // when V1 support ends. `bun run agents:compat:check` fails when either
 // entrypoint goes missing.
 //
-// `ROUTE:` lines (instruction router) need the prompt text. OpenCode 1 hands
-// it to `chat.message`: the plugin classifies it there with the same
+// `ROUTE:` lines (instruction router) need the prompt text. Each generation
+// hands it to one hook: `chat.message` on OpenCode 1, the session `prompt`
+// hook on OpenCode 2 (`{ sessionID, messageID, prompt: { text, files } }`,
+// measured on 2.3.2). The plugin classifies it there with the same
 // `routeLines` the command hook uses and pushes the result through the system
-// transform for the rest of that turn; `experimental.session.compacting`
-// re-arms the routes. OpenCode 2 exposes no hook that carries the prompt, so
-// it is ROUTER-ONLY: the model follows the router table of AGENTS.md and its
-// LOAD PROTOCOL, with no `ROUTE:` cue. Re-verify when OpenCode 2 ships a
-// per-message hook.
+// hook for the rest of that turn. Compaction re-arms the routes:
+// `experimental.session.compacting` on OpenCode 1, the session `compaction`
+// hook on OpenCode 2 (it runs on the compaction request, next to the
+// `session.compaction.started` / `ended` events).
 //
 // The `ORCA:` line follows the session's role, and the role comes from the
 // prompt too: a prompt carrying the fleet token (`/<skill> <label> fleet
-// worker`) marks the session launched. OpenCode 1 records it in
-// `chat.message` with the emitter's `sessionLaunched` (same session record as
-// the routes, so a compaction keeps it) and the system transform then pushes
-// the launched variant. OpenCode 2 hands the plugin no prompt, so it cannot
-// see the token: a v2 worker always gets the independent `ORCA:` line, and
-// its brief (worker contract) is what tells it to report to its launcher.
+// worker`) marks the session launched. The prompt hook records it with the
+// emitter's `sessionLaunched` (same session record as the routes, so a
+// compaction keeps it) and the system hook then pushes the launched variant.
+//
+// The checkout is the plugin's, never the server's working directory: one
+// OpenCode service serves every project, and its `process.cwd()` is wherever
+// it started. OpenCode 1 hands it as `ctx.worktree`, OpenCode 2 as
+// `ctx.location` (`project.directory` is the checkout root, `directory` the
+// folder the session opened). The identity line and the route state both
+// resolve from it.
 //
 // Plain object on purpose (no `Plugin.define` import): this repo does not
 // depend on the plugin SDK, and the loader reads the shape, not the helper.
@@ -49,7 +54,13 @@ function promptOf(parts) {
     .join('\n');
 }
 
-/** OpenCode 1: the `ROUTE:` lines of the latest prompt, per session. */
+/** OpenCode 2: the checkout root of `ctx.location`, else the session folder. */
+function checkoutOfLocation(location) {
+  const root = location?.project?.directory || location?.directory;
+  return typeof root === 'string' && root ? root : undefined;
+}
+
+/** The `ROUTE:` lines of the latest prompt, per session. */
 const pendingRoutes = new Map();
 
 export default {
@@ -57,8 +68,20 @@ export default {
 
   // OpenCode 2.
   async setup(ctx) {
+    const repoRoot = checkoutOfLocation(ctx?.location);
+    await ctx.session.hook('prompt', (event) => {
+      const sessionId = event?.sessionID ?? '';
+      const prompt = typeof event?.prompt?.text === 'string' ? event.prompt.text : '';
+      // The role first: `routeLines` rewrites the same record and keeps `launched`.
+      sessionLaunched({ prompt, sessionId, repoRoot });
+      pendingRoutes.set(sessionId, routeLines({ prompt, sessionId, repoRoot }));
+    });
+    await ctx.session.hook('compaction', (event) => {
+      rearmRoutes({ sessionId: event?.sessionID ?? '', repoRoot });
+    });
     await ctx.session.hook('context', (event) => {
-      for (const text of linesFor(event?.sessionID)) {
+      const lines = [...linesFor(event?.sessionID, repoRoot), ...(pendingRoutes.get(event?.sessionID ?? '') ?? [])];
+      for (const text of lines) {
         if (!event.system.some(part => part?.text === text)) {
           event.system.push({ type: 'text', text });
         }

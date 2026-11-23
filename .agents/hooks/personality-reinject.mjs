@@ -4,9 +4,9 @@
  * Claude Code and Codex run this file as a `UserPromptSubmit` command hook and
  * read its stdout, and run it again on `SessionStart` to re-arm the routes
  * (see "Re-arm sources" below); OpenCode imports the same exports from its
- * plugin adapter (`.opencode/plugins/personality-reinject.js`): OpenCode 1
- * also routes from `chat.message`, OpenCode 2 is router-only. Pi imports them
- * from its extension (`.pi/extensions/agentic-qa.js`). The emitter
+ * plugin adapter (`.opencode/plugins/personality-reinject.js`), which routes
+ * from `chat.message` (OpenCode 1) or the session `prompt` hook (OpenCode 2).
+ * Pi imports them from its extension (`.pi/extensions/agentic-qa.js`). The emitter
  * carries four payloads, in this order (the AGENTS.md §2 output contract is
  * not one of them: the harness loads it once per session):
  *
@@ -43,9 +43,9 @@
  *   - Codex, `.codex/hooks.json`: the same two `SessionStart` groups (Codex
  *     emits `startup | resume | clear | compact | fork`; only these two drop
  *     the routed files from the context).
- *   - OpenCode 1, `.opencode/plugins/personality-reinject.js`: the
- *     `experimental.session.compacting` event only; OpenCode 2 is router-only
- *     and keeps no state to re-arm.
+ *   - OpenCode, `.opencode/plugins/personality-reinject.js`: compaction only,
+ *     `experimental.session.compacting` on OpenCode 1 and the session
+ *     `compaction` hook on OpenCode 2.
  *   - Pi, `.pi/extensions/agentic-qa.js`: the `session_compact` event only;
  *     `/new` starts a new session id.
  *   `bun run agents:compat:check` asserts the two command-host lists
@@ -68,7 +68,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
-import { delimiter, dirname, join, resolve } from 'node:path';
+import { basename, delimiter, dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 /** Prefix of the forensic identity line. Consumed by `git-flow-master`. */
@@ -286,12 +286,31 @@ export function detectHarness({ env = process.env, hookInput = {} } = {}) {
 }
 
 /**
- * `ORCA_WORKTREE_ID` is `<repoId>::<absolute path>`; the worktree name is the
- * last path segment. Orca sets this variable for the PRIMARY checkout too, so
- * its mere presence never distinguishes primary from a linked worktree: a
- * linked worktree's `.git` is a FILE (`gitdir: <path>`), the primary
- * checkout's `.git` is a DIRECTORY, and that check is what actually decides
- * `primary` here. No Orca variable at all also means the primary checkout.
+ * True when `root/.git` is a FILE `gitdir: <common>/worktrees/<name>`, i.e. a
+ * linked worktree. The primary checkout's `.git` is a directory; a
+ * submodule's is a file too, but its gitdir sits under `modules/`, so the
+ * pointer is read rather than trusting the file type.
+ */
+function isLinkedWorktree(root, read = readFileSync) {
+  try {
+    if (statSync(join(root, '.git')).isDirectory()) { return false; }
+    return /^gitdir:.*[\\/]worktrees[\\/][^\\/\s]+\s*$/m.test(String(read(join(root, '.git'), 'utf8')));
+  }
+  catch {
+    return false;
+  }
+}
+
+/**
+ * The worktree name for the `Worktree:` trailer, or `primary`.
+ *
+ * Decided by the checkout itself, never by an inherited variable: walk up from
+ * `cwd` to the nearest `.git`; a linked worktree is named after its directory
+ * (the name `git worktree add`, a harness and Orca all give it), anything else
+ * is `primary`. Orca's `ORCA_WORKTREE_ID` (`<repoId>::<absolute path>`) is
+ * only a fallback when no `.git` is reachable: it describes the TERMINAL's
+ * worktree, is set for the primary checkout too, and leaks into any session
+ * started from that terminal in another checkout.
  *
  * The `env` parameter is typed as a plain string map rather than
  * `NodeJS.ProcessEnv` on purpose: a host that augments `ProcessEnv` with
@@ -303,18 +322,21 @@ export function detectHarness({ env = process.env, hookInput = {} } = {}) {
  * @param {string} [cwd]
  */
 export function resolveWorktree(env = process.env, cwd = process.cwd()) {
+  const root = checkoutRootOf(cwd);
+  if (root) {
+    return isLinkedWorktree(root) ? basename(root) : 'primary';
+  }
   const raw = text(env.ORCA_WORKTREE_ID);
   if (!raw) { return 'primary'; }
-  try {
-    if (statSync(join(cwd, '.git')).isDirectory()) { return 'primary'; }
-  }
-  catch {
-    // No readable `.git` at cwd: fall through to the ORCA_WORKTREE_ID name.
-  }
   const separator = raw.indexOf('::');
   const path = separator === -1 ? raw : raw.slice(separator + 2);
   const segments = path.split(/[\\/]/).filter(Boolean);
   return segments.length > 0 ? segments[segments.length - 1] : 'primary';
+}
+
+/** Where the session runs: the harness's project dir, else the payload's cwd, else ours. */
+function sessionDirectory(env, hookInput) {
+  return text(env.CLAUDE_PROJECT_DIR) || text(env.CODEX_PROJECT_DIR) || text(hookInput.cwd) || process.cwd();
 }
 
 /** `~/.claude/sessions/<CLAUDE_PID>.json` → `{ sessionId, name, nameSource }`. */
@@ -409,7 +431,7 @@ export function resolveAgentIdentity(options = {}) {
     sessionName,
     nameSource,
     label: sessionLabel({ sessionName, nameSource, sessionId }),
-    worktree: resolveWorktree(env),
+    worktree: resolveWorktree(env, options.cwd ?? options.repoRoot ?? sessionDirectory(env, hookInput)),
   };
 }
 
@@ -999,7 +1021,7 @@ function checkoutRootOf(start) {
 function routerRoot(options) {
   if (options.repoRoot) { return options.repoRoot; }
   const { env = process.env, hookInput = {} } = options;
-  const directory = text(env.CLAUDE_PROJECT_DIR) || text(env.CODEX_PROJECT_DIR) || text(hookInput.cwd) || process.cwd();
+  const directory = sessionDirectory(env, hookInput);
   return checkoutRootOf(directory) || directory;
 }
 
@@ -1090,8 +1112,8 @@ export function rearmRoutes(options = {}) {
  * notification neither sets nor clears it: its result text may quote a brief
  * that carries the token. Without a session id only the current prompt decides.
  * Without `routeState` the record is resolved from `sessionId` (and `repoRoot`),
- * as `routeLines` does: the OpenCode 1 adapter records the role this way in
- * `chat.message`, and its system transform reads it back.
+ * as `routeLines` does: the OpenCode adapter records the role this way in its
+ * prompt hook, and its system hook reads it back.
  */
 export function sessionLaunched(options = {}) {
   const { prompt } = options;
@@ -1112,7 +1134,7 @@ export function identityLine(identity) {
 /**
  * The lines every harness injects, in order. OpenCode pushes them as-is. The
  * `ROUTE:` lines come last and only when a `prompt` is passed: the OpenCode
- * system transform has no prompt, so its adapter routes in `chat.message`.
+ * system hooks have no prompt, so its adapter routes in its prompt hook.
  * The session record is resolved once and shared: `sessionLaunched` (the
  * `ORCA:` variant) writes its flag before `routeLines` writes the routes.
  */

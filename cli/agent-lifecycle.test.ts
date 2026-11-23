@@ -341,7 +341,7 @@ describe('doctor and updater parity', () => {
   test.skipIf(!HAS_CLAUDE || !HAS_CODEX)('reports file correctness separately from Codex trust and CLI availability', () => {
     const root = compatibilityFixture();
     repairRepositoryCompatibility(root, 'linux');
-    const diagnostic = diagnoseAgentCompatibility(root, { platform: 'linux', codexCliDetected: false });
+    const diagnostic = diagnoseAgentCompatibility(root, { platform: 'linux', codexCliDetected: false, codexTrustStatus: 'hooks-untrusted' });
 
     expect(diagnostic.file_correct).toBe(true);
     expect(diagnostic.errors).toEqual([]);
@@ -355,7 +355,7 @@ describe('doctor and updater parity', () => {
       repository_configured: true,
       desktop_uses_repository_config: true,
       trust_required: true,
-      trust_status: 'required-not-verifiable',
+      trust_status: 'hooks-untrusted',
     });
   });
 
