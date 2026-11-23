@@ -2581,8 +2581,17 @@ async function updateCommunitySkills(sink: ReportSink, parsed: ParsedArgs, lang:
   try {
     const { PROJECT_LEVEL_SKILLS, USER_LEVEL_SKILLS } = await import('./install.ts');
     sink.step(lang === 'en' ? 'Community skills: checking for updates' : 'Skills de la comunidad: buscando actualizaciones');
+    let declined: string[] = [];
+    try {
+      const raw = JSON.parse(fs.readFileSync(path.join(process.cwd(), '.template', 'installer.state.json'), 'utf8')) as { skills?: Record<string, string> };
+      declined = Object.entries(raw.skills ?? {}).filter(([, v]) => v === 'declined').map(([k]) => k.replace(/^community:global:/, ''));
+    }
+    catch {
+      declined = [];
+    }
     await runSkillsUpdate({
       cwd: process.cwd(),
+      declined,
       global: USER_LEVEL_SKILLS,
       project: PROJECT_LEVEL_SKILLS,
       dryRun: parsed.dryRun,

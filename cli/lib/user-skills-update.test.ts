@@ -161,6 +161,16 @@ describe('runSkillsUpdate', () => {
     expect(res.failed).toEqual([]);
   });
 
+  it('reports declared skills that are not installed, minus the declined ones', async () => {
+    const { run } = fake([], []);
+    const infos: string[] = [];
+    await runSkillsUpdate({ cwd: tmp(), home: tmp(), global: [{ package: OURS, skill: 'teach' }, { package: OURS, skill: 'nope' }], project: [], declined: ['nope'], dryRun: false, run, info: m => infos.push(m), warn: () => {}, lang: 'en' });
+    const out = infos.join('\n');
+    expect(out).toContain('bun setup --sync-skills');
+    expect(out).toContain('teach');
+    expect(out).not.toContain('nope');
+  });
+
   it('plans but runs no update on a dry run', async () => {
     const home = tmp();
     const { run, calls } = fake([row('retro', { path: join(home, '.agents', 'skills', 'retro') })], []);

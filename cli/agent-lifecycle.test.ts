@@ -21,6 +21,7 @@ import {
   offerEngramClaudePlugin,
   parseAgentsEnv,
   partitionDeclinedSkills,
+  pendingUserSkills,
   PROJECT_LEVEL_SKILLS,
   PROJECT_SKILL_DESTINATION,
   remoteHeadRef,
@@ -424,6 +425,15 @@ describe('user-level skill selection', () => {
     const [first] = USER_LEVEL_SKILLS;
     const { declined } = partitionDeclinedSkills(USER_LEVEL_SKILLS, { [`community:project:${first.skill}`]: 'declined' });
     expect(declined).toEqual([]);
+  });
+
+  test('only skills with no state entry are pending, whatever their recorded value', () => {
+    const [first, second, ...rest] = USER_LEVEL_SKILLS;
+    const pending = pendingUserSkills(USER_LEVEL_SKILLS, {
+      [`community:global:${first.skill}`]: 'declined',
+      [`community:global:${second.skill}`]: 'installed',
+    });
+    expect(pending).toEqual(rest);
   });
 
   test('retired skills stay out of the user-level list', () => {

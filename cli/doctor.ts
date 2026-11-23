@@ -1373,7 +1373,7 @@ function printHuman(report: DoctorReport): void {
     'ready': `${orca.cli} ready`,
   };
   checks.push(['Orca (only for /sprint-conductor)', `${tui.statusIcon(orca.state === 'ready' ? 'ok' : 'info')} ${orcaText[orca.state]}`]);
-  checks.push(['agent-orchestration skill (~/.agents or ~/.claude)', report.orchestration_skill_installed ? tui.statusIcon('ok') : `${tui.statusIcon('info')} not installed: run \`bun setup\``]);
+  checks.push(['agent-orchestration skill (~/.agents or ~/.claude)', report.orchestration_skill_installed ? tui.statusIcon('ok') : `${tui.statusIcon('info')} not installed: run \`bun setup --sync-skills\``]);
   if (report.worktree_of !== null) {
     checks.push(['Linked worktree of', `${tui.statusIcon('info')} ${report.worktree_of}`]);
   }

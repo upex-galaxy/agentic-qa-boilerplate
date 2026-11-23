@@ -1296,6 +1296,15 @@ export function partitionDeclinedSkills(
 }
 
 /**
+ * User-level skills with no entry at all in `state.skills` (never installed,
+ * declined, failed or skipped): the ones added to the list after the stamped
+ * first run. They are offered again even when the step is already stamped.
+ */
+export function pendingUserSkills(list: ReadonlyArray<CommunitySkill>, skills: Record<string, string>): CommunitySkill[] {
+  return list.filter(item => skills[`community:global:${describeSkill(item)}`] === undefined);
+}
+
+/**
  * The per-skill ask for the user level: every offered skill pre-checked; an
  * unchecked one is recorded as declined and never offered again. Asked in Team,
  * so the downloads can start without waiting for anyone. Null = nothing to ask.
@@ -1303,8 +1312,11 @@ export function partitionDeclinedSkills(
 async function askUserLevelSkills(state: InstallState, forceKeys: Set<string>, agents: AgentId[]): Promise<CommunitySkill[] | null> {
   const key = '9-skills-community-global';
   if (SKIP_COMMUNITY || USER_LEVEL_SKILLS.length === 0) { return null; }
-  if (!shouldRunStep(state, key, forceKeys) && !FORCE_COMMUNITY) { return null; }
-  const { offered, declined } = partitionDeclinedSkills(USER_LEVEL_SKILLS, state.skills);
+  const stamped = !shouldRunStep(state, key, forceKeys) && !FORCE_COMMUNITY;
+  const pending = pendingUserSkills(USER_LEVEL_SKILLS, state.skills);
+  if (stamped && pending.length === 0) { return null; }
+  const { offered: allOffered, declined } = partitionDeclinedSkills(USER_LEVEL_SKILLS, state.skills);
+  const offered = stamped ? allOffered.filter(item => pending.includes(item)) : allOffered;
   if (offered.length === 0) { return []; }
   const declinedNote = declined.length > 0
     ? tr(
@@ -1365,7 +1377,8 @@ async function runCommunityStep(
     return;
   }
   if (list.length === 0) { step.end('skipped', tr('ninguna configurada', 'none configured')); return; }
-  if (!shouldRunStep(state, key, forceKeys) && !FORCE_COMMUNITY) {
+  const newUserSkills = level === 'global' && (picked?.length ?? 0) > 0;
+  if (!shouldRunStep(state, key, forceKeys) && !FORCE_COMMUNITY && !newUserSkills) {
     step.end('skipped', tr('ya instaladas en una corrida anterior', 'already installed in an earlier run'));
     return;
   }

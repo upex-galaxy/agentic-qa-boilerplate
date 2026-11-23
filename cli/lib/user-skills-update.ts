@@ -185,6 +185,8 @@ export interface SkillsUpdateOptions {
   home?: string
   /** Backup folder suffix; tests pass a fixed one. */
   stamp?: string
+  /** Skills the user declined (`state.skills['community:global:<slug>'] === 'declined'`); never reported as missing. */
+  declined?: ReadonlyArray<string>
   /** Language of the messages, the run's own (Spanish when unsure). */
   lang?: 'es' | 'en'
 }
@@ -199,12 +201,14 @@ export interface SkillsUpdateResult {
 const LIST_TIMEOUT_MS = 120_000;
 const UPDATE_TIMEOUT_MS = 300_000;
 
-function describeSkips(plan: SkillsUpdatePlan, t: (es: string, en: string) => string): string[] {
+function describeSkips(plan: SkillsUpdatePlan, t: (es: string, en: string) => string, declined: ReadonlyArray<string> = []): string[] {
   const where = plan.scope === 'global' ? t('de usuario', 'user') : t('de proyecto', 'project');
   const out: string[] = [];
   if (plan.devLinks.length) { out.push(t(`skills ${where} omitidas por ser un symlink de desarrollo: ${plan.devLinks.join(', ')}`, `${where} skills skipped, development symlink: ${plan.devLinks.join(', ')}`)); }
   if (plan.otherSource.length) { out.push(t(`skills ${where} omitidas, instaladas desde otra fuente: ${plan.otherSource.join(', ')}`, `${where} skills skipped, installed from another source: ${plan.otherSource.join(', ')}`)); }
   if (plan.untracked.length) { out.push(t(`skills ${where} sin registro en el CLI de skills, no se actualizan (reinstálalas con \`bun setup --sync-skills\`): ${plan.untracked.join(', ')}`, `${where} skills not tracked by the skills CLI, so not updated (reinstall them with \`bun setup --sync-skills\`): ${plan.untracked.join(', ')}`)); }
+  const missing = plan.notInstalled.filter(name => !declined.includes(name));
+  if (missing.length) { out.push(t(`skills ${where} declaradas sin instalar (instálalas con \`bun setup --sync-skills\`): ${missing.join(', ')}`, `${where} skills declared but not installed (install them with \`bun setup --sync-skills\`): ${missing.join(', ')}`)); }
   return out;
 }
 
@@ -226,7 +230,7 @@ export async function runSkillsUpdate(opts: SkillsUpdateOptions): Promise<Skills
       if (ls.code !== 0) { throw new Error(`\`bunx ${listArgs.join(' ')}\` exited ${ls.code}`); }
       const plan = planSkillsUpdate(s.scope, s.declared, parseListJson(ls.stdout), p => isDevLink(p, s.store));
       result.plans.push(plan);
-      for (const line of describeSkips(plan, t)) { opts.info(line); }
+      for (const line of describeSkips(plan, t, opts.declined)) { opts.info(line); }
       if (plan.update.length === 0) { continue; }
       const updateArgs = ['skills', 'update', ...plan.update, s.flag, '-y'];
       if (opts.dryRun) { opts.info(t(`correría: bunx ${updateArgs.join(' ')}`, `would run: bunx ${updateArgs.join(' ')}`)); continue; }
