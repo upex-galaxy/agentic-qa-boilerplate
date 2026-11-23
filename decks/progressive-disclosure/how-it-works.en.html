@@ -631,7 +631,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
           <tr><td class="small"><b>Claude Code</b></td><td class="small"><code>UserPromptSubmit</code> runs the emitter; <code>SessionStart</code> <code>compact</code> or <code>clear</code> re-arms it; <code>PostToolUse</code> without a matcher reminds about an unread path.</td></tr>
           <tr><td class="small"><b>Codex</b></td><td class="small">The same except the reminder, and only in a trusted repository.</td></tr>
           <tr><td class="small"><b>OpenCode 1</b></td><td class="small"><code>chat.message</code> classifies, the system transform pushes the lines, <code>session.compacting</code> re-arms.</td></tr>
-          <tr><td class="small"><b>OpenCode 2</b></td><td class="small">Router only: no hook receives the request. Declared degradation.</td></tr>
+          <tr><td class="small"><b>OpenCode 2</b></td><td class="small">The session <code>prompt</code> hook classifies, <code>context</code> pushes, <code>compaction</code> re-arms.</td></tr>
           <tr><td class="small"><b>Pi</b></td><td class="small">An extension (<code>.pi/extensions/agentic-qa.js</code>) instead of a command hook, and only if the project is trusted.</td></tr>
         </table>
       </div>

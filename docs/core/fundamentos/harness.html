@@ -484,10 +484,10 @@
         <code>PostToolUse</code> corre el mismo archivo y, si el agente usa una herramienta sin
         haber leído lo ruteado, le recuerda una sola vez qué falta (<code>ROUTE-PENDING:</code>).
         OpenCode no tiene hooks de comando, así que su plugin importa las mismas funciones y las
-        empuja al prompt de sistema; en OpenCode 2, que no le pasa el texto del pedido, queda solo
-        el router. Pi usa una sola extensión de JavaScript plano,
-        <code>.pi/extensions/agentic-qa.js</code>, sobre el mismo emisor: da la identidad y las
-        líneas <code>ORCA</code> y <code>ROUTE</code>, re-arma las rutas al compactar, da
+        empuja al prompt de sistema, y rutea desde <code>chat.message</code> en OpenCode 1 o desde
+        el hook de sesión <code>prompt</code> en OpenCode 2. Pi usa una sola extensión de JavaScript
+        plano, <code>.pi/extensions/agentic-qa.js</code>, sobre el mismo emisor: da la identidad y
+        las líneas <code>ORCA</code> y <code>ROUTE</code>, re-arma las rutas al compactar, da
         <code>ROUTE-PENDING:</code> y le pone nombre a la sesión a partir del token de flota, igual
         que el hook de Claude Code.
       </p>
