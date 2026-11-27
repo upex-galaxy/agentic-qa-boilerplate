@@ -251,10 +251,13 @@ FLUSH PRIVILEGES;</code></pre>
         El <code>dbhub.toml</code> que trae el repo no la activa. DBHub puede rechazar por su cuenta
         todo lo que no sea lectura en <code>execute_sql</code>: con
         <code>readonly = true</code> solo acepta sentencias de lectura (<code>SELECT</code>,
-        <code>WITH</code>, <code>EXPLAIN</code>, <code>SHOW</code>, según el motor), y en PostgreSQL
-        además corre la consulta dentro de una transacción de solo lectura. Es una opción de la
-        herramienta, no de la fuente: va en un bloque <code>[[tools]]</code>; escrita dentro de
-        <code>[[sources]]</code>, DBHub rechaza el archivo.
+        <code>WITH</code> y <code>EXPLAIN</code> en todos los motores, más algunas propias de cada
+        uno, como <code>SHOW</code> o <code>PRAGMA</code>), y después corre la consulta con el modo
+        de solo lectura del propio motor: una transacción de solo lectura en PostgreSQL, MySQL y
+        MariaDB, <code>PRAGMA query_only</code> en SQLite y, en SQL Server, una transacción que
+        siempre se deshace. Es una opción de la herramienta, no de la fuente: va en un bloque
+        <code>[[tools]]</code>; escrita dentro de <code>[[sources]]</code>, DBHub rechaza el
+        archivo.
       </p>
       <pre data-lang="toml"><code>[[tools]]
 name = "execute_sql"
