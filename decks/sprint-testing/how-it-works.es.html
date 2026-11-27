@@ -466,7 +466,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <span class="warr">→</span>
         <div class="wnode"><span class="wn">Execution</span><div class="wt">Execution</div><div class="wd">Smoke · trifuerza UI/API/DB</div><div class="wg">smoke No-Go → STOP · bug bloqueante → ⏸</div></div>
         <span class="warr">→</span>
-        <div class="wnode"><span class="wn">Reporting</span><div class="wt">Reporting</div><div class="wd">ATR · QA comment · transición · cierra ATS/ATP/ATR</div><div class="wg">bug solo con tu confirmación</div></div>
+        <div class="wnode"><span class="wn">Reporting</span><div class="wt">Reporting</div><div class="wd">ATR · QA comment · transición · cierra ATP/ATR · el ATS sigue designing (traspaso al Stage 4)</div><div class="wg">bug solo con tu confirmación</div></div>
       </div>
       <div class="wrow">
         <span class="wlbl">Salida</span>
@@ -663,7 +663,7 @@ Listas de tests del ATP y del ATR = DERIVADAS de la membership del ATS (S17)</di
       <tbody>
         <tr><td><b>Test</b> (TC)</td><td><span class="mono">draft</span></td><td><span class="mono">ready</span> vía <span class="mono">start_design</span> → <span class="mono">ready_to_run</span></td><td>lo mueve Documentation</td></tr>
         <tr><td><b>ATP</b></td><td><span class="mono">planning</span></td><td><span class="mono">ready</span> vía <span class="mono">designed</span></td><td><span class="mono">completed</span> vía <span class="mono">complete</span></td></tr>
-        <tr><td><b>ATS</b></td><td><span class="mono">designing</span></td><td>sigue <span class="mono">designing</span></td><td><span class="mono">close</span> vía <span class="mono">done</span></td></tr>
+        <tr><td><b>ATS</b></td><td><span class="mono">designing</span></td><td>sigue <span class="mono">designing</span></td><td>queda en <span class="mono">designing</span> a propósito (marca de traspaso al Stage 4); /test-documentation lo cierra vía <span class="mono">done</span> tras el veredicto de ROI</td></tr>
         <tr><td><b>ATR</b></td><td><span class="mono">active</span></td><td>sigue <span class="mono">active</span></td><td><span class="mono">close</span> vía <span class="mono">complete</span></td></tr>
         <tr><td><b>STP</b> (sprint-wide)</td><td><span class="mono">planning</span></td><td><span class="mono">ready</span> al fijar el scope</td><td><span class="mono">completed</span> al cierre del sprint</td></tr>
       </tbody>
@@ -673,7 +673,7 @@ Listas de tests del ATP y del ATR = DERIVADAS de la membership del ATS (S17)</di
       <div class="card"><p class="lbl">Slug sin mapear (S18)</p><p class="small mt-s">Lista las transiciones vivas, propone la más parecida en <b>una</b> pregunta, dispara el id vivo si dices que sí y recomienda <span class="mono">bun run jira:sync-workflows</span>. Si eliges saltarla queda como N/A declarado; un salto silencioso, nunca.</p></div>
     </div>
     <p class="small dim mt-s">Cada Test va con parent epic QA Test Repository; el ATR nace con su Test Environment.</p>
-    <div class="notes">ATS y ATR siguen abiertos a propósito al salir de Planning: la membership no es final y la corrida no pasó. Sin entorno no hay ATR. Canon: agentic-qa-core/references/artifact-lifecycle.md §1 (tabla), §2 (assignee), §4 (fallback). Los nombres de estado y transición son slugs que resuelve .agents/jira-workflows.json; cada proyecto los mapea a sus nombres reales. El Re-Test Execution de un bug sigue la misma regla que el ATR: nace active y se cierra cuando el run del Test de repro queda registrado. Un ATP congelado en planning o un TC en draft después de su stage es un defecto reportable del harness: le dice al equipo que el trabajo nunca pasó.</div>
+    <div class="notes">ATS y ATR siguen abiertos a propósito al salir de Planning: la membership no es final y la corrida no pasó. Reporting cierra el ATR y completa el ATP pero deja el ATS en designing a propósito, como marca de traspaso al Stage 4; /test-documentation lo cierra tras el veredicto de ROI. Sin entorno no hay ATR. Canon: agentic-qa-core/references/artifact-lifecycle.md §1 (tabla), §2 (assignee), §4 (fallback). Los nombres de estado y transición son slugs que resuelve .agents/jira-workflows.json; cada proyecto los mapea a sus nombres reales. El Re-Test Execution de un bug sigue la misma regla que el ATR: nace active y se cierra cuando el run del Test de repro queda registrado. Un ATP congelado en planning o un TC en draft después de su stage es un defecto reportable del harness: le dice al equipo que el trabajo nunca pasó.</div>
   </section>
 
   <!-- 10. CAMINO BUG -->
@@ -814,7 +814,7 @@ Listas de tests del ATP y del ATR = DERIVADAS de la membership del ATS (S17)</di
   chequeo de tres aristas OK
 
 Reporting · líneas propias
-  ATR close · ATS close · ATP completed
+  ATR close · ATP completed · ATS queda en designing (traspaso al Stage 4)
   Story en qa_approved o blocked
   cada issue reportado: QA Defect Management
     + components + qa_assignee
@@ -927,7 +927,7 @@ También la disparan frases como
         <div class="card"><p class="lbl">Regression</p><p class="small mt-s"><span class="mono">/regression-testing</span>: suites en CI + veredicto GO / CAUTION / NO-GO.</p></div>
       </div>
       <div class="grid g2 mt-m">
-        <div class="card"><p class="lbl">Artefactos que deja un run</p><p class="small mt-s">ATS + ATP + ATR en Jira, ya cerrados · STP vivo (solo sprint-wide) · QA comment · ticket transicionado · bugs clasificados y linkeados · carpeta PBI con <span class="mono">context.md</span> y <span class="mono">evidence/</span> · <span class="mono">test-session-memory.md</span> en <span class="mono">.session/sprint-testing/&lt;scope&gt;/</span> · sesión archivada.</p></div>
+        <div class="card"><p class="lbl">Artefactos que deja un run</p><p class="small mt-s">ATP + ATR en Jira cerrados, ATS en designing para que /test-documentation lo cierre · STP vivo (solo sprint-wide) · QA comment · ticket transicionado · bugs clasificados y linkeados · carpeta PBI con <span class="mono">context.md</span> y <span class="mono">evidence/</span> · <span class="mono">test-session-memory.md</span> en <span class="mono">.session/sprint-testing/&lt;scope&gt;/</span> · sesión archivada.</p></div>
         <div class="card card-accent"><p class="lbl">Tres reglas de oro</p><p class="small mt-s"><b>1</b> El orden es ley: smoke antes de trifuerza, comment antes de transición. <b>2</b> Triage de todo: el veto gana, un FAIL no es auto-Critical. <b>3</b> Trazable o no ocurrió: la cascade TC→ATS→Story (el link ATS↔Story es el coverage; ATP/ATR son administrativos).</p></div>
       </div>
       <p class="small dim mt-m">Pruébalo: <span class="mono">/sprint-testing single-issue UPEX-277</span> · ← → navegar · S presentador · O overview</p>

@@ -875,6 +875,7 @@ Component Value = ROI × (1 + 0.2 × N)
   </table>
   <ul class="blist anim-stagger-list">
     <li><b>Nunca saltes estados.</b> Rework solo vía <span class="mono">back_from_&lt;state&gt;</span>. Slugs desde <span class="mono">.agents/jira-workflows.json</span> (<span class="mono">{{jira.transition.test_case.&lt;slug&gt;}}</span>), nunca nombres literales hardcodeados.</li>
+    <li><b>El ATS se cierra aquí.</b> Reporting de <span class="mono">/sprint-testing</span> lo deja en <span class="mono">designing</span> a propósito como marca de traspaso; tras el veredicto de ROI, Documentation lo cierra vía <span class="mono">done</span>.</li>
     <li><b>Slug sin mapear</b> (estados renombrados o catálogo viejo): fallback de <span class="mono">artifact-lifecycle.md</span> §4. Lista las transiciones vivas, propone el sinónimo más cercano en UNA pregunta, dispara el id vivo si decís que sí y recomienda <span class="mono">bun run jira:sync-workflows</span>. Nunca queda un TC en <span class="mono">draft</span> por un slug que no resolvió.</li>
     <li><b>Labels base por TC.</b> alcance: <span class="mono">regression</span> casi siempre, <span class="mono">smoke</span> solo ruta crítica (10-20% de la suite), + <span class="mono">e2e</span>/<span class="mono">integration</span>/<span class="mono">functional</span> · estado: <span class="mono">automation-candidate</span> ↔ <span class="mono">manual-only</span> excluyentes; al mergear → <span class="mono">automated</span>.</li>
   </ul>

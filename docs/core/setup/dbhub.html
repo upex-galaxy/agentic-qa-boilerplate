@@ -246,6 +246,34 @@ GRANT SELECT ON tu_base_de_datos.* TO 'qa_automation'@'%';
 FLUSH PRIVILEGES;</code></pre>
       </details>
 
+      <h3 id="solo-lectura">Capa extra opcional: <code>readonly</code> en DBHub</h3>
+      <p>
+        El <code>dbhub.toml</code> que trae el repo no la activa. DBHub puede rechazar por su cuenta
+        todo lo que no sea lectura en <code>execute_sql</code>: con
+        <code>readonly = true</code> solo acepta sentencias de lectura (<code>SELECT</code>,
+        <code>WITH</code>, <code>EXPLAIN</code>, <code>SHOW</code>, según el motor), y en PostgreSQL
+        además corre la consulta dentro de una transacción de solo lectura. Es una opción de la
+        herramienta, no de la fuente: va en un bloque <code>[[tools]]</code>; escrita dentro de
+        <code>[[sources]]</code>, DBHub rechaza el archivo.
+      </p>
+      <pre data-lang="toml"><code>[[tools]]
+name = "execute_sql"
+source = "primary"
+readonly = true
+
+[[tools]]
+name = "search_objects"
+source = "primary"</code></pre>
+      <p>
+        Lo que suma: una segunda barrera si el usuario de la base tiene más permisos de los que
+        debería. Lo que cuesta: bloquea también las pruebas de restricciones que hacen un
+        <code>INSERT</code> a propósito (clave foránea, <code>UNIQUE</code>, <code>NOT NULL</code>)
+        para ver cómo responde la base; en esas sesiones hay que quitar la línea y reiniciar el
+        agente. No reemplaza al usuario de solo lectura: la documentación de DBHub la presenta como
+        una barandilla, no como un límite de permisos. <code>bun sync</code> nunca toca
+        <code>dbhub.toml</code>, así que si la quieres, la agregas tú en tu copia del proyecto.
+      </p>
+
       <h2 id="varias-bases">Más de una base de datos</h2>
       <p>
         Añade otro bloque <code>[[sources]]</code> a <code>dbhub.toml</code> con un
