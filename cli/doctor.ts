@@ -388,6 +388,7 @@ interface DoctorReport {
    */
   orchestrator: { cli: string | null, state: OrchestratorState }
   orchestration_skill_installed: boolean
+  jq_installed: boolean
   pending_actions: PendingAction[]
   /**
    * OPTIONAL items, reported and never blocking: they do not turn `status` to
@@ -893,6 +894,17 @@ export function userSkillInstalled(home: string, slug: string, exists: (path: st
   return [join(home, '.agents', 'skills', slug, 'SKILL.md'), join(home, '.claude', 'skills', slug, 'SKILL.md')].some(exists);
 }
 
+export function jqInstalled(spawn: typeof spawnSync = spawnSync): boolean {
+  const probe = spawn('jq', ['--version'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  return !probe.error && probe.status === 0;
+}
+
+export function jqWarning(installed: boolean, platform: string): PendingAction | null {
+  if (installed) { return null; }
+  const target = platform === 'win32' ? 'winget install jqlang.jq' : platform === 'darwin' ? 'brew install jq' : 'sudo apt install jq';
+  return { type: 'shell_command', target, hint: 'Only for the JSON pipelines of the /acli skill (acli ... --json | jq); missing jq never blocks.' };
+}
+
 export function orchestratorState(cli: string | null, spawn: typeof spawnSync = spawnSync): OrchestratorState {
   if (cli === null) { return 'not-configured'; }
   const r = spawn(cli, ['status', '--json'], { encoding: 'utf8', timeout: 5000, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -1006,6 +1018,7 @@ export async function runDoctor(): Promise<DoctorReport> {
       return { cli, state: orchestratorState(cli) };
     })(),
     orchestration_skill_installed: userSkillInstalled(homedir(), 'agent-orchestration'),
+    jq_installed: jqInstalled(),
     pending_actions: [],
     warnings: [],
   };
@@ -1226,6 +1239,9 @@ export async function runDoctor(): Promise<DoctorReport> {
     });
   }
 
+  const jqMissing = jqWarning(report.jq_installed, process.platform);
+  if (jqMissing !== null) { report.warnings.push(jqMissing); }
+
   // .mcp.json / opencode.jsonc presence, only for a harness in use: a project
   // that dropped one deleted its config on purpose (ADR-0012).
   const harnessInUse = (harness: Harness): boolean => agentCompatibility.harnesses.includes(harness);
@@ -1365,6 +1381,7 @@ function printHuman(report: DoctorReport): void {
   checks.push(['Atlassian host (.agents/project.yaml)', hostRow]);
   checks.push(['Issue tracker (.agents/project.yaml)', report.issue_tracker.note !== null ? `${tui.statusIcon('warn')} ${report.issue_tracker.note}` : `${tui.statusIcon('ok')} ${report.issue_tracker.value === null ? 'jira (unset)' : report.issue_tracker.tracker}`]);
   checks.push(['Evidence builder (Python 3.9+ and Pillow)', report.evidence_builder.ready ? tui.statusIcon('ok') : `${tui.statusIcon('warn')} optional, see below`]);
+  checks.push(['jq (/acli JSON pipelines)', report.jq_installed ? tui.statusIcon('ok') : `${tui.statusIcon('warn')} optional, see below`]);
   const orca = report.orchestrator;
   const orcaText: Record<OrchestratorState, string> = {
     'not-configured': 'no orchestration.orchestrator_cli in .agents/project.yaml',

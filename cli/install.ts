@@ -328,6 +328,7 @@ const EXTERNAL_CLIS: ReadonlyArray<{ name: string, install?: string, docs: strin
   },
   {
     name: 'jq',
+    install: 'brew install jq   # or: apt install jq · winget install jqlang.jq',
     docs: 'https://jqlang.org/',
     purpose: 'JSON processor — required by /acli skill for parsing acli --json output',
   },

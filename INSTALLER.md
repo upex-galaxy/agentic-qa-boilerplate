@@ -189,10 +189,11 @@ playwright-cli   missing     Agent-driven browser automation (`/playwright-cli` 
 resend           missing     Email testing flows (`/resend-cli` skill)
                             docs:  https://resend.com/docs/cli
 jq               missing     JSON parsing in `acli` Jira pipelines (`acli ... --json | jq ...`)
-                            docs:  https://jqlang.github.io/jq/download
+                            quick: brew install jq   # or: apt install jq · winget install jqlang.jq
+                            docs:  https://jqlang.org/
 ```
 
-Orca (`orca`) is the one entry a skill cannot run without: `/sprint-conductor` runs only on it and stops with one line when the binary or its runtime is missing; `/agent-orchestration` and every other skill work without it (one-shot subagents stay the default executor). `bun run setup:doctor` reports its gate. `python3` (or `py` / `python` on Windows) serves only the evidence pages; `setup:doctor` checks its version and Pillow.
+Orca (`orca`) is the one entry a skill cannot run without: `/sprint-conductor` runs only on it and stops with one line when the binary or its runtime is missing; `/agent-orchestration` and every other skill work without it (one-shot subagents stay the default executor). `bun run setup:doctor` reports its gate. `python3` (or `py` / `python` on Windows) serves only the evidence pages; `setup:doctor` checks its version and Pillow. `bun run setup:doctor` also reports a missing `jq` as an optional warning.
 
 Missing per-skill CLIs do not exit the installer. Install them lazily when the owning skill surfaces a missing-binary error, or eagerly if you already know which workflow you want.
 

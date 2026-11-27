@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, test } from 'bun:test';
 
-import { checkoutSetupActions, codexTrustStatus, envVarVerdict, orchestratorCli, orchestratorState, piTrustStatus, probeOpenApiSpec, userSkillInstalled } from './doctor.ts';
+import { checkoutSetupActions, codexTrustStatus, envVarVerdict, jqInstalled, jqWarning, orchestratorCli, orchestratorState, piTrustStatus, probeOpenApiSpec, userSkillInstalled } from './doctor.ts';
 import { VAR_MANIFEST, varsFor } from './lib/variables-manifest.ts';
 
 function spec(overrides: Partial<VarSpec> & { name: string }): VarSpec {
@@ -238,5 +238,24 @@ describe('the Orca row (info only, /sprint-conductor needs it)', () => {
     expect(orchestratorState('orca', fake({ stdout: '{"result":{"runtime":{"reachable":false}}}' }))).toBe('unreachable');
     expect(orchestratorState('orca', fake({ stdout: '{"reachable":true}' }))).toBe('unreachable');
     expect(orchestratorState('orca', fake({ stdout: 'not json' }))).toBe('unreachable');
+  });
+});
+
+describe('jqWarning', () => {
+  test('a missing jq yields one optional shell_command with the platform install line', () => {
+    expect(jqWarning(false, 'darwin')?.target).toBe('brew install jq');
+    expect(jqWarning(false, 'win32')?.target).toBe('winget install jqlang.jq');
+    expect(jqWarning(false, 'linux')?.target).toBe('sudo apt install jq');
+    expect(jqWarning(false, 'darwin')?.type).toBe('shell_command');
+  });
+
+  test('a present jq yields no warning', () => {
+    expect(jqWarning(true, 'darwin')).toBeNull();
+  });
+
+  test('the probe reads the spawn result', () => {
+    const fake = (r: object) => (() => r) as unknown as typeof import('node:child_process').spawnSync;
+    expect(jqInstalled(fake({ status: 0 }))).toBe(true);
+    expect(jqInstalled(fake({ status: null, error: new Error('ENOENT') }))).toBe(false);
   });
 });
