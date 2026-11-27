@@ -12,6 +12,7 @@
 import type { Flags, PreconditionResult } from '../types/index.js';
 import { loadConfig } from '../lib/config.js';
 import { graphql, MUTATIONS, QUERIES } from '../lib/graphql.js';
+import { buildJiraFields, readJiraFlags } from '../lib/jira-fields.js';
 import { resolveIssueId, resolveIssueIds } from '../lib/jira.js';
 import { log, printCreatedKey, warnCountedButUnresolved, warnIfTruncated } from '../lib/logger.js';
 import { getBoolFlag, getFlag, requireFlag } from '../lib/parser.js';
@@ -41,10 +42,7 @@ export async function create(flags: Flags): Promise<void> {
     {
       preconditionType: { name: preconditionType },
       definition,
-      projectKey,
-      summary,
-      description,
-      labels,
+      jira: buildJiraFields({ projectKey, summary, description, labels, ...readJiraFlags(flags) }),
       folderPath,
     },
   );

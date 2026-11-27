@@ -143,8 +143,10 @@ query GetTestRunById($id: String!) {
 ### Create Test
 
 The test type is passed as an `UpdateTestTypeInput!` object (e.g.
-`{ name: "Manual" }`), the project key travels inside `jira.fields.project`,
-and inline `steps` are accepted by the schema but silently dropped by Xray
+`{ name: "Manual" }`), the whole Jira payload travels in one `$jira: JSON!`
+variable (`{ fields: { project, summary, ... } }`) built by `cli/xray/lib/jira-fields.ts`
+(`--parent`, `--component` repeatable or CSV, and `--assignee <accountId>` on the create
+commands land in it), and inline `steps` are accepted by the schema but silently dropped by Xray
 Cloud. See the Manual-steps gotcha in SKILL.md and call `addTestStep` after creating the test:
 
 ```graphql
@@ -153,10 +155,7 @@ mutation CreateTest(
   $steps: [CreateStepInput],
   $unstructured: String,
   $gherkin: String,
-  $projectKey: String!,
-  $summary: String!,
-  $description: String,
-  $labels: [String],
+  $jira: JSON!,
   $folderPath: String
 ) {
   createTest(
@@ -165,14 +164,7 @@ mutation CreateTest(
     unstructured: $unstructured,
     gherkin: $gherkin,
     folderPath: $folderPath,
-    jira: {
-      fields: {
-        summary: $summary,
-        description: $description,
-        labels: $labels,
-        project: { key: $projectKey }
-      }
-    }
+    jira: $jira
   ) {
     test {
       issueId
@@ -245,31 +237,21 @@ mutation UpdateTestType($issueId: String!, $testType: UpdateTestTypeInput!) {
 These mutations have dedicated CLI commands (`bun xray precondition create` /
 `add-to-test` / `update` / `remove-from-test`; reads via `precondition list` /
 `get`), so raw GraphQL is not needed. The type input is
-`UpdatePreconditionTypeInput!` (e.g. `{ name: "Manual" }`) and the project key
-travels inside `jira.fields.project`:
+`UpdatePreconditionTypeInput!` (e.g. `{ name: "Manual" }`) and the Jira payload
+travels in one `$jira: JSON!` variable built by `cli/xray/lib/jira-fields.ts`:
 
 ```graphql
 mutation CreatePrecondition(
   $preconditionType: UpdatePreconditionTypeInput!,
   $definition: String,
-  $projectKey: String!,
-  $summary: String!,
-  $description: String,
-  $labels: [String],
+  $jira: JSON!,
   $folderPath: String
 ) {
   createPrecondition(
     preconditionType: $preconditionType,
     definition: $definition,
     folderPath: $folderPath,
-    jira: {
-      fields: {
-        summary: $summary,
-        description: $description,
-        labels: $labels,
-        project: { key: $projectKey }
-      }
-    }
+    jira: $jira
   ) {
     precondition {
       issueId

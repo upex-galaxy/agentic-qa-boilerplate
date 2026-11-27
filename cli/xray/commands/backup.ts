@@ -38,6 +38,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from 'node:path';
 import { loadConfig } from '../lib/config.js';
 import { graphql, MUTATIONS, QUERIES } from '../lib/graphql.js';
+import { buildJiraFields } from '../lib/jira-fields.js';
 import { getJiraIssueId, listProjects } from '../lib/jira.js';
 import { log } from '../lib/logger.js';
 import { getBoolFlag, getFlag, requireFlag } from '../lib/parser.js';
@@ -917,10 +918,7 @@ export async function restore(flags: Flags): Promise<void> {
           {
             preconditionType: { name: pre.preconditionType },
             definition: pre.definition,
-            projectKey: targetProject,
-            summary: pre.summary,
-            description: pre.description,
-            labels: pre.labels,
+            jira: buildJiraFields({ projectKey: targetProject, summary: pre.summary, description: pre.description, labels: pre.labels }),
             folderPath: pre.folderPath,
           },
         );
@@ -1042,10 +1040,7 @@ export async function restore(flags: Flags): Promise<void> {
     try {
       const variables: Record<string, unknown> = {
         testType: { name: test.testType },
-        projectKey: targetProject,
-        summary: test.summary,
-        description: test.description,
-        labels: test.labels,
+        jira: buildJiraFields({ projectKey: targetProject, summary: test.summary, description: test.description, labels: test.labels }),
         folderPath: test.folderPath,
       };
 
@@ -1198,8 +1193,7 @@ export async function restore(flags: Flags): Promise<void> {
 
         if (!execIssueId) {
           const execResult = await graphql<{ createTestExecution: { testExecution: { issueId: string, jira: { key: string } } } }>(MUTATIONS.createTestExecution, {
-            projectKey: targetProject,
-            summary: exec.summary,
+            jira: buildJiraFields({ projectKey: targetProject, summary: exec.summary }),
             testIssueIds,
           });
           execIssueId = execResult.createTestExecution.testExecution.issueId;
@@ -1343,9 +1337,7 @@ async function restoreContainers(
 
       if (!issueId) {
         const result = await graphql<Record<string, Record<string, { issueId: string, jira: { key: string } }>>>(ops.create, {
-          projectKey: targetProject,
-          summary: c.summary,
-          description: c.description,
+          jira: buildJiraFields({ projectKey: targetProject, summary: c.summary, description: c.description }),
           testIssueIds: testIds,
         });
         const createdIssue = result[ops.createRoot]?.[ops.createField];

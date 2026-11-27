@@ -8,6 +8,7 @@
 import type { Flags, PreconditionResult, TestResult, TestStepResponse } from '../types/index.js';
 import { loadConfig } from '../lib/config.js';
 import { graphql, MUTATIONS, QUERIES } from '../lib/graphql.js';
+import { buildJiraFields, readJiraFlags } from '../lib/jira-fields.js';
 import { log, printCreatedKey, warnCountedButUnresolved, warnIfTruncated } from '../lib/logger.js';
 import { getBoolFlag, getFlag, getFlagArray, requireFlag } from '../lib/parser.js';
 
@@ -54,10 +55,7 @@ export async function create(flags: Flags): Promise<void> {
     testType: { name: testType },
     unstructured,
     gherkin,
-    projectKey,
-    summary,
-    description,
-    labels,
+    jira: buildJiraFields({ projectKey, summary, description, labels, ...readJiraFlags(flags) }),
     folderPath,
   });
 

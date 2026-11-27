@@ -490,10 +490,7 @@ export const MUTATIONS = {
       $steps: [CreateStepInput],
       $unstructured: String,
       $gherkin: String,
-      $projectKey: String!,
-      $summary: String!,
-      $description: String,
-      $labels: [String],
+      $jira: JSON!,
       $folderPath: String
     ) {
       createTest(
@@ -502,14 +499,7 @@ export const MUTATIONS = {
         unstructured: $unstructured,
         gherkin: $gherkin,
         folderPath: $folderPath,
-        jira: {
-          fields: {
-            summary: $summary,
-            description: $description,
-            labels: $labels,
-            project: { key: $projectKey }
-          }
-        }
+        jira: $jira
       ) {
         test {
           issueId
@@ -583,24 +573,14 @@ export const MUTATIONS = {
     mutation CreatePrecondition(
       $preconditionType: UpdatePreconditionTypeInput!,
       $definition: String,
-      $projectKey: String!,
-      $summary: String!,
-      $description: String,
-      $labels: [String],
+      $jira: JSON!,
       $folderPath: String
     ) {
       createPrecondition(
         preconditionType: $preconditionType,
         definition: $definition,
         folderPath: $folderPath,
-        jira: {
-          fields: {
-            summary: $summary,
-            description: $description,
-            labels: $labels,
-            project: { key: $projectKey }
-          }
-        }
+        jira: $jira
       ) {
         precondition {
           issueId
@@ -650,22 +630,14 @@ export const MUTATIONS = {
 
   createTestExecution: `
     mutation CreateTestExecution(
-      $projectKey: String!,
-      $summary: String!,
-      $description: String,
+      $jira: JSON!,
       $testIssueIds: [String],
       $testEnvironments: [String]
     ) {
       createTestExecution(
         testIssueIds: $testIssueIds,
         testEnvironments: $testEnvironments,
-        jira: {
-          fields: {
-            summary: $summary,
-            description: $description,
-            project: { key: $projectKey }
-          }
-        }
+        jira: $jira
       ) {
         testExecution {
           issueId
@@ -687,20 +659,12 @@ export const MUTATIONS = {
 
   createTestPlan: `
     mutation CreateTestPlan(
-      $projectKey: String!,
-      $summary: String!,
-      $description: String,
+      $jira: JSON!,
       $testIssueIds: [String]
     ) {
       createTestPlan(
         testIssueIds: $testIssueIds,
-        jira: {
-          fields: {
-            summary: $summary,
-            description: $description,
-            project: { key: $projectKey }
-          }
-        }
+        jira: $jira
       ) {
         testPlan {
           issueId
@@ -768,20 +732,12 @@ export const MUTATIONS = {
 
   createTestSet: `
     mutation CreateTestSet(
-      $projectKey: String!,
-      $summary: String!,
-      $description: String,
+      $jira: JSON!,
       $testIssueIds: [String]
     ) {
       createTestSet(
         testIssueIds: $testIssueIds,
-        jira: {
-          fields: {
-            summary: $summary,
-            description: $description,
-            project: { key: $projectKey }
-          }
-        }
+        jira: $jira
       ) {
         testSet {
           issueId

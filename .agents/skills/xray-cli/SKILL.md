@@ -129,6 +129,14 @@ TC_KEY=$(bun xray test create --project DEMO --summary "Verify login" | grep '^K
 bun xray test create --project DEMO --summary "Verify login" --json   # {"key":"DEMO-123","issueId":"1042389",...}
 ```
 
+Every `create` also takes three optional Jira fields, passed through to the Jira issue create:
+
+- `--parent <ISSUE-KEY>`: parent issue, for example an Epic.
+- `--component <name>`: Jira component. Repeat the flag or use commas (`--component A --component B` or `--component A,B`).
+- `--assignee <accountId>`: an Atlassian `accountId`, not an email or display name.
+
+Without them the create payload is unchanged.
+
 The `issueId` (numeric) is in the `--json` object too. Prefer the KEY for
 anything a human will read or link; the numeric id is what `add-step` and the
 other Xray-internal mutations take, and every command here accepts either.

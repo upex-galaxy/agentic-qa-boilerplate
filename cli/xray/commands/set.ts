@@ -7,6 +7,7 @@
 import type { Flags, TestResult, TestSetResult } from '../types/index.js';
 import { loadConfig } from '../lib/config.js';
 import { graphql, MUTATIONS, QUERIES } from '../lib/graphql.js';
+import { buildJiraFields, readJiraFlags } from '../lib/jira-fields.js';
 import { getLinkedTests, resolveIssueId, resolveIssueIds } from '../lib/jira.js';
 import { log, printCreatedKey, warnCountedButUnresolved, warnIfTruncated } from '../lib/logger.js';
 import { getBoolFlag, getFlag, requireFlag } from '../lib/parser.js';
@@ -31,9 +32,7 @@ export async function create(flags: Flags): Promise<void> {
   log.dim(`Creating Test Set in project ${projectKey}...`);
 
   const result = await graphql<{ createTestSet: { testSet: { jira: { key: string, summary: string }, issueId: string } } }>(MUTATIONS.createTestSet, {
-    projectKey,
-    summary,
-    description,
+    jira: buildJiraFields({ projectKey, summary, description, ...readJiraFlags(flags) }),
     testIssueIds,
   });
 
