@@ -162,7 +162,7 @@ When setup ends, each question below has one unambiguous answer. Each already ha
 
 | Question | Owner |
 |----------|-------|
-| Modality (Xray on Jira or Jira-native) and TMS CLI | `.agents/project.yaml` → `testing.tms_cli` (`bun xray` = jira-xray; unset or `acli` = jira-native) |
+| Modality (Xray on Jira or Jira-native) and TMS CLI | `.agents/project.yaml` → `testing.tms_cli` (`bun xray` = jira-xray; `acli` = jira-native; unset = probe the Xray API first, `SKILL.md` §Phase 0) |
 | Regression Epic | `.agents/project.yaml` → `qa.qa_epics.test_repository_epic` (name, key cached on first discovery) |
 | Custom field IDs (Modality jira-native only) | `.agents/jira-fields.json`, filled by `bun run jira:sync-fields` |
 | Link types available | `.agents/jira-link-types.json`, filled by `bun run jira:sync-link-types` |
