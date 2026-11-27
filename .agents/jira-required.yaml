@@ -946,8 +946,9 @@ work_types:
       `sync: never` type is refused by the sync, so this one is declared `discovery`.
     sync: discovery
     local_dir: test-sets
-    # Lifecycle: the Story's ATS is closed by /sprint-testing Reporting once its
-    # membership is final. A feature-level `TS:*` Set stays `designing` for the life of
+    # Lifecycle: /sprint-testing Reporting leaves the Story's ATS at designing on purpose,
+    # as the hand-off marker to Stage 4; /test-documentation closes it after the ROI
+    # verdict, when the fields its close demands are known. A feature-level `TS:*` Set stays `designing` for the life of
     # the feature and closes only with its Epic.
     # Doctrine: agentic-qa-core/references/artifact-lifecycle.md
     required_statuses:

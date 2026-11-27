@@ -466,7 +466,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <span class="warr">→</span>
         <div class="wnode"><span class="wn">Execution</span><div class="wt">Execution</div><div class="wd">Smoke · UI/API/DB triforce</div><div class="wg">smoke No-Go → STOP · blocking bug → ⏸</div></div>
         <span class="warr">→</span>
-        <div class="wnode"><span class="wn">Reporting</span><div class="wt">Reporting</div><div class="wd">ATR · QA comment · transition · closes ATS/ATP/ATR</div><div class="wg">bug only with your confirmation</div></div>
+        <div class="wnode"><span class="wn">Reporting</span><div class="wt">Reporting</div><div class="wd">ATR · QA comment · transition · closes ATP/ATR · ATS stays designing (hand-off to Stage 4)</div><div class="wg">bug only with your confirmation</div></div>
       </div>
       <div class="wrow">
         <span class="wlbl">Exit</span>
@@ -663,7 +663,7 @@ ATP and ATR test lists = DERIVED from the ATS membership (S17)</div>
       <tbody>
         <tr><td><b>Test</b> (TC)</td><td><span class="mono">draft</span></td><td><span class="mono">ready</span> via <span class="mono">start_design</span> → <span class="mono">ready_to_run</span></td><td>moved by Documentation</td></tr>
         <tr><td><b>ATP</b></td><td><span class="mono">planning</span></td><td><span class="mono">ready</span> via <span class="mono">designed</span></td><td><span class="mono">completed</span> via <span class="mono">complete</span></td></tr>
-        <tr><td><b>ATS</b></td><td><span class="mono">designing</span></td><td>stays <span class="mono">designing</span></td><td><span class="mono">close</span> via <span class="mono">done</span></td></tr>
+        <tr><td><b>ATS</b></td><td><span class="mono">designing</span></td><td>stays <span class="mono">designing</span></td><td>left at <span class="mono">designing</span> on purpose (hand-off marker to Stage 4); /test-documentation closes it via <span class="mono">done</span> after the ROI verdict</td></tr>
         <tr><td><b>ATR</b></td><td><span class="mono">active</span></td><td>stays <span class="mono">active</span></td><td><span class="mono">close</span> via <span class="mono">complete</span></td></tr>
         <tr><td><b>STP</b> (sprint-wide)</td><td><span class="mono">planning</span></td><td><span class="mono">ready</span> once the scope is fixed</td><td><span class="mono">completed</span> at sprint close</td></tr>
       </tbody>
@@ -673,7 +673,7 @@ ATP and ATR test lists = DERIVED from the ATS membership (S17)</div>
       <div class="card"><p class="lbl">Unmapped slug (S18)</p><p class="small mt-s">Lists the live transitions, proposes the closest one in <b>one</b> question, fires the live id if you say yes and recommends <span class="mono">bun run jira:sync-workflows</span>. If you choose to skip it, it stays as a declared N/A; a silent skip, never.</p></div>
     </div>
     <p class="small dim mt-s">Every Test goes with the QA Test Repository epic as parent; the ATR is born with its Test Environment.</p>
-    <div class="notes">ATS and ATR stay open on purpose when leaving Planning: the membership is not final and the run has not happened. No environment, no ATR. Canon: agentic-qa-core/references/artifact-lifecycle.md §1 (table), §2 (assignee), §4 (fallback). State and transition names are slugs resolved by .agents/jira-workflows.json; each project maps them to its real names. A bug's Re-Test Execution follows the same rule as the ATR: it is born active and closes when the repro Test's run is recorded. An ATP frozen in planning or a TC in draft after its stage is a reportable harness defect: it tells the team the work never went through.</div>
+    <div class="notes">ATS and ATR stay open on purpose when leaving Planning: the membership is not final and the run has not happened. Reporting closes the ATR and completes the ATP but leaves the ATS at designing on purpose, as the hand-off marker to Stage 4; /test-documentation closes it after the ROI verdict. No environment, no ATR. Canon: agentic-qa-core/references/artifact-lifecycle.md §1 (table), §2 (assignee), §4 (fallback). State and transition names are slugs resolved by .agents/jira-workflows.json; each project maps them to its real names. A bug's Re-Test Execution follows the same rule as the ATR: it is born active and closes when the repro Test's run is recorded. An ATP frozen in planning or a TC in draft after its stage is a reportable harness defect: it tells the team the work never went through.</div>
   </section>
 
   <!-- 10. BUG PATH -->
@@ -814,7 +814,7 @@ ATP and ATR test lists = DERIVED from the ATS membership (S17)</div>
   three-edge check OK
 
 Reporting · its own lines
-  ATR close · ATS close · ATP completed
+  ATR close · ATP completed · ATS left at designing (hand-off to Stage 4)
   Story in qa_approved or blocked
   every reported issue: QA Defect Management
     + components + qa_assignee
@@ -927,7 +927,7 @@ Phrases like these trigger it too
         <div class="card"><p class="lbl">Regression</p><p class="small mt-s"><span class="mono">/regression-testing</span>: suites in CI + GO / CAUTION / NO-GO verdict.</p></div>
       </div>
       <div class="grid g2 mt-m">
-        <div class="card"><p class="lbl">Artifacts a run leaves behind</p><p class="small mt-s">ATS + ATP + ATR in Jira, already closed · live STP (sprint-wide only) · QA comment · transitioned ticket · classified and linked bugs · PBI folder with <span class="mono">context.md</span> and <span class="mono">evidence/</span> · <span class="mono">test-session-memory.md</span> in <span class="mono">.session/sprint-testing/&lt;scope&gt;/</span> · archived session.</p></div>
+        <div class="card"><p class="lbl">Artifacts a run leaves behind</p><p class="small mt-s">ATP + ATR in Jira closed, ATS left at designing for /test-documentation to close · live STP (sprint-wide only) · QA comment · transitioned ticket · classified and linked bugs · PBI folder with <span class="mono">context.md</span> and <span class="mono">evidence/</span> · <span class="mono">test-session-memory.md</span> in <span class="mono">.session/sprint-testing/&lt;scope&gt;/</span> · archived session.</p></div>
         <div class="card card-accent"><p class="lbl">Three golden rules</p><p class="small mt-s"><b>1</b> Order is law: smoke before triforce, comment before transition. <b>2</b> Triage everything: the veto wins, a FAIL is not an automatic Critical. <b>3</b> Traceable or it did not happen: the TC→ATS→Story cascade (the ATS↔Story link is the coverage; ATP/ATR are administrative).</p></div>
       </div>
       <p class="small dim mt-m">Try it: <span class="mono">/sprint-testing single-issue UPEX-277</span> · ← → navigate · S presenter · O overview</p>

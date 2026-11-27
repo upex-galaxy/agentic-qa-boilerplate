@@ -390,7 +390,7 @@ Actions:
 10. Statuses + ownership (`agentic-qa-core/references/artifact-lifecycle.md` §1 + §2). Assignee = self on the ATP, the ATS, the ATR and every `Test`, set at create time (Xray refuses membership edits on a Plan the caller does not own). Then:
      - each `Test`: `{{jira.transition.test_case.start_design}}` -> `{{jira.transition.test_case.ready_to_run}}` = `{{jira.status.test_case.ready}}`, parented to the **QA Test Repository** epic.
      - ATP: `{{jira.transition.test_plan.designed}}` -> `{{jira.status.test_plan.ready}}`. Not `complete`: the ATP is completed at Stage 3, once the ATR results are in.
-     - ATS stays `{{jira.status.test_set.designing}}` and ATR stays `{{jira.status.test_execution.active}}`: both close at Stage 3. State it; do not "fix" it.
+     - ATS stays `{{jira.status.test_set.designing}}` and ATR stays `{{jira.status.test_execution.active}}`: the ATR closes at Stage 3, the ATS at Stage 4 (`/test-documentation`, after the ROI verdict). State it; do not "fix" it.
      On an unmapped slug run the §4 fallback (list live transitions, ask ONE `AskUserQuestion`, take the live id, recommend `bun run jira:sync-workflows`); never skip silently.
 11. Materialize the read-only cache (never hand-written) per modality: jira-native -> `bun run jira:sync-issues get <KEY> --include-comments` -> `acceptance-test-plan.md` in the STORY folder; jira-xray -> `bun run jira:sync-issues get <ATP_KEY>` -> `.context/PBI/test-plans/ATP-<ATP_KEY>-<slug>.md`. Filename note: the acronym prefix comes from a conforming ladder title; a Plan or Execution whose title does not follow the grammar keeps the legacy `TESTPLAN-` / `TESTEXEC-` / `RETESTEXEC-` prefix.
 

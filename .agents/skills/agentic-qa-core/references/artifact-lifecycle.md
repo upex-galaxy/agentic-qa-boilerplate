@@ -48,7 +48,7 @@ the skill. Everything after that is the harness's job.
 | **STR** (Sprint Test Results) | `test_execution` | sprint close: `/sprint-testing` batch close or `/regression-testing`, whoever arrives first | `active` | after the GO / CAUTION / NO-GO verdict is written: `complete` → `close` | `close` |
 | **RTR** (Regression Test Results) | `test_execution` | `/regression-testing` Phase 1, before the CI trigger (created with its Test Environment, assignee self, `testPlan → RTP`) | `active` | after the GO / CAUTION / NO-GO verdict comment is posted on it: `complete` → `close`. One RTR per verdict: an environment re-run before the verdict imports into the same RTR; a re-run after a verdict is a new RTR, never `reactive` | `close` |
 | **Re-Test Execution** | `re_test_execution` | `/sprint-testing` bug retest | `active` | after the repro Test's run is recorded PASSED/FAILED: `complete` → `close` | `close` |
-| **ATS** (Acceptance Test Set) | `test_set` | `/sprint-testing` Planning (Set-first order, step ①) | `designing` | Reporting, once membership is final: `done` → `close` | `close` |
+| **ATS** (Acceptance Test Set) | `test_set` | `/sprint-testing` Planning (Set-first order, step ①) | `designing` | `/sprint-testing` Reporting writes the fields it knows and leaves it `designing` on purpose (see below) · `/test-documentation`, after the ROI verdict: `done` → `close` | `close` |
 | **TS** (feature Test Set, optional) | `test_set` | `/test-documentation` (lazily, 1:1 with the Epic) | `designing` | stays `designing`: a feature set keeps accepting members for the life of the feature. `done` → `close` only when the Epic itself closes | `close` (at Epic close) |
 | **Precondition** | `precondition` | `/test-documentation` | `active` | no transition exists in the catalog (the workflow has `create` and nothing else). It stays `active`, which is correct | `active` |
 | **Tech Story / Tech Debt** | `tech_story` / `tech_debt` | dev (external) | `to_do` | dev owns `start_working` / `ready` · `/sprint-testing` Reporting on a coverable tech item: `test_finished` → `automated` (the QA-verified terminal) or `complete` → `completed` when the item carried no test scope | `completed` / `automated` |
@@ -58,6 +58,16 @@ A row is where the artifact must end up, which is not a promise that the move is
 mapped, available transition can still be refused by the instance's own field validators
 (measured on the ATS `done` → `close` row, refused by several project-specific mandatory-field
 validators at once). That is §4.2, and it is not a reason to leave the artifact behind.
+
+The ATS is the one Stage-1 artifact that outlives the sprint by design, and the reason is the
+hand-off, not the validator. Documenting the Tests that are real automation candidates is
+asynchronous work that happens after sprint testing ends, so an ATS left at `designing` after
+Reporting is the visible pending item that says Stage 4 is owed: the bridge between
+`/sprint-testing` and `/test-documentation`. Do not "fix" it by closing the ATS in Stage 3 or by
+writing provisional values into the fields only the ROI verdict can answer. Reporting writes the
+fields it really knows (the analysis and the outline it authored); `/test-documentation` writes the
+ROI-dependent ones (estimates, automation type, regression flag) and fires `done`. When a validator
+refuses that close, §4.2 is the mechanism.
 
 ### 1.1 Three edges that do not exist
 

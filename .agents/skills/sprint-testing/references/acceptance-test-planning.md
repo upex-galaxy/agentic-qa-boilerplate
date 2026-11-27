@@ -506,7 +506,7 @@ Every artifact this phase created carries `assignee` = the authenticated session
 |---|---|---|
 | each sprint `Test` | `{{jira.transition.test_case.start_design}}` → `{{jira.transition.test_case.ready_to_run}}` | `{{jira.status.test_case.ready}}` (parent: **QA Test Repository**) |
 | ATP | `{{jira.transition.test_plan.designed}}` | `{{jira.status.test_plan.ready}}` — **not** `completed`, that is Stage 3 |
-| ATS | — | stays `{{jira.status.test_set.designing}}` (membership final at Stage 3) |
+| ATS | — | stays `{{jira.status.test_set.designing}}` (open until `/test-documentation` closes it after the ROI verdict) |
 | ATR | — | stays `{{jira.status.test_execution.active}}` (the run has not happened) |
 
 On an unmapped slug, run the fallback protocol in `agentic-qa-core/references/artifact-lifecycle.md` §4: list the LIVE transitions, propose the closest synonym in ONE `AskUserQuestion`, fire the live id on yes, and recommend `bun run jira:sync-workflows`. Do not skip silently and do not guess an id. A supervised worker passes that question to its conductor, and a routine with nobody present leaves the transition unfired and reports the unmapped slug.

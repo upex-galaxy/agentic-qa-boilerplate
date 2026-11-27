@@ -122,7 +122,7 @@ The reading order for an AI starting cold on a sprint-testing workflow. Stop ear
 2. `.agents/jira-required.yaml`: the canonical slug catalog (custom fields, statuses, transitions).
 3. `.agents/jira-fields.json`: slug to numeric custom-field ID, for `{{jira.<slug>}}` resolution at runtime.
 4. `.agents/jira-workflows.json`: the workflow and transition catalog and the authoritative source of every status and transition name. A status that is not in this file does not exist in the instance.
-4b. `agentic-qa-core/references/artifact-lifecycle.md`: which status each artifact this skill creates must end in (ATP `ready` then `completed`, ATS `designing` then `close`, ATR `active` then `close`, TCs `draft` then `ready`), assignee-at-create, the unmapped-status fallback (§4) and the light stage verifier that closes each stage (§5). Read it before firing any transition.
+4b. `agentic-qa-core/references/artifact-lifecycle.md`: which status each artifact this skill creates must end in (ATP `ready` then `completed`, ATS `designing` until `/test-documentation` closes it, ATR `active` then `close`, TCs `draft` then `ready`), assignee-at-create, the unmapped-status fallback (§4) and the light stage verifier that closes each stage (§5). Read it before firing any transition.
 5. `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/context.md`: hand-authored ticket-local notes and open questions, read if a prior Session Start created it. It is never a Jira mirror.
 6. `.context/PBI/qa-artifacts/master-test-plan.md`: a cache of the `QA Master Test Plan` Epic description (missing: run `bun run context:hydrate`), with the regression Epic pointer and what to test and why.
 7. `business-e2e-context` (`bun run context:map business-e2e-context`): the journeys the story sits in and the feature catalog vocabulary. It resolves "what epic owns this story" for the `epics/EPIC-<KEY>-<slug>/` PBI folder name (module = Epic, 1:1). `business-data-context` and `business-api-context` join per touched level (DB, API), read the same way.
@@ -285,10 +285,12 @@ Stage 2 — Execution
 
 Stage 3 — Reporting
     -> Fill ATR, post QA comment, transition ticket
-    -> CLOSE the artifacts Stage 1 opened (artifact-lifecycle.md §1):
+    -> CLOSE the artifacts Stage 1 opened, except the ATS (artifact-lifecycle.md §1):
          ATR  complete -> {{jira.status.test_execution.close}}   (after every run status is recorded)
-         ATS  done     -> {{jira.status.test_set.close}}         (membership now final)
          ATP  complete -> {{jira.status.test_plan.completed}}    (results are in)
+         ATS  stays       {{jira.status.test_set.designing}}     (write the fields Stage 3 knows; the open
+                                                                   ATS is the hand-off marker to Stage 4,
+                                                                   which closes it after the ROI verdict)
     -> File bugs via bug-report template when found
     -> Light stage verifier (artifact-lifecycle.md §5) closes the stage
     -> See references/reporting-templates.md
@@ -372,7 +374,7 @@ The Story's coverage backbone is its **ATS** (Acceptance Test Set, `ATS: {US_ID}
    |---|---|---|---|
    | sprint `Test` (TC) | `{{jira.status.test_case.draft}}` | `{{jira.status.test_case.ready}}` | `{{jira.transition.test_case.start_design}}` then `{{jira.transition.test_case.ready_to_run}}` |
    | ATP | `{{jira.status.test_plan.planning}}` | `{{jira.status.test_plan.ready}}` | `{{jira.transition.test_plan.designed}}` |
-   | ATS | `{{jira.status.test_set.designing}}` | **stays `designing`**, because membership is not final until Stage 3 | none |
+   | ATS | `{{jira.status.test_set.designing}}` | **stays `designing`** through Stage 3: the open ATS is the hand-off marker to Stage 4, where `/test-documentation` closes it | none |
    | ATR | `{{jira.status.test_execution.active}}` | **stays `active`**, because the run has not happened yet | none |
    | STP (sprint altitude) | `{{jira.status.test_plan.planning}}` | `{{jira.status.test_plan.ready}}` once the sprint scope is set | `{{jira.transition.test_plan.designed}}` |
 
@@ -641,7 +643,7 @@ Each one points at a rule stated elsewhere and keeps its code because other file
 - S15. Do not bury a hard-to-reverse test-architecture decision in a ticket plan. A decision earns a standalone ADR only when it passes all three gates: it is hard to reverse (test-data-isolation contract, auth-in-tests change, fixture topology, a flake-retry policy spanning 3+ tests or 2+ tickets), a future reader would be surprised by it without context, and it is a real trade-off between genuine alternatives. Promote such a decision to `.context/ADR/ADR-NNNN-<slug>.md` (append-only; supersede, never edit) and leave a `See ADR-NNNN` backlink in the plan's `## Technical Decisions`. A decision that fails a gate is ticket-local and stays in the plan. The AI drafts `Proposed`; the human approves (`agentic-qa-core/references/adr-doctrine.md` §1 and §2).
 - S16. Do not create an ATR or retest Execution without a Test Environment (no ATR without environment): it resolves from `active_env` or the session env switch at creation, and an environment-less Execution fails the Stage-1 DoD gate (`agentic-qa-core/references/stage-gates.md`).
 - S17. Do not keep the ATS, ATP and ATR test lists as independent id lists (Modality jira-xray): the ATS membership is the single source and the other two derive from it.
-- S18. Do not leave an artifact in the status Jira's `create` transition dropped it in (ATP at `{{jira.status.test_plan.planning}}`, ATS at `{{jira.status.test_set.designing}}`, ATR at `{{jira.status.test_execution.active}}`, TC at `{{jira.status.test_case.draft}}`) after its owning stage closed: it tells the team the work never happened and is a reported defect of this harness. Fire the transition, or run the `agentic-qa-core/references/artifact-lifecycle.md` §4 fallback and ask.
+- S18. Do not leave an artifact in the status Jira's `create` transition dropped it in (ATP at `{{jira.status.test_plan.planning}}`, ATS at `{{jira.status.test_set.designing}}`, ATR at `{{jira.status.test_execution.active}}`, TC at `{{jira.status.test_case.draft}}`) after its owning stage closed: it tells the team the work never happened and is a reported defect of this harness. Fire the transition, or run the `agentic-qa-core/references/artifact-lifecycle.md` §4 fallback and ask. The ATS is the one exception: after Stage 3 it stays at `designing` on purpose, as the hand-off marker to `/test-documentation`, which owns its close (`artifact-lifecycle.md` §1). Closing it in Stage 3, or writing provisional values to get a validator past, is the defect there.
 - S19. Do not create a Test Plan, Test Execution, Test Set or `Test` without an `assignee`: Xray refuses membership edits on a Plan the caller does not own (`agentic-qa-core/references/artifact-lifecycle.md` §2). A find-or-create that returns someone else's artifact is never reassigned silently; ask first.
 
 ---
@@ -664,7 +666,7 @@ Each one points at a rule stated elsewhere and keeps its code because other file
 - [ ] Stage 2: smoke test first with Go/No-Go recorded, evidence under the ticket's `evidence/` folder
 - [ ] Stage 3 ATR filled, QA comment posted, ticket transitioned
 - [ ] Story approved: `{{jira.quality_token_usage}}` written (cumulative, one cycle comment) when a figure is available, or N/A stated; empty is valid (`sprint-orchestration.md` Stage 3 step 5b)
-- [ ] Stage 3 closed the Stage-1 artifacts: ATR to `{{jira.status.test_execution.close}}`, ATS to `{{jira.status.test_set.close}}`, ATP to `{{jira.status.test_plan.completed}}` (or each unmapped slug went through the `artifact-lifecycle.md` §4 fallback and was asked, never silently skipped)
+- [ ] Stage 3 closed the Stage-1 artifacts: ATR to `{{jira.status.test_execution.close}}`, ATP to `{{jira.status.test_plan.completed}}`; ATS left at `{{jira.status.test_set.designing}}` with the fields Stage 3 knows written, as the hand-off to Stage 4 (or each unmapped slug went through the `artifact-lifecycle.md` §4 fallback and was asked, never silently skipped)
 - [ ] Light stage verifier run at the close of each stage per `agentic-qa-core/references/artifact-lifecycle.md` §5, every line YES or a stated N/A
 - [ ] Progress checkpoint appended after each Stage subagent returned; after Stage 3, archived to `.session/.archive/<YYYY-MM-DD>-sprint-testing-<scope>/` and `mem_session_summary` called
 - [ ] Hand-off identified for Stages 4 / 5 / 6 if applicable

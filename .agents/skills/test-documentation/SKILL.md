@@ -496,7 +496,7 @@ Plan and Set lifecycle (`agentic-qa-core/references/artifact-lifecycle.md` §1):
 | Artifact | Born | This skill moves it to | Then |
 |---|---|---|---|
 | RTP (Regression Test Plan) | `{{jira.status.test_plan.planning}}` | `{{jira.status.test_plan.ready}}` via `{{jira.transition.test_plan.designed}}` on the first promotion | stays `ready` forever, because the RTP is long-lived. Never fire `{{jira.transition.test_plan.complete}}` on it |
-| ATS (per-Story Set) | `{{jira.status.test_set.designing}}` | closed by `/sprint-testing` Reporting, not here | none |
+| ATS (per-Story Set) | `{{jira.status.test_set.designing}}` (left there on purpose by `/sprint-testing` Reporting, as the hand-off marker to this stage) | `{{jira.status.test_set.close}}` via `{{jira.transition.test_set.done}}`, after the ROI verdict: write the ROI-dependent fields the close demands (estimates, automation type, regression flag), then fire. A validator refusal follows `agentic-qa-core/references/artifact-lifecycle.md` §4.2 | terminal |
 | TS (optional feature Set) | `{{jira.status.test_set.designing}}` | stays `designing` for the life of the feature | `{{jira.transition.test_set.done}}` only when its Epic closes |
 | Precondition | `{{jira.status.precondition.active}}` | nothing: the workflow has no transition out of `active` | stays `active`; that is correct, not a gap |
 
@@ -675,6 +675,8 @@ Run the eight-line template in `agentic-qa-core/references/artifact-lifecycle.md
     Deferred stated as deliberately left at {{jira.status.test_case.ready}}
 [ ] Every promoted TC's summary matches the canonical form, re-derived and verified
     BEFORE the `regression-candidate` label and RTP membership (§"Title on promotion")
+[ ] The Story's ATS at {{jira.status.test_set.close}} (via done) with the ROI fields written,
+    or a stated N/A quoting the validator (artifact-lifecycle.md §4.2)
 [ ] RTP at {{jira.status.test_plan.ready}}, assignee = self, NOT completed
 [ ] Promoted TCs added to the RTP (and the optional feature TS) — membership verified
 [ ] Every Candidate grouped into a named e2e regression flow, and the grouping written

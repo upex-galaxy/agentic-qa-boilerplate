@@ -420,7 +420,7 @@ Exact instructions:
        - each sprint `Test`: `{{jira.transition.test_case.start_design}}` then `{{jira.transition.test_case.ready_to_run}}` -> `{{jira.status.test_case.ready}}`, parented to the **QA Test Repository** epic (`qa.qa_epics.test_repository_epic`).
        - ATP: `{{jira.transition.test_plan.designed}}` -> `{{jira.status.test_plan.ready}}`.
        - STP (sprint altitude, once the sprint scope is set): `{{jira.transition.test_plan.designed}}` -> `{{jira.status.test_plan.ready}}`.
-       - ATS stays `{{jira.status.test_set.designing}}` (membership is final only at Stage 3); ATR stays `{{jira.status.test_execution.active}}` (the run has not happened yet). Both are deliberate: state them, do not "fix" them.
+       - ATS stays `{{jira.status.test_set.designing}}` (it stays open through Stage 3 as the hand-off marker to Stage 4); ATR stays `{{jira.status.test_execution.active}}` (the run has not happened yet). Both are deliberate: state them, do not "fix" them.
        On an unmapped slug run the fallback in `agentic-qa-core/references/artifact-lifecycle.md` §4 (list the live transitions, ask ONE AskUserQuestion, fire the live id, recommend `bun run jira:sync-workflows`). Never skip silently.
   6. Materialize the local cache per modality (a read-only cache, never hand-written), then read it back to confirm:
        - Modality jira-native: `bun run jira:sync-issues get <TICKET_KEY> --include-comments` -> <PBI_FOLDER>/acceptance-test-plan.md
@@ -538,8 +538,8 @@ Exact instructions:
        - Modality jira-xray: [TMS_TOOL] Update Test Execution / Run statuses, then transition the Execution: `[ISSUE_TRACKER_TOOL] Transition: {{jira.transition.test_execution.complete}}` (`active` -> `close`). "Mark complete" is the transition: an ATR left at `{{jira.status.test_execution.active}}` reads as a run still in progress.
   3-bis. Run statuses are per-project vocabulary, so read them and do not assume them. One instance (ADR-0006) accepted only `TODO`, `EXECUTING`, `PASSED`, `FAILED` and rejected `BLOCKED` and `ABORTED` with a bare validation error and no list of accepted values. On the first status write of the session, use the project's own vocabulary (the TMS skill's status list for this instance, or one probe). When a value is rejected, do not retry variants: leave an unexecuted run `TODO` (never `FAILED`, because FAILED claims an observation) and write the ladder reason into the ATR body (`DEFERRED (execution) <date> by QA decision: <reason>; follow-up <KEY>`) per `reporting-templates.md` §2.4, plus the same reason in the Findings list. The reason text is what the reader needs; the enum value is only a filter, and a blocked case is never dropped silently because its status would not fit.
        - Modality jira-native: [ISSUE_TRACKER_TOOL] Update Issue with {{jira.acceptance_test_results}} field (or `## Acceptance Test Results (ATR)` fallback comment when the field is absent).
-  3b. Close the other two Stage-1 artifacts (`agentic-qa-core/references/artifact-lifecycle.md` §1), Modality jira-xray:
-        - ATS: membership is now final, so `[ISSUE_TRACKER_TOOL] Transition: {{jira.transition.test_set.done}}` (`designing` -> `close`).
+  3b. Close the ATP and hand the ATS to Stage 4 (`agentic-qa-core/references/artifact-lifecycle.md` §1), Modality jira-xray:
+        - ATS: write the fields Stage 3 knows (the analysis and the outline it authored), leave the ROI-dependent ones empty and do NOT fire `{{jira.transition.test_set.done}}`. The ATS stays `designing` as the hand-off marker to `/test-documentation`, which closes it after the ROI verdict.
         - ATP: results are in, so `[ISSUE_TRACKER_TOOL] Transition: {{jira.transition.test_plan.complete}}` (`ready` -> `completed`). If the ATP is still at `{{jira.status.test_plan.planning}}` (Stage 1 skipped its transition), fire `{{jira.transition.test_plan.designed}}` first, because `complete` is only available from `ready`.
         On any unmapped slug run the `artifact-lifecycle.md` §4 fallback: list the live transitions, ask ONE AskUserQuestion, fire the live id on yes, and recommend `bun run jira:sync-workflows`. Never skip silently. Modality jira-native has no items at this altitude: state N/A.
   3a. Materialize the local cache per modality (a read-only cache, never hand-written), then read it back to confirm:
@@ -566,7 +566,7 @@ Exact instructions:
        f. Parent the issue to the **QA Defect Management** process epic (`qa.qa_epics.defect_epic`, found-or-created; never the Story and never a product/dev epic), and keep the source-Story link for traceability (the Story `causes` the issue via `{{jira.link_types.problem_incident.name}}`, per reporting-templates.md §1.13). Three axes: parent = QA epic, link = Story, components = product module (Part 4).
      Create-time customfields and native `components` go via acli `workitem create --from-json`; customfield/component edits on an existing issue go via REST `PUT`. The mechanics are in doctrine Part 6 + `/acli`.
   7. Update <SESSION_DIR>/test-session-memory.md sections: TMS Artifacts (final IDs), Stage Results > Reporting, Checklist > Reporting.
-  8. Run the light stage verifier (`agentic-qa-core/references/artifact-lifecycle.md` §5). Stage-specific lines: ATR at `{{jira.status.test_execution.close}}` · ATS at `{{jira.status.test_set.close}}` · ATP at `{{jira.status.test_plan.completed}}` · Story at `{{jira.status.story.qa_approved}}` or `{{jira.status.story.blocked}}` · every filed issue parented to **QA Defect Management** with components + `{{jira.qa_assignee}}` set · every unmapped slug asked, never silently skipped.
+  8. Run the light stage verifier (`agentic-qa-core/references/artifact-lifecycle.md` §5). Stage-specific lines: ATR at `{{jira.status.test_execution.close}}` · ATS at `{{jira.status.test_set.designing}}` (hand-off to Stage 4) · ATP at `{{jira.status.test_plan.completed}}` · Story at `{{jira.status.story.qa_approved}}` or `{{jira.status.story.blocked}}` · every filed issue parented to **QA Defect Management** with components + `{{jira.qa_assignee}}` set · every unmapped slug asked, never silently skipped.
 
 Report format:
   {
@@ -577,7 +577,7 @@ Report format:
     "recalibration": { "applied": true|false, "hypothesis": "...", "verification_fact": "...", "outcome": "confirmed_defect | go_with_debt", "user_confirmed": true|false },
     "qa_comment_id": "<comment id or 'posted'>",
     "transition": "<from_status> -> <to_status>",
-    "artifact_closures": { "atr": "close|<actual>", "ats": "close|<actual>|n/a", "atp": "completed|<actual>|n/a" },
+    "artifact_closures": { "atr": "close|<actual>", "ats": "designing|<actual>|n/a", "atp": "completed|<actual>|n/a" },
     "unmapped_slugs": [{ "slug": "...", "asked": true|false, "resolution": "live id <n> | skipped by user" }],
     "light_verifier": "8/8 (N/A: <stated reasons>)",
     "bugs_filed": [{ "key": "<TMS_KEY>", "summary": "..." }],
@@ -589,7 +589,7 @@ Report format:
 Rules:
   - Do not edit ACs on the parent ticket. Do not close the ticket; only transition it to the QA-defined state.
   - Report only with no open `BLOCKED`, and list every `DEFERRED (execution)` in the QA comment so the signer sees it.
-  - Close the QA artifacts: an ATR left `active`, an ATS left `designing` or an ATP left `planning` after this stage is a Reporting DoD failure (artifact-lifecycle.md §1, sprint-testing anti-pattern S18).
+  - Close the QA artifacts: an ATR left `active` or an ATP left `planning` after this stage is a Reporting DoD failure (artifact-lifecycle.md §1, sprint-testing anti-pattern S18). The ATS stays `designing` on purpose, as the hand-off to Stage 4.
   - Apply the bug summary format from reporting-templates.md §1.2 verbatim, without improvisation.
   - On 4xx/5xx from any [ISSUE_TRACKER_TOOL] / [TMS_TOOL] call: stop, report the partial state, and do not auto-retry the transition.
   - Critical Rule #3 (No AI Attribution): the QA comment must look human-authored.
@@ -722,7 +722,7 @@ The orchestrator creates the file at `<SESSION_DIR>/test-session-memory.md`: `.s
 - [ ] Three-edge traceability check passed (Story↔ATS coverage + ATP↔Story + ATR↔Story administrative + lists match)
 - [ ] ATP transitioned planning -> ready (designed); it is COMPLETED at Stage 3, not here
 - [ ] TCs transitioned draft -> in_design -> ready (start_design, ready_to_run), parented to QA Test Repository
-- [ ] ATS left designing + ATR left active (deliberate — both close at Stage 3)
+- [ ] ATS left designing + ATR left active (deliberate — the ATR closes at Stage 3, the ATS at Stage 4)
 - [ ] Assignee = self on ATP / ATS / ATR / every Test, set at create time
 - [ ] Light stage verifier run (artifact-lifecycle.md §5) — every line YES or a stated N/A
 - [ ] acceptance-test-plan.md materialized via bun run jira:sync-issues in PBI
@@ -751,7 +751,7 @@ The orchestrator creates the file at `<SESSION_DIR>/test-session-memory.md`: `.s
 
 ### Reporting
 - [ ] ATR report filled, then transitioned active -> close (complete)
-- [ ] ATS transitioned designing -> close (done) — membership final
+- [ ] ATS left designing with the fields Stage 3 knows written — hand-off to Stage 4, which closes it
 - [ ] ATP transitioned ready -> completed (complete)
 - [ ] [Bug] Re-Test Execution transitioned active -> close (complete) after the repro run is recorded
 - [ ] Every unmapped slug ASKED per artifact-lifecycle.md §4, never silently skipped
