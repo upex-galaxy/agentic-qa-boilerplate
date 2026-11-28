@@ -347,6 +347,28 @@ sslmode = "require"</code></pre>
               <td>Varias sesiones en paralelo que no cierran conexiones</td>
               <td>Menos workers en paralelo, o un pooler</td>
             </tr>
+            <tr>
+              <td>
+                Si tu base es Supabase: <code>ECONNRESET</code> al conectar por el puerto
+                <code>5432</code>
+              </td>
+              <td>
+                Algunas redes cortan la sesión en el puerto <code>5432</code> del pooler de sesión
+              </td>
+              <td>
+                Prueba <code>DBHUB_PORT=6543</code>, el pooler de transacciones, como alternativa:
+                las queries sencillas que usa DBHub funcionan ahí. Reinicia la sesión después de
+                cambiar <code>.env</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Si tu base es Supabase: <code>Tenant or user not found</code></td>
+              <td>Con el pooler, el usuario debe llevar la referencia del proyecto como sufijo</td>
+              <td>
+                <code>DBHUB_USER</code> con la forma
+                <code>&lt;usuario&gt;.&lt;project-ref&gt;</code>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
