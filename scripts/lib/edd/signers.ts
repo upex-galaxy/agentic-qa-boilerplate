@@ -52,8 +52,16 @@ const KEY_TYPE = /^(?:ssh-[a-z0-9-]+|ecdsa-sha2-[a-z0-9-]+|sk-[a-z0-9@.-]+)$/;
 function keyBlob(type: string, b64: string): Buffer | null {
   if (!KEY_TYPE.test(type) || !/^[A-Z0-9+/]+={0,2}$/i.test(b64)) { return null; }
   const blob = Buffer.from(b64, 'base64');
-  if (blob.length < 4 || blob.readUInt32BE(0) !== type.length) { return null; }
-  return blob.subarray(4, 4 + type.length).toString('latin1') === type ? blob : null;
+  const fields: Buffer[] = [];
+  for (let at = 0; at < blob.length;) {
+    if (at + 4 > blob.length) { return null; }
+    const n = blob.readUInt32BE(at);
+    if (at + 4 + n > blob.length) { return null; }
+    fields.push(blob.subarray(at + 4, at + 4 + n));
+    at += 4 + n;
+  }
+  if (fields.length < 2 || fields[0].toString('latin1') !== type || fields.slice(1).some(f => f.length === 0)) { return null; }
+  return type.includes('ed25519') && fields[1].length !== 32 ? null : blob;
 }
 
 export function fingerprint(key: string): string | null {

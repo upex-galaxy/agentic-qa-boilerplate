@@ -74,6 +74,8 @@ describe('what counts as a listed signer', () => {
     expect(listsASigner('../../docs/probe-keys.txt')).toBe(false);
     expect(listsASigner('# header\n\n   \n')).toBe(false);
     expect(listsASigner('owner namespaces="git" ssh-ed25519 AAAAowner\n')).toBe(false);
+    expect(listsASigner('owner namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5\n')).toBe(false);
+    expect(listsASigner(`owner ${key}AAAA\n`)).toBe(false);
   });
 
   test('a symlinked allowed_signers is refused and its target is left as it is', () => {
