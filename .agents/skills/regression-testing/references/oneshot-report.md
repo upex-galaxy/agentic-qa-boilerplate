@@ -47,21 +47,34 @@ Exit codes: 0 means written, 1 means nothing was written (no results, a leak gat
 
 ## Leak gate
 
-The report is built to leave the machine, so two layers keep secrets out of it:
+The report is built to leave the machine, so two layers lower the chance that a secret leaves with it:
 
-1. The model redacts every string on the way in: secret-shaped text, plus the exact values held by the local `.env*` files, the MCP configs, `.auth/` and secret-named environment variables. Arguments in decorator-shaped step titles (`@atc` and `@step`) are dropped.
+1. The model redacts every string on the way in: secret-shaped text, whatever was typed into a field (step titles, call logs, page snapshots), and the exact values held by the local `.env*` files, the MCP configs, `.auth/` and secret-named environment variables. Arguments in decorator-shaped step titles (`@atc` and `@step`) are dropped.
 2. A final scan of the finished page runs before the write. Any hit exits 1, writes nothing, and prints the rule name and a count, never the value.
 
-The redactor over-redacts on purpose, because it fails closed: harmless text shaped like a secret, such as a test name with a word after `password:`, is masked too.
+The redactor over-redacts on purpose, because it fails closed: a typed email, or a test name with a word after `password:`, is masked too.
 
 When the gate refuses, find the string in the test or the helper that produced it and fix it there. Never edit the HTML or skip the gate.
 
-What the gate cannot see, so look at the file before sending it when the run touched sensitive data:
+## Before attaching the file
 
-- Pixels in screenshots and video.
-- An opaque token in free text with no key name and no known prefix, whose value this machine does not hold. A report built from CI artifacts is the usual case, since CI secrets can differ from local ones.
-- Local values shorter than eight characters.
-- Values encoded more than once, compressed, or split across lines.
+**A passed gate is not proof that the file is clean.** The gate knows secrets by their shape, by the name next to them, and by the values this machine holds. A secret with none of the three passes, and the command still reports success.
+
+**The weakest case is a report built from CI artifacts on a machine that does not hold the CI secrets.** The exact-value check then has nothing to compare against, and only shapes and names are left. Open the file and read it before sending it, or build it where the run's secrets are loaded.
+
+What passes, even so:
+
+| What | Where it shows up |
+|---|---|
+| Anything visible in a screenshot or a video, on any machine | `--attachments`, `--video` |
+| A value with no known token prefix and no secret-looking name beside it | error messages, assertion diffs (`Received: "..."`), logs, test and step names, parameter values, URL paths, `environment.properties` |
+| A secret under a key the rules do not know, nested one level below a secret key, or written as XML, multipart or a `[name, value]` pair | API bodies in attachments |
+| Part of a password that holds a quote followed by punctuation, a space, or an HTML closing tag | `password=...` text |
+| A value shorter than eight characters in free text | anywhere |
+| A value encoded in a way the check does not try, such as compressed, reversed, or base64 inside `user:password` | anywhere |
+| A local value whose `.env` file sits outside the directory the command runs in | anywhere |
+
+When the run touched real credentials or customer data, prefer the lean default (no attachments, no video) and read the failures before sending.
 
 ## Known defects
 
