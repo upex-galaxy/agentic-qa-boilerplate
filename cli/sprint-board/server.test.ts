@@ -20,12 +20,17 @@ function cli(b: Board, ...args: string[]): void {
   if (r.exitCode !== 0) { throw new Error(`${args.join(' ')} failed: ${r.stdout.toString()}${r.stderr.toString()}`); }
 }
 function newAsk(b: Board, text: string): string {
-  cli(b, 'ask', '--to', 'Kim', '--ticket', 'DEMO-1', '--kind', 'bug', '--text', text);
+  cli(b, 'ask', '--to', 'Kim', '--ticket', 'DEMO-1', '--kind', 'bug', '--text', text, '--by', 'conductor');
   return String(events(b).filter(e => e.kind === 'ask.create').at(-1)!.data!.id);
 }
 async function post(b: Board, body: Record<string, unknown>): Promise<Reply> {
   const r = await fetch(`http://127.0.0.1:${b.port}/api/ask`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-sprint-board': '1' }, body: JSON.stringify(body) });
   return { status: r.status, json: await r.json() as Record<string, unknown> };
+}
+
+async function postTo(b: Board, route: string, body: Record<string, unknown>): Promise<number> {
+  const r = await fetch(`http://127.0.0.1:${b.port}${route}`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-sprint-board': '1' }, body: JSON.stringify(body) });
+  return r.status;
 }
 
 async function startBoard(command: (port: number) => string[]): Promise<Board> {
@@ -150,6 +155,71 @@ describe('POST /api/ask', () => {
     await post(board, { id, action: 'close' });
     expect((await post(board, { id, state: 'answered', expect: 'closed' })).json).toMatchObject({ noop: false, state: 'answered' });
     expect(writes(board, id).map(e => e.data?.state)).toEqual(['sent', 'answered', 'closed', 'answered', 'closed', 'answered']);
+  });
+});
+
+describe('who the owner is', () => {
+  let board: Board;
+  beforeAll(async () => { board = await startBoard(port => ['bun', CLI, 'serve', '--port', String(port), '--merge-every', '0']); });
+  afterAll(() => { board.stop(); });
+
+  const need = (question: string) => {
+    cli(board, 'needs-you', 'DEMO-1', question, '--by', 'worker');
+    return String(events(board).filter(e => e.kind === 'need.open').at(-1)!.data!.id);
+  };
+
+  test('a page answer and a page message are the owner\'s, whatever the body claims, and listen prints only those', async () => {
+    const mine = need('from the page?');
+    const theirs = need('from the CLI?');
+    expect(await postTo(board, '/api/answer', { ticket: 'DEMO-1', needId: mine, text: 'page says yes', by: 'conductor' })).toBe(200);
+    cli(board, 'answer', 'DEMO-1', 'agent says yes', '--id', theirs, '--by', 'conductor');
+    cli(board, 'say', 'agent note');
+    expect(await postTo(board, '/api/msg', { text: 'page note', by: 'claude', from: 'claude' })).toBe(200);
+
+    const answers = events(board).filter(e => e.kind === 'need.answer');
+    expect(answers.map(e => e.by)).toEqual(['owner', 'conductor']);
+    expect(events(board).filter(e => e.kind === 'msg').map(e => `${e.by}:${String(e.data?.from)}`)).toEqual(['claude:claude', 'owner:owner']);
+
+    const listener = Bun.spawn(['bun', CLI, 'listen', '--since', '2026-10-01T00:00:00Z'], { env: env(board.dir), stdout: 'pipe', stderr: 'pipe' });
+    const reader = listener.stdout.getReader();
+    let heard = '';
+    while (!heard.includes('listening for owner actions')) {
+      const { value, done } = await reader.read();
+      if (done) { break; }
+      heard += new TextDecoder().decode(value);
+    }
+    listener.kill();
+    expect(heard).toContain('page says yes');
+    expect(heard).toContain('page note');
+    expect(heard).not.toContain('agent says yes');
+    expect(heard).not.toContain('agent note');
+    expect(heard).toContain('replayed 2 owner action(s)');
+  });
+});
+
+describe('a question an agent answered', () => {
+  let board: Board;
+  beforeAll(async () => { board = await startBoard(port => ['bun', CLI, 'serve', '--port', String(port), '--merge-every', '0']); });
+  afterAll(() => { board.stop(); });
+
+  const need = async () => {
+    const state = await (await fetch(`http://127.0.0.1:${board.port}/api/state`)).json() as { tickets: { lane: string, needs: { answer?: string, answeredBy?: string }[] }[] };
+    return { lane: state.tickets[0].lane, ...state.tickets[0].needs[0] };
+  };
+
+  test('stays answerable from the page until the owner answers, and then no agent replaces it', async () => {
+    cli(board, 'needs-you', 'DEMO-1', 'defer it?', '--by', 'worker');
+    const id = String(events(board).filter(e => e.kind === 'need.open').at(-1)!.data!.id);
+    cli(board, 'answer', 'DEMO-1', 'agent heard yes', '--id', id, '--by', 'conductor');
+    expect(await need()).toMatchObject({ lane: 'Needs you', answer: 'agent heard yes', answeredBy: 'conductor' });
+
+    expect(await postTo(board, '/api/answer', { ticket: 'DEMO-1', needId: 'need-nope', text: 'x' })).toBe(400);
+    expect(await postTo(board, '/api/answer', { ticket: 'DEMO-1', needId: id, text: 'owner says no' })).toBe(200);
+    expect(await need()).toMatchObject({ answer: 'owner says no', answeredBy: 'owner' });
+
+    expect(await postTo(board, '/api/answer', { ticket: 'DEMO-1', needId: id, text: 'again' })).toBe(400);
+    expect(() => cli(board, 'answer', 'DEMO-1', 'agent again', '--id', id, '--by', 'conductor')).toThrow(/not an open question/);
+    expect((await need()).answer).toBe('owner says no');
   });
 });
 

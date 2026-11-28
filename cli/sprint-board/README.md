@@ -82,27 +82,32 @@ $B sprint --person "Dana Dev=Product,en,Dana;D. Dev"   name=role,lang,aliases
 # what a worker (or the conductor for it) reports
 $B start PROJ-7340 [--worker w-340]        running; a second start after a verdict opens attempt n+1
 $B worker PROJ-7340 --stage execute         plan | execute | report | close
-$B tc PROJ-7340 PROJ-7320 PASSED            DEFERRED needs --reason "QA decision <date>: <why>" (or --approval "<who>, <where>")
+$B tc PROJ-7340 PROJ-7320 PASSED            a TC status; DEFERRED needs --by, and --reason "QA decision <date>: <external cause>"
+                                            or --approval "<who>, <where>" (who agreed on that case, not the owner's OK
+                                            for the Story to move), only once the unblock preflight says DEFER
+                                            (sprint-testing/references/preflight-gate.md)
 $B bug PROJ-7340 PROJ-7410 --title "..." --severity Medium [--evidence-embedded]   reminds you to embed a screenshot
 $B evidence PROJ-7340 <image> --caption "..." [--tc PROJ-7320] [--outcome passed|failed|blocked]
-$B evidence-artifact PROJ-7340 https://claude.ai/artifact/<id> --by worker|conductor|owner [--bug PROJ-7410] [--title "..."]
+$B evidence-artifact PROJ-7340 https://claude.ai/artifact/<id> --by worker|conductor [--bug PROJ-7410] [--title "..."]
                                             the published evidence page of the ticket (a claude.ai artifact by
                                             default, `bun run evidence`), or with --bug of one bug; the newest per
                                             ticket or bug wins, history kept
 $B fixture PROJ-7340 "store 42 has no orders in 7 days" [--module checkout]   reusable test data found
-$B verdict PROJ-7340 FAILED --note "5/7, bug PROJ-7410"
+$B verdict PROJ-7340 FAILED --note "5/7, bug PROJ-7410" --by worker
 $B hold PROJ-7330 --reason deploy "sync worker not on staging" [--on Tom]   / unhold
-$B needs-you PROJ-7340 "Defer case b or fix AC5?" --option "a: ..." --option "b: ..."
+$B needs-you PROJ-7340 "Defer case b or fix AC5?" --option "a: ..." --option "b: ..." --by worker
 $B needs-you PROJ-7340 "Defer TC-3?" --blocked "TC-3 cannot run" --why "the worker is not on staging"
     --option "a: wait for the deploy | cost: 1 day, Tom redeploys" --option "b: recreate on staging | cost: 20 min, one DB write restored after"
-    --recommend a --decider Dana            the structured decision card (every new flag optional)
+    --recommend a --decider Dana --by conductor   the structured decision card (every card flag optional)
 
 # owner side
-$B answer PROJ-7340 "b, Dana approved" [--id need-x]   owner, or the conductor for them (or from the page);
-                                            --id must be an unanswered question on that ticket
-$B resolve PROJ-7340 [--id need-x]          close a question; --id is required when the ticket has more than one
-$B wait PROJ-7390 --on Lee --what "..."     / unwait
-$B ask --to Dana --ticket PROJ-7340 --kind decision --file draft.txt [--attach img] [--one-way|--two-way]
+$B answer PROJ-7340 "b, Dana approved" --id need-x --by conductor   an agent records an answer given outside the page,
+                                            under its own name (the owner answers on the page); --id must be an
+                                            unanswered question on that ticket, which stays open for the owner (see
+                                            Authors). With no text it prints the answers and by whom
+$B resolve PROJ-7340 [--id need-x] --by conductor   close a question; --id is required when the ticket has more than one
+$B wait PROJ-7390 --on Lee --what "..."     / unwait PROJ-7390 --on Lee --by conductor
+$B ask --to Dana --ticket PROJ-7340 --kind decision --file draft.txt --by conductor [--attach img] [--one-way|--two-way]
                                             a message for the owner to send (see Asks)
 $B ask-state <ask-id> <state> --by conductor|sentinel|worker [--expect <state>] [--reply "..."] [--reply-at <iso>]
            [--link <url>] [--error "..."]   record a move an agent saw; the owner moves an ask on the page
@@ -126,20 +131,48 @@ $B sentinel [--baseline <file>] [--every 10] [--hours 9-18] [--days 1-5] [--stop
 $B arrivals [--sync] [--lock-wait <s>] [--json]   tickets that reached the test environment (bucket in_test) and
                                             still need a conductor decision, plus UNTRACKED sprint tickets in test that
                                             are not on the board
-$B arrival PROJ-1 launched|held|skipped "why"   record that decision (held comes back as RECHECK every pass)
+$B arrival PROJ-1 launched|held|skipped "why" --by conductor   record that decision (held comes back as RECHECK
+                                            every pass)
 $B watch-pass ["note"]                      record a pass that did not run arrivals --sync
 $B watcher register <name> --pid <n> [--match=<text>]   a background process the board flags when it stops running
 $B watcher clear <name> | list              forget a retired one | each registration, running or NOT running
 ```
 
 Every value from a closed set is checked (`--state`, `--stage`, statuses,
-`--blocker`, `--reason` on `hold`, `--severity`, `--kind`, `--outcome`, `--module`, `--by` on
-`evidence-artifact`, `ask` and `ask-state`, the evidence page URL), every
+`--blocker`, `--reason` on `hold`, `--severity`, `--kind`, `--outcome`, `--module`, `--by` where
+§Authors requires it, the evidence page URL), every
 ticket must already be on the board, and a person (`--to`, `--on`, `--decider`)
 must resolve to exactly one name, or the command stops and says why. A time (`--at`, `--started`,
 `--closed`) is stored as ISO and an unparseable one is refused. Boolean flags (`--ask`, `--all`,
 `--json`, `--sync`, `--reuse`, ...) never take the next word, so `say --ask "text"` keeps its text.
 A test case id is a tracker key (`PROJ-7320`) or a file's own id (`DEMO-7101-T1`, `TC-7012`).
+
+## Authors
+
+Only the page's routes write `owner`, whatever the request body says. On every command the CLI
+refuses a `--by` that reads as `owner` (case, spacing, punctuation, invisible or look-alike letters,
+or a "who, where" text that starts with it) and a `--by` with no value. So `listen` and the sentinel
+report an owner action only when it came through the page. This guards the CLI. A process on the same
+machine that calls the page's routes, or edits the log, is not stopped.
+
+| Commands | `--by` |
+|---|---|
+| `answer` with text, `needs-you`, `resolve`, `ask`, `ask-state`, `verdict`, `tc` with `DEFERRED` or `--approval`, `arrival`, `unwait`: the event states what someone said or decided | required: `conductor`, `sentinel` or `worker` |
+| `evidence-artifact` (`evidence-page`) | required: `worker` or `conductor` |
+| `accept-risk` | required: the person and where they said it |
+| `add`, `remove`, `meta`, `start`, `worker`, any other `tc`, `bug`, `evidence`, `fixture`, `hold`, `unhold`, `wait`, `log`: scope, progress or an observation, and nothing reads their author | optional |
+
+`say` always signs as `claude`; `watch-pass`, `arrivals --sync` and the sentinel sign their own passes.
+
+**A question stays the owner's.** One answered by anyone else stays in Needs you, and the page keeps
+offering it, naming who recorded that answer, until the owner answers or it is resolved. An owner
+answer is never replaced by another, and "Your response time" counts the owner's answers only. When
+an agent may resolve a question that gates something:
+`.agents/skills/sprint-testing/references/sprint-board.md` §3.
+
+**What the CLI prints.** Stored text stays on the line that introduces it: line breaks and control
+characters are flattened, long runs of spaces are shortened, JSON output escapes them instead, and
+where a line carries someone's words their name comes first.
 
 ## Worker protocol
 
@@ -354,11 +387,8 @@ only one waiter at a time does the taking over.
 A move with no `--at` is never dated before the state it replaces, so an ask already stamped ahead of
 the clock still moves. A long reply or failure text is cut to what one event line holds.
 
-**Who wrote it.** Only the page's route writes `owner`, whatever the request body says. `ask-state`
-requires `--by`, one of `conductor`, `sentinel` or `worker`, and refuses `owner` in any spelling, so
-`listen` and the sentinel report an owner move on an ask only when it came through the page. This
-guards the CLI. A process on the same machine that calls the page's route, or edits the log, is not
-stopped.
+**Who wrote it.** The page's route writes `owner`; `ask` and `ask-state` name their author and
+cannot sign as the owner (§Authors).
 
 **Messenger.** `messenger.ts` defines the interface a chat provider implements, and the board ships
 none (`resolveMessenger`). Without one, approve, retry and the states `approved`, `drafted` and
@@ -585,7 +615,7 @@ Computed, never written (`laneOf` in `model.ts`, tests in `model.test.ts`):
 
 | Order | Lane | When |
 |---|---|---|
-| 1 | Needs you | an unanswered question, a DEFERRED with no recorded reason, or a worker that stopped without a verdict |
+| 1 | Needs you | a question the owner has not answered and nobody resolved, a DEFERRED with no recorded reason, or a worker that stopped without a verdict |
 | 2 | Running | the worker is running (a retest outranks old failures) |
 | 3 | Failed | verdict FAILED or any TC FAILED |
 | 4 | Passed | verdict PASSED, or the tracker in the `tested` bucket with every case PASSED/DEFERRED |

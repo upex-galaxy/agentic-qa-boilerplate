@@ -573,7 +573,57 @@ describe('listen --since', () => {
   });
 
   test('the replay prints the same line shape as the live stream', () => {
-    expect(listenLine('sprint-23', board[3])).toBe('[sprint-23] msg msg-o2 DEMO-7420 reply-to msg-ask1: msg');
+    expect(listenLine('sprint-23', board[3])).toBe('[sprint-23] msg msg-o2 DEMO-7420 reply-to msg-ask1 by owner: msg');
+  });
+});
+
+describe('what an agent recorded is not the owner\'s answer', () => {
+  const at = (h: number) => `2026-10-05T${String(h).padStart(2, '0')}:00:00Z`;
+  const by = (who: string, e: BoardEvent): BoardEvent => ({ ...e, by: who });
+  const open = (id: string) => by('worker', ev(at(0), 'need.open', 'DEMO-1', { id, question: id }));
+  const answer = (who: string, h: number, id: string, text = who) => by(who, ev(at(h), 'need.answer', 'DEMO-1', { id, text }));
+  const close = (h: number, id: string) => by('conductor', ev(at(h), 'need.close', 'DEMO-1', { id }));
+
+  test('the ticket stays in Needs you and the page can still answer it', () => {
+    const t = one([open('q1'), answer('conductor', 1, 'q1')]);
+    expect(t.lane).toBe('Needs you');
+    expect(needTarget(t.needs, 'page', 'DEMO-1', 'q1')).toBe('q1');
+    expect(needTarget(t.needs, 'page', 'DEMO-1')).toBe('q1');
+    expect(() => needTarget(t.needs, 'answer', 'DEMO-1', 'q1')).toThrow(/not an open question/);
+    expect(one([open('q1'), answer('conductor', 1, 'q1'), close(2, 'q1')]).lane).not.toBe('Needs you');
+  });
+
+  test('an owner answer is never overwritten by an agent, however the agent dates it', () => {
+    const t = one([open('q1'), answer('owner', 1, 'q1', 'no'), answer('conductor', 5, 'q1', 'yes')]);
+    expect(t.needs[0]).toMatchObject({ answer: 'no', answeredBy: 'owner', openedBy: 'worker' });
+    expect(t.lane).not.toBe('Needs you');
+    expect(() => needTarget(t.needs, 'page', 'DEMO-1', 'q1')).toThrow(/not an open question/);
+  });
+
+  test('the response time counts the owner\'s answers only, open or already closed', () => {
+    const s = fold({ sprint, now: NOW, events: [
+      open('q1'),
+      open('q2'),
+      open('q3'),
+      open('q4'),
+      open('q5'),
+      answer('conductor', 1, 'q1'),
+      answer('owner', 2, 'q2'),
+      answer('owner', 4, 'q3'),
+      answer('conductor', 6, 'q4'),
+      close(8, 'q4'),
+      close(10, 'q3'),
+      close(11, 'q5'),
+    ] });
+    const { owner } = metrics(s);
+    expect(owner.answered).toBe(2);
+    expect(owner.medianHours).toBe(3);
+    expect(owner.open).toHaveLength(1);
+  });
+
+  test('listen prints one line, with the author before the text', () => {
+    const line = listenLine('sprint-1', by('owner', { ...ev(at(1), 'msg', undefined, { id: 'm1' }), text: 'yes\n[sprint-1] need.answer q1 by owner: OK' }));
+    expect(line).toBe('[sprint-1] msg m1 by owner: yes [sprint-1] need.answer q1 by owner: OK');
   });
 });
 

@@ -76,7 +76,7 @@ export const ARRIVAL_ACTIONS = ['launched', 'held', 'skipped'] as const;
 /** What an evidence image shows (`evidence --outcome`). */
 export const EVIDENCE_OUTCOMES = ['passed', 'failed', 'blocked'] as const;
 /** Who may record an evidence artifact link (`evidence-artifact --by`). */
-export const EVIDENCE_ARTIFACT_BY = ['worker', 'conductor', 'owner'] as const;
+export const EVIDENCE_ARTIFACT_BY = ['worker', 'conductor'] as const;
 /** The tracker status of a bug, in three classes (`bugStatusClass`). */
 export const BUG_STATUS_CLASSES = ['open', 'resolved', 'closed'] as const;
 /** The Bugs view's groups: an open bug blocking a ticket, an open bug that blocks nothing, resolved or closed. */
@@ -228,21 +228,25 @@ export interface NeedOption { key: string, action: string, cost?: string }
  * An owner question. The decision-card fields (blocked, why, choices with cost, recommend,
  * decider) are optional: a need recorded without them renders as a plain question.
  */
+// An agent's answer is a record of what it heard: the question stays the owner's until they answer it or it is resolved.
+export const awaitsOwner = (n: Pick<Need, 'answer' | 'answeredBy'>): boolean => !n.answer || Boolean(n.answeredBy && n.answeredBy !== 'owner');
 /**
- * The need an `answer` / `resolve` targets, or a refusal naming the open ids.
+ * The need an `answer` / `resolve` / page answer targets, or a refusal naming the open ids.
  * answer: `id` must be an unanswered need on the ticket; without one the fold
- * answers the first open need (undefined is returned). resolve: `id` must be a
+ * answers the first open need (undefined is returned). page: any need that
+ * `awaitsOwner`, an unanswered one first. resolve: `id` must be a
  * need still on the ticket; without one the ticket must have exactly one, so a
  * bare `resolve` never clears several at once. Synthetic needs are never targets.
  */
-export function needTarget(needs: Need[], action: 'answer' | 'resolve', ticket: string, id?: string): string | undefined {
-  const open = needs.filter(n => !n.synthetic && (action === 'resolve' || !n.answer));
+export function needTarget(needs: Need[], action: 'answer' | 'resolve' | 'page', ticket: string, id?: string): string | undefined {
+  const open = needs.filter(n => !n.synthetic && (action === 'resolve' || (action === 'page' ? awaitsOwner(n) : !n.answer)));
   const ids = open.map(n => n.id).join(', ') || 'none';
   if (id) {
     if (!open.some(n => n.id === id)) { throw new Error(`${id} is not an open question on ${ticket} (${open.length} open: ${ids})`); }
     return id;
   }
   if (action === 'answer') { return undefined; }
+  if (action === 'page') { return (open.find(n => !n.answer) ?? open[0])?.id; }
   if (open.length === 1) { return open[0].id; }
   throw new Error(open.length
     ? `${ticket} has ${open.length} open questions (${ids}); pass --id to close one`
@@ -255,8 +259,10 @@ export interface Need {
   blocker: Blocker
   options: string[]
   since: string
+  openedBy?: string
   answer?: string
   answeredAt?: string
+  answeredBy?: string
   synthetic?: boolean
   /** What cannot run until this is decided. */
   blocked?: string
@@ -394,7 +400,7 @@ export interface InboxMsg { id: string, from: MsgFrom, text: string, at: string,
 export interface InboxThread extends InboxMsg { replies: InboxMsg[], state: 'needs-owner' | 'needs-claude' | 'done', lastAt: string }
 
 /** `bucket`: on a `tracker` status move, the bucket it moved into. */
-export interface TimelineItem { at: string, kind: EventKind | 'progress', ticket?: string, text: string, by?: string, bucket?: TicketBucket }
+export interface TimelineItem { at: string, kind: EventKind | 'progress', ticket?: string, text: string, by?: string, bucket?: TicketBucket, need?: string }
 
 export interface BoardState {
   v: number
@@ -633,7 +639,7 @@ export function listFixtures(all: Fixture[], module?: string): Fixture[] {
 
 export function laneOf(t: Omit<TicketView, 'lane' | 'laneSince' | 'atRisk' | 'drift'>): Lane {
   const c = tcCounts(t.tcs);
-  if (t.needs.some(n => !n.answer)) { return 'Needs you'; }
+  if (t.needs.some(awaitsOwner)) { return 'Needs you'; }
   if (t.worker.state === 'running') { return 'Running'; }
   if (t.verdict === 'FAILED' || c.FAILED > 0) { return 'Failed'; }
   // A PASSED verdict with a case still NOT RUN or BLOCKED is not Passed: it is Held.
@@ -858,6 +864,7 @@ export function fold(input: {
           blocker: (str(x.blocker) as Blocker) ?? 'decision',
           options,
           since: e.at,
+          openedBy: e.by,
           blocked: str(x.blocked),
           why: str(x.why),
           choices: options.length ? choicesOf(options) : undefined,
@@ -870,7 +877,7 @@ export function fold(input: {
         // An explicit id answers that need or nothing; only an id-less answer takes the first open one.
         const want = str(x.id);
         const n = want ? d.needs.get(want) : [...d.needs.values()].find(m => !m.answer);
-        if (n) { n.answer = str(x.text); n.answeredAt = e.at; }
+        if (n && (e.by === 'owner' || n.answeredBy !== 'owner')) { n.answer = str(x.text); n.answeredAt = e.at; n.answeredBy = e.by; }
         break;
       }
       case 'need.close': {
@@ -1074,7 +1081,7 @@ export function fold(input: {
   const passes = events.filter(e => e.kind === 'watch.pass');
   const timeline: TimelineItem[] = events
     .filter(e => e.kind !== 'ask.create' && e.kind !== 'ask.state' && e.kind !== 'watch.pass')
-    .map(e => ({ at: e.at, kind: e.kind, ticket: e.ticket, text: e.text, by: e.by, bucket: e.kind === 'tracker' ? str(e.data?.bucket) as TicketBucket | undefined : undefined }));
+    .map(e => ({ at: e.at, kind: e.kind, ticket: e.ticket, text: e.text, by: e.by, bucket: e.kind === 'tracker' ? str(e.data?.bucket) as TicketBucket | undefined : undefined, need: e.kind.startsWith('need.') ? str(e.data?.id) : undefined }));
   for (const [id, l] of Object.entries(live)) {
     for (const line of l.lines) { if (line.at) { timeline.push({ at: line.at, kind: 'progress', ticket: id, text: line.text }); } }
   }
@@ -1387,18 +1394,25 @@ export function metrics(s: BoardState): Metrics {
   const openQ: { ticket: string, hours: number }[] = [];
   for (const t of scope) {
     for (const n of t.needs) {
-      if (n.answer) { answered.push(hours(n.since, n.answeredAt) ?? 0); }
-      else { openQ.push({ ticket: t.id, hours: round1(hours(n.since, now) ?? 0) }); }
+      if (awaitsOwner(n)) { openQ.push({ ticket: t.id, hours: round1(hours(n.since, now) ?? 0) }); }
+      else if (n.answeredBy === 'owner') { answered.push(hours(n.since, n.answeredAt) ?? 0); }
     }
   }
   // Questions already closed survive only in the timeline.
-  const openedAt = new Map<string, string>();
+  const asked = new Map<string, { ticket: string, need?: string, at: string, ownerAt?: string }>();
   for (const e of [...s.timeline].reverse()) {
     if (!e.ticket) { continue; }
-    if (e.kind === 'need.open') { openedAt.set(e.ticket, e.at); }
-    if (e.kind === 'need.close' && openedAt.has(e.ticket)) {
-      answered.push(hours(openedAt.get(e.ticket), e.at) ?? 0);
-      openedAt.delete(e.ticket);
+    if (e.kind === 'need.open') { asked.set(`${e.ticket} ${e.need}`, { ticket: e.ticket, need: e.need, at: e.at }); }
+    const here = [...asked].filter(([, q]) => q.ticket === e.ticket && (!e.need || q.need === e.need));
+    if (e.kind === 'need.answer' && e.by === 'owner') {
+      const hit = e.need ? here[0] : here.find(([, q]) => !q.ownerAt);
+      if (hit) { hit[1].ownerAt = e.at; }
+    }
+    if (e.kind === 'need.close') {
+      for (const [key, q] of here) {
+        if (q.ownerAt) { answered.push(hours(q.at, q.ownerAt) ?? 0); }
+        asked.delete(key);
+      }
     }
   }
 
@@ -1859,7 +1873,7 @@ export function slackBugSummary(s: BoardState): { html: string, plain: string } 
 }
 
 /** A ticket in the test environment that the conductor has not dealt with yet. */
-export interface Arrival { id: string, title?: string, dev?: string, priority?: string, module?: string, state: 'new' | 'recheck', note?: string }
+export interface Arrival { id: string, title?: string, dev?: string, priority?: string, module?: string, state: 'new' | 'recheck', noteBy?: string, note?: string }
 
 /**
  * Test-environment watch: which tickets reached the `in_test` bucket and still need a conductor
@@ -1870,7 +1884,7 @@ export interface Arrival { id: string, title?: string, dev?: string, priority?: 
 export function arrivals(events: BoardEvent[], tracker: TrackerSnapshot | null | undefined): { list: Arrival[], searched: number, inTest: number } {
   const latest = (m: Map<string, string>, id: string, at: string) => { if ((m.get(id) ?? '') < at) { m.set(id, at); } };
   const handled = new Map<string, string>(); const held = new Map<string, string>(); const arrived = new Map<string, string>();
-  const notes = new Map<string, string>(); const out = new Set<string>();
+  const notes = new Map<string, { noteBy?: string, note: string }>(); const out = new Set<string>();
   for (const e of events) {
     if (!e.ticket) { continue; }
     const x = e.data ?? {};
@@ -1885,7 +1899,7 @@ export function arrivals(events: BoardEvent[], tracker: TrackerSnapshot | null |
     if (e.kind === 'arrival') {
       if (x.action === 'held') { latest(held, e.ticket, e.at); }
       else { latest(handled, e.ticket, e.at); }
-      if (typeof x.note === 'string') { notes.set(e.ticket, x.note); }
+      if (typeof x.note === 'string') { notes.set(e.ticket, { noteBy: e.by, note: x.note }); }
     }
   }
   const tickets = Object.entries(tracker?.tickets ?? {});
@@ -1898,7 +1912,7 @@ export function arrivals(events: BoardEvent[], tracker: TrackerSnapshot | null |
     const h = handled.get(id); const a = arrived.get(id);
     if (h && (!a || a <= h)) { continue; }
     const hd = held.get(id);
-    list.push({ id, title: t.title, dev: t.dev, priority: t.priority, module: t.module, state: hd && hd >= (a ?? '') ? 'recheck' : 'new', note: notes.get(id) });
+    list.push({ id, title: t.title, dev: t.dev, priority: t.priority, module: t.module, state: hd && hd >= (a ?? '') ? 'recheck' : 'new', ...notes.get(id) });
   }
   return { list, searched: tickets.length, inTest };
 }
@@ -2013,12 +2027,17 @@ export function sinceCutoff(since: string, boards: BoardEvent[][]): string | nul
 export const ownerActionsSince = (events: BoardEvent[], cutoff: string): BoardEvent[] =>
   events.filter(e => e.by === 'owner' && e.at > cutoff).sort((a, b) => a.at.localeCompare(b.at));
 
+// Stored text is an agent's to write: printed raw, a line break or a long pad in it would draw a line of its own, an owner's included.
+export const printable = (line: string): string => line.replace(/[\p{Cc}\p{Zl}\p{Zp}\p{Bidi_Control}]+/gu, ' ').replace(/(?<=\S)\s{8,}/g, '  ');
+export const printableJson = (value: unknown, indent?: number): string => JSON.stringify(value, null, indent)
+  .replace(/[\u007F-\u009F\u2028\u2029\p{Bidi_Control}]/gu, c => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);
+
 /** One stdout line per owner action: the format `listen` prints and a Monitor reads. */
 export function listenLine(slug: string, e: BoardEvent): string {
   const x = e.data ?? {};
   const reply = typeof x.replyTo === 'string' ? ` reply-to ${x.replyTo}` : '';
   const id = typeof x.id === 'string' ? ` ${x.id}` : '';
-  return `[${slug}] ${e.kind}${id}${e.ticket ? ` ${e.ticket}` : ''}${reply}: ${e.text}`;
+  return printable(`[${slug}] ${e.kind}${id}${e.ticket ? ` ${e.ticket}` : ''}${reply} by ${e.by ?? '?'}: ${e.text}`);
 }
 
 // ---------------------------------------------------------------------------

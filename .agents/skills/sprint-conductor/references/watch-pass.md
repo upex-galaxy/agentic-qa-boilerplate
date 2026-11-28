@@ -11,7 +11,7 @@ worker, and keeps the board and the sprint record current, so the team gets QA f
 
 One pass is the steps below, then stop. A pass with nothing to do prints ONE line and ends. A step that
 fails is logged and the pass moves on, so a pass never blocks. Every decision is recorded with
-`bun run board arrival <KEY> launched|held|skipped "<why>"`, which makes passes idempotent: a missed pass
+`bun run board arrival <KEY> launched|held|skipped "<why>" --by conductor`, which makes passes idempotent: a missed pass
 costs nothing, and the ticket shows up on the next one. After §6, re-arm the sentinel in the same turn
 (`sprint-board.md` §7).
 
@@ -75,16 +75,16 @@ Nothing NEW or RECHECK: go straight to §5.
    - Name the feature gate, not a page flag. A flag that only shows a page proves nothing about the
      behaviour behind it; the brief names the setting that actually turns the behaviour on, and the data
      that puts it in scope.
-   - Not deployed: `bun run board arrival <KEY> held "<what is missing>"` plus
+   - Not deployed: `bun run board arrival <KEY> held "<what is missing>" --by conductor` plus
      `bun run board hold <KEY> --reason deploy --on <developer> "<what>"`. Next ticket. A held ticket comes
      back as RECHECK on every pass, and on the `recheck-sweep` wake.
 3. Module: the ticket's module (its Epic) decides which synced `module-context.md` and which recorded
    fixtures its brief carries.
 4. Skip what is not worth a worker (no ACs at all, pure configuration with nothing observable, a
-   duplicate): `arrival <KEY> skipped "<why>"`, and say it in the pass line.
+   duplicate): `arrival <KEY> skipped "<why>" --by conductor`, and say it in the pass line.
 5. Fixture gaps, asked now: `references/boot-and-resume.md` §2.5, so a worker never discovers them.
 6. Cap: at most `<cap>` live workers, counting every one (an ad-hoc retest included). Full:
-   `arrival <KEY> held "fleet full"`; it returns as RECHECK on the next pass.
+   `arrival <KEY> held "fleet full" --by conductor`; it returns as RECHECK on the next pass.
 7. Collision with a live worker: the same `entity:id` with `write` on either side
    (`fleet-conductor.md` §8, runtime half: `write` conflicts with everything on the same `entity:id`)
    holds the ticket the same way. Compare against the claims ledger
@@ -108,7 +108,7 @@ Nothing NEW or RECHECK: go straight to §5.
 4. Launch natively and confirm on screen (`/agent-orchestration`, conductor cycle §2 and §3): the tab renamed to `<KEY>--<handle>` and read back with the session name, the agent footer within a short wait, credentials loaded, the prompt delivered. A harness
    error on screen is reported, not retried blindly.
 5. Board: `bun run board start <KEY> --worker <handle> --by conductor` and
-   `bun run board arrival <KEY> launched "<one line>"`.
+   `bun run board arrival <KEY> launched "<one line>" --by conductor`.
 6. The roster row (`fleet-conductor.md` §1) with the handle and the dispatch.
 7. Sprint-record scope: a launched ticket that is not in the sprint test plan goes on
    `.session/sprint-board/staged/<test plan key>-updates.md` (one line: ticket, date, why it joined; staged
@@ -121,8 +121,9 @@ Nothing NEW or RECHECK: go straight to §5.
 
 1. Owner answers on the board: `bun run board inbox` plus the bounded `listen --since <last pass>`
    replay (`sprint-board.md` §3). Act on anything newer than the last pass, relay it to its worker
-   (mailbox reply plus a terminal pointer; the worker echoes the decision back), then close it: `resolve`
-   for a Needs-you answer, `say --reply <msg-id>` for an inbox message. Measured
+   (mailbox reply plus a terminal pointer; the worker echoes the decision back), then close it: `resolve ... --by conductor`
+   for a Needs-you answer (a gating question only once the owner's own record exists, `sprint-board.md` §3),
+   `say --reply <msg-id>` for an inbox message. Measured
    on the source board: four owner answers sat unread 15 to 60 minutes before this read became part of
    every pass.
    An ask part in the wake is read the same way. `ask-sent`: the person now owes a reply, so keep or
@@ -135,7 +136,7 @@ Nothing NEW or RECHECK: go straight to §5.
    `references/boot-and-resume.md` §3 step 3, then answer each worker by replying to one of its messages.
 3. A waited-on developer (optional, only when a read-only chat tool is configured for this project):
    for each open `wait` on the board, read the owner's conversation with that person for a reply since the
-   wait opened. A reply: tell the owner, `unwait`. Do not write there.
+   wait opened. A reply: tell the owner, `unwait ... --by conductor`. Do not write there.
 4. Finished workers: `references/round-close.md`. The conductor reads back the final ticket status
    itself; a report is never the proof.
 5. A live worker silent for two or three passes: read its screen (`agent-orchestration` liveness

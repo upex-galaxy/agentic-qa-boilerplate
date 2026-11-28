@@ -6,6 +6,7 @@ import type { SentinelConfig, SentinelDeps, SentinelState } from './sentinel.ts'
 import { spawn } from 'node:child_process';
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
+import { printable, printableJson } from './model.ts';
 import {
   additions,
   cycle,
@@ -101,7 +102,7 @@ export async function runSentinel(slug: string, f: SentinelFlags): Promise<void>
   if (sprint.closedAt) { throw new Error(`${slug} is closed (${sprint.closedAt}); a sentinel watches an open board only`); }
   const baselinePath = f.baseline ? (isAbsolute(f.baseline) ? f.baseline : resolve(process.cwd(), f.baseline)) : undefined;
   const rearm = `bun run board sentinel ${f.argv.filter(x => x !== '--once' && x !== '--dry-run').join(' ')}`.trim();
-  const log = (line: string) => console.error(`${new Date().toISOString()} ${line}`);
+  const log = (line: string) => console.error(printable(`${new Date().toISOString()} ${line}`));
   const read = () => ({ events: readEvents(slug).events, tracker: readTracker(slug) });
 
   if (f.once) {
@@ -114,7 +115,7 @@ export async function runSentinel(slug: string, f: SentinelFlags): Promise<void>
     const added = base?.baseline ? additions(base.baseline, signature) : null;
     const pids = listeningPids(cfg.port);
     const stale = syncStale(tracker.syncedAt, now, cfg);
-    console.log(JSON.stringify({
+    console.log(printableJson({
       slug,
       at: now.toISOString(),
       inHours: inHours(now, cfg),
@@ -124,7 +125,7 @@ export async function runSentinel(slug: string, f: SentinelFlags): Promise<void>
       wouldWake: added ? `change (${added.parts.join(', ')})` : null,
       additions: added,
       signature,
-    }, null, 2));
+    }, 2));
     return;
   }
 

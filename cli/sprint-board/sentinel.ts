@@ -20,7 +20,7 @@ import type { Ask, AskState, BoardEvent, TrackerSnapshot } from './model.ts';
  * conductor uses it: `.agents/skills/sprint-testing/references/sprint-board.md` §Sentinel.
  */
 import { resolveMessenger } from './messenger.ts';
-import { arrivals, boardTicketIds, foldAsks, untrackedInTest } from './model.ts';
+import { arrivals, boardTicketIds, foldAsks, printableJson, untrackedInTest } from './model.ts';
 
 // ---------------------------------------------------------------------------
 // Signature: what the conductor must react to
@@ -29,7 +29,7 @@ import { arrivals, boardTicketIds, foldAsks, untrackedInTest } from './model.ts'
 export interface SigArrival { id: string, kind: 'NEW' | 'RECHECK', title?: string }
 export interface SigUntracked { id: string, qa?: string, title?: string }
 export interface SigOwner { event: string, ticket?: string, text: string }
-export interface SigNeed { id: string, ticket: string, question: string }
+export interface SigNeed { id: string, ticket: string, by?: string, question: string }
 export type SigAsk = Pick<Ask, 'id' | 'to' | 'state' | 'stateAt' | 'sentAt' | 'kind' | 'twoWay' | 'tickets' | 'by'>;
 export interface SigAskChange { id: string, to: string, from: AskState, state: AskState, by?: string }
 
@@ -69,7 +69,7 @@ export function openWorkerNeeds(events: BoardEvent[]): SigNeed[] {
     byTicket.set(e.ticket, needs);
     if (e.kind === 'need.open') {
       const id = str(x.id) ?? e.id;
-      needs.set(id, { id, ticket: e.ticket, question: str(x.question) ?? e.text, answered: false, worker: !NOT_A_WORKER.has(e.by ?? '') });
+      needs.set(id, { id, ticket: e.ticket, by: e.by, question: str(x.question) ?? e.text, answered: false, worker: !NOT_A_WORKER.has(e.by ?? '') });
     }
     else if (e.kind === 'need.answer') {
       const want = str(x.id);
@@ -83,7 +83,7 @@ export function openWorkerNeeds(events: BoardEvent[]): SigNeed[] {
     }
   }
   const open = [...byTicket.values()].flatMap(m => [...m.values()]).filter(n => n.worker && !n.answered);
-  return open.map(({ id, ticket, question }) => ({ id, ticket, question: question.slice(0, 200) })).sort(byId);
+  return open.map(({ id, ticket, by, question }) => ({ id, ticket, by, question: question.slice(0, 200) })).sort(byId);
 }
 
 /** Tickets with a hold that was never cleared, minus the ones taken out of scope. */
@@ -480,7 +480,7 @@ export async function watchUntilWake(cfg: SentinelConfig, deps: WaitDeps & { tic
 /** The two lines a wake prints: the reason line the harness notification shows, then JSON. */
 export function wakeLines(w: Wake, ctx: { at: Date, slug: string, rearm: string }): [string, string] {
   const parts = Array.isArray(w.details.parts) ? ` (${(w.details.parts as string[]).join(', ')})` : '';
-  return [`SENTINEL WAKE ${w.reason}${parts}`, JSON.stringify({ reason: w.reason, at: ctx.at.toISOString(), slug: ctx.slug, ...w.details, rearm: ctx.rearm })];
+  return [`SENTINEL WAKE ${w.reason}${parts}`, printableJson({ reason: w.reason, at: ctx.at.toISOString(), slug: ctx.slug, ...w.details, rearm: ctx.rearm })];
 }
 
 // ---------------------------------------------------------------------------

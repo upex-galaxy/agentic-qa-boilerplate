@@ -1,6 +1,6 @@
 import type { Ask, AskAction, AskPhase, AskState, BoardState, BugGroup, EvidenceArtifact, EvidenceFilter, EvidenceView, Fixture, InboxMsg, InboxThread, Lane, Metrics, Need, OutcomeCounts, SprintBug, TicketView } from '../model.ts';
 /** Every view is a pure function of the folded state: state in, HTML out. */
-import { askPhase, askTransition, bugCounts, devsOf, EVIDENCE_OUTCOMES, groupEvidence, isDecisionCard, isDraftingState, isTestedBucket, isUnsent, LANES, listFixtures, metrics, outcomeCounts, REPORT_PRIORITIES, tcCounts, trackerName } from '../model.ts';
+import { askPhase, askTransition, awaitsOwner, bugCounts, devsOf, EVIDENCE_OUTCOMES, groupEvidence, isDecisionCard, isDraftingState, isTestedBucket, isUnsent, LANES, listFixtures, metrics, outcomeCounts, REPORT_PRIORITIES, tcCounts, trackerName } from '../model.ts';
 import { barChart, burnupChart, dotStrip, stackBar } from './charts.ts';
 import { getLang, tr } from './i18n.ts';
 import { ago, day, esc, firstName, hhmm, initials, pct, slackHtml } from './util.ts';
@@ -86,9 +86,11 @@ function caseBar(t: TicketView): string {
   return `<span class="bar" title="${c.PASSED} PASSED · ${c.FAILED} FAILED · ${c.DEFERRED} DEFERRED · ${c.BLOCKED} BLOCKED · ${c['NOT RUN']} NOT RUN">${seg(c.PASSED, 's-pass')}${seg(c.FAILED, 's-fail')}${seg(c.BLOCKED, 's-blk')}${seg(c.DEFERRED, 's-def')}${seg(c['NOT RUN'], 's-nr')}</span><span class="mono">${c.PASSED}/${c.total}</span>`;
 }
 
+const recordedBy = (n: Need): string => (n.answer && n.answeredBy ? esc(tr(`answer recorded by ${n.answeredBy}`, `respuesta registrada por ${n.answeredBy}`)) : '');
+
 function laneLine(t: TicketView, c: Ctx): string {
-  const need = t.needs.find(n => !n.answer);
-  if (t.lane === 'Needs you' && need) { return `<div class="say">◆ ${esc(need.question)}</div>`; }
+  const need = t.needs.find(awaitsOwner);
+  if (t.lane === 'Needs you' && need) { return `<div class="say">◆ ${esc(need.question)}${need.answer ? ` <span class="hint">· ${recordedBy(need)}</span>` : ''}</div>`; }
   if (t.lane === 'Running') {
     const last = t.progress.at(-1)?.text;
     return `<div class="running-stripe"></div><div class="meta">${esc(t.worker.stage ?? 'started')}${t.worker.lastActivity ? ` · ${tr('active', 'activo')} ${ago(t.worker.lastActivity, nowMs(c))} ${tr('ago', 'atrás')}` : ''}${t.worker.quiet ? ` · <b class="warn">${tr('quiet', 'callado')}</b>` : ''}</div>${last ? `<div class="say">${esc(last.slice(0, 110))}</div>` : ''}`;
@@ -150,8 +152,8 @@ export function nextSteps(c: Ctx): { html: string, n: number }[] {
     items.push({ n: 1, html: `<a href="#inbox" data-goto-inbox="${esc(t.id)}">${tr('Answer Claude', 'Responder a Claude')}</a> ${esc(q.text.length > 90 ? `${q.text.slice(0, 90)}…` : q.text)}<small>${t.ticket ? `${esc(t.ticket)} · ` : ''}${ago(q.at, nowMs(c))}</small>` });
   }
   for (const t of inScope(c)) {
-    for (const n of t.needs.filter(x => !x.answer)) {
-      items.push({ n: 1, html: `<a href="#" data-open="${esc(t.id)}">${tr('Decide', 'Decidir')}: <span class="id">${esc(t.id)}</span></a> ${esc(n.question)}<small>${esc(t.title)} · ${ago(n.since, nowMs(c))}</small>` });
+    for (const n of t.needs.filter(awaitsOwner)) {
+      items.push({ n: 1, html: `<a href="#" data-open="${esc(t.id)}">${tr('Decide', 'Decidir')}: <span class="id">${esc(t.id)}</span></a> ${esc(n.question)}<small>${esc(t.title)} · ${ago(n.since, nowMs(c))}${n.answer ? ` · ${recordedBy(n)}` : ''}</small>` });
     }
   }
   for (const a of c.state.asks) {
@@ -432,7 +434,7 @@ export function qaResult(t: TicketView): string {
 
 function whatIsLeft(t: TicketView): string {
   if (t.atRisk) { return tr('Shipped with open cases: get the decision in writing', 'Salió con casos abiertos: conseguir la decisión por escrito'); }
-  const n = t.needs.find(x => !x.answer);
+  const n = t.needs.find(awaitsOwner);
   if (n) { return n.question; }
   if (t.waits[0]) { return `${tr('Waiting on', 'Esperando a')} ${t.waits[0].person}: ${t.waits[0].what}`; }
   if (t.hold) { return t.hold.note; }
@@ -790,8 +792,8 @@ export function drawer(t: TicketView, c: Ctx): string {
   const c2 = tcCounts(t.tcs);
   // The automated chip (ADR-0020): beside each TC's own pill, never counted.
   const autoRun = t.tcs.find(x => x.automated)?.automated;
-  const needs = t.needs.filter(n => !n.answer);
-  const answered = t.needs.filter(n => n.answer);
+  const needs = t.needs.filter(awaitsOwner);
+  const answered = t.needs.filter(n => !awaitsOwner(n));
   const drafts = c.state.asks.filter(a => a.tickets.includes(t.id));
   const events = c.state.timeline.filter(e => e.ticket === t.id).slice(0, 30);
   // This ticket's own test data first, then what other tickets found in the same module.
@@ -803,6 +805,7 @@ export function drawer(t: TicketView, c: Ctx): string {
   <p class="hint">${esc(t.dev ?? 'Unassigned')} · ${esc(t.priority ?? 'Not set')} · ${esc(t.type ?? '')}${t.link ? ` · <a href="${esc(t.link)}" target="_blank" rel="noopener">${tr(`open in ${TRK(c)}`, `abrir en ${TRK(c)}`)}</a>` : ''}</p></div>
   ${needs.map(n => `<div class="need-box"><b>◆ ${esc(n.question)}</b><span class="hint">${esc(n.blocker)} · ${tr('waiting', 'esperando')} ${ago(n.since, nowMs(c))}</span>
     ${decisionCard(n)}
+    ${n.answer ? `<span class="hint">${recordedBy(n)}: <b>${esc(n.answer)}</b>. ${tr('It is not your answer until you send one.', 'No es tu respuesta hasta que envíes una.')}</span>` : ''}
     ${!n.synthetic && c.canWrite ? `${pickValues(n).length ? `<div class="opts">${pickValues(n).map(o => `<button class="btn" type="button" data-pick="${esc(o)}">${esc(o)}</button>`).join('')}</div>` : ''}<textarea id="answer-${esc(n.id)}" placeholder="${esc(tr('Your answer. The worker reads it back.', 'Tu respuesta. El worker la lee.'))}"></textarea><div><button class="btn primary" type="button" data-answer="${esc(t.id)}" data-need="${esc(n.id)}">${tr('Send answer', 'Enviar respuesta')}</button></div>` : ''}
     ${n.synthetic ? `<span class="hint">${tr('Raised by the board itself, not by a worker.', 'La levantó el propio tablero, no un worker.')}</span>` : ''}</div>`).join('')}
   ${t.verdictNote || t.evidenceArtifact || t.evidence.length

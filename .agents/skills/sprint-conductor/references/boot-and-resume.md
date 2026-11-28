@@ -97,7 +97,7 @@ build it tests.
 ### 2.5 Fixture gaps, before launch
 
 For every ticket of the round, ask whether any case needs a user, an organization or data that does not
-exist in `<env>`. Ask the owner now, on the board (`needs-you`) and in chat, before a worker finds it: on the source fleet two workers found a missing role user mid-run and
+exist in `<env>`. Ask the owner now, on the board (`needs-you ... --by conductor`) and in chat, before a worker finds it: on the source fleet two workers found a missing role user mid-run and
 waited about four hours. Verifying a fixture a developer supplied is
 conductor work, one query each; anything not verified goes into the brief marked `UNVERIFIED`.
 

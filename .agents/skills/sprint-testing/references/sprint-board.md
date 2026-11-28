@@ -22,7 +22,8 @@ is `git-flow-master/references/observer.md`.
 All commands below are `bun run board <command>`. Every closed-set value is validated and every
 ticket must already be on the board, or the command stops and says why. Pass `--id <need-id>` to
 `answer` and `resolve` every time: without it `resolve` refuses when the ticket has more than one
-open question.
+open question. A command that records what someone said or decided requires `--by`, and no command
+signs as `owner`, which only the page does (`cli/sprint-board/README.md` §Authors).
 
 ---
 
@@ -34,13 +35,13 @@ open question.
 | 0 boot | people come from `board.people`; add anyone else with `sprint --person "<Full Name>=<role>,<lang>,<alias>;<alias>"` | conductor |
 | 0 boot | `sync --discover` (adds every sprint row whose QA owner is the board's QA), then `add <KEY>` for anything assigned after the sync and `sync --ticket <KEY>` | conductor |
 | 0 boot | `bun run board:up` (serve, open the browser, `sync --discover` every 10 min). One server serves every board; keep the previous sprint's board open until its carryovers close. Once the sentinel is armed it starts the server each working morning and stops it in the evening | conductor |
-| 1 triage | `hold <KEY> --reason deploy\|no-data\|no-access\|no-permission\|defect\|other --on <person> "<what>"`; `needs-you <KEY> "<question>"` with the decision-card flags (§5) for anything only the owner decides; `fixtures --module <m>` when seeding (§6); `wait <KEY> --on <person> --what "<what>"` | conductor |
-| 2-3 launch | `start <KEY> --worker <terminal handle> --by conductor` right after the worker's terminal opens; `arrival <KEY> launched\|held\|skipped "<why>"` for a test-environment watch decision | conductor |
+| 1 triage | `hold <KEY> --reason deploy\|no-data\|no-access\|no-permission\|defect\|other --on <person> "<what>"`; `needs-you <KEY> "<question>" --by conductor` with the decision-card flags (§5) for anything only the owner decides; `fixtures --module <m>` when seeding (§6); `wait <KEY> --on <person> --what "<what>"` | conductor |
+| 2-3 launch | `start <KEY> --worker <terminal handle> --by conductor` right after the worker's terminal opens; `arrival <KEY> launched\|held\|skipped "<why>" --by conductor` for a test-environment watch decision | conductor |
 | 3 run | `tc`, `bug`, `needs-you`, `evidence`, `fixture`, `verdict`, `worker <KEY> --stage plan\|execute\|report\|close`, all `--by worker`; at Stage 3 `evidence-artifact <KEY> <url> [--bug <BUG>]` right after publishing the evidence page (§6) | worker (§2) |
 | 3 run | `evidence-artifact <KEY> <url> [--bug <BUG>] --by conductor` when the worker could not publish or record it (§6) | conductor |
-| 3 run | `inbox` (what the owner wrote that Claude owes), `listen --since <last id seen>` under Monitor (§3), `say`, `say --reply <msg-id>`, `answer <KEY> "<text>" --id <need-id> --by conductor`, `resolve <KEY> --id <need-id>`, `unhold`, `unwait <KEY> --on <person>` | conductor |
+| 3 run | `inbox` (what the owner wrote that Claude owes), `listen --since <last id seen>` under Monitor (§3), `say`, `say --reply <msg-id>`, `answer <KEY> "<text>" --id <need-id> --by conductor`, `resolve <KEY> --id <need-id> --by conductor`, `unhold`, `unwait <KEY> --on <person> --by conductor` | conductor |
 | 3 run | `ask --to <person> --ticket <KEY> --kind blocker\|bug\|decision --file <draft.txt> --by conductor` (a message the owner sends); the owner moves it on the page (sent, answered, closed, dropped). What the conductor saw itself it records with `ask-state <ask-id> <state> --by conductor --expect <current state>` (§4) | conductor, owner |
-| 4 round close | `verdict` reconciled with the tracker, `worker <KEY> --state done`, `snapshot --mode share` when the team should see it (allowlist copy: no drafts, waits, questions, inbox or evidence); the full close of a worker and a round: `sprint-conductor/references/round-close.md` | conductor |
+| 4 round close | `verdict ... --by conductor` reconciled with the tracker, `worker <KEY> --state done`, `snapshot --mode share` when the team should see it (allowlist copy: no drafts, waits, questions, inbox or evidence); the full close of a worker and a round: `sprint-conductor/references/round-close.md` | conductor |
 | sprint close | `snapshot --mode report --fragment --stp-url <test plan url>` (the sprint QA report: allowlist state, counted by bucket); publish the fragment as a private claude.ai artifact and link it from the sprint test plan; then `archive` (freezes the board) | conductor |
 | any | `sentinel --baseline .session/sprint-board/sprints/<slug>/sentinel-baseline.json` as a background task, armed at session start and after every wake (§7) | conductor |
 | any | `watcher register <name> --pid <n> [--match=<text>]` for a long-running process the conductor starts besides the sentinel; `watcher clear <name>` for one it retires on purpose; `watcher list` (§7) | conductor |
@@ -90,7 +91,7 @@ CONDUCTOR -- Run mailbox (record) + terminal pointer (nudge) -- WORKERS
 |---|---|---|---|
 | 1 | Run mailbox | the worker record: status, question, escalation, done | byte-intact, the channel of record between workers and the conductor (`/agent-orchestration` channel discipline) |
 | 2 | Board | the owner surface: Needs you, the inbox, drafts, holds, waits | everything the owner must decide reaches the board and the chat, so the owner never has to read a terminal |
-| 3 | Owner chat | answers when the owner cannot open the board | a chat answer is as valid as a board answer. Relay it, then mirror it: `say --reply <msg-id> "answered by chat: <text>"` for an inbox thread, `answer <KEY> "<text>" --id <need-id> --by conductor` then `resolve <KEY> --id <need-id>` for a Needs-you |
+| 3 | Owner chat | answers when the owner cannot open the board | relay it, then mirror it under the conductor's name: `say --reply <msg-id> "answered by chat: <text>"` for an inbox thread, `answer <KEY> "<text>" --id <need-id> --by conductor` for a Needs-you. The mirror is not the owner's board answer: `listen` does not print it, and the question stays open on the page. A question that gates nothing is then closed with `resolve <KEY> --id <need-id> --by conductor`. A question that gates something (a deferral OK, a transition, any step the owner signs) is not resolved by an agent before the owner's own record exists, on the board (their answer on the page, which `listen` prints) or in the tracker (their own comment) |
 | 4 | Slack | messages to developers | only on the owner's order. The board drafts (`ask`) and copies tables ("Copy for Slack") and sends nothing |
 
 To relay an owner answer to a worker, send a mailbox reply (the record) plus a one-line terminal
@@ -137,8 +138,8 @@ the first time, arm `listen` with a starting point:
   the owner sends it. A QA deferral is not one of them: QA takes it on its own once the unblock preflight
   (`preflight-gate.md`) finds the case cannot be recreated in the test environment for an external cause.
   The Story's move on a deferral still needs the owner's OK (`shift-right-deferral.md` §3). When the answer is to defer and the case's preflight record says
-  `DEFER`, record it with `tc <KEY> <TC> DEFERRED --approval "<who>, <where>"`; a deferral QA took on its
-  own is recorded with `--reason "QA decision <date>: <why>"` instead. Neither is the Story's deferral OK.
+  `DEFER`, record it with `tc <KEY> <TC> DEFERRED --approval "<who>, <where>" --by conductor`; a deferral QA took on its
+  own is recorded with `--reason "QA decision <date>: <external cause>"` and `--by` instead. Neither is the Story's deferral OK.
 
 ---
 
@@ -155,7 +156,7 @@ bun run board needs-you <KEY> "<the question>" \
   --why "<plain-language reason, with the real data fact>" \
   --option "a: <action> | cost: <time/risk/who acts>" \
   --option "b: <action> | cost: <time/risk/who acts>" \
-  --recommend a --decider "<person who must answer>"
+  --recommend a --decider "<person who must answer>" --by conductor
 ```
 
 The conductor enriches a worker's card before the owner sees it. A card missing `--blocked`,
@@ -166,7 +167,7 @@ The conductor enriches a worker's card before the owner sees it. A card missing 
    adds only `--decider` (who in the team owns the call) and the cost of the options in time and
    who acts.
 2. Posts the full card with `--by conductor`, then closes the terse one with
-   `resolve <KEY> --id <need-id> "superseded by the enriched card"`.
+   `resolve <KEY> --id <need-id> "superseded by the enriched card" --by conductor`.
 3. Says the same thing in chat (§3). A card whose decider is a developer or product, not the owner,
    also goes into the wave's team-decision message (§4).
 

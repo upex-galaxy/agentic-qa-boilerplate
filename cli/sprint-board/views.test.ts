@@ -4,7 +4,7 @@
  */
 import type { BoardEvent, Sprint, TrackerSnapshot } from './model.ts';
 import { describe, expect, test } from 'bun:test';
-import { askUndo, ctxOf, drawer, nextSteps, routeView, viewBugs, viewEvidence, viewMetrics, viewPeople, viewReport, viewTickets, viewTimeline } from './app/views.ts';
+import { askUndo, card, ctxOf, drawer, nextSteps, routeView, viewBugs, viewEvidence, viewMetrics, viewPeople, viewReport, viewTickets, viewTimeline } from './app/views.ts';
 import { fold as foldRaw, SCHEMA, toReportState } from './model.ts';
 import { bucketed } from './test-fixtures.ts';
 
@@ -227,5 +227,30 @@ describe('ask cards', () => {
     expect(askUndo({ from: 'approved', state: 'dropped' }, false)).toBeNull();
     expect(askUndo({ from: 'dropped', state: 'draft' }, false)).toBe('dropped');
     expect(askUndo({ from: 'closed', state: 'sent' }, false)).toBe('closed');
+  });
+});
+
+describe('a question an agent answered', () => {
+  const rendered = (by: string) => {
+    const s = fold({ sprint, now: '2026-10-05T12:00:00Z', events: [
+      ev('2026-10-02T00:00:00Z', 'need.open', 'DEMO-1', { id: 'need-a', question: 'defer?' }),
+      { ...ev('2026-10-02T01:00:00Z', 'need.answer', 'DEMO-1', { id: 'need-a', text: 'yes' }), by },
+    ] });
+    const c = ctxOf(s, { filter: '', canWrite: true, img: p => p, sprints: [], archives: [] });
+    return { drawer: drawer(s.tickets[0], c), card: card(s.tickets[0], c), steps: nextSteps(c).map(x => x.html).join('') };
+  };
+
+  test('is still offered on the card and the drawer, naming who recorded the answer', () => {
+    const v = rendered('conductor');
+    expect(v.drawer).toContain('data-answer="DEMO-1" data-need="need-a"');
+    for (const html of [v.drawer, v.card, v.steps]) { expect(html).toContain('answer recorded by conductor'); }
+    expect(v.drawer).not.toContain('Your answers');
+  });
+
+  test('the owner\'s own answer closes it', () => {
+    const v = rendered('owner');
+    expect(v.drawer).not.toContain('data-answer=');
+    expect(v.drawer).toContain('Your answers');
+    expect(v.steps).not.toContain('defer?');
   });
 });

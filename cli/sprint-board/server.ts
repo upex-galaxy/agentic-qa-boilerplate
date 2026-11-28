@@ -26,7 +26,7 @@ import { brandHtml } from './brand.ts';
 import { buildApp, openInBrowser } from './build.ts';
 import { readMergeLine } from './merge-read.ts';
 import { resolveMessenger } from './messenger.ts';
-import { ASK_ACTIONS, ASK_STATES, needTarget, oneOf } from './model.ts';
+import { ASK_ACTIONS, ASK_STATES, awaitsOwner, needTarget, oneOf } from './model.ts';
 import { buildState, watchedFiles } from './sources.ts';
 import { appendEvent, archiveDir, BOARD_DIR, currentSlug, listArchives, listSprints, readSprint, REPO_ROOT, serverFile, sprintDir, writeAtomic } from './store.ts';
 import { watcherViews } from './watchers.ts';
@@ -236,8 +236,8 @@ export async function serve(opts: { port: number, open: boolean, syncMinutes: nu
             const text = String(body.text ?? '').trim().slice(0, 1500);
             if (!/^[A-Z][A-Z0-9]*-\d+$/.test(id) || !text) { return json({ error: 'ticket and text required' }, 400); }
             const t = buildState(slug).tickets.find(x => x.id === id);
-            if (!t?.needs.some(n => !n.answer && !n.synthetic)) { return json({ error: `${id} has no open question to answer` }, 400); }
-            const needId = needTarget(t.needs, 'answer', id, body.needId ? String(body.needId) : undefined);
+            if (!t?.needs.some(n => !n.synthetic && awaitsOwner(n))) { return json({ error: `${id} has no open question to answer` }, 400); }
+            const needId = needTarget(t.needs, 'page', id, body.needId ? String(body.needId) : undefined);
             appendEvent(slug, { kind: 'need.answer', ticket: id, by: 'owner', text: `Owner answered on ${id}: ${text}`, data: { id: needId, text } });
             return json({ ok: true });
           }

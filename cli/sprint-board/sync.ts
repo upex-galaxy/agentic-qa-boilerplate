@@ -13,8 +13,11 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { createSource, loadBoardConfig, resolveBoardConfig, SOURCE_KINDS } from '../lib/sprint-source/index.ts';
-import { boardTicketIds, SCHEMA, trackerName, untrackedInTest } from './model.ts';
+import { boardTicketIds, printable, SCHEMA, trackerName, untrackedInTest } from './model.ts';
 import { appendEvent, readEvents, readSprint, readTracker, withSourceLock, writeSprint, writeTracker } from './store.ts';
+
+const print = (line: string) => console.log(printable(line));
+const warn = (line: string) => console.warn(printable(line));
 
 /** The checkout this code runs from: its `.agents/project.yaml` is the config the board reads. */
 export const CODE_ROOT = resolve(import.meta.dir, '..', '..');
@@ -115,7 +118,7 @@ export async function syncFromSource(slug: string, opts: SyncOptions = {}): Prom
     return syncOpen(slug, now, config, opts);
   }, {
     waitMs: opts.lockWaitMs,
-    onWait: (holder, waitMs) => console.log(`sync: waiting for the tracker sync lock (held by ${holder || 'another sync'}), up to ${Math.round(waitMs / 1000)} s`),
+    onWait: (holder, waitMs) => print(`sync: waiting for the tracker sync lock (held by ${holder || 'another sync'}), up to ${Math.round(waitMs / 1000)} s`),
   });
 }
 
@@ -148,7 +151,7 @@ async function syncOpen(slug: string, sprint: Sprint, config: BoardConfig, opts:
     const rows = first.discover?.untracked ?? [];
     const sprintRows = first.discover?.sprintRows ?? 0;
     const mine = rows.filter(r => isBoardQa(sprint, r.qaOwner));
-    console.log(`discover: ${sprintRows} rows in the sprint query, ${mine.length} more with QA owner ${sprint.qa ?? '(no QA set: new --qa)'}`);
+    print(`discover: ${sprintRows} rows in the sprint query, ${mine.length} more with QA owner ${sprint.qa ?? '(no QA set: new --qa)'}`);
     for (const r of mine) {
       if (!ids.has(r.id)) {
         ids.add(r.id);
@@ -161,19 +164,19 @@ async function syncOpen(slug: string, sprint: Sprint, config: BoardConfig, opts:
     const untracked: UntrackedTicket[] = rows.map(r => ({ id: r.id, title: r.title, status: r.status, bucket: r.bucket ?? undefined, qa: r.qaOwner ?? undefined }));
     // A sprint row in a status board.statuses does not list cannot be in test: named, never counted.
     const unclassified = rows.filter(r => r.bucket === null && !onBoard.has(r.id.toUpperCase())).map(r => ({ id: r.id, status: r.status }));
-    if (unclassified.length) { console.warn(`discover: ${unclassified.length} untracked sprint row(s) in a status board.statuses does not list: ${unclassified.map(u => `${u.id} (${u.status})`).join(', ')}`); }
+    if (unclassified.length) { warn(`discover: ${unclassified.length} untracked sprint row(s) in a status board.statuses does not list: ${unclassified.map(u => `${u.id} (${u.status})`).join(', ')}`); }
     // The sprint's own bug rows (the Bugs view's second source); absent when the source has no bug query, so the view says "not checked".
     const sprintBugRows = first.discover?.bugs?.map(b => ({ id: b.id, ...trackerBugOf(b) }));
     const lostBugs = first.discover?.unclassifiedBugs ?? [];
-    if (lostBugs.length) { console.warn(`discover: ${lostBugs.length} sprint bug row(s) left out, never counted: ${lostBugs.map(u => `${u.id} (${u.status || 'no status'}): ${u.reason}`).join('; ')}`); }
-    if (sprintBugRows) { console.log(`discover: ${sprintBugRows.length} bug rows in the sprint's bug query`); }
+    if (lostBugs.length) { warn(`discover: ${lostBugs.length} sprint bug row(s) left out, never counted: ${lostBugs.map(u => `${u.id} (${u.status || 'no status'}): ${u.reason}`).join('; ')}`); }
+    if (sprintBugRows) { print(`discover: ${sprintBugRows.length} bug rows in the sprint's bug query`); }
     discovered = { at: now.toISOString(), sprintRows, untracked: untrackedInTest(untracked, onBoard), ...(unclassified.length ? { unclassified } : {}), ...(sprintBugRows ? { bugs: sprintBugRows } : {}), ...(lostBugs.length ? { unclassifiedBugs: lostBugs.map(u => ({ id: u.id, status: u.status, reason: u.reason })) } : {}) };
   }
 
   if (!ids.size) {
     // Keep what --discover found off the board even when nothing is on it yet.
     if (opts.discover) { writeTracker(slug, { searched: { tickets: 0, tcs: 0, bugs: 0 }, tickets: {}, bugs: {}, ...prev, v: SCHEMA, source: config.source, syncedAt: now.toISOString(), discover: discovered }); }
-    console.log(`sync: 0 tickets on the ${slug} board, nothing searched. Add tickets or use --discover.`);
+    print(`sync: 0 tickets on the ${slug} board, nothing searched. Add tickets or use --discover.`);
     return;
   }
 
@@ -193,21 +196,21 @@ async function syncOpen(slug: string, sprint: Sprint, config: BoardConfig, opts:
   let missing = 0;
   for (const id of ids) {
     const src = snap.tickets[id];
-    if (!src) { missing++; console.warn(`sync: ${id} not found in ${name}`); continue; }
+    if (!src) { missing++; warn(`sync: ${id} not found in ${name}`); continue; }
     const t = trackerTicketOf(src);
     const before = prev?.tickets[id]?.status;
     if (before && t.status && before !== t.status) {
       appendEvent(slug, { kind: 'tracker', ticket: id, text: `${name} status ${before} -> ${t.status}`, data: { from: before, to: t.status, fromBucket: prev?.tickets[id]?.bucket, bucket: t.bucket } });
     }
     next.tickets[id] = t;
-    console.log(`sync: ${id} ${t.status ?? '?'} (${t.bucket}), ${t.tcs.length} TCs`);
+    print(`sync: ${id} ${t.status ?? '?'} (${t.bucket}), ${t.tcs.length} TCs`);
   }
   for (const [id, b] of Object.entries(snap.bugs)) { next.bugs[id] = trackerBugOf(b); }
   // A bug linked on the board that the tracker cannot find is named, never left silently open.
   const lost = snap.missing?.bugs ?? [];
   next.missing = { bugs: lost };
-  if (lost.length) { console.warn(`sync: ${lost.length} board-linked bug(s) not found in ${name}: ${lost.join(', ')}`); }
+  if (lost.length) { warn(`sync: ${lost.length} board-linked bug(s) not found in ${name}: ${lost.join(', ')}`); }
 
   writeTracker(slug, next);
-  console.log(`sync: searched ${next.searched.tickets} tickets (${missing} missing), ${next.searched.tcs} TCs, ${next.searched.bugs} bugs from ${name} (${snap.source})`);
+  print(`sync: searched ${next.searched.tickets} tickets (${missing} missing), ${next.searched.tcs} TCs, ${next.searched.bugs} bugs from ${name} (${snap.source})`);
 }

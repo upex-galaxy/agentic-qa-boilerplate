@@ -24,7 +24,8 @@ export type AgentAskRequest = AskRequest & { by: string };
 
 export interface AskResult { ok: true, noop: boolean, from: AskState, state: AskState, by?: string, at?: string }
 
-const AGENTS = ASK_ACTORS.filter(a => a !== 'owner').join(', ');
+export const AGENT_ACTORS = ASK_ACTORS.filter(a => a !== 'owner');
+const AGENTS = AGENT_ACTORS.join(', ');
 const AT_SKEW_MS = 5 * 60_000;
 // Measured as the log encodes them, because the line limit counts those bytes and not characters.
 const REPLY_BYTES = 2400;
@@ -49,9 +50,25 @@ function clip(value: string | undefined, max: number): string | undefined {
   return out;
 }
 
+// Letters of other scripts that read as the ones in "owner": a disguised owner is still refused.
+const LOOKALIKES = new Map(Object.entries({ o: 'оОοΟօՕᴏ0', w: 'ԝԜѡᴡ', n: 'ոΝɴ', e: 'еЕΕҽᴇ', r: 'гᴦʀ' })
+  .flatMap(([latin, others]) => [...others].map(other => [other, latin] as const)));
+function letters(value: string): string {
+  const bare = value.normalize('NFKD').replace(/[^\p{L}\p{N}]|\p{Default_Ignorable_Code_Point}/gu, '');
+  return [...bare].map(c => LOOKALIKES.get(c) ?? c).join('').toLowerCase();
+}
+
+// A conductor opens gates on what the owner wrote, so no command may sign as the owner, free-text "who, where" included.
+export function ownerRefusal(by: string): string | null {
+  const named = by.normalize('NFKC').trim().replace(/^the[\s\p{Pd}]+/iu, '');
+  const who = named.split(/[,;:()[\]|/._\p{Pd}'\u2018\u2019\u02BC\u2032`]/u).find(part => letters(part))?.trim() ?? '';
+  return [by, who, who.split(/\s+/)[0]].some(name => letters(name) === 'owner')
+    ? `--by owner is refused: only the page writes as the owner (got "${by}"). Say who is writing: ${AGENTS}; on accept-risk, the person's name and where they said it`
+    : null;
+}
+
 export function agentRefusal(by: string): string | null {
-  if (by.trim().toLowerCase() === 'owner') { return `--by owner is refused: only the page writes the owner's moves. Pass --by with one of: ${AGENTS}`; }
-  return isAskActor(by) ? null : `--by must be one of: ${AGENTS} (got "${by}")`;
+  return ownerRefusal(by) ?? (isAskActor(by) ? null : `--by must be one of: ${AGENTS} (got "${by}")`);
 }
 
 const actionRefusal = (action: AskAction | undefined, cur: Ask): string | null => {

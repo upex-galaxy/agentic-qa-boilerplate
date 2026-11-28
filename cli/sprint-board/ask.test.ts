@@ -22,7 +22,7 @@ function cli(...args: string[]): string {
   return r.stdout.toString();
 }
 function newAsk(text = 'words for Kim'): string {
-  cli('ask', '--to', 'Kim', '--ticket', 'DEMO-1', '--kind', 'bug', '--text', text);
+  cli('ask', '--to', 'Kim', '--ticket', 'DEMO-1', '--kind', 'bug', '--text', text, '--by', 'conductor');
   return String(events().filter(e => e.kind === 'ask.create').at(-1)!.data!.id);
 }
 

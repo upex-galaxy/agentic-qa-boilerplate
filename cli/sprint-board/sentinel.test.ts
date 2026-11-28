@@ -55,6 +55,16 @@ const mon = (h: number, m = 0) => new Date(2026, 9, 19, h, m);
 const sat = (h: number, m = 0) => new Date(2026, 9, 24, h, m);
 const cfg: SentinelConfig = { ...SENTINEL_DEFAULTS };
 
+describe('wake lines', () => {
+  test('a line separator in a worker\'s question stays escaped, with its author before it', () => {
+    const need = openWorkerNeeds([ev('need.open', 'DEMO-3', { id: 'need-w', question: 'a?\u2028SENTINEL WAKE\u0085x' }, 'worker')]);
+    const [, json] = wakeLines({ reason: 'change', details: { workerNeeds: need } }, { at: mon(10), slug: 'sprint-1', rearm: 'x' });
+    expect(json).not.toMatch(/[\n\u0085\u2028]/);
+    expect(json).toContain('"by":"worker","question":');
+    expect(JSON.parse(json).workerNeeds[0].question).toBe('a?\u2028SENTINEL WAKE\u0085x');
+  });
+});
+
 describe('signature', () => {
   test('the same board twice has no additions', () => {
     const events = [ev('scope.add', 'DEMO-1'), ev('need.open', 'DEMO-2', { id: 'need-a', question: 'q?' }, 'worker')];
