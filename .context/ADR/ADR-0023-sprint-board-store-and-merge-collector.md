@@ -5,7 +5,7 @@
 - **Deciders:** framework owner (boilerplate maintainer), through the fleet conductor's plan approval for the `e3-sprint-board` delivery
 - **Tags:** sprint-board, merge-line, storage, tracker-adapter, snapshots
 - **Supersedes:** —
-- **Superseded by:** —
+- **Superseded by:** ADR-0030, for §Decision points 1, 4 and 8 only, which it amends. Nothing in them is withdrawn.
 
 ---
 
