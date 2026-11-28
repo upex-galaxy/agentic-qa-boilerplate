@@ -50,7 +50,7 @@ Normal hooks run on it. The forensic trailers stay last.
 
 ## What CI verifies
 
-The check `edd/evidence` runs the verifier from the **base** branch's code, reading the PR's commits as data and never running them, so a PR cannot change the verifier that judges it. The ruleset requires that check from the GitHub Actions app specifically, so a status posted with the agent's own token does not count. The verifier enforces:
+The check `edd/evidence` runs the verifier from the **base** branch's code (`pull_request_target`), reading the PR's commits as data and never running them, so a PR cannot edit the verifier that judges it. The ruleset requires that check from the GitHub Actions app, so a status posted with a personal token does not count. A PR can still add a workflow of its own with a job of the same name: it comes from the same Actions app, and GitHub accepts its green check. See the table below. When the real verifier runs, it enforces:
 
 | Rule | Why |
 |---|---|
@@ -65,16 +65,22 @@ Static checks run as ordinary required CI jobs next to it.
 
 ## What this can and cannot guarantee
 
-| Guaranteed | Not guaranteed |
-|---|---|
-| the merge gate opens only on a check that Actions produced from base-branch code, and the host enforces it | that the agentic test happened as claimed: an agent holding the signing key and the tools can fabricate artifacts |
-| the static level is recomputed by CI for a PR that leaves the gate alone; the agent cannot mint it | that the tester told the truth in its verdict and claim |
-| the evidence is bound to the exact diff; any later change to the code voids it | that session labels are real: they come from the harness's identity hook and are as honest as that hook |
-| a PR cannot weaken its own contract, signer list or verifier | protection of a direct push beyond the local hook: the agent controls that machine, and CI on the pushed branch catches a problem only after the fact |
-| every attested delivery stays in git history with its digests | the artifacts themselves after the retention window |
-| | a weakened static level: the static jobs run the PR's own workflow files and `package.json` scripts, so a PR that edits them is judged by its edited checks. A gate change is delivered like any other change; the record flags it as `touches_gate` and nothing stops it |
+The gate protects against mistakes and drift, not against an agent that deliberately forges a check. An agent that follows this doctrine cannot push red code, attest the wrong diff or test its own work without the gate noticing. An agent that sets out to cheat, using the owner's identity, can.
 
-The signature proves where the evidence came from and what it is bound to. It does not prove the evidence is true. What narrows that gap is cheap: a reader who opens every record flagged `touches_gate`, a tester session separate from the author, artifacts a reader can open from the PR, an optional reviewer session (`waiting.md`), post-merge detection (CI on push, regression runs), and `human-approves` for a team that wants a person on every merge.
+| Caught: mistakes and drift | Not caught: an agent that deliberately forges |
+|---|---|
+| a static check that fails: the pre-push gate re-runs it and CI runs it again | a green `edd/evidence` posted by a workflow the PR itself adds: same Actions app, same name, so the ruleset accepts it |
+| evidence attested for another diff, or left stale by a later code change (patch-id) | a weakened static level: the static jobs run the PR's own workflow files and `package.json` scripts, so a PR that edits them is judged by its edited checks |
+| a contract, signer list or verifier weakened by the change it judges, when the real verifier runs | that the agentic test happened as claimed: an agent holding the signing key and the tools can fabricate artifacts and the tester's claim |
+| the author giving its own agentic verdict (`verdict_by` against the `Session:` trailer) | that session labels are real: they are self-declared and as honest as the harness's identity hook |
+| a status posted with a personal token | a direct push beyond the local hook: the agent controls that machine, and CI on the pushed branch catches a problem only after the fact |
+| every attested delivery stays in git history with its digests | the artifacts themselves after the retention window |
+
+A change to the gate itself is delivered like any other change, so the right column includes a PR that loosens the gate. What covers it: the change takes depth `standard` or deeper, the record flags it as `touches_gate`, and a repo on `human-approves` lists the gate paths in CODEOWNERS so a person reviews them. Agents push with the owner's own GitHub identity, so the host cannot tell the owner from the agent, and the owner accepted this risk for their repositories.
+
+Other cheap mitigations: a reader who opens every record flagged `touches_gate`, a tester session separate from the author, artifacts a reader can open from the PR, an optional reviewer session (`waiting.md`), post-merge detection (CI on push, regression runs), and `human-approves` for a team that wants a person on every merge.
+
+**Upgrade path.** A dedicated GitHub App as the only source of `edd/evidence`, with the ruleset pinned to that app's `integration_id`, closes the forged-check gap: a workflow a PR adds cannot post as that app. It is offered to the owner at rollout and not built yet.
 
 ## Why not something simpler
 

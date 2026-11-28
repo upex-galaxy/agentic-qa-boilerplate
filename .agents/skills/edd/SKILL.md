@@ -37,7 +37,7 @@ This file is the doctrine and fits any repository, application code or test code
 - Before `gh pr merge --auto`, run `bun run git:policy verify --merge <base>`, because on a base that requires no check auto-merge merges at once, red or not. A protected base that fails it: stop and tell the person. A base with no ruleset at all (a stacked PR, an unprotected trunk): skip `--auto`, wait for `edd/evidence` to pass, then merge.
 - Merge with a merge commit unless the repo declares another method in `git_strategy.decisions.feature_merge`. A squash folds the evidence commit into a message body and loses its signature.
 - Watch your own PR from the moment it opens until it merges, with the bundled watcher (`references/waiting.md`). It ends itself on MERGED or CLOSED after one last event; then confirm the merge commit is an ancestor of the base.
-- A change to the gate itself (workflows, hooks, the evidence script, the contract, the policy) is delivered like any other change. The record flags it as `touches_gate` for the reader; it stops nothing.
+- A change to the gate itself (workflows, hooks, the evidence script, the contract, the policy) is delivered like any other change. It takes depth `standard` or deeper, the record flags it as `touches_gate` for the reader, and a repo on `human-approves` lists those paths in CODEOWNERS so a person reviews them there. Nothing else stops it.
 - People hear from you two ways: the PR announcement posts on its own from the announcement template, wherever `notify.provider` in `.agents/project.yaml` points (`none` posts nothing); every other message to a person is a Slack draft the owner reviews and sends.
 - Ask a person only for the closed list in `references/human-gates.md`. Everything outside it is the agent's call.
 - No policy relaxes the git invariants: no force push, no `--no-verify`, no rewrite of pushed history, no remote branch deletion without confirmation.
@@ -54,7 +54,7 @@ The branching strategy in `git_strategy` picks one of three flows. `references/f
 
 ## What the evidence proves
 
-The signed evidence commit and the CI check `edd/evidence` prove who opened the gate and which exact diff it was opened for, and CI re-runs the static checks itself. They cannot prove that the agentic test happened the way the agent says it did, and a PR that edits the workflows or scripts behind the static checks is judged by its own edited checks: the record flags it as `touches_gate`, nothing stops it. `references/record-and-signature.md` states both halves and what covers the gap.
+The gate catches mistakes and drift: a red check, evidence for another diff, a contract weakened by the change it judges, an author testing its own work. It does not stop an agent that deliberately forges a check. A PR can add its own workflow that posts a green `edd/evidence`, and GitHub cannot tell it from the real verifier because both come from the same Actions app. Nor can the signature prove the agentic test happened the way the agent says. The upgrade that closes the forged-check gap is a dedicated GitHub App as the only source of `edd/evidence`. `references/record-and-signature.md` states both halves. `references/record-and-signature.md` states both halves and what covers the gap.
 
 ## References
 

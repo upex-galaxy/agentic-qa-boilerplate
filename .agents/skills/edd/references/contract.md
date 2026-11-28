@@ -11,7 +11,7 @@ The contract says which checks a delivery needs, how deep the agentic part goes 
 | `evidence.agentic` | `{id, kind, tool, envs, min_depth}` rows | `kind` names the artifact the check must leave (`screenshots`, `exploratory`, `test-run`, `api-calls`) |
 | `evidence.depth.default` | depth of a file no rule matches | |
 | `evidence.depth.rules` | `{paths, depth}` rows | the first matching rule decides a file's depth |
-| `evidence.human.paths`, `evidence.human.keys` | paths and `project.yaml` keys that make up the gate itself | a match sets `touches_gate` in the record and adds one line to the PR's evidence block. It is information for the reader and stops nothing |
+| `evidence.human.paths`, `evidence.human.keys` | paths and `project.yaml` keys that make up the gate itself | a match sets `touches_gate` in the record and adds one line to the PR's evidence block, information for the reader that stops nothing. These paths take depth `standard` or deeper through a depth rule, and a repo on `human-approves` lists them in CODEOWNERS |
 | `evidence.review.bot` | login of a review bot whose findings must be resolved before merge | `null` when there is none |
 | `evidence.review.max_rounds` | how many fix rounds the agent runs against the bot | after the cap the finding goes to a person (`human-gates.md`) |
 | `evidence.record.artifact_retention_days` | how long local artifacts stay after merge | records themselves are never pruned |
@@ -30,6 +30,8 @@ The gate computes depth from the files the change touches (`git diff --name-only
 | `light` | screenshots of every top-level page or view the app exposes, on one environment |
 | `standard` | every agentic check with `min_depth` up to `standard`, run against the change's acceptance criteria |
 | `deep` | `standard`, plus the flows next to the touched ones (the smoke of the touched modules), on every environment the check lists |
+
+The paths in `evidence.human.paths` (the gate itself) need a rule of their own placed before any rule that would give them `none`, so a change that replaces the verifier or the signers still carries evidence.
 
 The agent may raise depth for one delivery with `--depth` when it judges the change riskier than its paths say. It never lowers it. A rule that sets the wrong depth is fixed in the contract, in its own change, so the reader sees the correction.
 
@@ -55,6 +57,7 @@ evidence:
   depth:
     default: standard
     rules:
+      - { paths: ['.github/workflows/**', '.husky/**', '.agents/edd/**'], depth: standard }
       - { paths: ['**/*.md', 'docs/**'], depth: none }
       - { paths: ['**/*.css', 'styles/**'], depth: light }
       - { paths: ['db/migrations/**', 'middleware.ts'], depth: deep }
@@ -70,6 +73,7 @@ evidence:
   depth:
     default: none
     rules:
+      - { paths: ['.github/workflows/**', '.husky/**', '.agents/edd/**'], depth: standard }
       - { paths: ['tests/**'], depth: standard }
       - { paths: ['tests/fixtures/**', 'playwright.config.ts'], depth: deep }
 ```

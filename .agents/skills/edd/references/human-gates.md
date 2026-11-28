@@ -15,7 +15,7 @@ EDD removes the per-step OKs: the branch name, the commit set, the PR body, a di
 | 9 | A new security posture, as opposed to applying a pattern already ratified | it decides what the system is allowed to do |
 | 10 | Any `--auto` on a base where `git:policy verify --merge` fails | it would merge unverified |
 
-A change that touches the gate itself (workflows, hooks, the evidence script, the contract, the policy keys) is not on the list. It is delivered like any other change and the record marks it `touches_gate`, with the matched paths, so the reader knows to look. This is the owner's provisional decision; it is revisited after the study of GitHub auto-merge and repository configuration.
+A change that touches the gate itself (workflows, hooks, the evidence script, the contract, the policy keys) is not on the list. It is delivered like any other change: it takes depth `standard` or deeper, the record marks it `touches_gate` with the matched paths so the reader knows to look, and a repo on `human-approves` lists those paths in CODEOWNERS, which brings the change under item 7 there. This is the owner's final decision.
 
 ## How to ask
 
