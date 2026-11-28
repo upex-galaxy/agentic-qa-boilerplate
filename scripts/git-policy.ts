@@ -468,12 +468,15 @@ export function resolveIntegrationId(body: unknown): number | null {
   return (latestEdd ?? actions[0])?.app.id ?? null;
 }
 
+function reported(run: (CheckRun & { conclusion?: string | null }) | null, context: string): boolean {
+  if (run?.name !== context) { return false; }
+  return context !== EDD_CHECK || (run.app?.slug === 'github-actions' && run.conclusion === 'success');
+}
+
 export function missingCheckRuns(contexts: string[], checkRunsBody: unknown): string[] {
   const runs = (checkRunsBody as { check_runs?: unknown } | null)?.check_runs;
-  const names = new Set((Array.isArray(runs) ? runs : [])
-    .map(r => (r as CheckRun | null)?.name)
-    .filter((n): n is string => typeof n === 'string'));
-  return [...new Set(contexts)].filter(c => !names.has(c));
+  const list = (Array.isArray(runs) ? runs : []) as ((CheckRun & { conclusion?: string | null }) | null)[];
+  return [...new Set(contexts)].filter(c => !list.some(r => reported(r, c)));
 }
 
 export function prHeadCheckRuns(read: (path: string) => unknown | null, slug: string, production: string): unknown | null {

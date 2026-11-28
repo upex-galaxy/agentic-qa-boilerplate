@@ -66,7 +66,7 @@ function gsOf(text: string): GitStrategy {
 
 const ACTIONS_RUNS = {
   check_runs: [
-    { name: 'edd/evidence', app: { id: 15368, slug: 'github-actions' }, started_at: '2026-11-27T10:00:00Z' },
+    { name: 'edd/evidence', app: { id: 15368, slug: 'github-actions' }, conclusion: 'success', started_at: '2026-11-27T10:00:00Z' },
     { name: 'lint', app: { id: 15368, slug: 'github-actions' }, started_at: '2026-11-27T10:00:00Z' },
   ],
 };
@@ -318,7 +318,7 @@ describe('assessPreflight: what can stop an apply before any write', () => {
 
   test('edd/evidence seen only on a PR head clears the guard; seen nowhere asks for the first pull request', () => {
     const tip = { check_runs: [{ name: 'lint', app: { id: 15368, slug: 'github-actions' } }] };
-    const onPr = { check_runs: [{ name: 'edd/evidence', app: { id: 15368, slug: 'github-actions' } }] };
+    const onPr = { check_runs: [{ name: 'edd/evidence', app: { id: 15368, slug: 'github-actions' }, conclusion: 'success' }] };
     expect(assessPreflight(AUTO_FORBIDDEN(), ['edd/evidence', 'lint'], hostState({ checkRuns: tip, prCheckRuns: onPr })).blockers).toEqual([]);
     const first = assessPreflight(AUTO_FORBIDDEN(), ['edd/evidence', 'lint'], hostState({ checkRuns: tip, prCheckRuns: { check_runs: [] } }));
     expect(first.blockers.join(' ')).toContain('the first one has to be a pull request into main');

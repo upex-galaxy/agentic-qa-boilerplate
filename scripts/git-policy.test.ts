@@ -868,12 +868,20 @@ describe('effectiveForApply: an undeclared merge_mode derives as manual', () => 
 
 describe('missingCheckRuns: a required context must have reported at least once', () => {
   test('lists the contexts no check run is named after, de-duplicated', () => {
-    const body = { check_runs: [{ name: EDD_CHECK, app: { id: 1, slug: 'github-actions' } }, { name: 'lint' }] };
+    const body = { check_runs: [{ name: EDD_CHECK, app: { id: 1, slug: 'github-actions' }, conclusion: 'success' }, { name: 'lint' }] };
     expect(missingCheckRuns([EDD_CHECK, 'lint', 'types', 'types'], body)).toEqual(['types']);
   });
 
   test('every context reported means nothing is missing', () => {
-    expect(missingCheckRuns([EDD_CHECK], { check_runs: [{ name: EDD_CHECK }] })).toEqual([]);
+    expect(missingCheckRuns([EDD_CHECK], { check_runs: [{ name: EDD_CHECK, app: { id: 1, slug: 'github-actions' }, conclusion: 'success' }] })).toEqual([]);
+  });
+
+  test('edd/evidence counts only from the GitHub Actions app and only when it concluded success', () => {
+    const run = (slug: string, conclusion: string | null): Record<string, unknown> => ({ name: EDD_CHECK, app: { id: 1, slug }, conclusion, status: conclusion === null ? 'queued' : 'completed' });
+    for (const r of [run('other-app', 'success'), run('github-actions', 'failure'), run('github-actions', 'cancelled'), run('github-actions', null), { name: EDD_CHECK }]) {
+      expect(missingCheckRuns([EDD_CHECK], { check_runs: [r] })).toEqual([EDD_CHECK]);
+    }
+    expect(missingCheckRuns([EDD_CHECK], { check_runs: [run('other-app', 'success'), run('github-actions', 'success')] })).toEqual([]);
   });
 
   test('an empty or unreadable body misses every context', () => {
@@ -1003,7 +1011,7 @@ describe('rulesetBody: one payload for apply and the hand-off', () => {
 describe('the edd/evidence guard reads pull request heads, never the production tip alone', () => {
   const ACTIONS = { app: { id: 15368, slug: 'github-actions' } };
   const tip = { check_runs: [{ name: 'lint', ...ACTIONS }, { name: 'edd/evidence (push)', ...ACTIONS }] };
-  const onPr = { check_runs: [{ name: EDD_CHECK, ...ACTIONS }] };
+  const onPr = { check_runs: [{ name: EDD_CHECK, ...ACTIONS, conclusion: 'success' }] };
 
   test('edd/evidence reported on a PR head is enough, the static ids still need the tip', () => {
     expect(missingRequiredChecks([EDD_CHECK, 'lint'], tip, onPr)).toEqual({ tip: [], pr: [], prUnread: false });
