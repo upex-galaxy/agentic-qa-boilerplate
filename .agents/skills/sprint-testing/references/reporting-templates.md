@@ -468,7 +468,7 @@ VERIFIED BEHAVIORS:
 {If any case was deferred:}
 DEFERRED (EXECUTION) CASES (not observed; QA decision, follow-up open):
 - TC-{id}: {reason} - follow-up {KEY}
-Owner OK: {owner}, {date}, {comment link | board answer event | owner OK given in session}
+Owner OK: {owner}, {date}, {comment link | board answer event | owner OK given in session, <YYYY-MM-DD HH:MM>}
 Story label: {label}
 Shift-right test plan: Shift-Right Test Plan: {sprint}
 

@@ -1,4 +1,6 @@
 import type { BoardEvent, Need, Sprint, TrackerSnapshot, WatcherView } from './model.ts';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, test } from 'bun:test';
 import {
   arrivals as arrivalsRaw,
@@ -1175,10 +1177,12 @@ describe('shift-right deferral: DEFERRED never reads plain Passed without a reco
     expect(seen([...base, verdict(2), blank]).lane).toBe('Held');
   });
 
-  test('a Bug with a DEFERRED case never reads Passed, OK or not', () => {
-    const extra = { type: 'Bug', status: 'QA Approved' };
-    for (const events of [[...base, verdict(2)], [...base, verdict(2), okFor(3, ['TC-2', 'TC-3'])], base, [...base, okFor(3, ['TC-2', 'TC-3'])]]) {
-      expect([seen(events, extra).lane, seen(events, extra).note]).toEqual(['Held', 'bug']);
+  test('a Bug with a DEFERRED case never reads Passed, OK or not, however its work type is cased', () => {
+    for (const type of ['Bug', 'bug', 'BUG']) {
+      const extra = { type, status: 'QA Approved' };
+      for (const events of [[...base, verdict(2)], [...base, verdict(2), okFor(3, ['TC-2', 'TC-3'])], base, [...base, okFor(3, ['TC-2', 'TC-3'])]]) {
+        expect([seen(events, extra).lane, seen(events, extra).note]).toEqual(['Held', 'bug']);
+      }
     }
   });
 
@@ -1231,7 +1235,7 @@ describe('shift-right deferral: DEFERRED never reads plain Passed without a reco
 
   test('deferralOkRecord returns the ids as the ticket spells them', () => {
     const t = state(base).tickets[0];
-    expect(deferralOkRecord(t, { cases: ['tc-2', 'TC-2'], pointer: ` http://tracker.example/${K}/c/1 `, at: NOW })).toEqual({ cases: ['TC-2'], pointer: `http://tracker.example/${K}/c/1` });
+    expect(deferralOkRecord(t, { cases: ['tc-2', 'TC-2'], pointer: ` http://tracker.example/${K}/c/1 `, at: NOW })).toEqual({ cases: ['TC-2'], pointer: `http://tracker.example/${K}/c/1`, hostUnverified: true });
     expect(() => deferralOkRecord(t, { cases: ['TC-1'], pointer: `https://x.example/${K}`, at: NOW })).toThrow('shift-right-deferral.md §3');
   });
 
@@ -1278,15 +1282,45 @@ describe('shift-right deferral: DEFERRED never reads plain Passed without a reco
     expect(cite(`${SAID}, 2026-10-01 10:00Z`, late)).not.toThrow();
   });
 
-  test('a URL pointer names the ticket as a whole token and, when the board knows the tracker link, sits on its host', () => {
+  test('a URL pointer names the ticket in its path and, when the board knows the tracker link, sits on its host', () => {
     const host = 'https://example.atlassian.net';
     const linked = fold({ sprint, now: NOW, events: base, tracker: tracker({ [K]: { status: 'Ready for QA', link: `${host}/browse/${K}`, tcs: [] } }) });
-    for (const url of [`${host}/browse/${K}?focusedCommentId=10001`, `${host}/jira/board?selectedIssue=${K}`]) { expect(cite(url, linked)).not.toThrow(); }
-    for (const url of [host, `${host}/browse/${K}0`, `${host}/browse/X${K}`, 'https://demo-1.example.com/c/2']) { expect(cite(url)).toThrow(`does not name ${K}`); }
+    const record = (url: string, s: ReturnType<typeof state>) => deferralOkRecord(s.tickets[0], { cases: ['TC-2'], pointer: url, at: NOW });
+    for (const url of [`${host}/browse/${K}?focusedCommentId=10001`, `${host}/browse/${K}`]) { expect(record(url, linked)).toEqual({ cases: ['TC-2'], pointer: url }); }
+    for (const url of [host, `${host}/browse/${K}0`, `${host}/browse/X${K}`, `${host}/jira/board?selectedIssue=${K}`, 'https://demo-1.example.com/c/2']) { expect(cite(url)).toThrow(`does not name ${K}`); }
     for (const url of [`https://evil.example/browse/${K}`, `https://example.atlassian.net@evil.example/browse/${K}`]) {
       expect(cite(url, linked)).toThrow(`the tracker link of ${K} is on example.atlassian.net`);
     }
-    expect(cite(`https://other.example/browse/${K}`)).not.toThrow();
+    const unlinked = `https://other.example/browse/${K}`;
+    expect(record(unlinked, state(base))).toEqual({ cases: ['TC-2'], pointer: unlinked, hostUnverified: true });
+    const garbled = fold({ sprint, now: NOW, events: base, tracker: tracker({ [K]: { status: 'Ready for QA', link: 'not a url', tcs: [] } }) });
+    expect(record(unlinked, garbled)).toEqual({ cases: ['TC-2'], pointer: unlinked, hostUnverified: true });
+  });
+
+  test('the pointer forms match the evidence builder\'s, from the same vectors', () => {
+    const v: Record<'session' | 'url', { accepted: string[], refused: string[] }> & { ticket: string } = JSON.parse(readFileSync(join(import.meta.dir, '..', 'lib', 'evidence-page', 'fixtures', 'owner-ok-vectors.json'), 'utf8'));
+    const t = fold({ sprint, now: NOW, events: [], tracker: tracker({ [v.ticket]: { status: 'Ready for QA', tcs: [{ id: 'TC-2', status: 'DEFERRED' }] } }) }).tickets[0];
+    const record = (pointer: string) => () => deferralOkRecord(t, { cases: ['TC-2'], pointer, at: NOW });
+    for (const form of ['session', 'url'] as const) {
+      for (const text of v[form].accepted) { expect(record(text), text).not.toThrow(); }
+      for (const text of v[form].refused) { expect(record(text), text).toThrow('shift-right-deferral.md §3'); }
+    }
+  });
+
+  test('events are ordered by instant, so a re-deferral written with milliseconds drops the OK', () => {
+    const events = [tc(1, 'TC-2', 'DEFERRED'), verdict(2), okFor(3, ['TC-2']), ev('2026-10-03T10:00:00.500Z', 'tc', K, { tc: 'TC-2', status: 'DEFERRED', reason: 'external' })];
+    expect(seen(events)).toEqual({ lane: 'Held', waiting: ['TC-2'], note: 'owner-ok' });
+  });
+
+  test('a tracker row is newer than a board record by instant, whatever offset it is written in', () => {
+    const row = (updatedAt: string) => fold({ sprint, now: NOW, events: [tc(3, 'TC-2', 'DEFERRED')], tracker: tracker({ [K]: { status: 'Ready for QA', tcs: [{ id: 'TC-2', status: 'FAILED', updatedAt }] } }) }).tickets[0].tcs[0].status;
+    expect(row('2026-10-03T08:00:00.000-0300')).toBe('FAILED');
+    expect(row('2026-10-03T12:00:00.000+0300')).toBe('DEFERRED');
+  });
+
+  test('a tc record dated before the OK leaves the OK in place', () => {
+    const events = [tc(1, 'TC-2', 'DEFERRED'), verdict(2), okFor(3, ['TC-2']), tc(2, 'TC-2', 'DEFERRED')];
+    expect(seen(events)).toEqual({ lane: 'Passed', waiting: [], note: null });
   });
 
   test('a board answer cannot date a case the board never recorded as DEFERRED', () => {

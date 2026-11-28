@@ -1,6 +1,6 @@
 import type { Ask, AskAction, AskPhase, AskState, BoardState, BugGroup, EvidenceArtifact, EvidenceFilter, EvidenceView, Fixture, InboxMsg, InboxThread, Lane, Metrics, Need, OutcomeCounts, SprintBug, TicketView } from '../model.ts';
 /** Every view is a pure function of the folded state: state in, HTML out. */
-import { askPhase, askTransition, awaitsOwner, bugCounts, DEFERRAL_NOTES, deferralBlocks, deferralHold, deferralNote, devsOf, EVIDENCE_OUTCOMES, groupEvidence, isDecisionCard, isDraftingState, isTestedBucket, isUnsent, LANES, listFixtures, metrics, NOT_FULLY_TESTED, outcomeCounts, REPORT_PRIORITIES, tcCounts, trackerName } from '../model.ts';
+import { askPhase, askTransition, awaitsOwner, bugCounts, DEFERRAL_NOTES, deferralBlocks, deferralHold, deferralNote, devsOf, EVIDENCE_OUTCOMES, groupEvidence, HOST_UNVERIFIED, isBugType, isDecisionCard, isDraftingState, isTestedBucket, isUnsent, LANES, listFixtures, metrics, NOT_FULLY_TESTED, outcomeCounts, REPORT_PRIORITIES, tcCounts, trackerName } from '../model.ts';
 import { barChart, burnupChart, dotStrip, stackBar } from './charts.ts';
 import { getLang, tr } from './i18n.ts';
 import { ago, day, esc, firstName, hhmm, initials, pct, slackHtml } from './util.ts';
@@ -94,7 +94,7 @@ function deferralLine(t: TicketView): string {
 
 function caseBar(t: TicketView): string {
   const c = tcCounts(t.tcs);
-  if (!c.total) { return `<span class="meta">${t.type === 'Bug' ? tr('bug retest', 'retest de bug') : tr('no cases yet', 'sin casos aún')}</span>`; }
+  if (!c.total) { return `<span class="meta">${isBugType(t.type) ? tr('bug retest', 'retest de bug') : tr('no cases yet', 'sin casos aún')}</span>`; }
   const seg = (n: number, cls: string) => (n ? `<i class="${cls}" style="width:${(n / c.total) * 100}%"></i>` : '');
   return `<span class="bar" title="${c.PASSED} PASSED · ${c.FAILED} FAILED · ${c.DEFERRED} DEFERRED · ${c.BLOCKED} BLOCKED · ${c['NOT RUN']} NOT RUN">${seg(c.PASSED, 's-pass')}${seg(c.FAILED, 's-fail')}${seg(c.BLOCKED, 's-blk')}${seg(c.DEFERRED, 's-def')}${seg(c['NOT RUN'], 's-nr')}</span><span class="mono">${c.PASSED}/${c.total}</span>`;
 }
@@ -818,7 +818,7 @@ function deferralSection(t: TicketView): string {
   if (!d) { return ''; }
   const note = deferralNote(t);
   const pointer = (p: string) => (httpsHref(p) ? `<a href="${esc(p)}" target="_blank" rel="noopener">${esc(p)}</a>` : esc(p));
-  const records = (d.oks ?? []).map(ok => `<div class="progress-line">${esc(tr(`Owner OK observed by ${ok.by}`, `OK del owner observado por ${ok.by}`))} · <span class="id">${esc(ok.cases.join(', '))}</span> · ${pointer(ok.pointer)} · <span class="mono">${day(ok.at).slice(5)} ${hhmm(ok.at)}</span></div>`).join('');
+  const records = (d.oks ?? []).map(ok => `<div class="progress-line">${esc(tr(`Owner OK observed by ${ok.by}`, `OK del owner observado por ${ok.by}`))} · <span class="id">${esc(ok.cases.join(', '))}</span> · ${pointer(ok.pointer)}${ok.hostUnverified ? ` · ${tr(HOST_UNVERIFIED.en, HOST_UNVERIFIED.es)}` : ''} · <span class="mono">${day(ok.at).slice(5)} ${hhmm(ok.at)}</span></div>`).join('');
   return `<section><span class="lbl">${tr('Deferred cases', 'Casos diferidos')} · ${d.cases.length}</span>
     ${note ? `<div><b>${deferralText(note)}</b></div>` : ''}
     ${d.waiting.length ? `<div class="progress-line">${tr('No owner OK observed for', 'Sin OK del owner observado para')} <span class="id">${esc(d.waiting.join(', '))}</span></div>` : ''}

@@ -34,6 +34,7 @@ import {
   EVIDENCE_OUTCOMES,
   evidenceArtifactUrl,
   HOLD_REASONS,
+  HOST_UNVERIFIED,
   listenLine,
   listFixtures,
   localHhmm,
@@ -50,6 +51,7 @@ import {
   TC_STATUSES,
   trackerName,
   untrackedInTest,
+  unverifiedHostCases,
   VERDICTS,
   WATCH_STALE_MIN,
   watchersDown,
@@ -480,8 +482,10 @@ const commands: Record<string, (a: Args) => void | Promise<void>> = {
     const at = isoAt(flag(a, 'at')) ?? new Date().toISOString();
     const ticket = buildState(slug).tickets.find(x => x.id === id)!;
     const record = deferralOkRecord(ticket, { cases, pointer, at });
-    appendEvent(slug, { kind: 'deferral.ok', ticket: id, text: `${id}: ${who} observed an owner OK for ${record.cases.join(', ')}: ${record.pointer}`, by: who, at, data: record });
+    const unverified = record.hostUnverified ? ` (${HOST_UNVERIFIED.en})` : '';
+    appendEvent(slug, { kind: 'deferral.ok', ticket: id, text: `${id}: ${who} observed an owner OK for ${record.cases.join(', ')}: ${record.pointer}${unverified}`, by: who, at, data: record });
     print(`${id}: ${who} observed an owner OK for ${record.cases.join(', ')} (${record.pointer})`);
+    if (record.hostUnverified) { print(`Pointer ${HOST_UNVERIFIED.en}: the board knows no tracker link for ${id} it can compare the URL with.`); }
     print(`The record sets the lane only: the pointer is still opened at Stage 3 and at round close (${DEFERRAL_OK_RULE}).`);
     if (record.pointer.startsWith('board:')) { print('A page answer proves it did not come through the CLI, not who typed it: the Story comment is the preferred pointer when both exist.'); }
     const after = buildState(slug).tickets.find(x => x.id === id)!;
@@ -914,7 +918,8 @@ const commands: Record<string, (a: Args) => void | Promise<void>> = {
     const lanes = new Map<string, string[]>();
     for (const t of s.tickets.filter(x => x.inScope)) {
       const note = deferralNote(t);
-      const deferral = t.deferral ? `  [${deferralMark(t.deferral)}]${note ? `  (${DEFERRAL_NOTES[note].en})` : ''}` : '';
+      const unverified = t.deferral ? unverifiedHostCases(t.deferral) : [];
+      const deferral = t.deferral ? `  [${deferralMark(t.deferral)}]${note ? `  (${DEFERRAL_NOTES[note].en})` : ''}${unverified.length ? `  (OK pointer ${HOST_UNVERIFIED.en}: ${unverified.join(', ')})` : ''}` : '';
       lanes.set(t.lane, [...(lanes.get(t.lane) ?? []), `${t.id}  ${t.title}${t.atRisk ? '  [shipped at risk]' : ''}${deferral}`]);
     }
     print(`${s.sprint.name}: ${s.tickets.filter(t => t.inScope).length} tickets in scope`);

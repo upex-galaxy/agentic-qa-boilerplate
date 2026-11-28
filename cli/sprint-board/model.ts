@@ -93,6 +93,7 @@ export const BUG_GROUPS = ['blocking', 'not-blocking', 'resolved'] as const;
 export const DEFERRAL_OK_ACTORS = ['conductor', 'worker'] as const;
 export const DEFERRAL_OK_RULE = 'sprint-testing/references/shift-right-deferral.md §3';
 export const SESSION_OK = 'owner OK given in session';
+export const HOST_UNVERIFIED = { en: 'host not verified', es: 'host sin verificar' } as const;
 export const NOT_FULLY_TESTED = { en: 'Not fully tested', es: 'Sin probar del todo' } as const;
 export const DEFERRAL_NOTES = {
   'owner-ok': { en: 'waiting for owner OK', es: 'esperando el OK del owner' },
@@ -346,7 +347,7 @@ export interface SprintBug {
 export interface BugSearch { linked: number, sprintRows: number | null, bugRows: number | null, createdInSprint: number | null, discoveredAt?: string, missing?: string[], unclassified?: { id: string, status: string }[] }
 
 // What a writer says it observed: it sets the lane and never stands in for opening the pointer.
-export interface DeferralOk { cases: string[], pointer: string, by: string, at: string }
+export interface DeferralOk { cases: string[], pointer: string, by: string, at: string, hostUnverified?: boolean }
 export interface Deferral { cases: string[], waiting: string[], bug: boolean, label?: string, oks?: DeferralOk[] }
 
 export interface TicketView {
@@ -667,6 +668,10 @@ export const isPassVerdict = (v: Verdict): boolean => v === 'PASSED' || v === 'P
 
 export const deferralMark = (d: Deferral): string => d.label ?? NOT_FULLY_TESTED.en;
 
+export const unverifiedHostCases = (d: Deferral): string[] => (d.oks ?? []).filter(o => o.hostUnverified).flatMap(o => o.cases);
+
+export const isBugType = (type?: string): boolean => type?.toLowerCase() === 'bug';
+
 export const deferralBlocks = (t: Pick<TicketView, 'deferral' | 'verdict'>): boolean => (t.deferral ? t.deferral.bug || t.deferral.waiting.length > 0 : t.verdict === 'PASSED WITH DEFERRALS');
 
 // Names the deferral only when nothing else is open: a case still NOT RUN holds the ticket under its own reason.
@@ -695,7 +700,7 @@ function deferralOf(tcs: TcView[], type: string | undefined, oks: Map<string, Om
     record.cases.push(id);
     records.set(key, record);
   }
-  return { cases, waiting, bug: type === 'Bug', label, oks: records.size ? [...records.values()] : undefined };
+  return { cases, waiting, bug: isBugType(type), label, oks: records.size ? [...records.values()] : undefined };
 }
 
 const SESSION_OK_FORM = new RegExp(`^${SESSION_OK}, (\\d{4})-(\\d{2})-(\\d{2}) (\\d{2}):(\\d{2})(?::(\\d{2}))?(Z|[+-]\\d{2}:?\\d{2})?$`);
@@ -721,10 +726,15 @@ function sessionOkMinute(pointer: string): number | null {
 }
 
 // A whole token, so KEY-1 is not found inside KEY-10.
-const namesTicket = (url: URL, id: string): boolean =>
-  new RegExp(`(?<![A-Za-z0-9_-])${id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![A-Za-z0-9_])`, 'i').test(`${url.pathname}${url.search}${url.hash}`);
+const holdsKey = (path: string, id: string): boolean =>
+  new RegExp(`(?<![A-Za-z0-9_-])${id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![A-Za-z0-9_])`, 'i').test(path);
 
-export function deferralOkRecord(t: Pick<TicketView, 'id' | 'tcs' | 'needs' | 'link'>, ok: { cases: string[], pointer: string, at: string }): { cases: string[], pointer: string } {
+// Never the query or the fragment: any page can carry a key there. build.py applies the same rule, pinned by the same vectors.
+const namesTicket = (url: URL, id: string): boolean =>
+  url.pathname.split('/').some(segment => segment.toUpperCase() === id.toUpperCase())
+  || (Boolean(url.searchParams.get('focusedCommentId')) && holdsKey(url.pathname, id));
+
+export function deferralOkRecord(t: Pick<TicketView, 'id' | 'tcs' | 'needs' | 'link'>, ok: { cases: string[], pointer: string, at: string }): { cases: string[], pointer: string, hostUnverified?: true } {
   const refuse = (why: string): never => { throw new Error(`${why}. See ${DEFERRAL_OK_RULE}`); };
   const deferred = new Map(t.tcs.filter(x => x.status === 'DEFERRED').map(x => [x.id.toUpperCase(), x]));
   const wanted = [...new Set(ok.cases.map(x => x.toUpperCase()))];
@@ -741,9 +751,10 @@ export function deferralOkRecord(t: Pick<TicketView, 'id' | 'tcs' | 'needs' | 'l
   const accepted = { cases: cases.map(x => x.id), pointer };
   if (/^https?:\/\/[^\s/]\S*$/i.test(pointer)) {
     const url = URL.canParse(pointer) ? new URL(pointer) : refuse(`--pointer "${pointer}" is not a URL`);
-    if (!namesTicket(url, t.id)) { refuse(`--pointer ${pointer} does not name ${t.id}: give the URL of the owner's comment on that item, read back from the tracker`); }
-    const host = t.link && URL.canParse(t.link) ? new URL(t.link).host : undefined;
-    if (host && url.host !== host) { refuse(`--pointer ${pointer} is on ${url.host}, but the tracker link of ${t.id} is on ${host}`); }
+    if (!namesTicket(url, t.id)) { refuse(`--pointer ${pointer} does not name ${t.id} in its path: give the URL of the owner's comment on that item, read back from the tracker (the key as a whole path segment, or inside the path of a URL with focusedCommentId)`); }
+    const host = t.link && URL.canParse(t.link) ? new URL(t.link).host : '';
+    if (!host) { return { ...accepted, hostUnverified: true }; }
+    if (url.host !== host) { refuse(`--pointer ${pointer} is on ${url.host}, but the tracker link of ${t.id} is on ${host}`); }
     return accepted;
   }
   if (pointer.startsWith(SESSION_OK)) {
@@ -794,7 +805,7 @@ export function laneOf(t: Omit<TicketView, 'lane' | 'laneSince' | 'atRisk' | 'dr
   if (isPassVerdict(t.verdict)) { return settled ? passed : 'Held'; }
   if (t.hold || t.verdict === 'BLOCKED' || c.BLOCKED > 0) { return 'Held'; }
   // A closed sprint imported without verdict events: the tracker past the gate and every case settled.
-  if (isTestedBucket(t.bucket) && (c.total === 0 ? t.type === 'Bug' : settled)) { return passed; }
+  if (isTestedBucket(t.bucket) && (c.total === 0 ? isBugType(t.type) : settled)) { return passed; }
   return 'Up next';
 }
 
@@ -902,7 +913,8 @@ export function fold(input: {
   const { sprint, tracker, now } = input;
   const live = input.live ?? {};
   const warnings: string[] = [];
-  const events = [...input.events].sort((a, b) => a.at.localeCompare(b.at));
+  // By instant, then by text: a re-deferral written with milliseconds would sort before an OK written without them.
+  const events = [...input.events].sort((a, b) => Date.parse(a.at) - Date.parse(b.at) || a.at.localeCompare(b.at));
   const drafts = new Map<string, Draft>();
   const asks = foldAsks(events);
   const threads = new Map<string, InboxThread>();
@@ -1084,7 +1096,8 @@ export function fold(input: {
       case 'deferral.ok': {
         const pointer = said(x.pointer);
         const by = DEFERRAL_OK_ACTORS.find(a => a === e.by);
-        if (pointer && by) { for (const id of strs(x.cases)) { d.deferralOks.set(id, { pointer, by, at: e.at }); } }
+        const unverified = x.hostUnverified === true ? { hostUnverified: true } : {};
+        if (pointer && by) { for (const id of strs(x.cases)) { d.deferralOks.set(id, { pointer, by, at: e.at, ...unverified }); } }
         break;
       }
       case 'deferral.lapse': for (const id of strs(x.cases)) { d.deferralOks.delete(id); } break;
@@ -1113,7 +1126,7 @@ export function fold(input: {
       }
       else {
         mine.name ??= ct.name;
-        if ((ct.updatedAt ?? '') > (mine.at ?? '') && ct.status !== mine.status) {
+        if (Date.parse(ct.updatedAt ?? '') > Date.parse(mine.at ?? '') && ct.status !== mine.status) {
           mine.history.push({ status: ct.status, at: ct.updatedAt! });
           mine.status = ct.status;
           mine.source = 'tracker';
@@ -1595,7 +1608,7 @@ export function metrics(s: BoardState): Metrics {
 
   const withVerdict = scope.filter(t => t.lane === 'Passed' || t.lane === 'Failed');
   const clean = withVerdict.filter(t => t.lane === 'Passed' && t.bugs.length === 0 && t.attempt === 1
-    && (t.tcs.some(x => x.status === 'PASSED') || t.type === 'Bug')).length;
+    && (t.tcs.some(x => x.status === 'PASSED') || isBugType(t.type))).length;
 
   return {
     scope: scope.length,

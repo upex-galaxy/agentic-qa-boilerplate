@@ -43,6 +43,8 @@ An in-session OK is checked by the session that received it: the owner typed or 
 | Jira comment | its id, author and timestamp, read back from Jira: the author is the owner, the time is after the notice, the text covers the case ids, and no session of the run posted it |
 | Board answer | the `need.answer` event in the board's `events.ndjson`: its text, time and `by`. Only `owner`, which the board page writes, counts; an answer recorded with `--by`, a conductor's included, does not |
 
+On a Sprint Board, `deferral-ok` checks the form of a comment URL and nothing behind it: opening the pointer and reading these fields stays this gate's job.
+
 A board answer is accepted evidence with a stated limit: it proves the record did not come through the board CLI, not who typed it, because a local process can still post to the page. The Story comment read back from Jira is the stronger pointer and is preferred when both exist.
 
 They also open each deferred case's preflight record: it names what was tried, each attempt with an evidence pointer that opens, the external class and who owes it, verdict `DEFER`.
@@ -75,7 +77,7 @@ In order:
 
 1. Add the label named by `qa.deferral.label` in `.agents/project.yaml` to the Story, keeping its other labels. With the key absent or `null`, ask once, together with the OK; never invent a label.
 2. Read the Story back and confirm the label.
-3. Set the result to `PASSED WITH DEFERRALS`, write the OK citation into the ATR, complete the ATR and post the QA comment. On a Sprint Board, then record in this order, each with `--by conductor|worker`: `bun run board unhold <KEY>`, `bun run board verdict <KEY> "PASSED WITH DEFERRALS"` and `bun run board deferral-ok <KEY> --cases <ids> --pointer "<pointer>"`; `deferral-ok` alone leaves a ticket recorded as waiting (§3) in Held. A `needs-you` the owner has not answered on the page keeps it in Needs you: after `deferral-ok`, close it with `bun run board resolve <KEY> --id <need-id> --by conductor|worker`, only where `sprint-board.md` §3 lets an agent resolve a gating question. No board record stands in for opening the pointer here and at round close (§3).
+3. Set the result to `PASSED WITH DEFERRALS`, write the OK citation into the ATR, complete the ATR and post the QA comment. On a Sprint Board, then record in this order, each with `--by conductor|worker`: `bun run board unhold <KEY>`, `bun run board verdict <KEY> "PASSED WITH DEFERRALS"` and `bun run board deferral-ok <KEY> --cases <ids> --pointer "<pointer>"`. `unhold` clears the hold, and the verdict and the OK decide the lane: the verdict alone or `deferral-ok` alone leaves a ticket recorded as waiting (§3) in Held. A `needs-you` the owner has not answered on the page keeps it in Needs you: after `deferral-ok`, close it with `bun run board resolve <KEY> --id <need-id> --by conductor|worker`, only where `sprint-board.md` §3 lets an agent resolve a gating question. No board record stands in for opening the pointer here and at round close (§3).
 4. Fire the sign-off: `{{jira.transition.story.qa_sign_off}}`, or the tech type's `test_finished`.
 
 QA moves the Story no further than `{{jira.status.story.qa_approved}}` (a tech item: `automated`) and deploys nothing.

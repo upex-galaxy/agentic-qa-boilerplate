@@ -42,7 +42,8 @@ still call the page's routes or edit the log.
 | 2-3 launch | `start <KEY> --worker <terminal handle> --by conductor` right after the worker's terminal opens; `arrival <KEY> launched\|held\|skipped "<why>" --by conductor` for a test-environment watch decision | conductor |
 | 3 run | `tc`, `bug`, `needs-you`, `evidence`, `fixture`, `verdict`, `worker <KEY> --stage plan\|execute\|report\|close`, all `--by worker`; at Stage 3 `evidence-artifact <KEY> <url> [--bug <BUG>]` right after publishing the evidence page (§6) | worker (§2) |
 | 3 run | `evidence-artifact <KEY> <url> [--bug <BUG>] --by conductor` when the worker could not publish or record it (§6) | conductor |
-| 3 run | `inbox` (what the owner wrote that Claude owes), `listen --since <last id seen>` under Monitor (§3), `say`, `say --reply <msg-id>`, `answer <KEY> "<text>" --id <need-id> --by conductor`, `resolve <KEY> --id <need-id> --by conductor`, `unhold`, `unwait <KEY> --on <person> --by conductor` | conductor |
+| 3 run | `inbox` (what the owner wrote that Claude owes), `listen --since <last id seen>` under Monitor (§3), `say`, `say --reply <msg-id>`, `answer <KEY> "<text>" --id <need-id> --by conductor`, `resolve <KEY> --id <need-id> --by conductor`, `unwait <KEY> --on <person> --by conductor` | conductor |
+| 3 run | on an owner OK observed for deferred cases: `unhold <KEY>`, `verdict <KEY> "PASSED WITH DEFERRALS"` and `deferral-ok <KEY> --cases <ids> --pointer "<pointer>"`, each with `--by conductor\|worker` (`shift-right-deferral.md` §4 step 3) | conductor, worker |
 | 3 run | `ask --to <person> --ticket <KEY> --kind blocker\|bug\|decision --file <draft.txt> --by conductor` (a message the owner sends); the owner moves it on the page (sent, answered, closed, dropped). What the conductor saw itself it records with `ask-state <ask-id> <state> --by conductor --expect <current state>` (§4) | conductor, owner |
 | 4 round close | `verdict ... --by conductor` reconciled with the tracker, `worker <KEY> --state done`, `snapshot --mode share` when the team should see it (allowlist copy: no asks, waits, questions, dock items, inbox or evidence); the full close of a worker and a round: `sprint-conductor/references/round-close.md` | conductor |
 | sprint close | `snapshot --mode report --fragment --stp-url <test plan url>` (the sprint QA report: allowlist state, counted by bucket); publish the fragment as a private claude.ai artifact and link it from the sprint test plan; then `archive` (freezes the board) | conductor |
@@ -71,7 +72,8 @@ for each screenshot that proves a case `bun run board evidence <KEY> <image> --c
 at Stage 3, right after publishing the ticket's evidence page `bun run board evidence-artifact <KEY> <url> --by worker`, and after each bug's page `bun run board evidence-artifact <KEY> <url> --bug <BUG> --by worker` (the `bug` line first); when you cannot publish, say so in the mailbox and the conductor records it;
 on reusable data found (a store, user or combination another ticket could use) `bun run board fixture <KEY> "<data found>" --module <module> --by worker` (the ticket's module);
 at stage changes `bun run board worker <KEY> --stage plan|execute|report|close --by worker`;
-at the end `bun run board verdict <KEY> <PASSED|FAILED|BLOCKED|"PASSED WITH DEFERRALS"> --note "<one line>" --by worker` (PENDING is rejected: it is the board's own "no verdict yet"; an owner or developer wait is BLOCKED plus `hold --reason no-data|other --on <who>`).
+at the end `bun run board verdict <KEY> <PASSED|FAILED|BLOCKED|"PASSED WITH DEFERRALS"> --note "<one line>" --by worker` (PENDING is rejected: it is the board's own "no verdict yet"; an owner or developer wait is BLOCKED plus `hold --reason no-data|other --on <who>`);
+on an owner OK you observed for deferred cases, once the Story label is read back, `bun run board unhold <KEY> --by worker`, `bun run board verdict <KEY> "PASSED WITH DEFERRALS" --by worker` and `bun run board deferral-ok <KEY> --cases <ids> --pointer "<pointer>" --by worker` (shift-right-deferral.md §3 and §4; unhold clears the hold, and the verdict and the OK decide the lane).
 Never `say`, `ask`, `ask-state`, `answer` or `sweep`: those are the conductor's and the owner's. A board error never stops the run.
 ```
 
@@ -156,7 +158,7 @@ the first time, arm `listen` with a starting point:
   The Story's move on a deferral still needs the owner's OK (`shift-right-deferral.md` §3). When the answer is to defer and the case's preflight record says
   `DEFER`, record it with `tc <KEY> <TC> DEFERRED --approval "<who>, <where>" --by conductor`; a deferral QA took on its
   own is recorded with `--reason "QA decision <date>: <external cause>"` and `--by` instead. Neither is the Story's deferral OK.
-  An OK you observed is recorded with `unhold <KEY>`, `verdict <KEY> "PASSED WITH DEFERRALS"` and `deferral-ok <KEY> --cases <ids> --pointer "<pointer>"`, each with `--by conductor|worker` (`shift-right-deferral.md` §4 step 3): `deferral-ok` alone leaves a ticket recorded as waiting in Held, and no board record stands in for opening the pointer at Stage 3 and at round close.
+  An OK you observed is recorded with `unhold <KEY>`, `verdict <KEY> "PASSED WITH DEFERRALS"` and `deferral-ok <KEY> --cases <ids> --pointer "<pointer>"`, each with `--by conductor|worker` (`shift-right-deferral.md` §4 step 3): `unhold` clears the hold, and the verdict and the OK decide the lane, so the verdict alone or `deferral-ok` alone leaves a ticket recorded as waiting in Held. No board record stands in for opening the pointer at Stage 3 and at round close.
 
 ---
 

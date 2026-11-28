@@ -1,0 +1,68 @@
+{
+  "ticket": "DEMO-7001",
+  "session": {
+    "accepted": [
+      "owner OK given in session, 2026-10-02 10:00",
+      "owner OK given in session, 2026-10-02 10:00:59",
+      "owner OK given in session, 2026-10-02 10:00Z",
+      "owner OK given in session, 2026-10-02 07:00-03:00",
+      "owner OK given in session, 2026-10-02 12:00:05+0200",
+      "owner OK given in session, 2024-02-29 10:00",
+      "  owner OK given in session, 2026-10-02 10:00  "
+    ],
+    "refused": [
+      "owner OK given in session",
+      "owner OK given in session: both cases accepted",
+      "owner OK given in session was NOT given 2026-10-02 10:00",
+      "owner OK given in session, 2026-10-02 10:00 was NOT given",
+      "owner OK given in session 2026-10-02 10:00",
+      "owner OK given in session, 2026-10-02T10:00",
+      "owner OK given in session, yesterday",
+      "the conductor says owner OK given in session, 2026-10-02 10:00",
+      "owner OK given in session, 2026-02-30 10:00",
+      "owner OK given in session, 2026-02-29 10:00",
+      "owner OK given in session, 2026-13-01 10:00",
+      "owner OK given in session, 2026-00-10 10:00",
+      "owner OK given in session, 0099-01-01 10:00",
+      "owner OK given in session, 2099-99-99 99:99",
+      "owner OK given in session, 2026-10-02 24:00",
+      "owner OK given in session, 2026-10-02 10:60",
+      "owner OK given in session, 2026-10-02 10:00:60",
+      "owner OK given in session, 2026-10-02 10:00+99:00",
+      "owner OK given in session, 2026-10-02 10:00+10:99",
+      "owner OK given in session, ２０２６-10-02 10:00",
+      "owner OK given in session, 2999-01-01 10:00",
+      "owner OK given in session, 2999-01-01 10:00Z"
+    ]
+  },
+  "url": {
+    "accepted": [
+      "https://tracker.example.test/browse/DEMO-7001",
+      "https://tracker.example.test/browse/DEMO-7001?focusedCommentId=10001#comment-10001",
+      "http://tracker.example.test/browse/demo-7001/",
+      "https://tracker.example.test/projects/p/issues/DEMO-7001/comments/3",
+      "https://tracker.example.test/browse/DEMO-7001-checkout?focusedCommentId=5",
+      "https://tracker.example.test/x/../browse/DEMO-7001"
+    ],
+    "refused": [
+      "https://tracker.example.test",
+      "https://tracker.example.test/c?focusedCommentId=5",
+      "https://tracker.example.test/browse/OTHER-5?x=DEMO-7001",
+      "https://tracker.example.test/jira/board?selectedIssue=DEMO-7001",
+      "https://tracker.example.test/c#DEMO-7001",
+      "https://tracker.example.test/c?focusedCommentId=5&issue=DEMO-7001",
+      "https://tracker.example.test/browse/DEMO-70010",
+      "https://tracker.example.test/browse/DEMO-7001-2",
+      "https://tracker.example.test/browse/XDEMO-7001",
+      "https://tracker.example.test/browse/DEMO-70010?focusedCommentId=5",
+      "https://tracker.example.test/browse/XDEMO-7001?focusedCommentId=5",
+      "https://tracker.example.test/browse/DEMO-7001-checkout",
+      "https://tracker.example.test/browse/DEMO-7001-checkout?focusedCommentId=",
+      "https://tracker.example.test/browse/DEMO-7001/..",
+      "https://tracker.example.test/browse/DEMO-7001/%2e%2e/c",
+      "https://DEMO-7001.example.test/c/2",
+      "https://tracker.example.test:abc/browse/DEMO-7001",
+      "https://[bad/browse/DEMO-7001"
+    ]
+  }
+}

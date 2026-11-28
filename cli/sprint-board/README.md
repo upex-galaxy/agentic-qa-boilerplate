@@ -235,7 +235,7 @@ recorder; the share and report copies carry neither.
 
 | Accepted `--pointer` | What the CLI checks |
 |---|---|
-| an `http(s)` URL: the Story comment read back from the tracker (preferred when it exists) | the ticket id as a whole token in its path, query or fragment, and the host of the ticket's tracker link when the board knows one; nothing behind the URL |
+| an `http(s)` URL: the Story comment read back from the tracker (preferred when it exists) | the form of the URL and nothing behind it: the ticket id as a whole segment of the path (or anywhere in the path of a URL that carries `focusedCommentId`), never only in the query or fragment, and the host of the ticket's tracker link. With no link the board knows, or one that does not parse, the URL is accepted and the record, `status` and the drawer say the host was not verified. Opening the pointer is still the gate's job |
 | `board:<need-id>` | a question on that ticket, still on the board, answered by `owner` on the page, after the cases were deferred; every cited case needs a deferral time the board recorded (`tc ... DEFERRED`), so a case DEFERRED only in the tracker is refused |
 | `owner OK given in session, <YYYY-MM-DD HH:MM>` | exactly that text and nothing else (seconds, `Z` or an offset optional, no offset reads as local time): a real date and time, not in the future and, to the minute, not before a deferral the board recorded for a cited case |
 
@@ -253,6 +253,10 @@ read what an answer says (a refusal is not an OK), and cannot check that an in-s
 the text and the time of the pointer. A case DEFERRED only in the tracker has no deferral time on the
 board, so neither an in-session time nor `--at` is compared against it. A board answer proves it did not
 come through the CLI, not who typed it. A tracker change made and undone between two syncs is not seen.
+A hold left set stays visible in the drawer of a Passed ticket: `unhold` clears it, and the lane follows
+the verdict and the OK. The retest rule reads the work type `Bug`, in any letter case: a ticket no `sync`
+or `meta --type` has typed has none, so the rule cannot apply to it, and a type spelled `Defect` is not
+read as a bug.
 
 ## Decision cards
 

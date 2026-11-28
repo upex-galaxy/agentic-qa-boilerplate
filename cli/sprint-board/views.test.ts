@@ -169,7 +169,7 @@ describe('the sprint report', () => {
 
 describe('deferred cases on the page', () => {
   const REF = 'https://example.atlassian.net/browse/DEMO-1';
-  const page = (opts: { label?: string, covered?: boolean, type?: string } = {}) => {
+  const page = (opts: { label?: string, covered?: boolean, hostUnverified?: boolean, type?: string } = {}) => {
     const s = fold({ sprint, now: '2026-10-05T12:00:00Z', deferralLabel: opts.label, events: [
       ev('2026-10-02T00:00:00Z', 'meta', 'DEMO-1', { type: opts.type ?? 'Story' }),
       ev('2026-10-02T00:00:00Z', 'tc', 'DEMO-1', { tc: 'TC-1', status: 'PASSED' }),
@@ -177,7 +177,7 @@ describe('deferred cases on the page', () => {
       ev('2026-10-02T01:00:00Z', 'verdict', 'DEMO-1', { verdict: 'PASSED' }),
       ev('2026-10-02T01:00:00Z', 'evidence', 'DEMO-1', { path: 'e/pass.png', tc: 'TC-1' }),
       ev('2026-10-02T01:00:00Z', 'bug.link', 'DEMO-1', { bug: 'DEMO-7090' }),
-      ...(opts.covered ? [{ ...ev('2026-10-02T02:00:00Z', 'deferral.ok', 'DEMO-1', { cases: ['TC-2'], pointer: REF }), by: 'conductor' }] : []),
+      ...(opts.covered ? [{ ...ev('2026-10-02T02:00:00Z', 'deferral.ok', 'DEMO-1', { cases: ['TC-2'], pointer: REF, hostUnverified: opts.hostUnverified }), by: 'conductor' }] : []),
     ] });
     const c = ctxOf(s, { filter: '', canWrite: true, img: p => p, sprints: [], archives: [] });
     return { c, t: s.tickets[0] };
@@ -206,6 +206,12 @@ describe('deferred cases on the page', () => {
     expect(html).toContain('Owner OK observed by conductor');
     expect(html).toContain(`href="${REF}"`);
     expect(html).not.toContain('waiting for owner OK');
+  });
+
+  test('the drawer says when the host of the OK pointer was not verified', () => {
+    const shown = (hostUnverified?: boolean) => { const p = page({ covered: true, hostUnverified }); return drawer(p.t, p.c); };
+    expect(shown(true)).toContain('host not verified');
+    expect(shown()).not.toContain('host not verified');
   });
 
   test('PASSED WITH DEFERRALS with no DEFERRED case reads passed on neither the lane nor the report', () => {

@@ -750,8 +750,11 @@ describe('deferral-ok', () => {
     const out = ok('deferral-ok', TK, '--cases', 'tc-1', '--pointer', COMMENT, '--by', 'worker');
     expect(out).toContain(`${TK}: worker observed an owner OK for TC-1 (${COMMENT})`);
     expect(out).toContain('the pointer is still opened at Stage 3 and at round close');
-    expect(oks()).toEqual([expect.objectContaining({ ticket: TK, by: 'worker', data: { cases: ['TC-1'], pointer: COMMENT } })]);
+    expect(out).toContain('Pointer host not verified');
+    expect(oks()).toEqual([expect.objectContaining({ ticket: TK, by: 'worker', data: { cases: ['TC-1'], pointer: COMMENT, hostUnverified: true } })]);
+    expect(oks()[0].text).toContain('(host not verified)');
     const status = ok('status');
+    expect(status).toContain('(OK pointer host not verified: TC-1)');
     expect(status).toContain('Passed (1, 1 not fully tested)');
     expect(status).toContain('[Not fully tested]');
     expect(status).not.toContain('waiting for owner OK');
@@ -763,6 +766,27 @@ describe('deferral-ok', () => {
     ok('verdict', TK, 'PASSED', '--by', 'worker');
     const out = ok('deferral-ok', TK, '--cases', 'TC-1', '--pointer', COMMENT, '--by', 'conductor');
     expect(out).toContain(`${TK} is waiting for owner OK on TC-2`);
+  });
+
+  test('the documented flow ends Passed, and none of its steps does that alone', () => {
+    defer('TC-1');
+    ok('verdict', TK, 'BLOCKED', '--by', 'worker');
+    ok('hold', TK, '--reason', 'other', '--on', 'Owner', 'waiting for owner OK', '--by', 'worker');
+    const log = join(dir, 'sprints', 'sprint-1', 'events.ndjson');
+    const waiting = readFileSync(log, 'utf8');
+    const steps = [
+      ['unhold', TK, '--by', 'worker'],
+      ['verdict', TK, 'PASSED WITH DEFERRALS', '--by', 'worker'],
+      ['deferral-ok', TK, '--cases', 'TC-1', '--pointer', COMMENT, '--by', 'worker'],
+    ];
+    for (const step of steps) {
+      writeFileSync(log, waiting);
+      ok(...step);
+      expect([step[0], ok('status').includes('Held (1)')]).toEqual([step[0], true]);
+    }
+    writeFileSync(log, waiting);
+    for (const step of steps) { ok(...step); }
+    expect(ok('status')).toContain('Passed (1, 1 not fully tested)');
   });
 
   test('PASSED WITH DEFERRALS is one quoted verdict', () => {
