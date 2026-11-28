@@ -83,7 +83,7 @@ describe.skipIf(missing !== null)('build.py (Python 3.9+ and Pillow present)', (
       pack.bugs = [];
       pack.tcs = [{ id: 'DEMO-7101-TC3', title: 'Saved cards are listed', status: 'DEFERRED', note: 'flag off; deferred to DEMO-7130' }];
       pack.ticket.verdict = 'PASSED WITH DEFERRALS';
-      pack.ticket.deferral = { label: '<img src=x>', ok: { by: '<b>Owner</b>', at: '2026-10-24T15:00:00Z', pointer: 'https://tracker.example.test/c?id=1&x="y', cases: ['DEMO-7101-TC3'] } };
+      pack.ticket.deferral = { label: '<img src=x>', ok: { by: '<b>Owner</b>', at: '2026-10-24T15:00:00Z', pointer: 'https://tracker.example.test/browse/DEMO-7101?id=1&x="y', cases: ['DEMO-7101-TC3'] } };
       const path = join(dir, 'pack.json');
       const page = join(dir, 'page.html');
       writeFileSync(path, JSON.stringify(pack));
@@ -92,7 +92,6 @@ describe.skipIf(missing !== null)('build.py (Python 3.9+ and Pillow present)', (
       expect(result.code).toBe(0);
       const html = readFileSync(page, 'utf8');
       expect(html).toContain('.stamp.PASSEDWITHDEFERRALS');
-      expect(html).toMatch(/class="stamp \$\{esc\(stKey\(t\.verdict\)\)\}"/);
 
       const source = html.slice(html.indexOf('function deferralOf('), html.indexOf('/* ---------- board ----------'));
       const escLine = /const esc = .*;/.exec(html)![0];
@@ -103,7 +102,7 @@ describe.skipIf(missing !== null)('build.py (Python 3.9+ and Pillow present)', (
       expect(box.hidden).toBe(false);
       expect(box.innerHTML).toContain('&lt;img src=x&gt;');
       expect(box.innerHTML).toContain('&lt;b&gt;Owner&lt;/b&gt; · 2026-10-24T15:00:00Z');
-      expect(box.innerHTML).toContain('href="https://tracker.example.test/c?id=1&amp;x=&quot;y"');
+      expect(box.innerHTML).toContain('href="https://tracker.example.test/browse/DEMO-7101?id=1&amp;x=&quot;y"');
       expect(box.innerHTML).toContain('<b>Cases covered:</b> DEMO-7101-TC3');
       expect(box.innerHTML).not.toContain('Waiting for owner OK');
 
@@ -114,6 +113,51 @@ describe.skipIf(missing !== null)('build.py (Python 3.9+ and Pillow present)', (
       fns.drawDeferral(fns.deferralOf({ ...pack, ticket: { ...pack.ticket, verdict: 'FAILED', deferral: undefined } }));
       expect(box.hidden).toBe(true);
       expect(fns.deferralOf({ ...pack, kind: 'bug' })).toBeNull();
+    }
+    finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it('a PASSED verdict beside a deferred case is stamped Not fully tested, on a story pack and a round-0 bug pack', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'evidence-stamp-'));
+    try {
+      for (const kind of ['story', 'bug'] as const) {
+        const pack = demoStoryPack({ ok: 'a.png', error: 'b.png' });
+        pack.kind = kind;
+        pack.images = {};
+        pack.bugs = [];
+        pack.tcs = [
+          { id: 'DEMO-7101-TC1', title: 'Pay with a saved card', status: 'PASSED', url: 'https://claude.ai/artifact/abc' },
+          { id: 'DEMO-7101-TC3', title: 'Saved cards are listed', status: 'DEFERRED', note: 'flag off; deferred to DEMO-7130' },
+        ];
+        pack.ticket.verdict = 'PASSED';
+        delete pack.ticket.deferral;
+        const path = join(dir, `${kind}.json`);
+        const page = join(dir, `${kind}.html`);
+        writeFileSync(path, JSON.stringify(pack));
+        expect(runBuildPy(['--pack', path, '--out', page, '--repo', dir]).code).toBe(0);
+        const html = readFileSync(page, 'utf8');
+
+        const source = html.slice(html.indexOf('function deferralOf('), html.indexOf('const FILTERS = '));
+        const helpers = [/const esc = .*;/, /const stKey = .*;/].map(line => line.exec(html)![0]).join('\n');
+        const header = (shown: unknown) => {
+          const boxes: Record<string, { innerHTML: string }> = {};
+          const $ = (id: string) => (boxes[id] ??= { innerHTML: '', querySelectorAll: () => [] } as { innerHTML: string });
+          runInNewContext(`${helpers}\nlet P, ITEMS, filter, showHist;\n${source}\n;renderBoard(shown)`, { $, shown, document: {}, itemsOf: () => [], drawFilters: () => {}, drawGrid: () => {} });
+          return boxes.hdr.innerHTML;
+        };
+
+        const stamped = header(pack);
+        expect(stamped).toContain('class="stamp NOTFULLYTESTED"');
+        expect(stamped).toContain('<span class="word">Not fully tested</span>');
+        expect(stamped).toContain('Deferred, not run: DEMO-7101-TC3');
+        expect(stamped).not.toContain('class="stamp PASSED"');
+        expect(stamped).not.toContain('owner OK given');
+        const clean = header({ ...pack, tcs: [pack.tcs[0]] });
+        expect(clean).toContain('class="stamp PASSED"');
+        expect(clean).toContain('<span class="word">PASSED</span>');
+      }
     }
     finally {
       rmSync(dir, { recursive: true, force: true });

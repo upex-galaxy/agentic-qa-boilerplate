@@ -32,7 +32,7 @@ accepted, so a pack recovered with `extract` builds again unchanged.
 
 ## `ticket`
 
-`id` (`PROJ-7410`), `title`, `module`, `verdict` (`PASSED` / `FAILED` / `PENDING` / `PASSED WITH DEFERRALS`, the big stamp),
+`id` (`PROJ-7410`), `title`, `module`, `verdict` (`PASSED` / `FAILED` / `PENDING` / `PASSED WITH DEFERRALS`, the big stamp; one exception under "What the verdict must agree with"),
 optional `verdictNote` (one line under the stamp), `severity`, `priority` (chips on a bug page),
 `bugs: ["PROJ-7410 Low"]` (chips on a story page), `parent`, `parentTitle`, `case`, `assignee`, `qa`,
 `date`, `atp`, `atr`, and on a story `deferral` (below).
@@ -48,8 +48,8 @@ Optional, story packs only (a Tech Story or Tech Debt included). It records what
 | `ok` | the owner's final OK. Absent or `{}` means no OK yet |
 | `ok.by` | who gave it: the owner's name or role |
 | `ok.at` | when: date and time, such as `2026-11-05T14:30:00Z` |
-| `ok.pointer` | where it can be opened: an http(s) URL (the owner's comment on the Story) or `board:<need-id>` of the question the owner answered on the Sprint Board |
-| `ok.record` | the OK given at the keyboard of the session running the stage. The text starts `owner OK given in session` |
+| `ok.pointer` | where it can be opened: an http(s) URL (the owner's comment on the Story) or `board:<need-id>` of the question the owner answered on the Sprint Board. A URL names this pack's `ticket.id` as a whole segment of its path (or anywhere in the path when it carries `focusedCommentId`), never only in its query or fragment |
+| `ok.record` | the OK given at the keyboard of the session running the stage: exactly `owner OK given in session, <YYYY-MM-DD HH:MM>`, a real date and time that is not in the future (seconds, `Z` or an offset optional, no offset reads as local time) |
 | `ok.cases` | the ids of the cases it covers, each a current `DEFERRED` case of `tcs[]` |
 
 An `ok` carries exactly one of `pointer` and `record`. A case deferred after the OK is not covered until
@@ -60,8 +60,10 @@ A pack that carries `deferral`, an empty `{}` included, never reads plain `PASSE
 DEFERRED case: it is `PENDING` until the OK covers every one and the label is written, then
 `PASSED WITH DEFERRALS`.
 
-The builder checks the shape and the coverage. It does not open the pointer or compare it with the
-notice: that check stays with the session that verifies the OK (§3 of the deferral reference).
+The builder checks the shape and the coverage, and the two pointer forms by the Sprint Board's rules
+(`cli/lib/evidence-page/fixtures/owner-ok-vectors.json` pins both). It does not open the pointer or
+compare it with the notice: that check stays with the session that verifies the OK (§3 of the deferral
+reference).
 
 The page shows the label, the OK (who, when, pointer or record, covered cases) and, for a current
 deferred case no OK covers on a ticket that is not `FAILED`, **Waiting for owner OK** with its id.
@@ -117,9 +119,11 @@ wins. `caption` overrides the filmstrip caption.
 | A mark or a redaction outside its image | it would point at nothing |
 
 A DEFERRED case under a PASSED verdict only warns, on a pack with no `ticket.deferral` and outside a bug
-pack's retest round: list it in the report. On a story,
+pack's retest round: list it in the report. The pack keeps its `PASSED`, and the page stamps it **Not
+fully tested** with the deferred case ids and cites no OK. On a story,
 write `PENDING` or `PASSED WITH DEFERRALS` instead, the results of
-`sprint-testing/references/reporting-templates.md` §2.2.
+`sprint-testing/references/reporting-templates.md` §2.2. A bug pack cannot cover a deferral: its stamp
+clears once the case runs and `tcs[].status` records what was observed.
 
 ## Retest rounds: history never reads as a current defect
 

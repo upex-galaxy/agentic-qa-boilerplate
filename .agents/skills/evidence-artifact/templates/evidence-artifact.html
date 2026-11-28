@@ -21,9 +21,9 @@ kbd { font: 600 11px var(--font-mono); border: 1px solid var(--line); border-bot
 .stamp { padding: 18px 22px; display: grid; align-content: center; gap: 8px; min-width: 180px; color: #fff; }
 /* stamps sit on saturated fills that read the same in both themes, like the marks on screenshots */
 :root { --stamp-pending: #a35f00; }
-.stamp.FAILED { background: var(--mark-defect); } .stamp.PASSED { background: var(--mark-ok); } .stamp.PENDING, .stamp.PASSEDWITHDEFERRALS { background: var(--stamp-pending); }
+.stamp.FAILED { background: var(--mark-defect); } .stamp.PASSED { background: var(--mark-ok); } .stamp.PENDING, .stamp.PASSEDWITHDEFERRALS, .stamp.NOTFULLYTESTED { background: var(--stamp-pending); }
 .stamp .word { font: 800 36px/1 var(--font-display); letter-spacing: .03em; }
-.stamp.PASSEDWITHDEFERRALS .word { font-size: 24px; line-height: 1.1; max-width: 12ch; }
+.stamp.PASSEDWITHDEFERRALS .word, .stamp.NOTFULLYTESTED .word { font-size: 24px; line-height: 1.1; max-width: 12ch; }
 .stamp .vnote { font-size: 12.5px; line-height: 1.35; opacity: .95; max-width: 22ch; }
 .stamp .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .stamp .chip { font: 600 12px var(--font-body); border: 1px solid rgba(255,255,255,.65); border-radius: 999px; padding: 1px 9px; white-space: nowrap; }
@@ -355,17 +355,24 @@ function drawDeferral(dv) {
     ${dv.waiting.length ? `<p><b>Waiting for owner OK:</b> ${dv.waiting.map(esc).join(", ")}</p>` : ""}</section>` : "";
 }
 
+/* PASSED beside a current DEFERRED case builds only with no ticket.deferral, so no owner OK stands behind it: never a clean stamp */
+function stampOf(pack) {
+  const t = pack.ticket, skipped = t.verdict === "PASSED" ? pack.tcs.filter(c => !c.hist && c.status === "DEFERRED").map(c => c.id) : [];
+  if (!skipped.length) return { key: stKey(t.verdict), label: "Verdict", word: t.verdict, note: "" };
+  return { key: "NOTFULLYTESTED", label: "Verdict PASSED", word: (t.deferral || {}).label || "Not fully tested", note: `Deferred, not run: ${skipped.join(", ")}. No owner OK cited.` };
+}
+
 /* ---------- board ---------- */
 function renderBoard(pack) {
   P = pack; ITEMS = itemsOf(pack); filter = "All"; showHist = false;
   const t = pack.ticket, bug = pack.kind === "bug";
   document.title = `${t.id} evidence`;
-  const dv = deferralOf(pack);
+  const dv = deferralOf(pack), stamp = stampOf(pack);
   const chips = bug ? [t.severity && `Severity ${t.severity}`, t.priority && `Priority ${t.priority}`].filter(Boolean)
     : [dv && dv.label, dv && dv.waiting.length && "Waiting for owner OK", ...(t.bugs || []).map(b => `Bug ${b}`)].filter(Boolean);
   $("hdr").className = "verdict";
-  $("hdr").innerHTML = `<div class="stamp ${esc(stKey(t.verdict))}"><span class="label" style="color:inherit;opacity:.85">Verdict</span><span class="word">${esc(t.verdict)}</span>
-      ${t.verdictNote ? `<span class="vnote">${esc(t.verdictNote)}</span>` : ""}<div class="chips">${chips.map(c => `<span class="chip">${esc(c)}</span>`).join("")}</div></div>
+  $("hdr").innerHTML = `<div class="stamp ${esc(stamp.key)}"><span class="label" style="color:inherit;opacity:.85">${esc(stamp.label)}</span><span class="word">${esc(stamp.word)}</span>
+      ${stamp.note ? `<span class="vnote">${esc(stamp.note)}</span>` : ""}${t.verdictNote ? `<span class="vnote">${esc(t.verdictNote)}</span>` : ""}<div class="chips">${chips.map(c => `<span class="chip">${esc(c)}</span>`).join("")}</div></div>
     <div class="vhead"><span class="label">${bug ? "Bug report" : "Story test evidence"} · ${esc(t.module || "")}</span>
       <h1><span class="tid">${esc(t.id)}</span>${esc(t.title)}</h1>
       <div class="meta">${t.parent ? `<span>Found testing <b>${esc(t.parent)}</b>${t.parentTitle ? ` (${esc(t.parentTitle)})` : ""}</span>` : ""}${t.case ? `<span>Case <b>${esc(t.case)}</b></span>` : ""}

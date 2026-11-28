@@ -47,7 +47,7 @@ describe('describePage', () => {
     pack.tcs = pack.tcs.filter(c => c.status === 'PASSED' || c.status === 'DEFERRED');
     pack.bugs = [];
     expect(describePage(pack)).toBe('DEMO-7101 staging evidence: 1 of 2 TCs passed, 1 deferred, waiting for owner OK');
-    pack.ticket.deferral = { label: 'not-fully-tested', ok: { by: 'Owner (demo)', at: '2026-10-24T15:00:00Z', record: 'owner OK given in session', cases: ['DEMO-7101-TC3'] } };
+    pack.ticket.deferral = { label: 'not-fully-tested', ok: { by: 'Owner (demo)', at: '2026-10-24T15:00:00Z', record: 'owner OK given in session, 2026-10-24 15:00Z', cases: ['DEMO-7101-TC3'] } };
     expect(describePage(pack)).toBe('DEMO-7101 staging evidence: 1 of 2 TCs passed, 1 deferred (not-fully-tested), owner OK cited');
   });
 });

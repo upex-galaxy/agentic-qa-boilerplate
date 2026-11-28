@@ -8,6 +8,8 @@ import base64, copy, io, json, os, re, shutil, subprocess, sys, tempfile, unitte
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BUILD = os.path.join(HERE, "build.py")
+# The Sprint Board's tests read the same file (cli/sprint-board/model.test.ts)
+OK_VECTORS = os.path.join(HERE, "..", "..", "..", "..", "cli", "lib", "evidence-page", "fixtures", "owner-ok-vectors.json")
 try:
     from PIL import Image, ImageDraw
     HAVE_PIL = True
@@ -289,7 +291,7 @@ class TestDeferral(BuildCase):
 
     def test_an_incomplete_ok_is_refused_by_field(self):
         without = lambda key: {k: v for k, v in self.OK.items() if k != key}
-        record = dict(without("pointer"), record="owner OK given in session: both cases accepted")
+        record = dict(without("pointer"), record="owner OK given in session, 2026-11-05 14:30Z")
         self.passes(self.story("PASSED WITH DEFERRALS", ok=record))
         self.passes(self.story("PASSED WITH DEFERRALS", ok=dict(self.OK, pointer="board:deferral-DEMO-7001-TC2")))
         for ok, needle in (
@@ -302,13 +304,27 @@ class TestDeferral(BuildCase):
             (dict(self.OK, pointer="the owner said yes"), "ok.pointer must be an absolute http(s) URL or board:<need-id>"),
             (dict(self.OK, pointer="board:"), "ok.pointer must be an absolute http(s) URL"),
             (dict(self.OK, pointer="javascript:alert(1)"), "ok.pointer must be an absolute http(s) URL"),
-            (dict(record, record="the conductor says owner OK given in session"), "ok.record must start with"),
+            (dict(record, record="the conductor says owner OK given in session"), "ok.record must be exactly"),
+            (dict(self.OK, pointer="https://tracker.example.test/c?focusedCommentId=9&issue=DEMO-7001"), "ok.pointer does not name DEMO-7001 in its path"),
             (without("cases"), "ok.cases must list the covered case ids"),
             (dict(self.OK, cases=[]), "ok.cases must list the covered case ids"),
             (dict(self.OK, aproved=True), "aproved is not a field"),
             ("yes", "ticket.deferral.ok must be an object"),
         ):
             self.refused(self.story("PENDING", ok=ok), needle)
+
+    def test_the_ok_takes_the_sprint_board_pointer_forms(self):
+        with open(OK_VECTORS) as f:
+            v = json.load(f)
+        self.assertEqual(self.story("PENDING")["ticket"]["id"], v["ticket"])
+        without = {k: x for k, x in self.OK.items() if k != "pointer"}
+        for form, key, needle in (("session", "record", "ok.record must be exactly"), ("url", "pointer", "ok.pointer does not name")):
+            for text in v[form]["accepted"]:
+                with self.subTest(text=text):
+                    self.passes(self.story("PASSED WITH DEFERRALS", ok=dict(without, **{key: text})))
+            for text in v[form]["refused"]:
+                with self.subTest(text=text):
+                    self.refused(self.story("PASSED WITH DEFERRALS", ok=dict(without, **{key: text})), needle)
 
     def test_a_bug_never_passes_on_a_deferral_ok_or_not(self):
         p = TestValidation.retest_pack(self, "PASSED")
@@ -352,13 +368,31 @@ class TestDeferral(BuildCase):
         self.passes(p)
 
     def test_a_passed_pack_with_no_ticket_deferral_still_builds_with_a_warning(self):
-        r, _ = self.passes(self.story("PASSED", ok=None, label=None, passed=True))
-        self.assertIn("DEFERRED, outside this PASSED verdict", r.stderr)
+        p = self.story("PASSED", ok=None, label=None, passed=True)
+        r, html = self.passes(p)
+        self.assertIn("DEMO-7001-TC2 DEFERRED, outside this PASSED verdict: the page stamp reads Not fully tested", r.stderr)
+        self.assertIn("Set ticket.verdict to PENDING", r.stderr)
+        self.assertEqual(embedded(html)[0]["ticket"]["verdict"], "PASSED")
+        self.assertNotIn("deferral", embedded(html)[0]["ticket"])
+        self.assertIn(".stamp.NOTFULLYTESTED", html)
+        p["ticket"]["verdict"] = "PENDING"
+        self.assertNotIn("outside this PASSED verdict", self.passes(p)[0].stderr)
+
+    def test_a_round_0_bug_pack_passed_beside_a_deferral_builds_and_only_a_run_clears_it(self):
+        p = base_pack(kind="bug")
+        p["tcs"].append({"id": "DEMO-7001-TC2", "title": "Other", "status": "DEFERRED", "note": "later, DEMO-7031"})
+        r, html = self.passes(p)
+        self.assertIn("A bug pack cannot cover a deferral: only a run of DEMO-7001-TC2 clears it", r.stderr)
+        self.assertEqual(embedded(html)[0]["ticket"]["verdict"], "PASSED")
+        self.refused(dict(p, ticket=dict(p["ticket"], verdict="PENDING")), "ticket.verdict PENDING contradicts the current cases")
+        p["tcs"][1].update(status="PASSED", url="https://claude.ai/artifact/abc")
+        self.assertNotIn("outside this PASSED verdict", self.passes(p)[0].stderr)
 
     def test_the_new_fields_go_through_the_secret_scan(self):
         record = {"by": "Owner", "at": "2026-11-05T14:30:00Z", "record": f"owner OK given in session, token={KEY}", "cases": ["DEMO-7001-TC2"]}
-        self.refused(self.story("PASSED WITH DEFERRALS", ok=record), "pack.ticket.deferral.ok.record holds")
-        self.refused(self.story("PASSED WITH DEFERRALS", ok=dict(self.OK, pointer=f"https://x.test/c?sig={KEY}")), "pack.ticket.deferral.ok.pointer holds")
+        self.refused(self.story("PASSED WITH DEFERRALS", ok=record), "ok.record must be exactly")
+        self.refused(self.story("PASSED WITH DEFERRALS", ok=dict(self.OK, by=f"Owner token={KEY}")), "pack.ticket.deferral.ok.by holds")
+        self.refused(self.story("PASSED WITH DEFERRALS", ok=dict(self.OK, pointer=f"https://x.test/browse/DEMO-7001?sig={KEY}")), "pack.ticket.deferral.ok.pointer holds")
 
 
 class TestPage(BuildCase):

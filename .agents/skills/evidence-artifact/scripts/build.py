@@ -30,6 +30,8 @@ venv; Windows: `py -m pip install pillow`); Python 3.9+. Nothing leaves the
 machine: no network call, no external service.
 """
 import argparse, base64, copy, html as htmllib, io, json, os, re, subprocess, sys
+from datetime import datetime, timedelta, timezone
+from urllib.parse import parse_qs, urlsplit
 
 # Same hint per platform as cli/lib/evidence-page/python.ts: a Homebrew or distro Python
 # refuses a bare `pip install` outside a venv (PEP 668).
@@ -79,6 +81,7 @@ DEFERRED_PASS = "PASSED WITH DEFERRALS"
 IN_SESSION = "owner OK given in session"      # the words shift-right-deferral.md §3 prescribes for an in-session record
 OK_POINTER = re.compile(r"(?:https?://[^\s/]+\S*|board:\S+)", re.I)
 OK_TIME = re.compile(r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?")
+SESSION_OK = re.compile(re.escape(IN_SESSION) + r", (\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})(?::(\d{2}))?(Z|[+-]\d{2}:?\d{2})?", re.ASCII)
 CASE_FIELDS = {"id", "title", "note", "status", "kind", "round", "date", "severity", "priority", "from", "url", "evidence", "compare", "hist", "histRound"}
 ITEM_COMMON = {"type", "label", "caption", "result", "round", "flags", "note", "alt", "hist", "histRound"}
 ITEM_FIELDS = {"image": {"ref", "annotations", "coords"}, "api": {"method", "url", "status", "ms", "request", "response", "curl"},
@@ -272,7 +275,7 @@ def validate(p, where, key_rx):
     check_str(t, "title", f"{where}: ticket", required=True)
     if t.get("verdict") not in VERDICTS: fail(f"{where}: ticket.verdict must be one of {', '.join(_ST['verdicts'])}")
     for k in TICKET_FIELDS - {"id", "title", "verdict", "bugs", "deferral"}: check_str(t, k, f"{where}: ticket")
-    check_deferral(t.get("deferral"), p["kind"], where)
+    check_deferral(t.get("deferral"), p["kind"], t["id"], where)
     if not isinstance(t.get("bugs", []), list) or not all(isinstance(b, str) for b in t.get("bugs", [])): fail(f"{where}: ticket.bugs must be a list of strings")
     env = p.get("env")
     if not isinstance(env, dict) or not all(isinstance(v, str) for v in env.values()): fail(f"{where}: env is required: an ordered map of label -> string (the build strip)")
@@ -327,7 +330,45 @@ def validate(p, where, key_rx):
     scan_text(p, where)
 
 
-def check_deferral(d, kind, where):
+# The two pointer rules below are the Sprint Board's (cli/sprint-board/model.ts); one fixture of vectors pins both.
+def session_ok(text):
+    m = SESSION_OK.fullmatch(text.strip())
+    if not m: return False
+    year, month, day, hour, minute, second = (int(x or 0) for x in m.groups()[:6])
+    zone = m.group(7)
+    if year < 100 or second > 59: return False
+    try:
+        tz = None
+        if zone == "Z": tz = timezone.utc
+        elif zone:
+            hours, minutes = int(zone[1:3]), int(zone[-2:])
+            if hours > 23 or minutes > 59: return False
+            tz = timezone((1 if zone[0] == "+" else -1) * timedelta(hours=hours, minutes=minutes))
+        given = datetime(year, month, day, hour, minute, tzinfo=tz)
+    except ValueError:
+        return False
+    return given <= datetime.now(tz).replace(second=0, microsecond=0)
+
+
+def url_names_ticket(url, key):
+    """The key as a whole path segment, or anywhere in the path of a URL with focusedCommentId; never only in the query or fragment."""
+    try:
+        u = urlsplit(url.replace("\\", "/"))
+        u.port  # raises on a port that is not a number, as the board's URL parser does
+    except ValueError:
+        return False
+    if not u.hostname: return False
+    segments = []
+    for seg in u.path.split("/"):
+        dots = seg.lower().replace("%2e", ".")
+        if dots == "..": segments = segments[:-1]
+        elif dots != ".": segments.append(seg)
+    if any(seg.upper() == key.upper() for seg in segments): return True
+    token = rf"(?<![A-Za-z0-9_-]){re.escape(key)}(?![A-Za-z0-9_])"
+    return bool(parse_qs(u.query).get("focusedCommentId")) and re.search(token, "/".join(segments), re.I | re.ASCII) is not None
+
+
+def check_deferral(d, kind, ticket, where):
     if d is None: return
     if kind == "bug": fail(f"{where}: ticket.deferral belongs to a story pack: a bug never passes on a deferral")
     unknown(d, DEFERRAL_FIELDS, f"{where}: ticket.deferral")
@@ -341,7 +382,10 @@ def check_deferral(d, kind, where):
     forms = [k for k in ("pointer", "record") if (check_str(ok, k, at) or "").strip()]
     if len(forms) != 1: fail(f"{at} needs exactly one of pointer (a URL or board:<need-id>) or record (an OK given in session)")
     if forms == ["pointer"] and not OK_POINTER.fullmatch(ok["pointer"]): fail(f"{at}.pointer must be an absolute http(s) URL or board:<need-id> (got {ok['pointer']!r})")
-    if forms == ["record"] and not ok["record"].startswith(IN_SESSION): fail(f"{at}.record must start with \"{IN_SESSION}\"")
+    if forms == ["pointer"] and ok["pointer"].lower().startswith("http") and not url_names_ticket(ok["pointer"], ticket):
+        fail(f"{at}.pointer does not name {ticket} in its path: give the URL of the owner's comment on that item (the key as a whole path segment, or inside the path of a URL with focusedCommentId)")
+    if forms == ["record"] and not session_ok(ok["record"]):
+        fail(f"{at}.record must be exactly \"{IN_SESSION}, <YYYY-MM-DD HH:MM>\" with a real date and time, not in the future (seconds, Z or an offset are optional, no offset reads as local time)")
     cases = ok.get("cases")
     if not (isinstance(cases, list) and cases and all(isinstance(c, str) for c in cases) and len(set(cases)) == len(cases)):
         fail(f"{at}.cases must list the covered case ids, at least one and each once")
@@ -430,7 +474,7 @@ def allowed_verdicts(kind, cases, deferral):
     passed = ["PASSED"] if "PASSED" in st else []
     if kind == "bug" or "DEFERRED" not in st: return passed or ["PENDING"]
     if deferral is not None: return ["PENDING"] if deferral_gap(kind, cases, deferral) else [DEFERRED_PASS]
-    # PASSED stays allowed beside a deferral so a pack with no ticket.deferral still builds, with a warning
+    # PASSED stays allowed beside a deferral so a pack with no ticket.deferral still builds: warned, and stamped Not fully tested
     return passed + ["PENDING"]
 
 
@@ -467,7 +511,10 @@ def cross_check(p, where, key_rx):
         else: why = "no current case was observed PASSED"
         fail(f"{where}: ticket.verdict {verdict} contradicts the current cases (they allow {' or '.join(allowed)}: {why}); earlier rounds never count")
     if verdict == "PASSED" and deferred:
-        print(f"warning: {where}: {deferred['id']} is DEFERRED, outside this PASSED verdict; list it in the report.", file=sys.stderr)
+        ids = ", ".join(c["id"] for c in live if c["status"] == "DEFERRED")
+        fix = (f"A bug pack cannot cover a deferral: only a run of {ids} clears it (set that tcs[].status to the observed result; a FAILED one makes ticket.verdict FAILED)." if p["kind"] == "bug"
+               else "Set ticket.verdict to PENDING, or, once the owner's OK covers every deferred case, write ticket.deferral (label and ok) and set ticket.verdict to PASSED WITH DEFERRALS.")
+        print(f"warning: {where}: {ids} DEFERRED, outside this PASSED verdict: the page stamp reads Not fully tested; list it in the report. {fix}", file=sys.stderr)
 
 
 def find_bug_pack(bug_id, story_path, root, given):
