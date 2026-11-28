@@ -75,7 +75,7 @@
     "scripts/lib/edd/record.ts": "c3c5e8e8ffb7c17a5a745837573757d81f8d17f457343f65fcbf6f1a780701a7",
     "scripts/lib/edd/signers.test.ts": "f606fa702293a8a1e3f7da1839e0418fc684f25edd2b97b5c9959cd6958a22d8",
     "scripts/lib/edd/signers.ts": "10bfc7db0c2821c55c6f92fbb896f6b09a713eb4e113d406e687e144510acaa8",
-    "scripts/lib/edd/verify.ts": "dbb1f9233a78fa1e9a5d77703553a8927bbbd0a516e585318ff26457b2b25ca7",
+    "scripts/lib/edd/verify.ts": "2fa9b55d982fab471c928a2d8890bfb9e1da77cc057e36114db45281e6fdb080",
     "scripts/lib/heavy-e2e.ts": "7bfe7f767ecac4d8ad61a3790cae7c9165521b50362d014ae0e41cee4a5fa589",
     "scripts/shared-check.ts": "a4863d03b318177a8c82b2e69b4dab2e5d4b4a3d6df7d9de94ef9a0b28e823a5"
   }

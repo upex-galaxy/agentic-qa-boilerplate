@@ -45,7 +45,7 @@ function docAt(cwd: string, ref: string): Record<string, unknown> | null {
 }
 
 export const RESOLVED_CONTRACT_KEY = 'evidence (resolved contract)';
-const BUN_SCRIPT = /\bbun\s+(?:run\s+)?(?:-{1,2}\S+\s+)*([^\s;&|()<>'"`-][^\s;&|()<>'"`]*)/g;
+const BUN_SCRIPT = /\bbun\s+(?:run\s+)?(?:-\S+\s+)*([^\s;&|()<>'"`-][^\s;&|()<>'"`]*)/g;
 const MAX_SCRIPTS = 200;
 
 export function staticScriptNames(cmds: string[]): string[] {
