@@ -1030,8 +1030,28 @@ svg .axis {
   border-top: 1px solid var(--rule);
   align-items: center;
 }
-.draft.sent {
+.draft.sent,
+.draft.closed,
+.draft.dropped {
   opacity: 0.75;
+}
+.draft-note {
+  padding: 6px 12px;
+  font-size: 13px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.draft-history {
+  list-style: none;
+  margin: 0;
+  padding: 6px 12px 8px;
+  display: grid;
+  gap: 2px;
+  font: 11.5px var(--mono);
+  color: var(--muted);
+}
+.draft-history b {
+  color: var(--ink);
 }
 .thumbs {
   display: flex;

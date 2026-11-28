@@ -118,6 +118,133 @@ describe('verdict', () => {
   });
 });
 
+describe('ask and ask-state', () => {
+  const askId = () => String(events().filter(e => e.kind === 'ask.create').at(-1)!.data!.id);
+  const states = () => events().filter(e => e.kind === 'ask.state');
+  const ask = (...extra: string[]) => {
+    ok('sprint', '--person', 'Kim Carter=Dev,en,Kim');
+    ok('ask', '--to', 'Kim', '--ticket', TK, '--text', 'private words for Kim only', ...extra);
+    return askId();
+  };
+
+  test('a reply is expected by kind, and either flag overrides it', () => {
+    ask('--kind', 'bug');
+    expect(events().at(-1)?.data?.twoWay).toBe(true);
+    ask('--kind', 'fyi');
+    expect(events().at(-1)?.data?.twoWay).toBe(false);
+    ask('--kind', 'fyi', '--two-way');
+    expect(events().at(-1)?.data?.twoWay).toBe(true);
+    ask('--kind', 'bug', '--one-way');
+    expect(events().at(-1)?.data?.twoWay).toBe(false);
+    expect(run('ask', '--to', 'Kim', '--text', 'x', '--one-way', '--two-way').out).toContain('not both');
+    expect(run('ask', '--to', 'Kim', '--text', 'x', '--by', 'claude').out).toContain('--by must be one of');
+    expect(run('ask', '--to', 'Kim', '--text', 'x', '--by', 'owner').out).toContain('--by owner is refused');
+  });
+
+  test('ask-state needs an author, and the CLI can never be the owner', () => {
+    const id = ask();
+    const bare = run('ask-state', id, 'sent');
+    expect(bare.code).toBe(1);
+    expect(bare.out).toContain('missing --by conductor|sentinel|worker');
+    for (const spelling of [['--by', 'owner'], ['--by', 'Owner'], ['--by', ' OWNER '], ['--by=owner'], ['--by', 'conductor', '--by', 'owner']]) {
+      const r = run('ask-state', id, 'sent', ...spelling);
+      expect(r.code).toBe(1);
+      expect(r.out).toContain('--by owner is refused');
+    }
+    expect(run('ask-state', id, 'sent', '--by').out).toContain('--by must be one of');
+    expect(states()).toHaveLength(0);
+  });
+
+  test('moves along the table, repeats write nothing, and a refusal says where the ask is now', () => {
+    const id = ask();
+    expect(ok('ask-state', id, 'sent', '--by', 'sentinel')).toContain(`${id} -> sent`);
+    expect(ok('ask-state', id, 'sent', '--by', 'conductor')).toContain(`${id} already sent (by sentinel at `);
+    ok('ask-state', id, 'answered', '--reply', 'tomorrow', '--reply-at', '2026-10-05 10:00Z', '--by', 'conductor');
+    expect(states().at(-1)).toMatchObject({ by: 'conductor', data: { state: 'answered', reply: 'tomorrow', replyAt: '2026-10-05T10:00:00.000Z' } });
+    const jump = run('ask-state', id, 'draft', '--by', 'conductor');
+    expect(jump.code).toBe(1);
+    expect(jump.out).toContain('cannot go from answered to draft (now answered, by conductor at ');
+    const stale = run('ask-state', id, 'closed', '--expect', 'sent', '--by', 'conductor');
+    expect(stale.out).toContain('is answered now, not sent');
+    ok('ask-state', id, 'closed', '--by', 'worker');
+    expect(states().map(e => `${String(e.data?.state)}:${e.by}`)).toEqual(['sent:sentinel', 'answered:conductor', 'closed:worker']);
+  });
+
+  test('an unknown id, an unknown actor and a flag of another state are refused', () => {
+    const id = ask();
+    const as = (...args: string[]) => run('ask-state', ...args, '--by', 'conductor').out;
+    expect(as('ask-nope', 'sent')).toContain('no ask ask-nope');
+    expect(run('ask-state', id, 'sent', '--by', `worker:${TK}`).out).toContain('--by must be one of');
+    expect(as(id, 'sent', '--reply', 'x')).toContain('--reply goes with the answered state');
+    expect(as(id, 'sent', '--link', 'https://chat.example/d')).toContain('--link goes with the drafted state');
+    expect(as(id, 'drafted', '--link', 'file:///tmp/x')).toContain('--link must be an https URL');
+    expect(states()).toHaveLength(0);
+  });
+
+  test('a blank or valueless reply, link or error is refused and keeps what was recorded', () => {
+    const id = ask();
+    ok('ask-state', id, 'sent', '--by', 'conductor');
+    ok('ask-state', id, 'answered', '--reply', 'tomorrow', '--by', 'conductor');
+    const refused = [
+      ['answered', '--reply'],
+      ['answered', '--reply='],
+      ['answered', '--reply', '   '],
+      ['answered', '--reply-at'],
+      ['drafted', '--link'],
+      ['draft-failed', '--error'],
+      ['draft-failed', '--error', ''],
+    ];
+    for (const args of refused) {
+      const r = run('ask-state', id, ...args, '--by', 'conductor');
+      expect([args, r.code]).toEqual([args, 1]);
+      expect(r.out).toContain(`${args[1].replace('=', '')} needs a value`);
+    }
+    expect(states().flatMap(e => e.data?.reply ?? [])).toEqual(['tomorrow']);
+  });
+
+  test('a long reply is recorded cut, and an oversized proposal does not point at a flag it cannot use', () => {
+    const id = ask();
+    ok('ask-state', id, 'sent', '--by', 'conductor');
+    ok('ask-state', id, 'answered', '--reply', '漢'.repeat(1500), '--by', 'conductor');
+    expect(String(states().at(-1)?.data?.reply)).toBe('漢'.repeat(800));
+    const big = run('ask', '--to', 'Kim', '--text', 'x'.repeat(5000));
+    expect(big.out).toContain('shorten the text');
+    expect(big.out).not.toContain('--file');
+  });
+
+  test('a proposal dated in the future is refused', () => {
+    ask();
+    const r = run('ask', '--to', 'Kim', '--text', 'later', '--at', '2099-01-01');
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('is in the future');
+    expect(events().filter(e => e.kind === 'ask.create')).toHaveLength(1);
+  });
+
+  test('with no messenger, approving and drafting are refused', () => {
+    const id = ask();
+    for (const args of [['approved'], ['drafted', '--link', 'https://chat.example/d'], ['draft-failed', '--error', 'no']]) {
+      const r = run('ask-state', id, ...args, '--by', 'conductor');
+      expect(r.code).toBe(1);
+      expect(r.out).toContain('no messenger is configured');
+    }
+    expect(states()).toHaveLength(0);
+  });
+
+  test('the share and report copies carry nothing of an ask', () => {
+    const id = ask();
+    ok('ask-state', id, 'sent', '--by', 'conductor');
+    ok('ask-state', id, 'answered', '--reply', 'private answer from Kim', '--by', 'conductor');
+    for (const mode of ['share', 'report']) {
+      const out = join(dir, `${mode}.html`);
+      ok('snapshot', '--mode', mode, '--out', out);
+      const html = readFileSync(out, 'utf8');
+      expect(html).not.toContain('private words for Kim only');
+      expect(html).not.toContain('private answer from Kim');
+      expect(html).not.toContain(id);
+    }
+  });
+});
+
 describe('tc DEFERRED', () => {
   test('is refused with neither --reason nor --approval, and the message names --reason', () => {
     const r = run('tc', TK, 'TC-1', 'DEFERRED');

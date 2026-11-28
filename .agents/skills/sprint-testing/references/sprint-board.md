@@ -39,7 +39,7 @@ open question.
 | 3 run | `tc`, `bug`, `needs-you`, `evidence`, `fixture`, `verdict`, `worker <KEY> --stage plan\|execute\|report\|close`, all `--by worker`; at Stage 3 `evidence-artifact <KEY> <url> [--bug <BUG>]` right after publishing the evidence page (§6) | worker (§2) |
 | 3 run | `evidence-artifact <KEY> <url> [--bug <BUG>] --by conductor` when the worker could not publish or record it (§6) | conductor |
 | 3 run | `inbox` (what the owner wrote that Claude owes), `listen --since <last id seen>` under Monitor (§3), `say`, `say --reply <msg-id>`, `answer <KEY> "<text>" --id <need-id> --by conductor`, `resolve <KEY> --id <need-id>`, `unhold`, `unwait <KEY> --on <person>` | conductor |
-| 3 run | `ask --to <person> --ticket <KEY> --kind blocker\|bug\|decision --file <draft.txt>` (a Slack draft the owner sends); the owner marks it with `ask-state <ask-id> sent\|answered\|dropped` or from the page | conductor, owner |
+| 3 run | `ask --to <person> --ticket <KEY> --kind blocker\|bug\|decision --file <draft.txt> --by conductor` (a message the owner sends); the owner moves it on the page (sent, answered, closed, dropped). What the conductor saw itself it records with `ask-state <ask-id> <state> --by conductor --expect <current state>` (§4) | conductor, owner |
 | 4 round close | `verdict` reconciled with the tracker, `worker <KEY> --state done`, `snapshot --mode share` when the team should see it (allowlist copy: no drafts, waits, questions, inbox or evidence); the full close of a worker and a round: `sprint-conductor/references/round-close.md` | conductor |
 | sprint close | `snapshot --mode report --fragment --stp-url <test plan url>` (the sprint QA report: allowlist state, counted by bucket); publish the fragment as a private claude.ai artifact and link it from the sprint test plan; then `archive` (freezes the board) | conductor |
 | any | `sentinel --baseline .session/sprint-board/sprints/<slug>/sentinel-baseline.json` as a background task, armed at session start and after every wake (§7) | conductor |
@@ -117,6 +117,14 @@ the first time, arm `listen` with a starting point:
 - Draft first, on the board. Draft with `ask` only when something is blocked on that person. A pass,
   a closed ticket or a thanks is not a reason to write. The `good-news` and `fyi` draft kinds exist
   for the record and are not sent unprompted.
+- An ask moves through one locked writer (`cli/sprint-board/README.md` §Asks). `ask-state` needs
+  `--by conductor` and refuses `--by owner`. A move recorded as `owner` came from the page, so it
+  counts as the owner's word. A move the owner only mentions in chat is recorded with
+  `--by conductor`, and so is a reply:
+  `ask-state <ask-id> answered --reply "<their words>" --by conductor`. Pass `--expect` so a stale view
+  is refused, and read a refusal before retrying, because it says who moved the ask and when.
+- No messenger is configured unless the board's code provides one. Then there is nothing to approve:
+  the owner copies the message, sends it and marks it sent.
 - The conductor does not message a developer on its own initiative, a watch pass included.
 - A precondition request and a deferral notice are Story comments, tracker writes of the stage and not team
   messages. Chat or Slack, a wired provider included, stays on the owner's order, one staged message per wave.
@@ -202,8 +210,8 @@ A scheduled model pass every few minutes re-reads the whole session context, and
 finds nothing. The sentinel moves the detection into code: `bun run board sentinel`
 (`cli/sprint-board/README.md` §Sentinel) costs no tokens while quiet and ends, waking the conductor,
 only when there is something to do. Most changes are found on its tick inside working hours; an owner
-answer (Needs-you or inbox) wakes it within seconds, at any hour (`cli/sprint-board/README.md`
-§Sentinel).
+answer (Needs-you or inbox) or an ask the owner moved on the page wakes it within seconds, at any hour
+(`cli/sprint-board/README.md` §Sentinel).
 
 The conductor arms it at the start of its session and again after every wake, as a background task
 of the harness:
@@ -225,7 +233,7 @@ The wake's first line `SENTINEL WAKE <reason>`, then one JSON line with the deta
 
 | Reason | Means | Conductor |
 |---|---|---|
-| `change (arrivals, untracked, owner-answer, worker-need)` | something new against the baseline: a NEW or returning ticket in test, an UNTRACKED sprint ticket in test, a new owner answer (Needs-you or inbox), a worker's unanswered Needs-you. With `owner-answer` it can arrive outside working hours | one pass, then re-arm. Act on the owner answer and `resolve` its need or reply in its thread (`say --reply`): a sentinel started without a saved baseline wakes again for one left open |
+| `change (arrivals, untracked, owner-answer, worker-need, ask-approved, ask-sent, ask-changed)` | something new against the baseline: a NEW or returning ticket in test, an UNTRACKED sprint ticket in test, a new owner answer (Needs-you or inbox), a worker's unanswered Needs-you, or an ask someone other than the conductor or the sentinel moved: marked sent and expecting a reply (`ask-sent`), any other move (`ask-changed`), or approved and not yet drafted (`ask-approved`, only with a messenger). With `owner-answer` or an ask part it can arrive outside working hours | one pass, then re-arm. Act on the owner answer and `resolve` its need or reply in its thread (`say --reply`): a sentinel started without a saved baseline wakes again for one left open. For the ask parts, follow `sprint-conductor/references/watch-pass.md` §5 |
 | `recheck-sweep` | the recheck interval passed while a RECHECK or held ticket exists; its blocker (a deploy) may be gone | one pass (the deploy check on each RECHECK), then re-arm |
 | `sync-stale` | `source.json` older than the stale limit in working hours: the board server's sync stalled | read `.session/sprint-board/board-server.log`, run the pass with `arrivals --sync` (it syncs itself), tell the owner in one line if the server keeps failing; re-arm |
 | `board-down` | two starts of the board server in a row did not listen | report it to the owner with the log path; run the pass anyway (`arrivals --sync` needs no server); re-arm |

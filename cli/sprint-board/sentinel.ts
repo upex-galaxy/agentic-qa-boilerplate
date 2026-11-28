@@ -1,4 +1,5 @@
-import type { BoardEvent, TrackerSnapshot } from './model.ts';
+import type { Messenger } from './messenger.ts';
+import type { Ask, AskState, BoardEvent, TrackerSnapshot } from './model.ts';
 /**
  * `board sentinel`: the conductor's zero-token test-environment watch trigger.
  *
@@ -18,7 +19,8 @@ import type { BoardEvent, TrackerSnapshot } from './model.ts';
  * so the tests run without a network, a server or a real clock. Why it exists and how the
  * conductor uses it: `.agents/skills/sprint-testing/references/sprint-board.md` §Sentinel.
  */
-import { arrivals, boardTicketIds, untrackedInTest } from './model.ts';
+import { resolveMessenger } from './messenger.ts';
+import { arrivals, boardTicketIds, foldAsks, untrackedInTest } from './model.ts';
 
 // ---------------------------------------------------------------------------
 // Signature: what the conductor must react to
@@ -28,6 +30,8 @@ export interface SigArrival { id: string, kind: 'NEW' | 'RECHECK', title?: strin
 export interface SigUntracked { id: string, qa?: string, title?: string }
 export interface SigOwner { event: string, ticket?: string, text: string }
 export interface SigNeed { id: string, ticket: string, question: string }
+export type SigAsk = Pick<Ask, 'id' | 'to' | 'state' | 'stateAt' | 'sentAt' | 'kind' | 'twoWay' | 'tickets' | 'by'>;
+export interface SigAskChange { id: string, to: string, from: AskState, state: AskState, by?: string }
 
 /**
  * Compared by key only (ids and kinds); the other fields are there so a wake can say what
@@ -40,6 +44,9 @@ export interface Signature {
   ownerAnswer: SigOwner | null
   /** Needs-you a worker raised that nobody (owner or conductor) has answered or closed. */
   workerNeeds: SigNeed[]
+  // Absent in a baseline saved before asks were watched, which adopts them.
+  asks?: SigAsk[]
+  drafting?: boolean
 }
 
 const isOwnerAnswer = (e: BoardEvent) => e.by === 'owner' && (e.kind === 'need.answer' || e.kind === 'msg');
@@ -90,7 +97,11 @@ export function activeHolds(events: BoardEvent[]): string[] {
   return [...held].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 }
 
-export function signatureOf(events: BoardEvent[], tracker: TrackerSnapshot | null | undefined): Signature {
+const asksOf = (events: BoardEvent[]): SigAsk[] => foldAsks(events)
+  .map(({ id, to, state, stateAt, sentAt, kind, twoWay, tickets, by }) => ({ id, to, state, stateAt, sentAt, kind, twoWay, tickets, by }))
+  .sort(byId);
+
+export function signatureOf(events: BoardEvent[], tracker: TrackerSnapshot | null | undefined, messenger: Messenger | null = resolveMessenger()): Signature {
   const r = arrivals(events, tracker);
   const untracked = untrackedInTest(tracker?.discover?.untracked ?? [], boardTicketIds(events, tracker));
   const owner = events.filter(isOwnerAnswer).at(-1);
@@ -99,15 +110,24 @@ export function signatureOf(events: BoardEvent[], tracker: TrackerSnapshot | nul
     untracked: untracked.map(u => ({ id: u.id, qa: u.qa, title: u.title })).sort(byId),
     ownerAnswer: owner ? { event: owner.id, ticket: owner.ticket, text: str(owner.data?.text) ?? owner.text } : null,
     workerNeeds: openWorkerNeeds(events),
+    asks: asksOf(events),
+    drafting: Boolean(messenger),
   };
 }
 
+const askKey = (a: SigAsk) => `${a.state}@${a.stateAt ?? ''}`;
+// The conductor and the sentinel must never wake themselves with their own writes.
+const wakesOnAsk = (a: SigAsk) => a.by !== undefined && a.by !== 'conductor' && a.by !== 'sentinel';
+
 export interface Additions {
-  parts: ('arrivals' | 'untracked' | 'owner-answer' | 'worker-need')[]
+  parts: ('arrivals' | 'untracked' | 'owner-answer' | 'worker-need' | 'ask-approved' | 'ask-sent' | 'ask-changed')[]
   arrivals: SigArrival[]
   untracked: SigUntracked[]
   ownerAnswer?: SigOwner
   workerNeeds: SigNeed[]
+  askApproved: SigAsk[]
+  askSent: SigAsk[]
+  askChanged: SigAskChange[]
 }
 
 /**
@@ -123,15 +143,34 @@ export function additions(base: Signature, now: Signature): Additions | null {
   const owner = now.ownerAnswer && now.ownerAnswer.event !== base.ownerAnswer?.event ? now.ownerAnswer : undefined;
   const baseNeeds = new Set(base.workerNeeds.map(n => n.id));
   const needs = now.workerNeeds.filter(n => !baseNeeds.has(n.id));
+  const baseAsks = base.asks && new Map(base.asks.map(a => [a.id, a]));
+  const moved = baseAsks
+    ? (now.asks ?? []).filter((a) => {
+        const was = baseAsks.get(a.id);
+        return wakesOnAsk(a) && (!was || askKey(was) !== askKey(a));
+      })
+    : [];
+  const askApproved = now.drafting ? moved.filter(a => a.state === 'approved') : [];
+  // The send time tells a new send from an Undo or a reopen back into one the baseline already holds.
+  const askSent = moved.filter(a => a.state === 'sent' && a.twoWay && baseAsks?.get(a.id)?.sentAt !== a.sentAt);
+  const askChanged = moved.flatMap((a) => {
+    // An ask the baseline never saw was a draft when it was proposed.
+    const from = baseAsks?.get(a.id)?.state ?? 'draft';
+    const isNewDraft = a.state === 'draft' && !baseAsks?.has(a.id);
+    return isNewDraft || a.state === 'approved' || a.state === 'sent' ? [] : [{ id: a.id, to: a.to, from, state: a.state, by: a.by }];
+  });
   const parts: Additions['parts'] = [];
   if (arr.length) { parts.push('arrivals'); }
   if (unt.length) { parts.push('untracked'); }
   if (owner) { parts.push('owner-answer'); }
   if (needs.length) { parts.push('worker-need'); }
-  return parts.length ? { parts, arrivals: arr, untracked: unt, ownerAnswer: owner, workerNeeds: needs } : null;
+  if (askApproved.length) { parts.push('ask-approved'); }
+  if (askSent.length) { parts.push('ask-sent'); }
+  if (askChanged.length) { parts.push('ask-changed'); }
+  return parts.length ? { parts, arrivals: arr, untracked: unt, ownerAnswer: owner, workerNeeds: needs, askApproved, askSent, askChanged } : null;
 }
 
-export const IMMEDIATE_PARTS: readonly Additions['parts'][number][] = ['owner-answer'];
+export const IMMEDIATE_PARTS: readonly Additions['parts'][number][] = ['owner-answer', 'ask-approved', 'ask-sent', 'ask-changed'];
 
 function hasPendingOwnerAnswer(events: BoardEvent[]): boolean {
   const rootOf = new Map<string, string>();
@@ -150,9 +189,10 @@ function hasPendingOwnerAnswer(events: BoardEvent[]): boolean {
   });
 }
 
-// With no saved baseline, an owner answer nobody has acted on is work, not history: leaving the newest one out makes it wake.
+// With no saved baseline, an owner answer nobody has acted on, or an ask approved and not drafted, is work and not history: leaving it out makes it wake.
 export function freshBaseline(events: BoardEvent[], sig: Signature): Signature {
-  return hasPendingOwnerAnswer(events) ? { ...sig, ownerAnswer: null } : sig;
+  const base = hasPendingOwnerAnswer(events) ? { ...sig, ownerAnswer: null } : sig;
+  return sig.drafting ? { ...base, asks: base.asks?.filter(a => a.state !== 'approved') } : base;
 }
 
 // ---------------------------------------------------------------------------
@@ -375,6 +415,8 @@ export function quickCheck(st: SentinelState, { events, tracker }: ReturnType<Se
   if (!tracker) { throw new Error(NEVER_SYNCED); }
   const sig = signatureOf(events, tracker);
   st.baseline ??= freshBaseline(events, sig);
+  // Adopted here too: off hours no tick reads the board, and an older baseline would never see an ask move.
+  if (!st.baseline.asks) { st.baseline = { ...st.baseline, asks: sig.asks }; }
   const added = additions(st.baseline, sig);
   if (!added?.parts.some(p => IMMEDIATE_PARTS.includes(p))) { return null; }
   st.baseline = sig;

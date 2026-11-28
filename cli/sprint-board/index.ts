@@ -9,6 +9,8 @@ import type { BoardEvent, Sprint } from './model.ts';
 import { existsSync, readFileSync } from 'node:fs';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 import { evidenceUrlError } from '../lib/evidence-page/hosts.ts';
+import { agentRefusal, applyAskTransition, AskError, draftApproved, futureRefusal, owesDraft } from './ask-transition.ts';
+import { resolveMessenger } from './messenger.ts';
 import {
   ARRIVAL_ACTIONS,
   arrivals,
@@ -18,6 +20,7 @@ import {
   boardTicketIds,
   bugEvidenceReminder,
   decisionOptions,
+  defaultTwoWay,
   EVIDENCE_ARTIFACT_BY,
   EVIDENCE_OUTCOMES,
   evidenceArtifactUrl,
@@ -61,13 +64,13 @@ import {
 import { boardConfig } from './sync.ts';
 import { checkWatcherName, clearWatcher, registerWatcher, watcherViews } from './watchers.ts';
 
-interface Args { _: string[], flags: Record<string, string[]> }
+interface Args { _: string[], flags: Record<string, string[]>, bare: Set<string> }
 
 /** Flags that never take a value: `say --ask "text"` must not swallow the text. */
-const BOOLEAN_FLAGS = new Set(['all', 'ask', 'discover', 'dry-run', 'embed-evidence', 'evidence-embedded', 'fragment', 'json', 'once', 'open', 'out-of-scope', 'reuse', 'sync']);
+const BOOLEAN_FLAGS = new Set(['all', 'ask', 'discover', 'dry-run', 'embed-evidence', 'evidence-embedded', 'fragment', 'json', 'once', 'one-way', 'open', 'out-of-scope', 'reuse', 'sync', 'two-way']);
 
 function parse(argv: string[]): Args {
-  const out: Args = { _: [], flags: {} };
+  const out: Args = { _: [], flags: {}, bare: new Set() };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a.startsWith('--')) {
@@ -76,7 +79,9 @@ function parse(argv: string[]): Args {
       const next = argv[i + 1];
       // `--match` is searched in a command line: left bare it must read as empty, never as the text "true".
       const bare = k === 'match' ? '' : 'true';
-      const v = eq > 0 ? a.slice(eq + 1) : !BOOLEAN_FLAGS.has(k) && next !== undefined && !next.startsWith('--') ? (i++, next) : bare;
+      const valued = eq <= 0 && !BOOLEAN_FLAGS.has(k) && next !== undefined && !next.startsWith('--');
+      if (eq <= 0 && !valued) { out.bare.add(k); }
+      const v = eq > 0 ? a.slice(eq + 1) : valued ? (i++, next) : bare;
       (out.flags[k] ??= []).push(v);
     }
     else { out._.push(a); }
@@ -120,6 +125,8 @@ function stpHosts(): string[] {
 const TC_ID = /^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$/i;
 const slugOf = (a: Args) => flag(a, 'sprint-slug') ?? currentSlug();
 const by = (a: Args) => flag(a, 'by');
+
+const ASK_STATE_FLAGS = { 'reply': 'answered', 'reply-at': 'answered', 'link': 'drafted', 'error': 'draft-failed' } as const;
 
 /** Fail loudly: only tickets already on this board, unless the command is `add`. */
 function knownTicket(slug: string, raw: string | undefined): string {
@@ -297,32 +304,73 @@ const commands: Record<string, (a: Args) => void | Promise<void>> = {
     const file = flag(a, 'file');
     const text = file ? readFileSync(file, 'utf8').trim() : need(flag(a, 'text'), '--text or --file');
     const tickets = flags(a, 'ticket').map(t => knownTicket(slug, t));
+    const kind = oneOf(ASK_KINDS, flag(a, 'kind') ?? 'blocker', '--kind');
+    if (flag(a, 'one-way') && flag(a, 'two-way')) { throw new Error('pass --one-way or --two-way, not both'); }
+    const twoWay = flag(a, 'two-way') ? true : flag(a, 'one-way') ? false : defaultTwoWay(kind);
+    const who = by(a);
+    const refused = (who === undefined ? null : agentRefusal(who)) ?? futureRefusal(flag(a, 'at'));
+    if (refused) { throw new Error(refused); }
     const id = `ask-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
     appendEvent(slug, {
       kind: 'ask.create',
       ticket: tickets[0],
       text: `Draft for ${person.name} ready`,
-      by: by(a),
+      by: who,
       at: flag(a, 'at'),
       data: {
         id,
         to: person.name,
         lang: flag(a, 'lang') ?? person.lang,
-        kind: oneOf(ASK_KINDS, flag(a, 'kind') ?? 'blocker', '--kind'),
+        kind,
         tickets,
         text,
         attach: flags(a, 'attach').map(repoPath),
+        twoWay,
       },
     });
-    console.log(`draft ${id} for ${person.name}`);
+    console.log(`draft ${id} for ${person.name} (${twoWay ? 'two-way' : 'one-way'})`);
   },
 
-  'ask-state': function (a) {
+  'ask-state': async function (a) {
     const slug = slugOf(a);
     const id = need(a._[0], 'ask id');
-    const st = oneOf(ASK_STATES, need(a._[1], 'state'), 'ask state');
-    appendEvent(slug, { kind: 'ask.state', text: `Draft ${id} marked ${st}`, by: by(a) ?? 'owner', at: flag(a, 'at'), data: { id, state: st } });
-    console.log(`${id} -> ${st}`);
+    const state = oneOf(ASK_STATES, need(a._[1], 'state'), 'ask state');
+    const who = need(by(a), '--by conductor|sentinel|worker: say who is writing (the owner moves an ask from the page)');
+    const expect = flag(a, 'expect') === undefined ? undefined : oneOf(ASK_STATES, flag(a, 'expect')!, '--expect');
+    for (const [name, only] of Object.entries(ASK_STATE_FLAGS)) {
+      const value = flag(a, name);
+      if (value === undefined) { continue; }
+      if (state !== only) { throw new Error(`--${name} goes with the ${only} state (got ${state})`); }
+      if (a.bare.has(name) || !value.trim()) { throw new Error(`--${name} needs a value`); }
+    }
+    const link = flag(a, 'link');
+    if (link !== undefined && !/^https:\/\/[^\s"'<>]+$/i.test(link)) { throw new Error(`--link must be an https URL (got "${link}")`); }
+    const error = flag(a, 'error');
+    const messenger = resolveMessenger();
+    try {
+      const r = await applyAskTransition(slug, {
+        id,
+        state,
+        expect,
+        by: who,
+        at: flag(a, 'at'),
+        reply: flag(a, 'reply')?.trim(),
+        replyAt: isoAt(flag(a, 'reply-at')),
+        link,
+        error,
+        guard: () => {
+          if (state === 'drafted' && !link) { return 'missing --link <url of the draft>'; }
+          return state === 'draft-failed' && !error ? 'missing --error "<why the draft failed>"' : null;
+        },
+      }, messenger);
+      console.log(r.noop ? `${id} already ${r.state} (by ${r.by ?? '?'} at ${r.at ?? '?'}); nothing written` : `${id} -> ${r.state}`);
+      if (messenger && owesDraft(r)) { console.log(`${id} -> ${(await draftApproved(slug, id, messenger)).state}`); }
+    }
+    catch (err) {
+      // A refusal says what the ask is now, so the caller need not read the board to learn it.
+      if (!(err instanceof AskError) || !err.current) { throw err; }
+      throw new Error(`${err.message} (now ${err.current.state}, by ${err.current.by ?? '?'} at ${err.current.at ?? '?'})`);
+    }
   },
 
   /**

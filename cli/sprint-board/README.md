@@ -1,7 +1,7 @@
 # Sprint Board
 
 A live, local dashboard for a sprint-testing run with one conductor and several workers. One page
-shows where every ticket is, what needs the QA owner, the sprint's metrics, the Slack drafts the
+shows where every ticket is, what needs the QA owner, the sprint's metrics, the messages the
 owner sends to each developer, the timeline and the evidence. The tracker stays the system of
 record; the board is a faster read of it.
 
@@ -102,8 +102,10 @@ $B answer PROJ-7340 "b, Dana approved" [--id need-x]   owner, or the conductor f
                                             --id must be an unanswered question on that ticket
 $B resolve PROJ-7340 [--id need-x]          close a question; --id is required when the ticket has more than one
 $B wait PROJ-7390 --on Lee --what "..."     / unwait
-$B ask --to Dana --ticket PROJ-7340 --kind decision --file draft.txt [--attach img]   a Slack draft for you to send
-$B ask-state <ask-id> sent|answered|dropped (or from the page; dropped = no longer needed, kept on record)
+$B ask --to Dana --ticket PROJ-7340 --kind decision --file draft.txt [--attach img] [--one-way|--two-way]
+                                            a message for the owner to send (see Asks)
+$B ask-state <ask-id> <state> --by conductor|sentinel|worker [--expect <state>] [--reply "..."] [--reply-at <iso>]
+           [--link <url>] [--error "..."]   record a move an agent saw; the owner moves an ask on the page
 $B accept-risk PROJ-7390 --by "Dana, Slack 10-08"   clears "shipped at risk"
 $B log [PROJ-1] "text" | release "label" --at <iso> --ref <sha>
 $B fixtures [--module checkout] [--json]    recorded test data, newest first, for the next seeds
@@ -132,7 +134,7 @@ $B watcher clear <name> | list              forget a retired one | each registra
 
 Every value from a closed set is checked (`--state`, `--stage`, statuses,
 `--blocker`, `--reason` on `hold`, `--severity`, `--kind`, `--outcome`, `--module`, `--by` on
-`evidence-artifact`, the evidence page URL), every
+`evidence-artifact`, `ask` and `ask-state`, the evidence page URL), every
 ticket must already be on the board, and a person (`--to`, `--on`, `--decider`)
 must resolve to exactly one name, or the command stops and says why. A time (`--at`, `--started`,
 `--closed`) is stored as ISO and an unparseable one is refused. Boolean flags (`--ask`, `--all`,
@@ -278,9 +280,9 @@ link.
 `toReportState` builds the state by **allowlist**, like `toShareState`: sprint meta, the report
 tickets with their TCs, the report bugs, the counted numbers (`report`), tracker links, the
 already-validated evidence page URLs, the verdict / bug / release / tracker timeline lines of
-report tickets and `generatedAt`. Never: drafts, the inbox, answers, waits, holds, needs, worker
+report tickets and `generatedAt`. Never: asks, the inbox, answers, waits, holds, needs, worker
 names, fixtures, local paths, screenshots or captions. The write is refused when the state still
-holds a draft's or an inbox message's text, a local path, or a worker name of three or more characters as a whole value (the tripwire; the allowlist is the guarantee). Every
+holds an ask's text, reply or failure, an inbox message's text, a local path, or a worker name of three or more characters as a whole value (the tripwire; the allowlist is the guarantee). Every
 tracker value reaches the page escaped; a link becomes an anchor only when it is https, and
 `--stp-url` must be https on the tracker host (`issue_tracker.atlassian_url`) or an evidence host.
 
@@ -313,6 +315,60 @@ it searched; `--json` is the shape the conductor pastes into a worker's seed. Th
 shows the ticket's own fixtures and then other tickets' fixtures in the same module. The Now
 view's rail shows a "Test data found" list, narrowed to the module of the ticket open in the
 drawer. Fixtures stay off the share snapshot.
+
+## Asks
+
+An ask is a message to one person. The conductor proposes it with `ask` and the owner sends it. Its
+states are `ASK_STATES` and the legal moves are `askTransition`, both in `model.ts`. The phase says
+what the ask is waiting on. It is derived on every read (`askPhase`) and never stored.
+
+| Phase | States | Waiting on |
+|---|---|---|
+| approve | `draft`, `draft-failed` | the owner, to approve it (with no messenger, to send it) |
+| send | `approved`, `drafted` | the draft to be made, or the owner to send it |
+| waiting | `sent`, when a reply is expected | the person |
+| read | `answered` | the owner, to read the reply and close |
+| done | `closed`, `dropped`, `sent` one-way | nothing |
+
+The kind decides whether a reply is expected (`TWO_WAY_KINDS`), and `--one-way` or `--two-way`
+overrides it. An ask can be closed once answered, or once sent when no reply is needed any more.
+Reopening returns it to the state it was closed from. Going back into `sent` from `closed`,
+`answered` or `dropped`, by a reopen or an Undo, keeps the time it was sent.
+
+**One writer.** The page, the CLI and the messenger hand-off all go through `ask-transition.ts`. It
+takes `asks.lock` in the sprint folder, folds the log again and appends at most one `ask.state`
+event, after checking that the lock is still its own. A second writer waits for the lock. It takes
+over a lock whose holder process is gone, or one older than `ASK_LOCK_STALE_MS` (`store.ts`), and
+only one waiter at a time does the taking over.
+
+| Request | Result |
+|---|---|
+| the state the ask is already in | succeeds and writes nothing, whatever `expect` says, unless it brings a new reply |
+| an unknown ask or author | refused (400 on the page's route) |
+| `--expect` (the page sends `expect`) names another state | refused (409) with the current state, author and time |
+| a move the table does not allow | refused (409) |
+| `--at` earlier than the current state | refused (409), since the fold would ignore it |
+| `--at` in the future, beyond a small clock difference (`ask` too) | refused (400) |
+| a blank or valueless `--reply`, `--link` or `--error` | refused, so a recorded value is never overwritten |
+
+A move with no `--at` is never dated before the state it replaces, so an ask already stamped ahead of
+the clock still moves. A long reply or failure text is cut to what one event line holds.
+
+**Who wrote it.** Only the page's route writes `owner`, whatever the request body says. `ask-state`
+requires `--by`, one of `conductor`, `sentinel` or `worker`, and refuses `owner` in any spelling, so
+`listen` and the sentinel report an owner move on an ask only when it came through the page. This
+guards the CLI. A process on the same machine that calls the page's route, or edits the log, is not
+stopped.
+
+**Messenger.** `messenger.ts` defines the interface a chat provider implements, and the board ships
+none (`resolveMessenger`). Without one, approve, retry and the states `approved`, `drafted` and
+`draft-failed` are refused, and the card offers Copy and Mark sent. With one, an approval hands the
+message to `createDraft` and records `drafted` (with its link and reference) or `draft-failed` as
+`conductor`. The page cannot report either result, though Undo can put a recorded draft back.
+
+**On the page.** Each card shows the phase, one primary action, the reply or the failure, and the last
+moves with their time and author. Undo sends `expect`, so it writes nothing if the ask moved in the
+meantime. The share and report snapshots carry no ask.
 
 ## The inbox (Claude <-> owner)
 
@@ -387,14 +443,15 @@ Every `--every` minutes on the wall-clock grid (:00, :10, ...) inside `--hours` 
 time), it reads `source.json` and `events.ndjson` (never the tracker) and builds a signature: the
 arrivals list (NEW and RECHECK, by ticket), the UNTRACKED tickets (filtered against the board as
 `arrivals` does), the newest owner answer (`need.answer` or an inbox `msg` by the owner) and every
-open needs-you a worker raised that nobody answered. It wakes only on an ADDITION against its
+open needs-you a worker raised that nobody answered, plus every ask with its state and the time it
+took it. It wakes only on an ADDITION against its
 baseline: an item that left the list was dealt with, and a NEW that became RECHECK is the conductor's
 own hold; a ticket that turns NEW again does wake. A quiet cycle appends one `watch.pass` event
 (`by: sentinel`), which keeps the "Last watch pass" chip green; a red chip means the sentinel died.
 
 | Wake line | When | JSON details |
 |---|---|---|
-| `SENTINEL WAKE change (<parts>)` | an addition, on the tick or between ticks (see Fast wake); parts: `arrivals`, `untracked`, `owner-answer`, `worker-need` | `parts`, `arrivals`, `untracked`, `ownerAnswer`, `workerNeeds` (only the new items) |
+| `SENTINEL WAKE change (<parts>)` | an addition, on the tick or between ticks (see Fast wake); parts: `arrivals`, `untracked`, `owner-answer`, `worker-need`, `ask-approved`, `ask-sent`, `ask-changed` | `parts`, `arrivals`, `untracked`, `ownerAnswer`, `workerNeeds`, `askApproved`, `askSent`, `askChanged` (only the new items) |
 | `SENTINEL WAKE recheck-sweep` | `--recheck-every` minutes since the last wake while a RECHECK or held ticket exists (its blocker may be gone) | `recheck`, `held`, `minutesSinceLastWake` |
 | `SENTINEL WAKE sync-stale` | `source.json` older than `--stale-after` minutes in hours, counted from the latest of its sync, the start of hours and a server start; once per stale `syncedAt` | `syncedAt`, `ageMin`, `staleAfterMin`, `boardPids` |
 | `SENTINEL WAKE board-down` | two server starts in a row did not listen within 30 s | `port`, `attempts`, `log` |
@@ -402,10 +459,16 @@ own hold; a ticket that turns NEW again does wake. A quiet cycle appends one `wa
 
 Every JSON line also carries `reason`, `at`, `slug` and `rearm` (the command to start it again).
 
+**Ask parts.** `ask-sent` is an ask that expects a reply and was marked sent. A reopen or an Undo
+back into `sent` is the same send and is not reported again. `ask-changed` is any other move, with the
+state it came from (`draft` for an ask the baseline never held). `ask-approved` appears only when a
+messenger is configured. A write by the conductor or the sentinel never wakes, a new proposal and a
+one-way send wake nobody, and the wake carries no message text.
+
 **Fast wake.** Between ticks it looks at the size and modification time of `events.ndjson` every few
 seconds (a poll, no `fs.watch`, and no read while the file is unchanged). When the file changed it lets
 the burst of appends settle, reads the board and wakes if the additions include an immediate part
-(`IMMEDIATE_PARTS` in `sentinel.ts`, today `owner-answer`), at any hour and on any day. The wake carries
+(`IMMEDIATE_PARTS` in `sentinel.ts`: the parts a person's action produces), at any hour and on any day. The wake carries
 every addition and takes the new baseline. Any other change leaves the baseline alone, so the next tick
 in hours still reports it. It also looks once as soon as it starts waiting, which catches an owner answer
 written while no sentinel was running. With no baseline yet (the start could not read the board) it takes
@@ -415,7 +478,8 @@ the start-up one described below and checks against that. A failed read, or a bo
 **Baseline.** Without `--baseline` it compares against what it saw at start. A start with no saved
 signature leaves out the newest owner answer while any owner answer is still pending (its need is not
 resolved, or Claude has not replied in its inbox thread), so the sentinel wakes once, at once, instead of
-taking it as history; the pass then reads every pending answer. With
+taking it as history; the pass then reads every pending answer. With a messenger, it also leaves out
+every ask still `approved`. A saved baseline with no asks in it adopts the current ones without a wake. With
 `--baseline <file>` (convention: `.session/sprint-board/sprints/<slug>/sentinel-baseline.json`) it
 saves the signature, the sweep clock, the last stale `syncedAt`, the day it last stopped the board, the
 last working day it was watching before `--stop-at` and when it last started the board there after every
@@ -558,6 +622,7 @@ listed without an expectation.
 ## Files
 
 `model.ts` pure fold, lanes, metrics, share and report allowlists, Slack table ·
+`ask-transition.ts` the one writer of an ask's state · `messenger.ts` the drafting interface, with no provider ·
 `sentinel.ts` the sentinel's decisions and loop, on injected deps · `sentinel-run.ts` its port probe, server lifecycle and exit ·
 `watchers.ts` registered background processes and their pid check ·
 `store.ts` files and the event log · `sources.ts` Live Progress + evidence + the automated outcomes file ·

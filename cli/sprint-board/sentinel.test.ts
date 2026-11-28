@@ -368,7 +368,7 @@ describe('fast wake', () => {
   });
 
   test('quickCheck wakes only on an immediate part, then carries every addition, takes the baseline and resets the sweep clock', () => {
-    expect(IMMEDIATE_PARTS).toEqual(['owner-answer']);
+    expect(IMMEDIATE_PARTS).toEqual(['owner-answer', 'ask-approved', 'ask-sent', 'ask-changed']);
     const st = fresh(signatureOf([], tracker({})), mon(8, 0));
     const events = [workerNeed(), ownerAnswer()];
     const c = tracker({ 'DEMO-5': 'Ready for QA' });
@@ -551,6 +551,107 @@ describe('cold baseline', () => {
     const st = fresh(null);
     expect(await cycle(cfg, deps, st)).toBeNull();
     expect((await cycle(cfg, deps, st))?.details.parts).toEqual(['owner-answer']);
+  });
+});
+
+describe('asks', () => {
+  const fake = { id: 'fake', createDraft: async () => ({ ok: true as const }) };
+  const at = (m: number) => `2026-10-19T12:${String(m).padStart(2, '0')}:00Z`;
+  const create = (id: string, kind = 'bug', by?: string) => ev('ask.create', undefined, { id, to: 'Kim', kind, text: 'private words', tickets: [] }, by, at(0));
+  const move = (id: string, state: string, by: string, m: number) => ev('ask.state', undefined, { id, state }, by, at(m));
+  const sig = (events: BoardEvent[], messenger: typeof fake | null = null) => signatureRaw(events, tracker({}), messenger);
+  const after = (before: BoardEvent[], next: BoardEvent[], messenger: typeof fake | null = null) => additions(sig(before, messenger), sig([...before, ...next], messenger));
+  const read = (events: BoardEvent[]) => ({ events, tracker: tracker({}) });
+
+  test('a two-way ask marked sent wakes at once; a one-way one wakes nobody', () => {
+    const st = fresh(sig([create('ask-a'), create('ask-b', 'fyi')]), mon(10, 0));
+    const events = [create('ask-a'), create('ask-b', 'fyi'), move('ask-b', 'sent', 'owner', 1)];
+    expect(quickCheck(st, read(events), mon(10))).toBeNull();
+    const wake = quickCheck(st, read([...events, move('ask-a', 'sent', 'owner', 2)]), mon(10))!;
+    expect(wake.details.parts).toEqual(['ask-sent']);
+    expect(wake.details.askSent).toEqual([expect.objectContaining({ id: 'ask-a', state: 'sent', by: 'owner' })]);
+    expect(JSON.stringify(wake.details)).not.toContain('private words');
+  });
+
+  test('a change by a person wakes at once with where it came from; the same board does not wake twice', () => {
+    const sent = [create('ask-a'), move('ask-a', 'sent', 'conductor', 1)];
+    const st = fresh(sig(sent), mon(10, 0));
+    const closed = [...sent, move('ask-a', 'closed', 'owner', 2)];
+    const wake = quickCheck(st, read(closed), mon(10))!;
+    expect(wake.details.parts).toEqual(['ask-changed']);
+    expect(wake.details.askChanged).toEqual([{ id: 'ask-a', to: 'Kim', from: 'sent', state: 'closed', by: 'owner' }]);
+    expect(quickCheck(st, read(closed), mon(10))).toBeNull();
+    expect(after(closed, [move('ask-a', 'answered', 'worker', 3)])?.parts).toEqual(['ask-changed']);
+  });
+
+  test('the conductor\'s and the sentinel\'s own writes never wake, on the fast path or on the tick', async () => {
+    const start = [create('ask-a'), create('ask-b')];
+    const own = [
+      ...start,
+      move('ask-a', 'sent', 'conductor', 1),
+      move('ask-a', 'answered', 'conductor', 2),
+      move('ask-b', 'sent', 'sentinel', 3),
+      move('ask-b', 'closed', 'sentinel', 4),
+      create('ask-c', 'bug', 'conductor'),
+      move('ask-c', 'approved', 'conductor', 5),
+    ];
+    expect(quickCheck(fresh(sig(start, fake), mon(10)), read(own), mon(10))).toBeNull();
+    expect(additions(sig(start, fake), sig(own, fake))).toBeNull();
+    const { deps } = world({ events: own });
+    expect(await cycle(cfg, deps, fresh(sig(start, fake)))).toBeNull();
+  });
+
+  test('a person moving an ask the baseline never saw wakes, as a move from draft', () => {
+    for (const state of ['dropped', 'closed', 'answered'] as const) {
+      const woke = after([], [create('ask-a', 'bug', 'conductor'), move('ask-a', 'sent', 'conductor', 1), move('ask-a', state, 'owner', 2)]);
+      expect(woke?.parts).toEqual(['ask-changed']);
+      expect(woke?.askChanged).toEqual([{ id: 'ask-a', to: 'Kim', from: 'draft', state, by: 'owner' }]);
+    }
+  });
+
+  test('an Undo or a reopen back into sent does not report the send again; a new send does', () => {
+    const sent = [create('ask-a'), move('ask-a', 'sent', 'owner', 1)];
+    for (const state of ['closed', 'answered', 'dropped']) {
+      const moved = [...sent, move('ask-a', state, 'owner', 2)];
+      const back = move('ask-a', 'sent', 'owner', 3);
+      expect(after(moved, [back])).toBeNull();
+      expect(after(sent, [moved[2], back])).toBeNull();
+      const st = fresh(sig(moved), mon(10, 0));
+      expect(quickCheck(st, read([...moved, back]), mon(10))).toBeNull();
+    }
+    const redrafted = [...sent, move('ask-a', 'draft', 'owner', 2)];
+    expect(after(redrafted, [move('ask-a', 'sent', 'owner', 3)])?.parts).toEqual(['ask-sent']);
+    expect(after(sent, [redrafted[2], move('ask-a', 'sent', 'owner', 3)])?.parts).toEqual(['ask-sent']);
+  });
+
+  test('a new proposal wakes nobody', () => {
+    expect(after([], [create('ask-a', 'bug', 'owner')])).toBeNull();
+  });
+
+  test('an approval wakes only when a messenger can draft it', () => {
+    const approved = [move('ask-a', 'approved', 'owner', 1)];
+    expect(after([create('ask-a')], approved)).toBeNull();
+    expect(after([create('ask-a')], approved, fake)?.parts).toEqual(['ask-approved']);
+  });
+
+  test('a cold start leaves a pending approval to wake once, and adopts everything else', () => {
+    const events = [create('ask-a'), create('ask-b'), move('ask-a', 'approved', 'owner', 1), move('ask-b', 'sent', 'owner', 2)];
+    expect(additions(freshBaseline(events, sig(events, fake)), sig(events, fake))?.parts).toEqual(['ask-approved']);
+    expect(additions(freshBaseline(events, sig(events)), sig(events))).toBeNull();
+  });
+
+  test('a baseline saved before asks were watched adopts them without a wake, and the next change wakes', async () => {
+    const events = [create('ask-a'), create('ask-b'), move('ask-a', 'sent', 'owner', 1)];
+    const { asks: _asks, drafting: _drafting, ...old } = sig(events);
+    expect(additions(old, sig(events))).toBeNull();
+    const saved = JSON.stringify(toBaselineFile(fresh(old), 'sprint-1', mon(10, 0)));
+    const restored = { ...fresh(null), ...fromBaselineFile(saved, 'sprint-1', 'b.json') };
+    expect(quickCheck(restored, read(events), mon(10))).toBeNull();
+    expect(quickCheck(restored, read([...events, move('ask-b', 'sent', 'owner', 2)]), mon(10))?.details.parts).toEqual(['ask-sent']);
+    const { deps } = world({ events });
+    const ticked = { ...fresh(null), ...fromBaselineFile(saved, 'sprint-1', 'b.json') };
+    expect(await cycle(cfg, deps, ticked)).toBeNull();
+    expect(ticked.baseline?.asks).toHaveLength(2);
   });
 });
 

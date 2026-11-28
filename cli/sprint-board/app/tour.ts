@@ -91,8 +91,8 @@ const STEPS: Step[] = [
   {
     view: 'people',
     target: '.draft',
-    en: ['Messages to developers: you send them', 'One card per person: what we wait on from them, their tickets, and drafts written in their language. Copy puts Slack-ready bullets on your clipboard. Each evidence image has its own copy button.', 'An AI writing to a developer directly reads badly and is a security risk, so you own the relationship. Mark sent starts the wait clock, and a draft is flagged when its ticket changed after it was written.'],
-    es: ['Mensajes a desarrolladores: los mandas tú', 'Una tarjeta por persona: lo que esperamos de ella, sus tickets y borradores escritos en su idioma. Copiar deja viñetas listas para Slack en tu portapapeles. Cada imagen de evidencia tiene su propio botón de copiar.', 'Que una IA le escriba directo a un dev se ve mal y es un riesgo de seguridad, así que la relación es tuya. Marcar enviado arranca el reloj de espera, y un borrador se marca cuando su ticket cambió después de escribirlo.'],
+    en: ['Messages to developers: you send them', 'One card per person: what we wait on from them, their tickets, and each message in their language with its state and history. Copy puts the message on your clipboard, and you paste it wherever you talk to them. Each evidence image has its own copy button.', 'An AI writing to a developer directly reads badly and is a security risk, so you own the relationship. Mark sent starts the wait clock, and an unsent message is flagged when its ticket changed after it was written.'],
+    es: ['Mensajes a desarrolladores: los mandas tú', 'Una tarjeta por persona: lo que esperamos de ella, sus tickets y cada mensaje en su idioma, con su estado e historial. Copiar deja el mensaje en tu portapapeles y tú lo pegas donde hablas con esa persona. Cada imagen de evidencia tiene su propio botón de copiar.', 'Que una IA le escriba directo a un dev se ve mal y es un riesgo de seguridad, así que la relación es tuya. Marcar enviado arranca el reloj de espera, y un mensaje sin enviar se marca cuando su ticket cambió después de escribirlo.'],
   },
   {
     view: 'metrics',

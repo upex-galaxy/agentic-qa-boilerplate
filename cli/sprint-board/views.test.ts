@@ -4,7 +4,7 @@
  */
 import type { BoardEvent, Sprint, TrackerSnapshot } from './model.ts';
 import { describe, expect, test } from 'bun:test';
-import { ctxOf, drawer, routeView, viewBugs, viewEvidence, viewMetrics, viewReport, viewTickets, viewTimeline } from './app/views.ts';
+import { askUndo, ctxOf, drawer, nextSteps, routeView, viewBugs, viewEvidence, viewMetrics, viewPeople, viewReport, viewTickets, viewTimeline } from './app/views.ts';
 import { fold as foldRaw, SCHEMA, toReportState } from './model.ts';
 import { bucketed } from './test-fixtures.ts';
 
@@ -161,5 +161,71 @@ describe('the sprint report', () => {
     expect(b).not.toContain('data-copy-bugs');
     expect(() => viewTimeline(rctx)).not.toThrow();
     expect(viewReport({ ...rctx, state: { ...rs, report: undefined } })).toContain('snapshot --mode report');
+  });
+});
+
+describe('ask cards', () => {
+  const ask = (...moves: [string, Record<string, unknown>?][]) => [
+    ev('2026-10-02T00:00:00Z', 'ask.create', 'DEMO-1', { id: 'ask-a', to: 'Kim', kind: 'bug', text: 'a message', tickets: ['DEMO-1'] }),
+    ...moves.map(([state, extra], i) => ev(`2026-10-03T0${i}:00:00Z`, 'ask.state', 'DEMO-1', { id: 'ask-a', state, ...extra })),
+  ];
+  const page = (events: BoardEvent[], opts: { messenger?: string, canWrite?: boolean } = {}) => {
+    const s = { ...fold({ sprint, now: '2026-10-05T12:00:00Z', events }), messenger: opts.messenger };
+    return ctxOf(s, { filter: '', canWrite: opts.canWrite ?? true, img: () => null, sprints: [], archives: [] });
+  };
+  const primaries = (html: string) => [...html.matchAll(/<button class="btn primary"[^>]*>([^<]*)</g)].map(m => m[1]);
+
+  test('a draft with no messenger offers Mark sent and Copy, never an approval', () => {
+    const html = viewPeople(page(ask()));
+    expect(primaries(html)).toEqual(['Mark sent']);
+    expect(html).toContain('data-ask-action="sent"');
+    expect(html).toContain('data-copy-ask="ask-a"');
+    expect(html).not.toContain('data-ask-action="approve"');
+    expect(html).toContain('To send · draft');
+    expect(html).not.toContain('draft-history');
+  });
+
+  test('a draft with a messenger offers the approval', () => {
+    const html = viewPeople(page(ask(), { messenger: 'fake' }));
+    expect(primaries(html)).toEqual(['Create draft']);
+    expect(html).toContain('To approve · draft');
+  });
+
+  test('each state offers one primary action, and the history says who moved it', () => {
+    const sent = viewPeople(page(ask(['sent'])));
+    expect(primaries(sent)).toEqual(['They answered']);
+    expect(sent).toContain('data-ask-action="close"');
+    expect(sent).toContain('Waiting reply · sent');
+    expect(sent).toContain('<ol class="draft-history"><li><b>draft</b>');
+    const answered = viewPeople(page(ask(['sent'], ['answered', { reply: 'fixed <today>' }])));
+    expect(primaries(answered)).toEqual(['Close']);
+    expect(answered).toContain('fixed &lt;today&gt;');
+    expect(primaries(viewPeople(page(ask(['sent'], ['closed']))))).toEqual(['Reopen']);
+    expect(primaries(viewPeople(page(ask(['dropped']))))).toEqual(['Back to draft']);
+    expect(primaries(viewPeople(page(ask(['approved']))))).toEqual(['Back to draft']);
+    expect(primaries(viewPeople(page(ask(['approved']), { messenger: 'fake' })))).toEqual(['Copy message']);
+  });
+
+  test('a read-only page keeps Copy and offers no action', () => {
+    const html = viewPeople(page(ask(['sent']), { canWrite: false }));
+    expect(primaries(html)).toEqual(['Copy message']);
+    expect(html).not.toContain('data-ask-id');
+  });
+
+  test('your next steps name what each ask waits on', () => {
+    const steps = (c: ReturnType<typeof page>) => nextSteps(c).map(s => s.html).join('');
+    expect(steps(page(ask()))).toContain('Send to Kim');
+    expect(steps(page(ask(), { messenger: 'fake' }))).toContain('Approve the message to Kim');
+    expect(steps(page(ask(['sent'], ['answered'])))).toContain('Read the reply from Kim');
+    expect(steps(page(ask(['sent'])))).not.toContain('Kim</a>');
+  });
+
+  test('Undo is offered only when the page can write the previous state back', () => {
+    expect(askUndo({ from: 'draft', state: 'sent' }, false)).toBe('draft');
+    expect(askUndo({ from: 'answered', state: 'closed' }, false)).toBe('answered');
+    expect(askUndo({ from: 'draft-failed', state: 'sent' }, true)).toBeNull();
+    expect(askUndo({ from: 'approved', state: 'dropped' }, false)).toBeNull();
+    expect(askUndo({ from: 'dropped', state: 'draft' }, false)).toBe('dropped');
+    expect(askUndo({ from: 'closed', state: 'sent' }, false)).toBe('closed');
   });
 });

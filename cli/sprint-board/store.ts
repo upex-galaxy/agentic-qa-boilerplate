@@ -13,12 +13,13 @@ import type { BoardEvent, EventKind, Sprint, TrackerSnapshot } from './model.ts'
  *     archive/<slug>.html           frozen snapshot of a closed sprint
  *     archive/<slug>.state.json     the state it was rendered from
  *
- * The log needs no lock: it is append-only, and each line goes out in a single
+ * An append needs no lock: the log is append-only, and each line goes out in a single
  * appendFileSync well under 4 KB (atomic on local APFS in practice). source.json
  * has two possible writers (the CLI `sync` and `serve --sync-every`), so a
- * sync holds source.json.lock beside it (withSourceLock).
+ * sync holds source.json.lock beside it (withSourceLock). An ask's state is read,
+ * checked and appended under asks.lock (withAskLock), so two writers cannot fork it.
  */
-import { appendFileSync, existsSync, linkSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { appendFileSync, closeSync, existsSync, fstatSync, linkSync, mkdirSync, openSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { SCHEMA } from './model.ts';
 
@@ -102,12 +103,14 @@ const SOURCE_LOCK_STALE_MS = 10 * 60_000;
  */
 export const SOURCE_LOCK_WAIT_MS = 240_000;
 
-export interface SourceLockWait {
+export interface LockWait {
   /** 0 (the default) refuses at once; above 0 polls for the lock up to this long. */
   waitMs?: number
   pollMs?: number
   /** Called once, on the first poll that finds the lock held. */
   onWait?: (holder: string, waitMs: number) => void
+  // Runs right after the lock file is created: a test moves it there, as a concurrent takeover would.
+  onTaken?: () => void
 }
 
 /**
@@ -116,16 +119,39 @@ export interface SourceLockWait {
  * polls for it instead, because a CLI pass that starts right after `board:up`
  * meets the server's first sync (measured on the source board).
  */
-export async function withSourceLock<T>(slug: string, fn: () => Promise<T>, wait: SourceLockWait = {}): Promise<T> {
-  const lock = join(sprintDir(slug), 'source.json.lock');
+export async function withSourceLock<T>(slug: string, fn: () => Promise<T>, wait: LockWait = {}): Promise<T> {
+  return withSprintLock(slug, { file: 'source.json.lock', task: 'tracker sync', staleMs: SOURCE_LOCK_STALE_MS }, fn, wait);
+}
+
+// An ask transition holds its lock for milliseconds: a lock this old is a crashed writer.
+const ASK_LOCK_STALE_MS = 30_000;
+
+export async function withAskLock<T>(slug: string, fn: (held: () => boolean) => Promise<T>, wait: LockWait = {}): Promise<T> {
+  return withSprintLock(slug, { file: 'asks.lock', task: 'ask transition', staleMs: ASK_LOCK_STALE_MS, deadHolderIsStale: true }, fn, { waitMs: 10_000, pollMs: 15, ...wait });
+}
+
+interface SprintLock { file: string, task: string, staleMs: number, deadHolderIsStale?: boolean }
+
+async function withSprintLock<T>(slug: string, { file, task, staleMs, deadHolderIsStale }: SprintLock, fn: (held: () => boolean) => Promise<T>, wait: LockWait): Promise<T> {
+  const lock = join(sprintDir(slug), file);
   const waitMs = wait.waitMs ?? 0;
   const pollMs = wait.pollMs ?? 2000;
   const started = Date.now();
   let announced = false;
   let mine = 0;
+  // The inode comes from the open file: a takeover may move the path before it could be read back.
   const take = () => {
-    writeFileSync(lock, `${process.pid} ${new Date().toISOString()}\n`, { flag: 'wx' });
-    mine = statSync(lock).ino;
+    const fd = openSync(lock, 'wx');
+    try {
+      writeFileSync(fd, `${process.pid} ${new Date().toISOString()}\n`);
+      wait.onTaken?.();
+      mine = fstatSync(fd).ino;
+    }
+    finally { closeSync(fd); }
+  };
+  const held = () => {
+    try { return statSync(lock).ino === mine; }
+    catch { return false; }
   };
   for (;;) {
     try { take(); break; }
@@ -140,22 +166,49 @@ export async function withSourceLock<T>(slug: string, fn: () => Promise<T>, wait
       if ((err as NodeJS.ErrnoException).code === 'ENOENT') { continue; }
       throw err;
     }
-    if (Date.now() - seen.mtimeMs >= SOURCE_LOCK_STALE_MS) { takeOverStaleLock(lock, seen); continue; }
+    const stale = Date.now() - seen.mtimeMs >= staleMs || (deadHolderIsStale && holderIsDead(holder));
+    if (stale && takeOverInTurn(lock, seen)) { continue; }
     const waited = Date.now() - started;
     if (waited >= waitMs) {
       throw new Error(waitMs > 0
-        ? `another tracker sync still holds ${lock} after ${Math.round(waited / 1000)} s (holder: ${holder || 'unknown'}); retry when it ends`
-        : `another tracker sync is running on ${slug} (${lock}); retry when it ends`);
+        ? `another ${task} still holds ${lock} after ${Math.round(waited / 1000)} s (holder: ${holder || 'unknown'}); retry when it ends`
+        : `another ${task} is running on ${slug} (${lock}); retry when it ends`);
     }
     if (!announced) { announced = true; wait.onWait?.(holder, waitMs); }
     await Bun.sleep(Math.min(pollMs, waitMs - waited));
   }
-  try { return await fn(); }
+  try { return await fn(held); }
   finally {
     // Release only our own lock: a sync that outlived the stale age may have been taken over.
-    try { if (statSync(lock).ino === mine) { rmSync(lock, { force: true }); } }
-    catch { /* already gone */ }
+    if (held()) { rmSync(lock, { force: true }); }
   }
+}
+
+function holderIsDead(holder: string): boolean {
+  const pid = Number(/^(\d+) \S/.exec(holder)?.[1]);
+  if (!pid) { return false; }
+  try { process.kill(pid, 0); return false; }
+  catch (err) { return (err as NodeJS.ErrnoException).code === 'ESRCH'; }
+}
+
+const TAKEOVER_STALE_MS = 5000;
+
+// One waiter at a time moves a stale lock: two at once can leave two writers holding it. True = try the lock again now.
+function takeOverInTurn(lock: string, seen: Pick<Stats, 'ino' | 'mtimeMs'>): boolean {
+  const turn = `${lock}.takeover`;
+  try { closeSync(openSync(turn, 'wx')); }
+  catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'EEXIST') { throw err; }
+    const left = statSync(turn, { throwIfNoEntry: false });
+    if (left && Date.now() - left.mtimeMs >= TAKEOVER_STALE_MS) { rmSync(turn, { force: true }); }
+    return false;
+  }
+  try {
+    const current = statSync(lock, { throwIfNoEntry: false });
+    if (current?.ino === seen.ino && current.mtimeMs === seen.mtimeMs) { takeOverStaleLock(lock, seen); }
+    return true;
+  }
+  finally { rmSync(turn, { force: true }); }
 }
 
 /**
@@ -209,7 +262,7 @@ export function appendEvent(
     data: e.data,
   };
   const line = `${JSON.stringify(ev)}\n`;
-  if (Buffer.byteLength(line) > MAX_LINE) { throw new Error(`event too large (${Buffer.byteLength(line)} bytes > ${MAX_LINE}); shorten the text or use --file for drafts under 3 KB`); }
+  if (Buffer.byteLength(line) > MAX_LINE) { throw new Error(`event too large (${Buffer.byteLength(line)} bytes > ${MAX_LINE}); shorten the text`); }
   appendFileSync(join(sprintDir(slug), 'events.ndjson'), line);
   return ev;
 }

@@ -1,3 +1,5 @@
+import type { Messenger } from './messenger.ts';
+import type { Ask, AskState } from './model.ts';
 /**
  * Local live server, http://127.0.0.1:4477
  *
@@ -10,7 +12,7 @@
  *   /files/<path>      evidence images (repo-relative, allowlisted roots, no SVG)
  *   /archive/<file>    frozen snapshots
  *   POST /api/answer   { ticket, needId?, text }  -> need.answer event
- *   POST /api/ask      { id, state }              -> ask.state event
+ *   POST /api/ask      { id, action | state, expect? } -> ask.state event, through the ask lock
  *   POST /api/msg      { text, replyTo? }         -> msg event from the owner (the inbox)
  *
  * Change detection is a 1 s fingerprint poll of known files, not fs.watch:
@@ -19,10 +21,12 @@
  */
 import { existsSync, readdirSync, realpathSync, statSync } from 'node:fs';
 import { extname, join, resolve, sep } from 'node:path';
+import { applyPageTransition, AskError, draftApproved, owesDraft } from './ask-transition.ts';
 import { brandHtml } from './brand.ts';
 import { buildApp, openInBrowser } from './build.ts';
 import { readMergeLine } from './merge-read.ts';
-import { ASK_STATES, needTarget, oneOf } from './model.ts';
+import { resolveMessenger } from './messenger.ts';
+import { ASK_ACTIONS, ASK_STATES, needTarget, oneOf } from './model.ts';
 import { buildState, watchedFiles } from './sources.ts';
 import { appendEvent, archiveDir, BOARD_DIR, currentSlug, listArchives, listSprints, readSprint, REPO_ROOT, serverFile, sprintDir, writeAtomic } from './store.ts';
 import { watcherViews } from './watchers.ts';
@@ -68,6 +72,24 @@ function safeEvidence(rel: string): string | null {
     catch { return false; }
   });
   return ok && IMAGE_TYPES[extname(abs).toLowerCase()] ? abs : null;
+}
+
+// The two drafting results are the messenger's to report; the page may only put a recorded one back (Undo).
+const pageGuard = (cur: Ask, to: AskState): string | null =>
+  to === 'draft-failed' || (to === 'drafted' && !cur.history.some(h => h.state === 'drafted')) ? `${to} is not set from the page` : null;
+
+async function postAsk(slug: string, body: Record<string, string>, messenger: Messenger | null): Promise<Response> {
+  const id = String(body.id ?? '');
+  if (!/^ask-[a-z0-9]+$/.test(id)) { return json({ error: 'bad id' }, 400); }
+  const target = body.action
+    ? { action: oneOf(ASK_ACTIONS, String(body.action), 'action') }
+    : { state: oneOf(ASK_STATES, String(body.state ?? ''), 'state') };
+  const expect = body.expect ? oneOf(ASK_STATES, String(body.expect), 'expect') : undefined;
+  const result = await applyPageTransition(slug, { id, ...target, expect, guard: pageGuard }, messenger);
+  if (messenger && owesDraft(result)) {
+    void draftApproved(slug, id, messenger).catch((err: Error) => console.warn(`${id}: the draft was not recorded: ${err.message}`));
+  }
+  return json(result);
 }
 
 async function alreadyRunning(): Promise<string | null> {
@@ -122,7 +144,8 @@ function startMergeLoop(everySec: number): void {
   void tick();
 }
 
-export async function serve(opts: { port: number, open: boolean, syncMinutes: number, discover?: boolean, mergeEvery?: number }): Promise<void> {
+export async function serve(opts: { port: number, open: boolean, syncMinutes: number, discover?: boolean, mergeEvery?: number, messenger?: Messenger }): Promise<void> {
+  const messenger = opts.messenger ?? resolveMessenger();
   const running = await alreadyRunning();
   if (running) {
     console.log(`Sprint Board is already live at ${running}`);
@@ -229,15 +252,10 @@ export async function serve(opts: { port: number, open: boolean, syncMinutes: nu
             appendEvent(slug, { kind: 'msg', by: 'owner', text: `Owner: ${text}`, data: { id, from: 'owner', text, replyTo } });
             return json({ ok: true, id });
           }
-          if (p === '/api/ask') {
-            const state = oneOf(ASK_STATES, String(body.state ?? ''), 'state');
-            const id = String(body.id ?? '');
-            if (!/^ask-[a-z0-9]+$/.test(id)) { return json({ error: 'bad id' }, 400); }
-            appendEvent(slug, { kind: 'ask.state', by: 'owner', text: `Draft ${id} marked ${state}`, data: { id, state } });
-            return json({ ok: true });
-          }
+          if (p === '/api/ask') { return await postAsk(slug, body, messenger); }
         }
         catch (err) {
+          if (err instanceof AskError) { return json({ error: err.message, ...err.current }, err.status); }
           return json({ error: (err as Error).message }, 400);
         }
         return new Response('not found', { status: 404 });
@@ -262,6 +280,7 @@ export async function serve(opts: { port: number, open: boolean, syncMinutes: nu
           const slug = url.searchParams.get('sprint') ?? currentSlug();
           if (!/^sprint-\d+$/.test(slug)) { return json({ error: 'bad sprint' }, 400); }
           const state = buildState(slug);
+          state.messenger = messenger?.id;
           if (!state.sprint.closedAt) {
             idsBySlug.set(slug, state.tickets.map(t => t.id));
             try { state.watchers = watcherViews(slug); }

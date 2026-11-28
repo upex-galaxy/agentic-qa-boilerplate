@@ -2,6 +2,12 @@ import type { BoardEvent, Need, Sprint, TrackerSnapshot, WatcherView } from './m
 import { describe, expect, test } from 'bun:test';
 import {
   arrivals as arrivalsRaw,
+  ASK_STATES,
+  askActionState,
+  askPhase,
+  askPhaseCounts,
+  askStep,
+  askTransition,
   boardTicketIds,
   bugCounts,
   bugEvidenceReminder,
@@ -9,8 +15,10 @@ import {
   decisionOptions,
   EVIDENCE_OUTCOMES,
   evidenceArtifactUrl,
+  foldAsks,
   fold as foldRaw,
   groupEvidence,
+  isAskActor,
   isDecisionCard,
   listenLine,
   listFixtures,
@@ -172,6 +180,161 @@ describe('share snapshot', () => {
     ] });
     const json = JSON.stringify(toShareState(s));
     for (const secret of ['private words', 'secret wait', 'secret question', '.session/']) { expect(json).not.toContain(secret); }
+  });
+});
+
+describe('ask lifecycle', () => {
+  const allowed: Record<string, string> = {
+    'draft': 'approved sent dropped',
+    'approved': 'drafted draft-failed draft dropped',
+    'drafted': 'sent draft dropped draft-failed',
+    'draft-failed': 'approved drafted sent draft dropped',
+    'sent': 'answered draft drafted dropped closed',
+    'answered': 'answered sent dropped closed',
+    'closed': 'answered sent',
+    'dropped': 'draft drafted sent approved answered',
+  };
+  const make = (at: string, id: string, kind = 'bug', extra: Record<string, unknown> = {}) => ev(at, 'ask.create', 'DEMO-1', { id, to: 'Kim', kind, text: 'words', tickets: ['DEMO-1'], ...extra });
+  const move = (at: string, id: string, state: string, extra: Record<string, unknown> = {}) => ev(at, 'ask.state', undefined, { id, state, ...extra });
+
+  test('the full transition matrix', () => {
+    expect(Object.keys(allowed).sort()).toEqual([...ASK_STATES].sort());
+    for (const from of ASK_STATES) {
+      for (const to of ASK_STATES) {
+        expect([from, to, askTransition(from, to) === null]).toEqual([from, to, allowed[from].split(' ').includes(to)]);
+      }
+    }
+    expect(askTransition('draft', 'draft')).toBe('it is already draft');
+    expect(askTransition('draft', 'closed')).toBe('cannot go from draft to closed');
+  });
+
+  test('the current state is a no-op unless it brings a new reply', () => {
+    for (const state of ASK_STATES) { expect(askStep({ state }, state)).toEqual({ kind: 'noop' }); }
+    expect(askStep({ state: 'answered', reply: 'ok' }, 'answered', 'ok')).toEqual({ kind: 'noop' });
+    expect(askStep({ state: 'answered', reply: 'ok' }, 'answered', 'done now')).toEqual({ kind: 'go' });
+    expect(askStep({ state: 'sent' }, 'sent', 'a reply')).toEqual({ kind: 'noop' });
+    expect(askStep({ state: 'draft' }, 'answered')).toEqual({ kind: 'refuse', why: 'cannot go from draft to answered' });
+  });
+
+  test('phases are derived from the state and whether a reply is expected', () => {
+    expect(ASK_STATES.map(state => `${state}:${askPhase({ state, twoWay: true })}`)).toEqual([
+      'draft:approve',
+      'sent:waiting',
+      'answered:read',
+      'dropped:done',
+      'approved:send',
+      'drafted:send',
+      'draft-failed:approve',
+      'closed:done',
+    ]);
+    expect(askPhase({ state: 'sent', twoWay: false })).toBe('done');
+    expect(askPhaseCounts([{ state: 'draft', twoWay: true }, { state: 'sent', twoWay: false }, { state: 'answered', twoWay: true }]))
+      .toEqual({ approve: 1, send: 0, waiting: 0, read: 1, done: 1 });
+  });
+
+  test('the actors are a closed set with a plain worker', () => {
+    expect(['owner', 'conductor', 'sentinel', 'worker'].every(isAskActor)).toBe(true);
+    expect(['claude', 'worker:DEMO-1', 'Kim', ''].some(isAskActor)).toBe(false);
+  });
+
+  test('a log written with the first four states replays unchanged', () => {
+    const asks = foldAsks([
+      make('2026-10-02T00:00:00Z', 'ask-a', 'blocker'),
+      move('2026-10-02T01:00:00Z', 'ask-a', 'sent'),
+      move('2026-10-02T02:00:00Z', 'ask-a', 'sent'),
+      move('2026-10-02T03:00:00Z', 'ask-a', 'answered'),
+      make('2026-10-02T00:00:00Z', 'ask-b', 'fyi'),
+      move('2026-10-02T01:00:00Z', 'ask-b', 'dropped'),
+      make('2026-10-02T00:00:00Z', 'ask-c'),
+      move('2026-10-02T01:00:00Z', 'ask-c', 'sent'),
+      move('2026-10-02T02:00:00Z', 'ask-c', 'draft'),
+      move('2026-10-02T03:00:00Z', 'ask-nobody', 'sent'),
+      move('2026-10-02T04:00:00Z', 'ask-b', 'not-a-state'),
+    ]);
+    const of = (id: string) => asks.find(a => a.id === id)!;
+    expect(asks).toHaveLength(3);
+    expect(of('ask-a')).toMatchObject({ state: 'answered', sentAt: '2026-10-02T02:00:00Z', answeredAt: '2026-10-02T03:00:00Z', twoWay: true });
+    expect(of('ask-b')).toMatchObject({ state: 'dropped', twoWay: false });
+    expect(of('ask-c')).toMatchObject({ state: 'draft', sentAt: undefined, answeredAt: undefined });
+    expect(of('ask-c').history.map(h => h.state)).toEqual(['draft', 'sent', 'draft']);
+  });
+
+  test('the fold keeps the draft link, the reference, the failure and the reply of the state that carries them', () => {
+    const log = [
+      make('2026-10-02T00:00:00Z', 'ask-a'),
+      move('2026-10-02T01:00:00Z', 'ask-a', 'approved'),
+      move('2026-10-02T02:00:00Z', 'ask-a', 'draft-failed', { error: 'refused' }),
+    ];
+    expect(foldAsks(log)[0]).toMatchObject({ state: 'draft-failed', error: 'refused' });
+    log.push(move('2026-10-02T03:00:00Z', 'ask-a', 'drafted', { link: 'https://chat.example/d/1', ref: 'm-1' }));
+    expect(foldAsks(log)[0]).toMatchObject({ link: 'https://chat.example/d/1', ref: 'm-1', error: undefined });
+    log.push(move('2026-10-02T04:00:00Z', 'ask-a', 'sent'), move('2026-10-02T05:00:00Z', 'ask-a', 'answered', { reply: 'yes' }));
+    expect(foldAsks(log)[0]).toMatchObject({ ref: 'm-1', reply: 'yes', replyAt: '2026-10-02T05:00:00Z' });
+    log.push(move('2026-10-02T06:00:00Z', 'ask-a', 'closed'));
+    expect(foldAsks(log)[0]).toMatchObject({ state: 'closed', closedAt: '2026-10-02T06:00:00Z', reply: 'yes' });
+    log.push(move('2026-10-02T07:00:00Z', 'ask-a', 'sent'), move('2026-10-02T08:00:00Z', 'ask-a', 'draft'));
+    expect(foldAsks(log)[0]).toMatchObject({ state: 'draft', link: undefined, ref: undefined, reply: undefined, closedAt: undefined });
+    expect(foldAsks([make('2026-10-02T00:00:00Z', 'ask-b'), move('2026-10-02T01:00:00Z', 'ask-b', 'drafted', { link: 'javascript:alert(1)' })])[0].link).toBeUndefined();
+  });
+
+  test('reopen goes back to the state the ask was closed from', () => {
+    const answered = [make('2026-10-02T00:00:00Z', 'ask-a'), move('2026-10-02T01:00:00Z', 'ask-a', 'sent'), move('2026-10-02T02:00:00Z', 'ask-a', 'answered'), move('2026-10-02T03:00:00Z', 'ask-a', 'closed')];
+    expect(askActionState('reopen', foldAsks(answered)[0])).toBe('answered');
+    const unanswered = [...answered.slice(0, 3), move('2026-10-02T02:30:00Z', 'ask-a', 'sent'), answered[3]];
+    expect(askActionState('reopen', foldAsks(unanswered)[0])).toBe('sent');
+  });
+
+  test('going back into sent keeps when it was sent; a new send after a draft does not', () => {
+    const sentAt = (...moves: [number, string][]) => foldAsks([make('2026-10-02T00:00:00Z', 'ask-a'), ...moves.map(([h, state]) => move(`2026-10-02T0${h}:00:00Z`, 'ask-a', state))])[0].sentAt;
+    const first = '2026-10-02T01:00:00Z';
+    expect(sentAt([1, 'sent'], [2, 'closed'], [3, 'sent'])).toBe(first);
+    expect(sentAt([1, 'sent'], [2, 'answered'], [3, 'sent'])).toBe(first);
+    expect(sentAt([1, 'sent'], [2, 'dropped'], [3, 'sent'])).toBe(first);
+    expect(sentAt([1, 'sent'], [2, 'draft'], [3, 'sent'])).toBe('2026-10-02T03:00:00Z');
+    expect(sentAt([1, 'dropped'], [3, 'sent'])).toBe('2026-10-02T03:00:00Z');
+  });
+
+  test('a blank value in the log leaves the recorded one', () => {
+    const [a] = foldAsks([
+      make('2026-10-02T00:00:00Z', 'ask-a'),
+      move('2026-10-02T01:00:00Z', 'ask-a', 'drafted', { link: 'https://chat.example/d/1', ref: 'm-1' }),
+      move('2026-10-02T02:00:00Z', 'ask-a', 'sent'),
+      move('2026-10-02T03:00:00Z', 'ask-a', 'drafted', { link: '', ref: ' ' }),
+      move('2026-10-02T04:00:00Z', 'ask-a', 'sent'),
+      move('2026-10-02T05:00:00Z', 'ask-a', 'answered', { reply: 'yes' }),
+      move('2026-10-02T06:00:00Z', 'ask-a', 'answered', { reply: '', replyAt: undefined }),
+      move('2026-10-02T07:00:00Z', 'ask-a', 'answered', { reply: '  ' }),
+    ]);
+    expect(a).toMatchObject({ reply: 'yes', replyAt: '2026-10-02T05:00:00Z', link: 'https://chat.example/d/1', ref: 'm-1' });
+  });
+
+  test('moves are applied by instant, with or without milliseconds in the time', () => {
+    const [a] = foldAsks([make('2026-10-02T00:00:00Z', 'ask-a'), move('2026-10-02T01:00:00Z', 'ask-a', 'sent'), move('2026-10-02T01:00:00.001Z', 'ask-a', 'answered')]);
+    expect(a.state).toBe('answered');
+  });
+
+  test('every unsent state is outdated once its ticket changed, a sent one is not', () => {
+    const outdated = (state: string) => fold({ sprint, now: NOW, events: [
+      make('2026-10-02T00:00:00Z', 'ask-a'),
+      move('2026-10-02T01:00:00Z', 'ask-a', state),
+      ev('2026-10-03T00:00:00Z', 'verdict', 'DEMO-1', { verdict: 'PASSED' }),
+    ] }).asks[0].outdated;
+    expect(ASK_STATES.filter(outdated).sort()).toEqual(['approved', 'draft', 'draft-failed', 'drafted']);
+  });
+
+  test('share and report copies carry nothing of an ask', () => {
+    const full = fold({ sprint, now: NOW, events: [
+      make('2026-10-02T00:00:00Z', 'ask-private', 'bug', { to: 'Private Person', text: 'private words' }),
+      move('2026-10-02T01:00:00Z', 'ask-private', 'drafted', { link: 'https://chat.example/private', ref: 'private-ref', by: 'conductor' }),
+      move('2026-10-02T02:00:00Z', 'ask-private', 'draft-failed', { error: 'private failure' }),
+      move('2026-10-02T03:00:00Z', 'ask-private', 'sent'),
+      move('2026-10-02T04:00:00Z', 'ask-private', 'answered', { reply: 'private reply' }),
+    ] });
+    for (const copy of [toShareState(full), toReportState(full)]) {
+      expect(copy.asks).toEqual([]);
+      expect(copy.messenger).toBeUndefined();
+      expect(JSON.stringify(copy)).not.toMatch(/private|chat\.example|marked/i);
+    }
   });
 });
 

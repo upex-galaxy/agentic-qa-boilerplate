@@ -1,6 +1,6 @@
-import type { Ask, BoardState, BugGroup, EvidenceArtifact, EvidenceFilter, EvidenceView, Fixture, InboxMsg, InboxThread, Lane, Metrics, Need, OutcomeCounts, SprintBug, TicketView } from '../model.ts';
+import type { Ask, AskAction, AskPhase, AskState, BoardState, BugGroup, EvidenceArtifact, EvidenceFilter, EvidenceView, Fixture, InboxMsg, InboxThread, Lane, Metrics, Need, OutcomeCounts, SprintBug, TicketView } from '../model.ts';
 /** Every view is a pure function of the folded state: state in, HTML out. */
-import { bugCounts, devsOf, EVIDENCE_OUTCOMES, groupEvidence, isDecisionCard, isTestedBucket, LANES, listFixtures, metrics, outcomeCounts, REPORT_PRIORITIES, tcCounts, trackerName } from '../model.ts';
+import { askPhase, askTransition, bugCounts, devsOf, EVIDENCE_OUTCOMES, groupEvidence, isDecisionCard, isDraftingState, isTestedBucket, isUnsent, LANES, listFixtures, metrics, outcomeCounts, REPORT_PRIORITIES, tcCounts, trackerName } from '../model.ts';
 import { barChart, burnupChart, dotStrip, stackBar } from './charts.ts';
 import { getLang, tr } from './i18n.ts';
 import { ago, day, esc, firstName, hhmm, initials, pct, slackHtml } from './util.ts';
@@ -154,8 +154,13 @@ export function nextSteps(c: Ctx): { html: string, n: number }[] {
       items.push({ n: 1, html: `<a href="#" data-open="${esc(t.id)}">${tr('Decide', 'Decidir')}: <span class="id">${esc(t.id)}</span></a> ${esc(n.question)}<small>${esc(t.title)} · ${ago(n.since, nowMs(c))}</small>` });
     }
   }
-  for (const a of c.state.asks.filter(x => x.state === 'draft')) {
-    items.push({ n: 2, html: `<a href="#people">${tr('Send to', 'Enviar a')} ${esc(a.to)}</a>${a.outdated ? ` <span class="flag drift">${tr('outdated', 'desactualizado')}</span>` : ''}<small>${esc(a.tickets.join(', '))} · ${esc(a.kind)}</small>` });
+  for (const a of c.state.asks) {
+    const phase = askPhase(a);
+    if (phase === 'waiting' || phase === 'done') { continue; }
+    const verb = phase === 'read'
+      ? tr('Read the reply from', 'Leer la respuesta de')
+      : phase === 'approve' && c.state.messenger ? tr('Approve the message to', 'Aprobar el mensaje a') : tr('Send to', 'Enviar a');
+    items.push({ n: 2, html: `<a href="#people">${verb} ${esc(a.to)}</a>${a.outdated ? ` <span class="flag drift">${tr('outdated', 'desactualizado')}</span>` : ''}<small>${esc(a.tickets.join(', '))} · ${esc(a.kind)}</small>` });
   }
   for (const t of inScope(c).filter(x => x.atRisk)) {
     items.push({ n: 3, html: `<a href="#" data-open="${esc(t.id)}">${tr('Shipped at risk', 'Salió con riesgo')}: <span class="id">${esc(t.id)}</span></a><small>${tr('get the decision written or accepted', 'consigue la decisión escrita o aceptada')}</small>` });
@@ -321,14 +326,66 @@ export function viewMetrics(c: Ctx): string {
 // People
 // ---------------------------------------------------------------------------
 
+export const askPhaseLabel = (phase: AskPhase, drafting: boolean): string => ({
+  approve: drafting ? tr('To approve', 'Por aprobar') : tr('To send', 'Por enviar'),
+  send: tr('To send', 'Por enviar'),
+  waiting: tr('Waiting reply', 'Esperando respuesta'),
+  read: tr('Reply to read', 'Respuesta por leer'),
+  done: tr('Done', 'Terminado'),
+})[phase];
+
+type AskButton = { label: string } & ({ action: AskAction } | { state: AskState });
+
+function askPrimary(a: Ask, drafting: boolean): AskButton | null {
+  const markSent: AskButton = { action: 'sent', label: tr('Mark sent', 'Marcar enviado') };
+  const backToDraft: AskButton = { state: 'draft', label: tr('Back to draft', 'Volver a borrador') };
+  switch (a.state) {
+    case 'draft': return drafting ? { action: 'approve', label: tr('Create draft', 'Crear borrador') } : markSent;
+    case 'draft-failed': return drafting ? { action: 'retry', label: tr('Retry draft', 'Reintentar borrador') } : markSent;
+    case 'approved': return drafting ? null : backToDraft;
+    case 'drafted': return markSent;
+    case 'sent': return a.twoWay ? { action: 'answered', label: tr('They answered', 'Ya respondió') } : null;
+    case 'answered': return { action: 'close', label: tr('Close', 'Cerrar') };
+    case 'closed': return { action: 'reopen', label: tr('Reopen', 'Reabrir') };
+    default: return backToDraft;
+  }
+}
+
+export function askUndo(done: { from: AskState, state: AskState }, drafting: boolean): AskState | null {
+  const { from, state } = done;
+  if (askTransition(state, from) !== null || from === 'draft-failed' || (isDraftingState(from) && !drafting)) { return null; }
+  return from;
+}
+
+function askButtons(a: Ask, drafting: boolean): string {
+  const button = (b: AskButton, cls: string) => `<button class="${cls}" type="button" data-ask-id="${esc(a.id)}" ${'action' in b ? `data-ask-action="${b.action}"` : `data-ask-state="${b.state}"`}>${b.label}</button>`;
+  const primary = askPrimary(a, drafting);
+  const phase = askPhase(a);
+  return [
+    primary ? button(primary, 'btn primary') : '',
+    phase === 'waiting' ? button({ action: 'close', label: tr('Close', 'Cerrar') }, 'btn') : '',
+    phase === 'approve' || phase === 'send' || phase === 'waiting' ? button({ action: 'drop', label: tr('Drop', 'Descartar') }, 'btn ghost') : '',
+  ].join('');
+}
+
+const askHistory = (a: Ask) => (a.history.length < 2
+  ? ''
+  : `<ol class="draft-history">${a.history.slice(-4).map(h => `<li><b>${esc(h.state)}</b> ${esc(day(h.at).slice(5))} ${hhmm(h.at)}${h.by ? ` · ${esc(h.by)}` : ''}</li>`).join('')}</ol>`);
+
 function draftCard(a: Ask, c: Ctx): string {
+  const drafting = Boolean(c.state.messenger);
+  const copyClass = c.canWrite && askPrimary(a, drafting) ? 'btn' : 'btn primary';
   const imgs = a.attach.map(p => c.img(p)).filter((x): x is string => Boolean(x));
   return `<div class="draft ${a.state}" data-ask="${esc(a.id)}">
-    <div class="draft-head"><span class="pill source">${esc(a.lang.toUpperCase())}</span><span class="pill ${a.kind === 'good-news' ? 'PASSED' : a.kind === 'bug' ? 'FAILED' : 'BLOCKED'}">${esc(a.kind)}</span><span class="id">${esc(a.tickets.join(', '))}</span><span class="spacer"></span><span class="lbl">${esc(a.state)}${a.sentAt ? ` · ${hhmm(a.sentAt)}` : ''}</span>${a.outdated ? `<span class="flag drift">${tr('ticket changed since', 'el ticket cambió desde entonces')}</span>` : ''}</div>
+    <div class="draft-head"><span class="pill source">${esc(a.lang.toUpperCase())}</span><span class="pill ${a.kind === 'good-news' ? 'PASSED' : a.kind === 'bug' ? 'FAILED' : 'BLOCKED'}">${esc(a.kind)}</span><span class="id">${esc(a.tickets.join(', '))}</span><span class="spacer"></span><span class="lbl">${askPhaseLabel(askPhase(a), drafting)} · ${esc(a.state)}${a.sentAt ? ` · ${hhmm(a.sentAt)}` : ''}</span>${a.outdated ? `<span class="flag drift">${tr('ticket changed since', 'el ticket cambió desde entonces')}</span>` : ''}</div>
     <div class="slack">${slackHtml(a.text)}</div>
     ${imgs.length ? `<div class="thumbs" style="padding:0 12px 10px">${imgs.map((src, i) => `<span style="display:grid;gap:4px"><img class="thumb" src="${esc(src)}" data-zoom="${esc(src)}" alt="evidence ${i + 1}"><button class="btn" type="button" data-copy-img="${esc(src)}">${tr('Copy image', 'Copiar imagen')}</button></span>`).join('')}</div>` : ''}
-    <div class="draft-foot"><button class="btn primary" type="button" data-copy-ask="${esc(a.id)}">${tr('Copy message', 'Copiar mensaje')}</button>
-      ${c.canWrite ? (a.state === 'draft' ? `<button class="btn" type="button" data-ask-state="${esc(a.id)}" data-state="sent">${tr('Mark sent', 'Marcar enviado')}</button>` : a.state === 'sent' ? `<button class="btn" type="button" data-ask-state="${esc(a.id)}" data-state="answered">${tr('They answered', 'Ya respondió')}</button>` : '') : ''}
+    ${a.error ? `<div class="draft-note"><span class="lbl">${tr('Draft failed', 'El borrador falló')}</span> ${esc(a.error)}</div>` : ''}
+    ${a.reply ? `<div class="draft-note"><span class="lbl">${esc(a.to)}</span> ${esc(a.reply)}</div>` : ''}
+    ${askHistory(a)}
+    <div class="draft-foot">${c.canWrite ? askButtons(a, drafting) : ''}<button class="${copyClass}" type="button" data-copy-ask="${esc(a.id)}">${tr('Copy message', 'Copiar mensaje')}</button>
+      ${a.link && a.state === 'drafted' ? `<a class="btn" href="${esc(a.link)}" target="_blank" rel="noopener">${tr('Open draft', 'Abrir borrador')}</a>` : ''}
+      ${drafting && a.state === 'approved' ? `<span class="hint">${tr('Creating the draft…', 'Creando el borrador…')}</span>` : ''}
     </div>
   </div>`;
 }
@@ -341,7 +398,7 @@ export function viewPeople(c: Ctx): string {
     const asks = state.asks.filter(a => a.to === name);
     const wait = m.waits.find(w => w.person === name);
     const tickets = state.tickets.filter(t => t.inScope && devsOf(t.dev).includes(name));
-    const unsent = asks.filter(a => a.state === 'draft').length;
+    const unsent = asks.filter(a => isUnsent(a.state)).length;
     return { p, asks, wait, tickets, unsent, score: unsent * 10 + (wait?.oldestHours ?? 0) };
   }).sort((a, b) => b.score - a.score);
   if (!people.length) { return `<section class="panel"><p class="hint">${tr(`No developers on this board yet. Sync from ${TRK(c)} to fill it.`, `Todavía no hay desarrolladores en el tablero. Sincroniza con ${TRK(c)} para llenarlo.`)}</p></section>`; }

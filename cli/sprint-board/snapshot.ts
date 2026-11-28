@@ -80,8 +80,10 @@ export async function snapshot(slug: string, opts: { mode: SnapshotMode, out?: s
     // The allowlist is the guarantee; this is the tripwire that proves it held.
     const data = jsonSafe(state);
     for (const a of full.asks) {
-      const probe = jsonSafe(a.text.slice(0, 40)).slice(1, -1);
-      if (probe.length > 12 && data.includes(probe)) { throw new Error(`${opts.mode} snapshot leaked draft ${a.id}; refusing to write`); }
+      for (const secret of [a.text, a.reply, a.error]) {
+        const probe = jsonSafe((secret ?? '').slice(0, 40)).slice(1, -1);
+        if (probe.length > 12 && data.includes(probe)) { throw new Error(`${opts.mode} snapshot leaked draft ${a.id}; refusing to write`); }
+      }
     }
     if (data.includes('.session/') || data.includes('.context/PBI')) { throw new Error(`${opts.mode} snapshot contains a local path; refusing to write`); }
     if (opts.mode === 'report') {

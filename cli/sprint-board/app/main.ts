@@ -1,5 +1,5 @@
 import type { MergeRaw } from '../merge.ts';
-import type { BoardState, BugGroup, EvidenceFilter } from '../model.ts';
+import type { AskState, BoardState, BugGroup, EvidenceFilter } from '../model.ts';
 import type { Demo } from './demo.ts';
 import type { Ctx, View } from './views.ts';
 /**
@@ -8,13 +8,13 @@ import type { Ctx, View } from './views.ts';
  *   snapshot  embedded in the page (archive, share copy or sprint report), no server needed
  *   demo      the tour's invented sprint, folded in the browser
  */
-import { localHhmm, slackBugSummary, slackTableHtml, slackTablePlain, trackerName, WATCH_STALE_MIN, watchersDown, watchLiveness } from '../model.ts';
+import { askPhaseCounts, isUnsent, localHhmm, slackBugSummary, slackTableHtml, slackTablePlain, trackerName, WATCH_STALE_MIN, watchersDown, watchLiveness } from '../model.ts';
 import { makeDemo } from './demo.ts';
 import { getLang, setLang, tr } from './i18n.ts';
 import { mergeNeeds, prDrawer, viewMerge } from './merge-view.ts';
 import { startTour } from './tour.ts';
 import { $, $$, ago, copyImage, copyRich, esc, hhmm, save, slackHtml, slackPlain, store, toast } from './util.ts';
-import { BOARD_VIEWS, ctxOf, drawer, fixturesNow, REPORT_VIEWS, routeView, SHARE_HIDDEN, viewBugs, viewEvidence, viewHistory, viewMetrics, viewNow, viewPeople, viewReport, viewTickets, viewTimeline } from './views.ts';
+import { askPhaseLabel, askUndo, BOARD_VIEWS, ctxOf, drawer, fixturesNow, REPORT_VIEWS, routeView, SHARE_HIDDEN, viewBugs, viewEvidence, viewHistory, viewMetrics, viewNow, viewPeople, viewReport, viewTickets, viewTimeline } from './views.ts';
 /** Phone width: the nav becomes an overlay (styles.css uses the same 760px). */
 const phoneQuery = matchMedia('(max-width: 760px)');
 const phone = () => phoneQuery.matches;
@@ -151,10 +151,12 @@ function render(): void {
     if (k.focus) { ta.focus(); ta.setSelectionRange(k.at, k.at); }
   }
 
-  const drafts = state.asks.filter(a => a.state === 'draft').length;
+  const phases = askPhaseCounts(state.asks);
+  const owed = (['approve', 'send', 'read'] as const).filter(p => phases[p]);
   const pc = $('#people-count')!;
-  pc.hidden = !drafts;
-  pc.textContent = String(drafts);
+  pc.hidden = !owed.length;
+  pc.textContent = String(owed.reduce((n, p) => n + phases[p], 0));
+  pc.title = owed.map(p => `${phases[p]} ${askPhaseLabel(p, Boolean(state.messenger)).toLowerCase()}`).join(', ');
   // The Bugs entry carries how many still block a ticket: the count that needs a developer now.
   const blocking = (state.bugs ?? []).filter(b => b.group === 'blocking').length;
   const bc = $('#bugs-count')!;
@@ -297,15 +299,15 @@ function tickLive(): void {
   if (!fresh && lastEventAt) { stale.textContent = `${tr('Stale since', 'Desactualizado desde')} ${new Date(lastEventAt).toISOString().slice(11, 16)}Z. ${tr('The local server stopped; restart it with', 'El servidor local se detuvo; reinícialo con')} bun cli/sprint-board/index.ts serve --open`; }
 }
 
-async function post(path: string, body: unknown): Promise<boolean> {
+async function post(path: string, body: unknown): Promise<Record<string, unknown> | null> {
   try {
     const r = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json', 'x-sprint-board': '1' }, body: JSON.stringify({ sprint: current()?.sprint.slug, ...(body as object) }) });
-    if (!r.ok) { toast((await r.json().catch(() => ({ error: r.statusText }))).error ?? 'failed'); return false; }
-    return true;
+    if (!r.ok) { toast((await r.json().catch(() => ({ error: r.statusText }))).error ?? 'failed'); return null; }
+    return await r.json().catch(() => ({})) as Record<string, unknown>;
   }
   catch {
     toast(tr('The local server is not answering', 'El servidor local no responde'));
-    return false;
+    return null;
   }
 }
 
@@ -405,7 +407,7 @@ async function onClick(e: MouseEvent): Promise<void> {
   const pr = hit('[data-open-pr]');
   if (pr) { e.preventDefault(); openPullRequest(Number(pr.dataset.openPr)); return; }
   const open = hit('[data-open]');
-  if (open && !hit('[data-copy-ask]') && !hit('[data-ask-state]')) { e.preventDefault(); openTicket(open.dataset.open!); return; }
+  if (open && !hit('[data-copy-ask]') && !hit('[data-ask-id]')) { e.preventDefault(); openTicket(open.dataset.open!); return; }
 
   const th = hit('[data-set-theme]');
   if (th) { theme = asTheme(th.dataset.setTheme); save('sprint-board-theme', theme); applyTheme(); return; }
@@ -451,20 +453,34 @@ async function onClick(e: MouseEvent): Promise<void> {
     if (!a) { return; }
     const ok = await copyRich(slackPlain(a.text), slackHtml(a.text));
     if (!ok) { toast(tr('Copy failed', 'No se pudo copiar')); return; }
-    if (live() && !demoState && a.state === 'draft') {
-      toast(tr(`Copied. Paste it in ${a.to}'s DM.`, `Copiado. Pégalo en el DM de ${a.to}.`), { label: tr('Mark sent', 'Marcar enviado'), run: () => void post('/api/ask', { id: a.id, state: 'sent' }) });
+    if (live() && !demoState && (a.state === 'draft' || a.state === 'draft-failed' || a.state === 'drafted')) {
+      toast(tr(`Copied. Paste it in ${a.to}'s DM.`, `Copiado. Pégalo en el DM de ${a.to}.`), { label: tr('Mark sent', 'Marcar enviado'), run: () => void post('/api/ask', { id: a.id, action: 'sent', expect: a.state }) });
     }
     else { toast(tr('Copied', 'Copiado')); }
     return;
   }
 
-  const askState = hit('[data-ask-state]');
-  if (askState && demoState) { toast(tr('Demo: on your real board this starts the wait clock.', 'Demo: en tu tablero real esto arranca el reloj de espera.')); return; }
-  if (askState) {
-    const id = askState.dataset.askState!; const st = askState.dataset.state!;
-    if (await post('/api/ask', { id, state: st })) {
-      toast(st === 'sent' ? tr('Marked sent. The wait clock started.', 'Marcado enviado. Arrancó el reloj de espera.') : tr('Marked answered', 'Marcado respondido'), { label: tr('Undo', 'Deshacer'), run: () => void post('/api/ask', { id, state: st === 'sent' ? 'draft' : 'sent' }) });
-    }
+  const askButton = hit('[data-ask-id]');
+  if (askButton && demoState) { toast(tr('Demo: on your real board this moves the message along.', 'Demo: en tu tablero real esto avanza el mensaje.')); return; }
+  if (askButton) {
+    const { askId: id, askAction: action, askState: target } = askButton.dataset;
+    // `expect` is the state this page shows: if the ask moved meanwhile the server answers 409 and writes nothing.
+    const expect = state?.asks.find(x => x.id === id)?.state;
+    const done = await post('/api/ask', { id, action, state: target, expect }) as { noop: boolean, from: AskState, state: AskState, by?: string } | null;
+    if (!done) { void fetchState(); return; }
+    if (done.noop) { toast(tr(`Already ${done.state} (by ${done.by ?? '?'}). Nothing changed.`, `Ya estaba ${done.state} (por ${done.by ?? '?'}). No cambió nada.`)); return; }
+    const said: Record<AskState, string> = {
+      'draft': tr('Back to draft', 'Volvió a borrador'),
+      'approved': tr('Approved. The draft is being created.', 'Aprobado. Se está creando el borrador.'),
+      'drafted': tr('Marked drafted', 'Marcado como borrador creado'),
+      'draft-failed': tr('Marked failed', 'Marcado como fallido'),
+      'sent': isUnsent(done.from) ? tr('Marked sent. The wait clock started.', 'Marcado enviado. Arrancó el reloj de espera.') : tr('Back to sent', 'Volvió a enviado'),
+      'answered': tr('Marked answered', 'Marcado respondido'),
+      'closed': tr('Closed', 'Cerrado'),
+      'dropped': tr('Dropped. Kept on record.', 'Descartado. Queda en el registro.'),
+    };
+    const undo = askUndo(done, Boolean(state?.messenger));
+    toast(said[done.state], undo ? { label: tr('Undo', 'Deshacer'), run: () => void post('/api/ask', { id, state: undo, expect: done.state }) } : undefined);
     return;
   }
 

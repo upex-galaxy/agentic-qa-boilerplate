@@ -25,9 +25,13 @@ export const TC_STATUSES = CASE_STATUSES as readonly ['PASSED', 'FAILED', 'NOT R
 export const BLOCKERS = ['decision', 'no-data', 'no-access', 'no-permission', 'partial', 'defect'] as const;
 export const HOLD_REASONS = ['deploy', 'no-data', 'no-access', 'no-permission', 'defect', 'other'] as const;
 export const SEVERITIES = ['Critical', 'High', 'Medium', 'Low'] as const;
-/** `dropped`: the draft is no longer needed and will not be sent (kept on record). */
-export const ASK_STATES = ['draft', 'sent', 'answered', 'dropped'] as const;
+// The first four are the older set and must keep their meaning: logs written with them still replay.
+export const ASK_STATES = ['draft', 'sent', 'answered', 'dropped', 'approved', 'drafted', 'draft-failed', 'closed'] as const;
 export const ASK_KINDS = ['blocker', 'bug', 'decision', 'good-news', 'fyi'] as const;
+export const TWO_WAY_KINDS = ['blocker', 'bug', 'decision'] as const;
+export const ASK_ACTIONS = ['approve', 'sent', 'drop', 'retry', 'answered', 'close', 'reopen'] as const;
+export const ASK_PHASES = ['approve', 'send', 'waiting', 'read'] as const;
+export const ASK_ACTORS = ['owner', 'conductor', 'sentinel', 'worker'] as const;
 /** Board columns, in priority order: left is where you act first. */
 export const LANES = ['Needs you', 'Running', 'Failed', 'Passed'] as const;
 /** Not columns: a one-line tray above the board. */
@@ -89,6 +93,8 @@ export type HoldReason = (typeof HOLD_REASONS)[number];
 export type Severity = (typeof SEVERITIES)[number];
 export type AskState = (typeof ASK_STATES)[number];
 export type AskKind = (typeof ASK_KINDS)[number];
+export type AskAction = (typeof ASK_ACTIONS)[number];
+export type AskPhase = (typeof ASK_PHASES)[number] | 'done';
 export type Lane = (typeof LANES)[number] | (typeof TRAYS)[number];
 export type Marker = (typeof MARKERS)[number];
 export type EventKind = (typeof EVENT_KINDS)[number];
@@ -362,8 +368,19 @@ export interface Ask {
   attach: string[]
   state: AskState
   createdAt: string
+  stateAt?: string
   sentAt?: string
   answeredAt?: string
+  closedAt?: string
+  twoWay: boolean
+  link?: string
+  // The messenger's own handle for the message; opaque to the board.
+  ref?: string
+  error?: string
+  reply?: string
+  replyAt?: string
+  by?: string
+  history: { state: AskState, at: string, by?: string }[]
   outdated: boolean
 }
 
@@ -393,6 +410,8 @@ export interface BoardState {
   bugSearch?: BugSearch
   timeline: TimelineItem[]
   tracker?: { source?: SourceKind, syncedAt: string, searched: TrackerSnapshot['searched'] }
+  // The provider that can draft messages, by id: the live server attaches it, absent = none.
+  messenger?: string
   /** The conductor's test-environment watch: newest `watch.pass` and how many ran. Absent when none ever ran. */
   watch?: { lastPassAt: string, passes: number }
   // Pid state is only true while someone is checking it: the live server attaches this, a snapshot never does.
@@ -441,10 +460,69 @@ export function resolvePerson(people: Person[], input: string): Person {
   throw new Error(`"${input}" matches ${exact.length + first.length ? 'more than one' : 'no'} person. Known: ${names}`);
 }
 
+export const isUnsent = (s: AskState) => s === 'draft' || s === 'approved' || s === 'drafted' || s === 'draft-failed';
+export const isDraftingState = (s: AskState) => s === 'approved' || s === 'drafted' || s === 'draft-failed';
+export const defaultTwoWay = (kind: AskKind) => (TWO_WAY_KINDS as readonly string[]).includes(kind);
+
+const ASK_NEXT: Record<AskState, AskState[]> = {
+  'draft': ['approved', 'sent', 'dropped'],
+  'approved': ['drafted', 'draft-failed', 'draft', 'dropped'],
+  'drafted': ['sent', 'draft', 'dropped', 'draft-failed'],
+  'draft-failed': ['approved', 'drafted', 'sent', 'draft', 'dropped'],
+  'sent': ['answered', 'draft', 'drafted', 'dropped', 'closed'],
+  'answered': ['answered', 'sent', 'dropped', 'closed'],
+  'closed': ['answered', 'sent'],
+  'dropped': ['draft', 'drafted', 'sent', 'approved', 'answered'],
+};
+
+export function askTransition(from: AskState, to: AskState): string | null {
+  if (from === to && to !== 'answered') { return `it is already ${to}`; }
+  return ASK_NEXT[from].includes(to) ? null : `cannot go from ${from} to ${to}`;
+}
+
+export type AskStep = { kind: 'go' } | { kind: 'noop' } | { kind: 'refuse', why: string };
+
+export function askStep(cur: Pick<Ask, 'state' | 'reply'>, to: AskState, reply?: string): AskStep {
+  if (cur.state === to) {
+    return to === 'answered' && reply !== undefined && reply !== cur.reply ? { kind: 'go' } : { kind: 'noop' };
+  }
+  const why = askTransition(cur.state, to);
+  return why ? { kind: 'refuse', why } : { kind: 'go' };
+}
+
+export function askPhase(a: Pick<Ask, 'state' | 'twoWay'>): AskPhase {
+  switch (a.state) {
+    case 'draft':
+    case 'draft-failed': return 'approve';
+    case 'approved':
+    case 'drafted': return 'send';
+    case 'sent': return a.twoWay ? 'waiting' : 'done';
+    case 'answered': return 'read';
+    default: return 'done';
+  }
+}
+
+export function askPhaseCounts(asks: Pick<Ask, 'state' | 'twoWay'>[]): Record<AskPhase, number> {
+  const c = { approve: 0, send: 0, waiting: 0, read: 0, done: 0 };
+  for (const a of asks) { c[askPhase(a)]++; }
+  return c;
+}
+
+export const isAskActor = (v: string): boolean => (ASK_ACTORS as readonly string[]).includes(v);
+
+const ACTION_STATE: Record<Exclude<AskAction, 'reopen'>, AskState> = { approve: 'approved', sent: 'sent', drop: 'dropped', retry: 'approved', answered: 'answered', close: 'closed' };
+
+export function askActionState(action: AskAction, ask: Pick<Ask, 'history'>): AskState {
+  if (action !== 'reopen') { return ACTION_STATE[action]; }
+  return ask.history.findLast(h => h.state !== 'closed')?.state === 'answered' ? 'answered' : 'sent';
+}
+
 /** The tracker's Assignee can hold several people ("Dana Dev,Lee Dev"). */
 export const devsOf = (dev?: string): string[] => (dev ? dev.split(/\s*,\s*/).filter(Boolean) : []);
 
 const str = (v: unknown) => (typeof v === 'string' ? v : undefined);
+const said = (v: unknown) => (typeof v === 'string' && v.trim() ? v : undefined);
+const httpsOnly = (u?: string) => (u && /^https:\/\/[^\s"'<>]+$/i.test(u) ? u : undefined);
 
 // ---------------------------------------------------------------------------
 // Evidence pages and bug status
@@ -604,6 +682,59 @@ interface Draft {
   lastAt: string
 }
 
+export function foldAsks(events: BoardEvent[]): Ask[] {
+  const asks = new Map<string, Ask>();
+  // By instant, not by text: a time written without milliseconds sorts wrong as a string.
+  for (const e of [...events].sort((a, b) => Date.parse(a.at) - Date.parse(b.at))) {
+    const x = e.data ?? {};
+    if (e.kind === 'ask.create') {
+      const id = str(x.id) ?? e.id;
+      const kind = (str(x.kind) as AskKind) ?? 'fyi';
+      asks.set(id, {
+        id,
+        to: str(x.to) ?? '?',
+        lang: x.lang === 'es' ? 'es' : 'en',
+        kind,
+        tickets: strs(x.tickets),
+        text: str(x.text) ?? '',
+        attach: strs(x.attach),
+        state: 'draft',
+        createdAt: e.at,
+        stateAt: e.at,
+        twoWay: typeof x.twoWay === 'boolean' ? x.twoWay : defaultTwoWay(kind),
+        by: e.by,
+        history: [{ state: 'draft', at: e.at, by: e.by }],
+        outdated: false,
+      });
+    }
+    if (e.kind !== 'ask.state') { continue; }
+    const a = asks.get(str(x.id) ?? '');
+    const state = ASK_STATES.find(v => v === x.state);
+    if (!a || !state) { continue; }
+    const resumed = a.state === 'closed' || a.state === 'answered' || a.state === 'dropped';
+    const reply = said(x.reply);
+    a.state = state;
+    a.stateAt = e.at;
+    a.by = e.by;
+    a.history.push({ state, at: e.at, by: e.by });
+    a.closedAt = state === 'closed' ? e.at : undefined;
+    if (isUnsent(state)) { a.sentAt = undefined; a.answeredAt = undefined; }
+    if (isUnsent(state) || state === 'sent') { a.reply = undefined; a.replyAt = undefined; }
+    // Going back to a message already sent keeps when it was sent.
+    if (state === 'sent' && !(resumed && a.sentAt)) { a.sentAt = e.at; }
+    if (state === 'answered') {
+      a.answeredAt = e.at;
+      a.replyAt = str(x.replyAt) ?? (reply ? e.at : a.replyAt);
+      a.reply = reply ?? a.reply;
+    }
+    if (state === 'draft') { a.link = undefined; a.ref = undefined; }
+    if (state === 'draft' || state === 'approved' || state === 'drafted') { a.error = undefined; }
+    if (state === 'drafted') { a.link = httpsOnly(str(x.link)) ?? a.link; a.ref = said(x.ref) ?? a.ref; }
+    if (state === 'draft-failed') { a.error = said(x.error) ?? 'unknown error'; }
+  }
+  return [...asks.values()];
+}
+
 export function fold(input: {
   sprint: Sprint
   events: BoardEvent[]
@@ -617,7 +748,7 @@ export function fold(input: {
   const warnings: string[] = [];
   const events = [...input.events].sort((a, b) => a.at.localeCompare(b.at));
   const drafts = new Map<string, Draft>();
-  const asks = new Map<string, Ask>();
+  const asks = foldAsks(events);
   const threads = new Map<string, InboxThread>();
   const rootOf = new Map<string, string>();
   const fixtures: Fixture[] = [];
@@ -654,22 +785,7 @@ export function fold(input: {
 
   for (const e of events) {
     const x = e.data ?? {};
-    if (e.kind === 'ask.create') {
-      const id = str(x.id) ?? e.id;
-      asks.set(id, {
-        id,
-        to: str(x.to) ?? '?',
-        lang: x.lang === 'es' ? 'es' : 'en',
-        kind: (str(x.kind) as AskKind) ?? 'fyi',
-        tickets: strs(x.tickets),
-        text: str(x.text) ?? '',
-        attach: strs(x.attach),
-        state: 'draft',
-        createdAt: e.at,
-        outdated: false,
-      });
-      continue;
-    }
+    if (e.kind === 'ask.create' || e.kind === 'ask.state') { continue; }
     if (e.kind === 'msg') {
       const options = strs(x.options);
       const m: InboxMsg = {
@@ -686,16 +802,6 @@ export function fold(input: {
       const t = root ? threads.get(root) : undefined;
       if (t) { t.replies.push(m); rootOf.set(m.id, t.id); }
       else { threads.set(m.id, { ...m, replyTo: undefined, replies: [], state: 'done', lastAt: m.at }); rootOf.set(m.id, m.id); }
-      continue;
-    }
-    if (e.kind === 'ask.state') {
-      const a = asks.get(str(x.id) ?? '');
-      if (a) {
-        a.state = (str(x.state) as AskState) ?? a.state;
-        if (a.state === 'sent') { a.sentAt = e.at; }
-        if (a.state === 'answered') { a.answeredAt = e.at; }
-        if (a.state === 'draft') { a.sentAt = undefined; a.answeredAt = undefined; }
-      }
       continue;
     }
     if (!e.ticket) { continue; }
@@ -953,8 +1059,8 @@ export function fold(input: {
 
   // A draft is outdated when its ticket changed after it was written.
   const byId = new Map(tickets.map(t => [t.id, t]));
-  for (const a of asks.values()) {
-    a.outdated = a.state === 'draft' && a.tickets.some(id => (byId.get(id)?.laneSince ?? '') > a.createdAt);
+  for (const a of asks) {
+    a.outdated = isUnsent(a.state) && a.tickets.some(id => (byId.get(id)?.laneSince ?? '') > a.createdAt);
     if (!people.has(a.to)) { people.set(a.to, { name: a.to, lang: a.lang, inferred: true }); }
   }
 
@@ -982,7 +1088,7 @@ export function fold(input: {
     v: SCHEMA,
     sprint,
     tickets: tickets.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true })),
-    asks: [...asks.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    asks: asks.sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
     inbox: [...threads.values()].sort((a, b) => b.lastAt.localeCompare(a.lastAt)),
     people: [...people.values()],
     fixtures: listFixtures(fixtures),
