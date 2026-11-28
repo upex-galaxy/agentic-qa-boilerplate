@@ -88,8 +88,8 @@ export async function status(flags: Flags): Promise<void> {
       `Could not set run ${id} to ${statusValue}: ${err instanceof Error ? err.message : String(err)}\n`
       + 'If the status was rejected, this project does not define it. Xray statuses are per-instance '
       + '(Settings -> Test Run Statuses); a project may accept only TODO / EXECUTING / PASSED / FAILED. '
-      + 'Record a blocked or aborted case in the status the project DOES define, and say so in the run '
-      + 'comment (\'run comment --id <id> --comment ...\') — never leave the run TODO as if it was never executed.',
+      + 'Do not retry variants: leave an unexecuted run TODO, never FAILED, and write its BLOCKED or '
+      + 'DEFERRED (execution) reason line in the results.',
     );
   }
 
