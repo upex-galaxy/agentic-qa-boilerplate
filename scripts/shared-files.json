@@ -63,9 +63,9 @@
     "cli/lib/user-skills-update.ts": "df27bdacdebfb418cefd838f9ae8f4fcbad757294e338ef038df328f8219723a",
     "cli/preflight.test.ts": "cc8465e1c2e312b08ce6d00deeb8dd7bd3ff8b5b8030c110594ea6b6c1739092",
     "cli/preflight.ts": "c12cb3e46864aa100e8dc3be13221d34600a6b5ebfc87502918cdcb988a877be",
-    "scripts/edd.ts": "3ab84722ee8629e277fcd2871f5f3e7e4583be6e12681ad365b73f0c73ad4111",
+    "scripts/edd.ts": "16fb73291a287cf8bec2d25e52f5700e2e5fdfe8aa06f4f5d7dd5577a79d9fb4",
     "scripts/lib/edd/attest.ts": "5ec76d0ad051213bc94651a50a210f894e9c88b8665155a067b65dc5edf295a8",
-    "scripts/lib/edd/cli.test.ts": "94dda7195ed37c217fa539cc7eaed2ab9132a53fb76955c1eab9ef9fbef70f0c",
+    "scripts/lib/edd/cli.test.ts": "b901b14d9688942199725d771322d943e87c1d5d7c181b84a0384882ce4d08c7",
     "scripts/lib/edd/contract.ts": "7c46e43c396edb1dc47e57d1749221201e5cbd6c993f65f18c3b85dd5376ebac",
     "scripts/lib/edd/depth.ts": "4e9b127b1eb59a0017b5bb3a6c40d443666fbfa07bb6e65aeccef0a2876a9907",
     "scripts/lib/edd/edd.test.ts": "302d731463369d24e83e62201a08c2fcc68e3e18ea974412f85e130955d1fffe",
@@ -73,7 +73,7 @@
     "scripts/lib/edd/git.ts": "3b172cb714ec85c31363e42e9057f76a38159010fe2d6ff72ec5847a155c09a8",
     "scripts/lib/edd/patch-id.ts": "d5a54d43bced965ed41329afd38e49f0547b08e743c704a67347f97d91d55236",
     "scripts/lib/edd/record.ts": "c3c5e8e8ffb7c17a5a745837573757d81f8d17f457343f65fcbf6f1a780701a7",
-    "scripts/lib/edd/verify.ts": "b3fbaa586a0feecb02cc6f57f15b6ec2a7fa4fef49c4e17261c81263b178752c",
+    "scripts/lib/edd/verify.ts": "385cd4072bfd6d882aa580363cd76de4f4c9049f7ad2c7e17e1e3efae8a321a5",
     "scripts/lib/heavy-e2e.ts": "7bfe7f767ecac4d8ad61a3790cae7c9165521b50362d014ae0e41cee4a5fa589",
     "scripts/shared-check.ts": "a4863d03b318177a8c82b2e69b4dab2e5d4b4a3d6df7d9de94ef9a0b28e823a5"
   }
