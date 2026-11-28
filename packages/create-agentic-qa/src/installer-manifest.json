@@ -457,6 +457,12 @@
           "what": "Optional: creates the remote with gh (account, visibility, name) and pushes the first commit, after the background downloads finish.",
           "interactive": true,
           "prompts": ["gh-create", "gh-account", "gh-visibility", "gh-name"]
+        },
+        {
+          "step": "Git strategy and GitHub configuration",
+          "what": "Asks the branching strategy, who confirms a push and how a pull request is merged, writes them to .agents/project.yaml, and prints the GitHub plan and a read-only permission preflight through bun run git:policy setup --plan-only. It never writes to GitHub: applying the plan, or the hand-off for an admin, is bun run git:policy setup in a terminal.",
+          "interactive": true,
+          "prompts": ["git-*"]
         }
       ]
     },
@@ -516,6 +522,7 @@
     "gh-account",
     "gh-visibility",
     "gh-name",
+    "git-*",
     "drop-*",
     "project-identity",
     "project-envs",

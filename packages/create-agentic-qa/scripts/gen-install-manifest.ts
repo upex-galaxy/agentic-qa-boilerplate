@@ -156,6 +156,7 @@ export const PHASE_STEPS: Record<string, StepSpec[]> = {
   ],
   github: [
     { step: 'GitHub repository', what: 'Optional: creates the remote with gh (account, visibility, name) and pushes the first commit, after the background downloads finish.', probes: ['setupGithubRemote('], prompts: ['gh-create', 'gh-account', 'gh-visibility', 'gh-name'] },
+    { step: 'Git strategy and GitHub configuration', what: 'Asks the branching strategy, who confirms a push and how a pull request is merged, writes them to .agents/project.yaml, and prints the GitHub plan and a read-only permission preflight through bun run git:policy setup --plan-only. It never writes to GitHub: applying the plan, or the hand-off for an admin, is bun run git:policy setup in a terminal.', probes: ['gitPolicyStep('], prompts: ['git-*'] },
   ],
   verify: [
     { step: 'Command-line tools', what: 'Reports which external CLIs are on PATH (information only; nothing is installed).', probes: ['verifyExternalClis('] },

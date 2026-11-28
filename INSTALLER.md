@@ -72,6 +72,12 @@ The Sprint Board (`bun run board:up`) reads the `board:` block of `.agents/proje
 
 Optional: creates the repository with `gh` and pushes, or hydrates `state.github` from an existing remote. It waits for the Install lane, and the push is confirmed with `git ls-remote`.
 
+### Git strategy and GitHub configuration
+
+Right after the GitHub step the installer asks three questions: the branching strategy, who confirms a push to a protected branch, and how a pull request is merged. Each option says what it changes in your day, and Enter keeps the recommended one (`evidence` for pushes when the evidence gate exists, `auto` for merges). The answers go to `git_strategy` in `.agents/project.yaml`. The installer then runs `bun run git:policy setup --plan-only`, which prints what the GitHub repository needs (ruleset, required checks, repository settings, the Actions approval switch) and a read-only check of your permissions.
+
+The installer never writes to GitHub. To apply the plan, run `bun run git:policy setup` in a terminal. If you administer the repository it shows the dry run and asks before it writes anything (the default answer is no). If you do not, it prints a hand-off for an admin, as a prompt for their AI agent and as the equivalent `gh api` commands for this repository. A non-interactive run asks nothing and only prints the plan.
+
 ### Verify and done
 
 The external CLI table (information only, see [External CLIs](#external-clis-verified-not-auto-installed)), the state file, and the retirement of plaintext MCP credential copies an older `bun run harness:env` generated (the `env` block of `.claude/settings.local.json`, `.auth/opencode/<VAR>`): a copy equal to `.env` is deleted, a copy `.env` does not reproduce is moved to `.auth/harness-env-backup/<VAR>` (mode 0600) and named so you put the right value in `.env` and delete the directory, and a copy a legacy host config still reads is kept. `bun run harness:env` does the same on its own (`--check` exits 1 while a stale copy remains, `--dry-run` changes nothing); `bun setup --variables` regenerates nothing.
@@ -84,7 +90,7 @@ The scaffold ships a **default** git strategy (`solo-main`) with `strategy_sourc
 
 > **"set up our git strategy"**
 
-That runs git-flow-master's Strategy Setup: it resolves your branching flow (solo-main / main-integration / sdet / others), asks the merge + hotfix + protection-policy questions, materializes any long-lived branches, and writes the `git_strategy:` block with `strategy_source: chosen`. Until you do this, the agent offers it on your first git intent, and the synced `pre-push` hook (`bun run git:policy verify`) prints any difference between the inherited policy and the host as warnings that point here, and lets the push through. No origin yet, or one that is not GitHub, is a warning too. Once the strategy is `chosen`, unaccepted drift blocks the push. When `git_strategy.policy.direct_push_to_protected` is `evidence`, the same hook first runs the evidence gate (`bun run edd gate`): it re-runs the contract's pre-push checks, writes the record and refuses the push when the gate fails. Under any other value the evidence gate does nothing.
+The installer step above already records the strategy and the push and merge policy. Strategy Setup covers the rest: it resolves your branching flow (solo-main / main-integration / sdet / others), asks the merge + hotfix + protection-policy questions, materializes any long-lived branches, and writes the `git_strategy:` block with `strategy_source: chosen`. Until you do this, the agent offers it on your first git intent, and the synced `pre-push` hook (`bun run git:policy verify`) prints any difference between the inherited policy and the host as warnings that point here, and lets the push through. No origin yet, or one that is not GitHub, is a warning too. Once the strategy is `chosen`, unaccepted drift blocks the push. When `git_strategy.policy.direct_push_to_protected` is `evidence`, the same hook first runs the evidence gate (`bun run edd gate`): it re-runs the contract's pre-push checks, writes the record and refuses the push when the gate fails. Under any other value the evidence gate does nothing.
 
 ### Where the run is shown
 

@@ -2286,6 +2286,73 @@ async function setupGithubRemote(state: InstallState, forceKeys: Set<string>): P
   }
 }
 
+// LINT.IfChange(git-policy-setup)
+interface GitPolicyAnswers { strategy: string, push: string, merge: string }
+
+interface GitPolicyQuestion {
+  id: string
+  title: string
+  default: string
+  choices: { value: string, label: string, day: string, rec?: boolean }[]
+}
+
+export function parseGitPolicyQuestions(stdout: string): GitPolicyQuestion[] | null {
+  try {
+    const qs = JSON.parse(stdout) as unknown;
+    if (!Array.isArray(qs) || qs.length !== 3) { return null; }
+    const ok = qs.every((q: Partial<GitPolicyQuestion>) => typeof q?.id === 'string' && typeof q.title === 'string' && typeof q.default === 'string' && Array.isArray(q.choices) && q.choices.length > 0);
+    return ok ? qs as GitPolicyQuestion[] : null;
+  }
+  catch { return null; }
+}
+
+export function gitPolicySetupArgs(answers: GitPolicyAnswers | null): string[] {
+  const base = ['scripts/git-policy.ts', 'setup', '--plan-only'];
+  return answers === null ? base : [...base, '--strategy', answers.strategy, '--push', answers.push, '--merge', answers.merge, '--write-policy'];
+}
+
+async function gitPolicyStep(state: InstallState, forceKeys: Set<string>): Promise<void> {
+  const key = '14-git-policy';
+  const title = tr('Estrategia de git y configuración de GitHub', 'Git strategy and GitHub configuration');
+  if (!shouldRunStep(state, key, forceKeys)) {
+    UI!.step({ phase: 'github', why: 'gh', title }).end('skipped', tr('ya hecho. Para cambiarlo: <code>bun run git:policy setup</code>', 'already done. To change it: <code>bun run git:policy setup</code>'));
+    return;
+  }
+  let answers: GitPolicyAnswers | null = null;
+  if (!NON_INTERACTIVE) {
+    const listed = spawnSync('bun', ['scripts/git-policy.ts', 'setup', '--questions-json'], { cwd: REPO_ROOT, encoding: 'utf8', timeout: 30_000 });
+    const questions = listed.status === 0 ? parseGitPolicyQuestions(listed.stdout) : null;
+    if (!questions) {
+      UI!.step({ phase: 'github', why: 'gh', title }).end('skipped', tr('no se pudieron leer las preguntas. Después: <code>bun run git:policy setup</code>', 'could not read the questions. Later: <code>bun run git:policy setup</code>'));
+      return;
+    }
+    const picked: string[] = [];
+    for (const q of questions) {
+      picked.push(await ask<string>({
+        id: `git-${q.id}`,
+        kind: 'select',
+        kicker: 'Git',
+        title: q.title,
+        spec: { options: q.choices.map(c => ({ value: c.value, label: c.label, desc: c.day, ...(c.rec ? { rec: true } : {}) })) },
+        default: q.default,
+      }));
+    }
+    answers = { strategy: picked[0]!, push: picked[1]!, merge: picked[2]! };
+  }
+  const step = UI!.step({ phase: 'github', why: 'gh', title, detail: tr('plan y comprobación de permisos: el instalador nunca escribe en GitHub', 'plan and permission check: the installer never writes to GitHub') });
+  const res = await runStreamed('bun', gitPolicySetupArgs(answers), { step, timeoutMs: 120_000 });
+  if (res.code !== 0) {
+    step.end('failed', tr('No se pudo preparar el plan. Corre <code>bun run git:policy setup</code> para ver el motivo.', 'The plan could not be prepared. Run <code>bun run git:policy setup</code> to see why.'));
+    return;
+  }
+  if (answers) { markStepDone(state, key); }
+  step.end(answers ? 'ok' : 'skipped', tr(
+    'Para aplicarlo en GitHub, o para el mensaje listo para quien administre el repositorio: <code>bun run git:policy setup</code> en una terminal.',
+    'To apply it on GitHub, or to get the ready message for whoever administers the repository: <code>bun run git:policy setup</code> in a terminal.',
+  ));
+}
+// LINT.ThenChange(INSTALLER.md, docs/core/empezar-aqui.html)
+
 // ============================================================================
 // Verify: external CLIs (information only: a missing one never stops the run)
 // ============================================================================
@@ -3734,6 +3801,7 @@ async function main(): Promise<void> {
     waiting?.end('ok');
   }
   await setupGithubRemote(state, forceKeys);
+  await gitPolicyStep(state, forceKeys);
   ui.phaseEnd('github');
 
   // ── verify ─────────────────────────────────────────────────────────────

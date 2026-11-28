@@ -360,6 +360,14 @@ bun setup</code></pre>
           correr los checks de pre-push del contrato, escribe el registro y rechaza el push si el
           gate falla. Con cualquier otro valor, el gate de evidencia no hace nada.
         </p>
+        <p>
+          El instalador ya te hace tres preguntas: la estrategia de ramas, quién confirma un push y
+          cómo se fusiona un pull request (Enter deja la opción recomendada). Guarda las respuestas,
+          muestra lo que necesita tu repositorio en GitHub y revisa tus permisos, sin escribir nada
+          en GitHub. Para aplicarlo corre <code>bun run git:policy setup</code> en una terminal: si
+          administras el repositorio te muestra el cambio y te pregunta antes de escribir; si no, te
+          deja un mensaje listo para quien lo administre, con los comandos <code>gh api</code>.
+        </p>
       </div>
       <p>
         Las conexiones con datos reales (Jira y Xray, la base de datos, la API) tienen su propia
