@@ -17,6 +17,7 @@ below names which one it applies to:
 ## Unreleased — Boilerplate
 
 ### Fixed (gates that let `main` go red, and the PR watcher on Linux)
+- **`repo:check` runs the installer manifest check and the tests under `.agents/skills/`** (`installer:manifest:check`, `skills:test`), and the unit-test workflow runs the skill tests too: a bare `bun test` skips dot directories. The manifest check does nothing outside the boilerplate's own checkout. **Upgrade step**: a project that kept its own `repo:check` appends `&& bun run skills:test`.
 - **The `edd` PR watcher reads its heartbeat age on Linux.** It tried the BSD form of `stat` first, which GNU `stat` answers with filesystem output before failing. Shared with the Dev boilerplate.
 
 ### Security (a publish by hand scrubs the results first)

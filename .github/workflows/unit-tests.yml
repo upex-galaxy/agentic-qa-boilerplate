@@ -108,6 +108,11 @@ jobs:
         if: steps.upstream.outputs.enforced == 'true'
         run: bun test
 
+      - name: Skill Tests
+        if: steps.upstream.outputs.enforced == 'true'
+        run: bun run skills:test
+        # The bare `bun test` above skips dot directories, so .agents/skills runs by path.
+
   ContractChecks:
     # One check per ci id of the evidence contract (evidence.static in
     # .agents/project.yaml), named by the id so a ruleset can require it. The
