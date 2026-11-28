@@ -316,9 +316,9 @@ TEST CASES
 
 DEFERRED (EXECUTION) CASES
   {None | TC-{id}: DEFERRED (execution) {date} by QA decision: {reason}; follow-up {KEY}}
-  {Story with a deferral:}
+  {Story, Tech Story or Tech Debt with a deferral:}
   {each deferred case's preflight record, preflight-gate.md §"Record"}
-  Owner OK: {owner}, {date}, {their comment link, or the relayed quote and its pointer} | pending
+  Owner OK: {owner}, {date}, {comment link | board answer event}; read back: {author}, {time} | pending | refused {answer, pointer}
   Story label: {label}, read back {date}
   Team notice: {comment link}; chat notice: {sent | skipped, no provider}
   Shift-right test plan: Shift-Right Test Plan: {sprint}
@@ -415,7 +415,7 @@ for each {TEST_KEY, result} in run:
 | A (Xray) | Every Test Run at a terminal status (PASS/FAIL/BLOCKED/ABORTED, not TODO/EXECUTING), or left `TODO` with its `DEFERRED (execution)` line in the ATR body, THEN the Test Execution issue transitioned via `{{jira.transition.test_execution.complete}}` to `{{jira.status.test_execution.close}}` (the status is named `Close`, not `Done`). A bug retest closes its `ReTest:` Execution with `{{jira.transition.re_test_execution.complete}}`. The terminal set is whatever THIS instance configures. An unexecuted case is not recorded FAILED, because that would report a defect nobody observed: its run stays `TODO` (or `BLOCKED` where the instance defines it) and the ATR body carries `DEFERRED (execution) <date> by QA decision: <reason>; follow-up <KEY>`. The Execution closes once every non-terminal run carries such a line (see `sprint-orchestration.md` Stage 3 step 3-bis). |
 | B (Jira-native) | `{{jira.acceptance_test_results}}` populated with full body (not placeholder), or the `## Acceptance Test Results (ATR)` fallback comment when the field is absent; every linked TC has a terminal Test Status, or stays `NOT RUN` with its `DEFERRED (execution)` line in the ATR. No Execution item exists at this altitude — state that as the N/A. |
 
-On a Story with a deferral the Execution (or the native ATR) and the ATP are completed only after the owner's OK (`shift-right-deferral.md` §3). A `DROPPED` case has no run to close: it left the run set (`preflight-gate.md` §"Verdicts").
+On a Story, Tech Story or Tech Debt with a deferral the Execution (or the native ATR) and the ATP are completed only after the owner's OK is opened at its pointer (`shift-right-deferral.md` §3). A `DROPPED` case has no run to close: it left the run set (`preflight-gate.md` §"Verdicts").
 
 Stage 3 closes the ATP and hands the ATS to Stage 4 (Modality jira-xray): ATP via `{{jira.transition.test_plan.complete}}` → `{{jira.status.test_plan.completed}}` (results are in; fire `{{jira.transition.test_plan.designed}}` first if Stage 1 left it at `planning`). The ATS stays at `{{jira.status.test_set.designing}}`: write the fields Stage 3 really knows (the analysis and the outline it authored) and leave the ROI-dependent ones empty, because the open ATS is the hand-off marker to Stage 4 and `/test-documentation` closes it after the ROI verdict (`artifact-lifecycle.md` §1). On an unmapped slug run the `artifact-lifecycle.md` §4 fallback and ask; a silent skip hides unfinished work.
 
@@ -446,7 +446,7 @@ Present Total / PASSED / FAILED / Pass Rate % as a 4-row summary when closing th
 
 ## 3. QA Comment Templates
 
-Four comment templates cover the two paths (Story, Bug) and two outcomes (pass, fail). Pick by ticket type and result. A Story with a deferral also gets the notice of §3.6, before its result comment.
+Four comment templates cover the two paths (Story, Bug) and two outcomes (pass, fail). Pick by ticket type and result. A Story, Tech Story or Tech Debt with a deferral also gets the notice of §3.6, before its result comment.
 
 **Real-link rule.** Any ticket a comment names as a blocker or filed defect (the `DEFECT:` line in Template B, back-references to bugs, blocking-ticket mentions in prose) is a real, clickable link to the issue: Markdown `[KEY: title](browse-URL)`, which becomes an ADF `link` mark. A bare plain-text key does not auto-link in ADF, and an unclickable blocker reference defeats the point of naming it. Mechanics and exceptions: `../../acli/references/adf-authoring-style.md` §Issue links. The traceability issuelink (§1.13, §5.1) is separate and still mandatory: the link mark serves the human reader, the issuelink serves the graph.
 
@@ -468,7 +468,7 @@ VERIFIED BEHAVIORS:
 {If any case was deferred:}
 DEFERRED (EXECUTION) CASES (not observed; QA decision, follow-up open):
 - TC-{id}: {reason} - follow-up {KEY}
-Owner OK: {owner}, {date}, {link or quoted pointer}
+Owner OK: {owner}, {date}, {comment link | board answer event}
 Story label: {label}
 Shift-right test plan: Shift-Right Test Plan: {sprint}
 
@@ -664,7 +664,7 @@ Record the gate outcome (hypothesis, cited fact, decision) in the ATR Observatio
 
 ### 5.1 Actions at close
 
-A Story with a deferral first runs `shift-right-deferral.md` §2-4: post the notice, check the owner's OK, then apply the label and read it back. With the OK pending or refused, the Story is waiting for owner OK (`shift-right-deferral.md` §3): actions 1, 2 and 4 do not run, so the ATR stays `active`, the ATP and ATS stay as they are, no pass result comment is posted, the Story stays in `{{jira.status.story.in_test}}` and the report reads `waiting for owner OK`. The shift-right plan rows follow action 4.
+A Story, Tech Story or Tech Debt with a deferral first runs `shift-right-deferral.md` §2-4: post the notice, open the owner's OK at its pointer, then apply the label and read it back. Its sign-off is `qa_sign_off`, or `test_finished` for the tech types. A refused OK returns the cases to `BLOCKED` (§3 there). A bug retest never closes on a deferral. With the OK pending or refused, the Story is waiting for owner OK (`shift-right-deferral.md` §3): actions 1, 2 and 4 do not run, so the ATR stays `active`, the ATP and ATS stay as they are, no pass result comment is posted, the Story stays in `{{jira.status.story.in_test}}` and the report reads `waiting for owner OK`. The shift-right plan rows follow action 4.
 
 1. ATR marked complete in TMS via `[TMS_TOOL]`, then transitioned to `{{jira.status.test_execution.close}}` per §2.4, together with the ATP (→ `{{jira.status.test_plan.completed}}`). Leaving either where `create` dropped it fails the Reporting DoD (sprint-testing anti-pattern S18). The ATS stays at `{{jira.status.test_set.designing}}` on purpose, as the hand-off to Stage 4.
 2. QA comment posted (Template A, B, C or D) via `[ISSUE_TRACKER_TOOL]`.
@@ -718,7 +718,7 @@ When some TCs pass and others fail, set the ATR result to `FAILED` (one or more 
 - [ ] Bugs, if any, filed with complete custom fields (§1.10) and human confirmation
 - [ ] ATR body written in the §2.2 format and uploaded via `[TMS_TOOL]` (or to `{{jira.acceptance_test_results}}` / the `## Acceptance Test Results (ATR)` fallback comment), and the synced cache materialized by `bun run jira:sync-issues`, not hand-written (§2.5)
 - [ ] Correct QA comment template (A/B/C/D) posted via `[ISSUE_TRACKER_TOOL]`, with real links for blocker or defect tickets (§3)
-- [ ] Story with a deferral: §3.6 notice posted, owner OK cited in the ATR, label read back before the transition, shift-right plan rows written (`shift-right-deferral.md`)
+- [ ] Story, Tech Story or Tech Debt with a deferral: §3.6 notice posted, owner OK opened at its pointer and cited in the ATR, label read back before the transition, shift-right plan rows written (`shift-right-deferral.md`)
 - [ ] Evidence Handoff emitted (§3.5) and written as the ATR's `EVIDENCE HANDOFF` section; each bug's one thumbnail embedded with `bun run evidence attach` and read back
 - [ ] Ticket transitioned (story PASSED -> `{{jira.status.story.qa_approved}}`; bug VERIFIED -> `{{jira.status.bug.closed}}`) and `context.md` updated with the Final Status block
 - [ ] Sprint-wide only: sprint `progress.md` entry appended and mirrored as one STP comment after the above

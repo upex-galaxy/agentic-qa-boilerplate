@@ -144,7 +144,7 @@ Run: <run id — ONLY when this worker was launched without a supervised dispatc
 - run every stage without returning to the prompt until the done-report is sent; stage boundaries are not checkpoints
 - no sprint-altitude writes, no token minting, no bulk sync
 - before writing a case BLOCKED or DEFERRED (execution): run the unblock preflight (`sprint-testing/references/preflight-gate.md`) and keep its record under the case
-- a Story with a deferred case: `ask` the conductor for the owner's OK and send your shift-right plan rows with your report; never write the plan (§10 "Shift-right deferrals")
+- a Story, Tech Story or Tech Debt with a deferred case: `ask` the conductor for the owner's OK and send your shift-right plan rows with your report; never write the plan (§10 "Shift-right deferrals")
 - no write to the Epic's `## Module Context (QA)` section: stage what you learned about the module under `## Module Learnings (candidate)` in your test-session-memory.md; the conductor publishes it
 - no heartbeats; report once at the end
 - if your own measurement contradicts an instruction in this brief or a later message, STOP and `ask` with both readings and your evidence — never comply silently and never deviate silently
@@ -303,7 +303,7 @@ A worker sends two things (`shift-right-deferral.md`):
 
 | Worker sends | As | Conductor does |
 |---|---|---|
-| the OK request: the Story, the notice comment link, the deferred case ids | `ask` | asks the owner and replies with the owner's message quoted, with its pointer. It never grants or words the OK itself |
+| the OK request: the Story, the notice comment link, the deferred case ids | `ask` | asks the owner to comment on the item or answer on the board, and replies with that pointer. It never grants, words or records the OK itself |
 | the plan rows, after its sign-off: Story, case, missing precondition, who owes, follow-up, owner OK pointer, state | in the done report | writes them into the shift-right test plan, its one writer, and reads the description back |
 
 A seed the preflight needs is also an `ask` (§2, "Fixture setup"); the case is not deferred until it is answered.
@@ -378,7 +378,7 @@ Against localhost, each worker reasons about its own issue's branch, and a worki
 - [ ] Each worker released and closed as it finishes
 - [ ] Per closed issue, written by the conductor after Stage 3 is verified: `progress.md` entry, STP comment, queue row, archive, tracker status read back, module learnings merged once per module
 - [ ] `claims.md` shows a release for every granted write claim
-- [ ] Each deferral OK relayed in the owner's own quoted words, and every worker's shift-right plan rows written and read back
+- [ ] Each deferral OK returned as a pointer to the owner's own comment or board answer, and every worker's shift-right plan rows written and read back
 
 ---
 
@@ -390,7 +390,7 @@ The conductor waits for a person at these points: the executors answer (§2), th
 |---|---|---|---|
 | N > 1 executors, test-case format | ask the user | the launching conductor decided it and put it in the brief | the delegating brief is the approval; without one, do the reversible prep (briefs, `launch.txt`), launch nothing and report |
 | round checkpoint | show the dashboard and wait | the launcher reads the dashboard and decides | write the dashboard to the sprint record, form the next round only if the brief covers it, otherwise stop and report |
-| deferral OK | ask the owner | the launcher asks the owner and relays the quoted message | only a brief quoting the owner's OK for those case ids; otherwise the Story stays in test and report |
+| deferral OK | ask the owner | the launcher asks the owner and returns the pointer | only an OK opened through a pointer the brief carries; otherwise the item stays in test and report |
 | third failed login | stop and ask | `escalation` to the conductor | stop the affected leg, mark `BLOCKED_AUTH_STALE`, report; no Jira write or message |
 
 A fleet worker never waits for a person: its `ask` goes to the conductor (§3, §10).

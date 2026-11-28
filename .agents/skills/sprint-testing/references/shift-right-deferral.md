@@ -4,7 +4,7 @@
 
 A **shift-right deferral** is `DEFERRED (execution)` on an in-scope case with an external cause. It differs from Shift-Right production observation (`iql-context/references/approaches.md`): this case is still owed and runs when its precondition arrives.
 
-The Story moves on without waiting, under a contract the team can read: what is untested, who owes what, and when it gets tested. Steps 2 to 6 apply to a Story QA signs off. A bug retest never closes on a deferral, and a ticket-free deferral stops at step 1 (§5.4 and §5.3 of the doctrine).
+The Story moves on without waiting, under a contract the team can read: what is untested, who owes what, and when it gets tested. **Story** below also means a Tech Story or Tech Debt: its sign-off is `{{jira.transition.tech_story.test_finished}}` or `{{jira.transition.tech_debt.test_finished}}` where a Story's is `{{jira.transition.story.qa_sign_off}}`, and while it is held it stays in its in-review status where a Story stays `{{jira.status.story.in_test}}`. Steps 2 to 6 apply to a Story, Tech Story or Tech Debt QA signs off. A bug retest never closes on a deferral, and a ticket-free deferral stops at step 1 (§5.4 and §5.3 of the doctrine).
 
 ## 1. Record
 
@@ -18,22 +18,35 @@ A chat notice is an interface with no provider behind it. Its inputs are a chann
 
 ## 3. The owner's OK
 
-Before the transition, the owner gives an explicit final OK on the list of deferred cases. The **owner** is the person who signs the transition (`stage-gates.md` §"Contract table"): the person who launched the session, or whom the brief names. The OK is evidence the agent cannot mint. It counts as the owner's comment on the Story, own message, or answer to a question that lists the case ids, given after the notice and covering those ids.
+Before the transition, the owner gives an explicit final OK on the list of deferred cases. The **owner** is the person who signs the transition (`stage-gates.md` §"Contract table"): the person who launched the session, or whom the brief names. The OK is evidence the agent cannot mint, and it counts only with a pointer that can be opened: the owner's comment on the Story, or the owner's answer on the Sprint Board, given after the notice and covering those case ids. An OK said in a chat or to a question prompt is recorded by the owner in one of those two before it counts.
 
 | Who runs | How the OK is obtained |
 |---|---|
-| A person is present | ask the owner with the case ids listed; a person who is not the owner only relays the answer, quoted, with its pointer |
-| A supervised worker or a subagent | escalate to the conductor or launcher, which asks the owner and relays the message quoted, with its pointer. It never answers the question itself |
-| A routine with nobody | only a delegating brief that quotes such an OK for those case ids, with its pointer; otherwise stop and report |
+| A person is present | ask the owner, with the case ids listed, to comment on the Story or answer on the board; anyone else only carries the pointer |
+| A supervised worker or a subagent | escalate to the conductor or launcher, which asks the owner and returns the pointer. It never answers the question itself |
+| A routine with nobody | only an OK it can open through a pointer its brief carries; otherwise stop and report |
 
-- **Not an OK**: a blanket advance approval, anything older than the notice, any wording by the agent, the conductor or the launcher session, and a comment an agent session posted, even from the owner's account.
-- The ATR cites who gave it, when and where.
+- **Not an OK**: a blanket advance approval, anything older than the notice, any wording by the agent, the conductor or the launcher session (a brief included: it never stands in for the owner's own words, a quote of them neither), and a comment an agent session posted, even from the owner's account.
+- The ATR cites the pointer and what was read behind it.
 - The OK covers the cases listed. A case deferred afterwards needs its own.
 - When every case is deferred and none was observed, the rule of `discovery-driven-doctrine.md` §5.4 holds: the owner decides.
 
+### Checking the OK and the record
+
+Before the sign-off the Stage 3 session, and in a fleet the round-close verifier again, open the pointer and record what they read:
+
+| Pointer | Read and record |
+|---|---|
+| Jira comment | its id, author and timestamp, read back from Jira: the author is the owner, the time is after the notice, the text covers the case ids, and no session of the run posted it |
+| Board answer | the `need.answer` event in the board's `events.ndjson`: its text, time and `by`. A `by` other than the owner does not count, an answer a conductor recorded for them included |
+
+They also open each deferred case's preflight record: it names what was tried, each attempt with an evidence pointer that opens, the external class and who owes it, verdict `DEFER`.
+
+A citation with no pointer that opens, or a record short of that, is the closed value: no `PASSED WITH DEFERRALS` and no sign-off. When the agents write under the owner's own account, the read-back cannot prove who typed: say so beside the record.
+
 ### Waiting for the owner OK
 
-A pending or refused OK is one state, **waiting for owner OK**:
+A pending OK is one state, **waiting for owner OK**:
 
 - The Story stays at `{{jira.status.story.in_test}}`, with no label and no pass result comment.
 - The ATR stays `active`, and no closing step touches the ATP or the ATS.
@@ -43,6 +56,14 @@ A pending or refused OK is one state, **waiting for owner OK**:
 
 A late OK resumes at §4, then §5.
 
+### A refused OK
+
+A refusal means the deferral is not accepted, and it counts however it arrives. It is not a pending OK:
+
+- The listed cases return to `BLOCKED`, each with the owner's answer recorded.
+- The Story stays in test, with no label, no pass result comment and no plan row; the ATR stays `active`.
+- The session keeps waiting on the precondition as with any block, and asks for an OK on those cases again only when something changed.
+
 ## 4. Mark and sign off
 
 In order:
@@ -50,9 +71,9 @@ In order:
 1. Add the label named by `qa.deferral.label` in `.agents/project.yaml` to the Story, keeping its other labels. With the key absent or `null`, ask once, together with the OK; never invent a label.
 2. Read the Story back and confirm the label.
 3. Set the result to `PASSED WITH DEFERRALS`, write the OK citation into the ATR, complete the ATR and post the QA comment.
-4. Fire `{{jira.transition.story.qa_sign_off}}`.
+4. Fire the sign-off: `{{jira.transition.story.qa_sign_off}}`, or the tech type's `test_finished`.
 
-QA moves the Story no further than `{{jira.status.story.qa_approved}}` and deploys nothing.
+QA moves the Story no further than `{{jira.status.story.qa_approved}}` (a tech item: `automated`) and deploys nothing.
 
 ## 5. The shift-right test plan
 
