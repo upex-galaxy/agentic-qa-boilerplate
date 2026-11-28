@@ -43,7 +43,8 @@ stale_limit() {
   echo "$lim"
 }
 beat_age() {
-  local m; m=$(stat -f %m "$BEAT" 2>/dev/null || stat -c %Y "$BEAT" 2>/dev/null) || { echo 999999; return; }
+  # GNU form first: GNU stat reads -f as "file system status" and prints to stdout before it fails.
+  local m; m=$(stat -c %Y "$BEAT" 2>/dev/null || stat -f %m "$BEAT" 2>/dev/null) || { echo 999999; return; }
   echo $(( $(date +%s) - m ))
 }
 unread() {

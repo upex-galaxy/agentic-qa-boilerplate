@@ -16,6 +16,9 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Fixed (gates that let `main` go red, and the PR watcher on Linux)
+- **The `edd` PR watcher reads its heartbeat age on Linux.** It tried the BSD form of `stat` first, which GNU `stat` answers with filesystem output before failing. Shared with the Dev boilerplate.
+
 ### Security (a publish by hand scrubs the results first)
 - **`publish-allure-pages.ts` and `publish-allure-portal.ts` scrub the results directory before they generate.** Both reuse the `report:scrub` redaction, in place, so a publisher run by hand no longer skips the step the suite workflows run. A scrub that fails stops the publish before a report is generated or anything is sent. It cleans the text attachments only and finds secrets by shape, by name and by the values that machine holds. It leaves `*-result.json` files, traces, images and videos as they are. A second scrub of the same directory changes nothing.
 - **The `test-automation` skill describes `allure:run` as it runs**: tests, attachment scrub, `allure generate`.
