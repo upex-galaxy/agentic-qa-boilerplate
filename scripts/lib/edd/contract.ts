@@ -11,7 +11,7 @@ export type Depth = typeof DEPTHS[number];
 export const WHERE = ['pre-push', 'ci'] as const;
 
 export interface StaticCheck { id: string, cmd: string, where: string[] }
-export interface AgenticCheck { id: string, kind: string, tool: string | null, envs: string[], min_depth: Depth }
+export interface AgenticCheck { id: string, kind: string, tool: string | null, envs: string[], min_depth: Depth, paths?: string[] }
 export interface DepthRule { paths: string[], depth: Depth }
 export interface Contract {
   include: string[]
@@ -101,7 +101,8 @@ function agenticList(v: unknown, what: string): AgenticCheck[] {
     if (!isObject(e) || typeof e.id !== 'string' || !e.id || typeof e.kind !== 'string' || !e.kind) { throw new ContractError(`${what}[${i}] needs a string id and kind`); }
     const envs = strings(e.envs, `${what}[${i}].envs`);
     if (envs.length === 0) { throw new ContractError(`${what}[${i}].envs must name at least one environment`); }
-    return { id: e.id, kind: e.kind, tool: typeof e.tool === 'string' ? e.tool : null, envs, min_depth: depthOf(e.min_depth ?? 'standard', `${what}[${i}].min_depth`) };
+    const paths = strings(e.paths, `${what}[${i}].paths`);
+    return { id: e.id, kind: e.kind, tool: typeof e.tool === 'string' ? e.tool : null, envs, min_depth: depthOf(e.min_depth ?? 'standard', `${what}[${i}].min_depth`), ...(paths.length > 0 ? { paths } : {}) };
   });
 }
 

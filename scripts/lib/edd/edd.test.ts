@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, utimesSync, writeFile
 import { join } from 'node:path';
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { AGENTIC_SCHEMA, collectChecks, evidenceMessage, parseEvidenceMessage, readEvidenceMessage } from './attest.ts';
+import { AGENTIC_SCHEMA, collectChecks, evidenceMessage, parseEvidenceMessage, readEvidenceMessage, testRunProblems } from './attest.ts';
 import { contractDigest, ContractError, gateKeysTouched, loadContract, readProjectDoc, refReader, sha256, treeReader } from './contract.ts';
 import { changeDepth, gatePathsTouched, requiredAgentic } from './depth.ts';
 import { makeRepo, projectYaml } from './fixture.ts';
@@ -477,5 +477,69 @@ describe('record', () => {
     const md = renderMarkdown(signed);
     expect(md).toContain('signed by an allowed key');
     expect(md).toContain('it does not stop an agent that deliberately forges a check');
+  });
+});
+
+describe('a test-run check asks for a run of the changed tests', () => {
+  const specs = { id: 'changed-specs', kind: 'test-run', tool: 'playwright', envs: ['local'], min_depth: 'standard' as const, paths: ['tests/**'] };
+  const screens = { id: 'board-screens', kind: 'screenshots', tool: 'playwright-cli', envs: ['local'], min_depth: 'light' as const, paths: ['cli/sprint-board/app/**'] };
+
+  test('a check with paths is required only when the change touches them', () => {
+    expect(requiredAgentic([specs, screens], 'standard', ['tests/e2e/login.spec.ts']).map(c => c.id)).toEqual(['changed-specs']);
+    expect(requiredAgentic([specs, screens], 'standard', ['cli/sprint-board/app/styles.css']).map(c => c.id)).toEqual(['board-screens']);
+    expect(requiredAgentic([specs, screens], 'standard', ['.husky/pre-push'])).toEqual([]);
+    expect(requiredAgentic([{ ...specs, paths: undefined }], 'standard', ['.husky/pre-push']).map(c => c.id)).toEqual(['changed-specs']);
+  });
+
+  test('paths parse from the contract and stay out of the digest when absent', () => {
+    const r = repo();
+    r.write('.agents/project.yaml', projectYaml('evidence:\n  agentic:\n    - { id: changed-specs, kind: test-run, envs: [local], paths: [\'tests/**\'] }\n    - { id: screens, kind: screenshots, envs: [local] }\n'));
+    const loaded = loadContract(treeReader(r.dir), 'wt');
+    expect(loaded.contract.agentic[0].paths).toEqual(['tests/**']);
+    expect('paths' in loaded.contract.agentic[1]).toBe(false);
+  });
+
+  test('the report must show tests and no failure: JUnit XML or Playwright JSON', () => {
+    const r = repo();
+    const f = (name: string, text: string): string => { const p = join(r.dir, name); writeFileSync(p, text); return p; };
+    expect(testRunProblems([f('ok.xml', '<testsuites><testsuite name="a" tests="3" failures="0" errors="0"></testsuite></testsuites>')])).toEqual([]);
+    expect(testRunProblems([f('red.xml', '<testsuite name="a" tests="3" failures="1" errors="0"></testsuite>')])).toEqual(['the test-run report has 1 failing test(s)']);
+    expect(testRunProblems([f('ok.json', JSON.stringify({ stats: { expected: 2, unexpected: 0, flaky: 0 } }))])).toEqual([]);
+    expect(testRunProblems([f('skipped.xml', '<testsuite tests="3" skipped="3" failures="0"></testsuite>')])).toEqual(['the test-run report ran no test']);
+    expect(testRunProblems([f('empty.json', JSON.stringify({ stats: { expected: 0, unexpected: 0 } }))])).toEqual(['the test-run report ran no test']);
+    expect(testRunProblems([f('trace.zip', 'zip')])[0]).toContain('no JUnit XML or Playwright JSON report');
+  });
+
+  test('attest refuses a test-run folder whose report is red', () => {
+    const r = repo();
+    const root = join(r.dir, 'art');
+    mkdirSync(join(root, 'changed-specs', 'local'), { recursive: true });
+    writeFileSync(join(root, 'changed-specs', 'local', 'results.xml'), '<testsuite tests="2" failures="1"></testsuite>');
+    writeFileSync(join(root, 'changed-specs', 'local', 'verdict.json'), JSON.stringify({ verdict: 'pass', verdict_by: 't' }));
+    const { problems } = collectChecks({ root, required: [specs], depth: 'standard', subjectTime: 0, environments: { local: { web_url: null } } });
+    expect(problems).toEqual(['changed-specs/local: the test-run report has 1 failing test(s)']);
+  });
+});
+
+describe('the first signer never vouches for the rest of its own change', () => {
+  test('evidence signed by the key the change itself adds is not trusted', () => {
+    const r = repo();
+    const keyDir = join(r.dir, '..', 'key');
+    mkdirSync(keyDir);
+    const gen = Bun.spawnSync(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '', '-C', 'test', '-f', join(keyDir, 'k')], { stdout: 'pipe', stderr: 'pipe' });
+    expect(gen.exitCode).toBe(0);
+    const pub = readFileSync(join(keyDir, 'k.pub'), 'utf8').trim().split(/\s+/).slice(0, 2).join(' ');
+    const contract = 'evidence:\n  agentic:\n    - { id: screens, kind: screenshots, envs: [local], min_depth: standard }\n  depth:\n    default: none\n    rules:\n      - { paths: [\'.agents/edd/**\', \'app/**\'], depth: standard }\n';
+    const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml(contract) });
+    const code = r.commit('feat: x\n\nSession: author', { '.agents/edd/allowed_signers': `test@example.com namespaces="git" ${pub}\n`, 'app/a.ts': '1\n' });
+    const loaded = loadContract(refReader(r.dir, base), base);
+    const payload = { schema: AGENTIC_SCHEMA, subject: code, patch_id: patchId(r.dir, base, code), depth: 'standard' as const, contract_digest: loaded.digest, checks: [{ id: 'screens', verdict: 'pass', verdict_by: 'tester', env: 'local', artifacts: [{ path: 'a.png', sha256: 'x', bytes: 1 }] }] };
+    const msg = join(r.dir, '..', 'EVMSG');
+    writeFileSync(msg, evidenceMessage(payload, 'wt', 'author'));
+    r.git('-c', 'gpg.format=ssh', '-c', `user.signingkey=${join(keyDir, 'k.pub')}`, 'commit', '-q', '--allow-empty', '-S', '-F', msg);
+    const head = r.git('rev-parse', 'HEAD');
+    const v = verifyAgentic({ cwd: r.dir, base, head, loaded, allowedSigners: null });
+    expect(v.signature).not.toBe('valid');
+    expect(v.ok).toBe(false);
   });
 });

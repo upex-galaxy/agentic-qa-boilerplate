@@ -270,8 +270,9 @@ async function attest(): Promise<number> {
   const contractSha = resolveCommit(CWD, contractRef) ?? base;
   const loaded = load(refReader(CWD, contractSha), contractSha === base ? baseRef : contractRef);
   for (const w of loaded.warnings) { say(`edd: warning: ${w}`); }
-  const { depth } = changeDepthWithKeys(CWD, base, changedFiles(CWD, base, subject), subject, loaded, raise as Depth | null);
-  const required = requiredAgentic(loaded.contract.agentic, depth);
+  const files = changedFiles(CWD, base, subject);
+  const { depth } = changeDepthWithKeys(CWD, base, files, subject, loaded, raise as Depth | null);
+  const required = requiredAgentic(loaded.contract.agentic, depth, files);
   if (required.length === 0) {
     say(`edd attest: depth ${depth} requires no agentic evidence; nothing to attest.`);
     return 0;

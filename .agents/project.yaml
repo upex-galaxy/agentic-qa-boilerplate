@@ -177,7 +177,7 @@ updater:
   declined_hooks: []
 
 evidence:
-  include: [test-automation, sprint-testing]
+  include: []
   static:
     - { id: format, cmd: bun run format:check, where: [pre-push, ci] }
     - { id: lint, cmd: bun run lint:check, where: [pre-push, ci] }
@@ -190,6 +190,12 @@ evidence:
       tool: playwright-cli
       envs: [local]
       min_depth: light
+    - id: changed-specs
+      kind: test-run
+      tool: playwright
+      envs: [local, staging]
+      min_depth: standard
+      paths: ['tests/**', 'playwright.config.ts']
   depth:
     default: none
     rules:

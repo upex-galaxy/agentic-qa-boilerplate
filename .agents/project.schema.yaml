@@ -330,11 +330,11 @@ updater:
 # Evidence contract (EDD): what must be proven before a push or merge. Read by `bun run edd`
 # (scripts/edd.ts). `bun run git:policy` reads only the static[].id entries with `where` including
 # `ci`, as required check contexts beside `edd/evidence`. Not the same as board.evidence, which
-# lists hosts an evidence link may point at. Changing this block is a gate-key edit: the record marks it (touches_gate), nothing stops on it.
+# lists hosts an evidence link may point at. Changing this block is a gate-key edit: it takes depth standard and the record marks it (touches_gate).
 evidence:
   # Skills whose `.agents/skills/<skill>/evidence.yaml` fragment adds checks. Fragments merge in this
   # order, then this block's own lists; duplicates by `id` resolve to this block.
-  include: [test-automation, sprint-testing]
+  include: []
   # Commands the gate re-runs. Each entry: {id, cmd, where}. `where` is a list of pre-push | ci.
   static:
     - { id: format, cmd: bun run format:check, where: [pre-push, ci] }
@@ -342,15 +342,23 @@ evidence:
     - { id: types, cmd: bun run types:check, where: [pre-push, ci] }
     - { id: unit, cmd: bun test, where: [pre-push, ci] }
     - { id: repo-gates, cmd: bun run repo:check, where: [ci] }
-  # Checks an agent session runs and attests. Each entry: {id, kind, tool, envs, min_depth}.
+  # Checks an agent session runs and attests. Each entry: {id, kind, tool, envs, min_depth, paths}.
   # kind: what is produced (e.g. screenshots, exploratory, test-run, api-calls). tool: the tool that produces it.
   # envs: environments to run against. min_depth: lowest depth that requires the check.
+  # paths: optional globs; the check is required only when the change touches one. A test-run check
+  # attests a JUnit XML or Playwright JSON report of the changed tests: at least one test, none failing.
   agentic:
     - id: board-screens
       kind: screenshots
       tool: playwright-cli
       envs: [local]
       min_depth: light
+    - id: changed-specs
+      kind: test-run
+      tool: playwright
+      envs: [local, staging]
+      min_depth: standard
+      paths: ['tests/**', 'playwright.config.ts']
   # Proportional depth. Order: none < light < standard < deep. The agent may raise depth for a run,
   # never lower it; lowering means editing this block, a gate-key edit the record marks.
   depth:

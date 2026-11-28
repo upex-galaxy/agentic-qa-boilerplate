@@ -40,9 +40,10 @@ export function raiseForGateKeys(d: { depth: Depth, reasons: string[] }, keys: s
   return { depth: 'standard', reasons: [...d.reasons, `gate keys changed (${keys.join(', ')}) -> standard`] };
 }
 
-export function requiredAgentic(agentic: AgenticCheck[], depth: Depth): AgenticCheck[] {
+export function requiredAgentic(agentic: AgenticCheck[], depth: Depth, files: string[] | null = null): AgenticCheck[] {
   if (depth === 'none') { return []; }
-  return agentic.filter(c => depthRank(c.min_depth) <= depthRank(depth));
+  return agentic.filter(c => depthRank(c.min_depth) <= depthRank(depth)
+    && (!c.paths || files === null || files.some(f => c.paths!.some(p => globMatch(p, f)))));
 }
 
 export function gatePathsTouched(files: string[], paths: string[]): string[] {

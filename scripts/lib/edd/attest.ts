@@ -20,6 +20,38 @@ const KIND_FILES: Record<string, RegExp> = {
   'api-calls': /\.(?:har|json)$/i,
 };
 const TIMED = /\.(?:png|jpe?g|webp|zip|har)$/i;
+const REPORT = /\.(?:xml|json)$/i;
+
+export function testRunProblems(files: string[]): string[] {
+  let tests = 0;
+  let failing = 0;
+  let read = 0;
+  for (const f of files.filter(x => REPORT.test(x))) {
+    const text = readFileSync(f, 'utf8');
+    if (f.toLowerCase().endsWith('.xml')) {
+      const suites = [...text.matchAll(/<testsuite\b[^>]*>/g)].map(m => m[0]);
+      if (suites.length === 0) { continue; }
+      read++;
+      for (const s of suites) {
+        const n = (k: string): number => Number(s.match(new RegExp(`\\b${k}="(\\d+)"`))?.[1] ?? 0);
+        tests += n('tests') - n('skipped');
+        failing += n('failures') + n('errors');
+      }
+      continue;
+    }
+    let stats: { expected?: unknown, unexpected?: unknown, flaky?: unknown } | undefined;
+    try { stats = (JSON.parse(text) as { stats?: typeof stats }).stats; }
+    catch { stats = undefined; }
+    if (!stats || typeof stats.expected !== 'number') { continue; }
+    read++;
+    const unexpected = typeof stats.unexpected === 'number' ? stats.unexpected : 0;
+    tests += stats.expected + unexpected + (typeof stats.flaky === 'number' ? stats.flaky : 0);
+    failing += unexpected;
+  }
+  if (read === 0) { return ['no JUnit XML or Playwright JSON report of the run (a testsuite element, or stats in the JSON)']; }
+  if (tests === 0) { return ['the test-run report ran no test']; }
+  return failing > 0 ? [`the test-run report has ${failing} failing test(s)`] : [];
+}
 const TRACE = /\.zip$/i;
 
 function walk(dir: string): string[] {
@@ -103,7 +135,10 @@ export function collectChecks(input: CollectInput): { checks: AttestedCheck[], p
       const re = KIND_FILES[c.kind];
       if (files.length === 0) { problems.push(`${c.id}/${env}: no artifact files`); }
       else if (re && !files.some(f => re.test(f))) { problems.push(`${c.id}/${env}: no artifact of kind ${c.kind} (${re.source})`); }
-      for (const f of files.filter(f => TIMED.test(f))) {
+      if (c.kind === 'test-run' && files.length > 0) {
+        for (const p of testRunProblems(files)) { problems.push(`${c.id}/${env}: ${p}`); }
+      }
+      for (const f of files.filter(f => TIMED.test(f) || (c.kind === 'test-run' && REPORT.test(f)))) {
         if (statSync(f).mtimeMs / 1000 < input.subjectTime) { problems.push(`${c.id}/${env}: ${relative(envDir, f)} is older than the subject commit`); }
       }
       const traces = files.filter(f => TRACE.test(f));
