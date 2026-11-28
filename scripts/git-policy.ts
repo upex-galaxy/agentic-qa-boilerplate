@@ -1573,6 +1573,9 @@ export interface MergeInputs {
 
 export function mergeDecision(i: MergeInputs): { code: 0 | 1, message: string } {
   const at = i.sha.slice(0, 12);
+  if (!['auto', 'human-approves', 'manual'].includes(i.mode)) {
+    return { code: 1, message: `${i.base}: merge_mode ${JSON.stringify(i.mode)} at the base is not auto, human-approves or manual, so the agent does not merge; fix the value in .agents/project.yaml.` };
+  }
   if (i.mode === 'manual') {
     return { code: 1, message: `${i.base}: merge_mode is manual at the base, so a person merges; the agent stops after opening the pull request.` };
   }

@@ -1152,6 +1152,13 @@ describe('mergeDecision: which merge verify --merge allows', () => {
     expect(mergeDecision({ ...base, guard: required, mode: 'manual' }).code).toBe(1);
   });
 
+  test('an unknown merge_mode fails closed', () => {
+    for (const mode of ['Manual', 'human-approve', '']) {
+      expect(mergeDecision({ ...base, mode }).code).toBe(1);
+      expect(mergeDecision({ ...base, guard: required, mode }).code).toBe(1);
+    }
+  });
+
   test('human-approves on a guarded base needs the host to require a last-push approval, or a read approval of the head', () => {
     expect(mergeDecision({ ...base, guard: required, mode: 'human-approves' }).code).toBe(1);
     expect(mergeDecision({ ...base, guard: required, mode: 'human-approves', hostApproves: true }).code).toBe(0);
