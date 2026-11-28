@@ -144,7 +144,7 @@ h3 {
   margin: 0;
   font-family: var(--serif);
   font-weight: 600;
-  letter-spacing: -0.005em;
+  letter-spacing: -0.006em;
 }
 [hidden] {
   display: none !important;
