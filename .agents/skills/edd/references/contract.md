@@ -8,7 +8,7 @@ The contract says which checks a delivery needs, how deep the agentic part goes 
 |---|---|---|
 | `evidence.include` | skills whose `evidence.yaml` fragment adds checks | merged in list order, then the project's own lists; the same `id` twice keeps the project's |
 | `evidence.static` | `{id, cmd, where}` rows | `where` is `pre-push`, `ci` or both. Commands come from `package.json`, never invented |
-| `evidence.agentic` | `{id, kind, tool, envs, min_depth}` rows | `kind` names the artifact the check must leave (`screenshots`, `exploratory`, `test-run`, `api-calls`) |
+| `evidence.agentic` | `{id, kind, tool, envs, min_depth, paths}` rows | `kind` names the artifact the check must leave (`screenshots`, `exploratory`, `test-run`, `api-calls`). `paths` (optional globs) makes the check required only when the change touches one. A `test-run` check leaves a JUnit XML or Playwright JSON report of the changed tests: at least one test, none failing |
 | `evidence.depth.default` | depth of a file no rule matches | |
 | `evidence.depth.rules` | `{paths, depth}` rows | the first matching rule decides a file's depth |
 | `evidence.human.paths`, `evidence.human.keys` | paths and `project.yaml` keys that make up the gate itself | a match sets `touches_gate` in the record and adds one line to the PR's evidence block, information for the reader that stops nothing. These paths take depth `standard` or deeper through a depth rule, and a repo on `human-approves` lists them in CODEOWNERS |

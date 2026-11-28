@@ -30,7 +30,7 @@ How a person sees it: in a PR, the body's evidence section is a fresh verificati
 
 ## The evidence commit
 
-After the agentic run, the author or tester session runs `bun run edd attest`. The script, not the agent, hashes every artifact, checks that each required agentic check left at least one artifact of its `kind`, that traces and screenshots are newer than the code commit and that traces hit the host of the declared environment. Then it creates an empty, signed commit on top of the code.
+After the agentic run, the author or tester session runs `bun run edd attest`. The script, not the agent, hashes every artifact, checks that each required agentic check left at least one artifact of its `kind`, that traces and screenshots are newer than the code commit, that traces hit the host of the declared environment, and that a `test-run` check's JUnit XML or Playwright JSON report ran at least one test with none failing. Then it creates an empty, signed commit on top of the code.
 
 The layout `attest` reads: one folder per required check and environment, `.session/evidence/artifacts/<subject-sha>/<check-id>/<env>/`, holding the artifact files and a `verdict.json` with `verdict` (`pass` to deliver), an optional `verdict_by` and an optional `claim`. At depth `deep` every environment of the check needs its folder; below it, one is enough. The tester passes its own label with `bun run edd attest --tester <label>` (or `EDD_TESTER`): it becomes the `verdict_by` of every folder whose `verdict.json` names none, a different `verdict_by` in the file is refused, and at depth `standard` or deeper it must differ from the `Session:` trailer of every code commit. A subagent tester uses `<author label>/tester`:
 
@@ -58,12 +58,14 @@ The check `edd/evidence` runs the verifier from the **default** branch's code (`
 |---|---|
 | the evidence commit changes no file (its tree equals its parent's) | evidence never smuggles code |
 | its subject is the commit below it, or the patch-id still matches | a clean merge of the base keeps the evidence; any change to the PR's own diff voids it |
-| the signature is valid against the allowed-signers list read from the base | a PR cannot add its own key |
+| the signature is valid against the allowed-signers list read from the base | a PR cannot add its own key once a signer is listed |
 | the contract digest matches the base's contract | a PR cannot weaken its own contract |
 | recomputed depth is not above the attested depth | the attest cannot under-declare |
 | at depth `standard` or deeper, every `verdict_by` differs from the `Session:` trailer of the code commits | the author is not its own tester |
 
 Static checks run as ordinary required CI jobs next to it.
+
+**The first signer is trusted on first use.** The installer and `bun run agents:setup` write the user's own public signing key (`git config user.signingkey`) to `.agents/edd/allowed_signers` with `bun run edd signers`, and say what to configure when there is none. While the base lists no signer, the change that adds the file needs no signature for it; anything else in that change that needs agentic evidence still needs evidence signed by a key the base lists, so the first signer lands in a change of its own. From then on only a key already listed at the base can add another. `bun sync` never writes the file.
 
 ## What this can and cannot guarantee
 

@@ -46,6 +46,8 @@ The host must allow the direct push: no PR rule on that branch, or a declared by
 
 ## Flow 2: feature branch and PR
 
+In a public repository GitHub runs `pull_request_target`, the trigger of the `edd/evidence` verifier, only where an Actions event policy allows it. A repository admin allows it for `.github/workflows/evidence.yml` (Settings > Actions > Policies, an active policy that restricts the events of that workflow to `pull_request_target`). `bun run git:policy verify` and the `setup` preflight report whether it may run.
+
 ```
 branch -> commits -> agentic run -> attest -> push branch -> gh pr create
   -> bun run git:policy verify --merge <base>
