@@ -109,7 +109,7 @@ approval to advance, while any CAUTION or NO-GO is signed by a person.
 | **Planning** | Creates ATS → ATP → ATR set-first, derives TCs or outlines per modality, decides the UI/API/DB surfaces by triage + veto + risk score | The Story Explanation checkpoint (the skill explains the story and waits) | ATP as a Test Plan item, ATR carrying its Test Environment (hard gate), coverage stated on both axes | **2** | **none** |
 | **Execution** | Runs smoke as Go/No-Go, executes the outlines, explores past them across the trifuerza, proposes bugs with derived severity | The triage of every bug and the **filing** of every bug; any security/auth severity recalibration | Screenshots under the PBI `evidence/` folder, smoke demonstrably run first | **3** | **none** |
 | **Execution** (exploration without a ticket) | Writes the charter, fans out recon across UI / API / DB, refutes every Medium+ anomaly, settles disagreements in the main thread, marks every candidate NEW / WEAK / COVERED against existing coverage, drafts bugs and coverage Tech Story proposals | The charter (unless the request already said go); every oracle answer ("is this intended?"); the **filing** of every bug; every coverage Tech Story; every module-context write | `charter.md`, one finding file per finding (confirmed and refuted), `candidate-scenarios.md` with marks and outcomes, captures verified on disk, `created_rows` re-read gone | **3** | **none**: the Refute step is an internal adversarial check, not a separate verifier |
-| **Reporting** | Fills the ATR, writes the QA comment, creates and verifies the traceability links | The workflow transition (`qa_sign_off` / `defect_reported`) | ATR as a Test Execution item, links resolved and verified in direction | **2** | **none** |
+| **Reporting** | Fills the ATR, writes the QA comment, creates and verifies the traceability links | The workflow transition (`qa_sign_off` / `defect_reported`); on a Story with any `DEFERRED (execution)` case, also the explicit OK on the deferral list, given before the transition | ATR as a Test Execution item, links resolved and verified in direction; with a deferral, the notice comment and the cited OK | **2** | **none** |
 | **Sprint close** | Creates or completes the sprint STR (first-to-arrive creates it, the other completes it), sets its Test Environment, links STR → STP via the `testPlan` edge and STR → RTP (dual membership) | The STP's closure: its final scope/progress and the transition to its terminal state | STR as a Test Execution item carrying its Test Environment, STR → STP and STR → RTP links resolved, STP at its terminal state | **2** | **none** |
 | **Documentation** | Derives scenarios by technique, scores ROI, proposes Candidate / Manual / Deferred, persists only the regression-worthy ones | **Every ROI verdict**, the regression epic, the Test Set | ROI score per scenario; the >50% Candidate/Manual alarm answered | **2** | **recommended**: a second agent re-reads the verdicts against the ATR |
 | **Automation** | Takes only TCs with a signed Candidate verdict (the TC source gate; never creates or scores a Test), writes `spec.md` + `automation-plan.md`, then KATA code with `@atc`, then runs the three verifiers and the two axis reviewers (spec and standards) and hands off to `/git-flow-master`, which opens the PR (`/test-automation` never runs git itself) | The plan **before a line of code**; the merge; the call at the third revision loop | Tests green, types clean, lint clean, `@atc` ids resolving to real tickets, manifest fresh | **2 → 3** inside the approved plan | **required**: `/pr-review-lead` or `/judgment-day`, in a clean context |
@@ -134,7 +134,9 @@ as the table says. A supervised worker raises the signature to its conductor or
 launcher, which holds the gate. A routine with nobody present takes the signature
 from the delegating brief when the brief covers that decision. Without one it does the
 reversible work, stops before any outward or irreversible action (a Jira write, a push,
-a message), and reports what is waiting for a signature.
+a message), and reports what is waiting for a signature. The shift-right deferral OK is narrower: it is the
+owner's own words, so a conductor or a brief only relays it
+(`sprint-testing/references/shift-right-deferral.md` §3).
 
 ### Feedforward and feedback
 
@@ -167,8 +169,8 @@ terminal there) is `artifact-lifecycle.md` §1; resolve against it and do not re
 | **Planning** | ATP · ATS · ATR · sprint TCs (xray) · STP | ATP at `ready` (via `designed`); ATS still `designing` (open until Documentation closes it); ATR `active` **carrying its Test Environment**; TCs at `ready` (via `start_design` → `ready_to_run`), parented to **QA Test Repository**; STP at `ready` once the sprint scope is set |
 | **Execution** | Story / coverable | at `in_test` (via `start_testing`), `qa_assignee` set (filled in Shift-Left; self when still empty) |
 | **Execution** (exploration without a ticket) | filed Bug / Improvement · coverage Tech Story (only those a person approved) | each filed issue at `open`, parented to **QA Defect Management**; each coverage Tech Story at the status its `create` transition lands it, parented to **QA Test Repository** (`artifact-lifecycle.md` §1, row "Coverage Tech Story"); no Test is created here |
-| **Reporting** | ATR · ATS · ATP · Story · filed Bug/Defect/Improvement | ATR at `close` (via `complete`) when the Story ends `qa_approved`; ATR stays `active` when the Story ends `blocked`, so a later retest appends to it (`artifact-lifecycle.md` §1); ATS still `designing`, with the fields Reporting knows written (the hand-off marker to Documentation); ATP at `completed` (via `complete`); Story at `qa_approved` (`{{jira.quality_token_usage}}` written when a figure is available) or `blocked`; each filed issue at `open`, parented to **QA Defect Management** |
-| **Sprint close** | STP · STR · open ATRs of the sprint | STP at `completed` (via `complete`); STR at `close` (via `complete`) after the verdict is written; sprint ATRs whose Story is already `done` at close (via `complete`) — read the Story status live, not from the STP or the local PBI cache; ATRs whose Story is still open (`blocked`, in test, carried to the next sprint) stay `active` |
+| **Reporting** | ATR · ATS · ATP · Story · filed Bug/Defect/Improvement · shift-right test plan (only with a deferral) | ATR at `close` (via `complete`) when the Story ends `qa_approved`; ATR stays `active` when the Story ends `blocked`, so a later retest appends to it (`artifact-lifecycle.md` §1), and while a deferral OK is pending; ATS still `designing`, with the fields Reporting knows written (the hand-off marker to Documentation); ATP at `completed` (via `complete`); Story at `qa_approved` (`{{jira.quality_token_usage}}` written when a figure is available) or `blocked`; each filed issue at `open`, parented to **QA Defect Management**; the shift-right test plan open, parented to **QA Test Artifacts**, one row per deferred case (`sprint-testing/references/shift-right-deferral.md`) |
+| **Sprint close** | STP · STR · open ATRs of the sprint · shift-right test plan | STP at `completed` (via `complete`); STR at `close` (via `complete`) after the verdict is written; sprint ATRs whose Story is already `done` at close (via `complete`) — read the Story status live, not from the STP or the local PBI cache; ATRs whose Story is still open (`blocked`, in test, carried to the next sprint) stay `active`; the shift-right test plan stays open past the close until every row is `PASSED` |
 | **Documentation** | the Story's ATS · promoted TCs · RTP · feature TS · Preconditions | the Story's ATS at `close` (via `done`) once the ROI verdict has filled the fields its close demands; Candidate TCs at `candidate` (via `automation_review_from_ready` → `approve_to_automate`); Manual TCs at `manual` (via `for_manual`, **from `ready`; there is no `in_review` to `manual` edge**); Deferred TCs stay `ready`; RTP at `ready` and **stays there** (long-lived, never `completed`); feature TS stays `designing`; Preconditions stay `active` (no transition exists) |
 | **Automation** | TCs in scope | `in_automation` at Code start (via `start_automation`); `pull_request` when the ticket PR opens (via `create_pr`); `automated` ONLY once the code is on the production branch (`git_strategy.branches.production`) with CI green (via `merged`), never at a trunk or integration merge (`discovery-driven-doctrine.md` §6) |
 | **Regression** | RTR · STR · RTP | RTR at `close` (via `complete`) after the verdict comment is posted on it, one RTR per verdict; STR at `close` (via `complete`) only when the run is the sprint close; RTP **untouched at `ready`**: a regression run never completes the plan it ran from |
@@ -257,6 +259,8 @@ the stage NEEDS REVISION.
 [ ] Evidence captured under the PBI folder; outline/Test status updated: PASSED / FAILED only
     on observation in the precondition's environment, else NOT RUN with its ladder reason
     (`discovery-driven-doctrine.md` §5)
+[ ] Every `BLOCKED` / `DEFERRED (execution)` case carries its preflight record, and every dropped
+    case its out-of-scope line (`sprint-testing/references/preflight-gate.md`)
 [ ] Bugs filed with story + AC traceability where found
 [ ] Artifact statuses match §"Lifecycle expectations per stage"; light stage verifier run
 ```
@@ -293,6 +297,10 @@ the stage NEEDS REVISION.
 [ ] QA comment posted; ticket transitioned to the correct status
 [ ] On approval, `{{jira.quality_token_usage}}` written when a figure is available (cumulative: current value read, this cycle's delta added, one `QTU cycle N` comment; comment fallback when the field is absent); no figure means left empty, a valid stated N/A that never fails this verifier
 [ ] No case left `BLOCKED`; every `DEFERRED (execution)` recorded in the ATR and listed in the QA comment
+[ ] Story with a deferral: notice comment posted, owner's OK cited in the ATR and label read back
+    before `qa_sign_off`, one shift-right plan row per case (a fleet worker sends the rows to its
+    conductor); without the OK, no transition and the pending OK reported
+    (`sprint-testing/references/shift-right-deferral.md`)
 [ ] Regression follow-up noted for any regression-worthy bug (Stage-4 hand-off); bug retest (xray):
     repro Test's run recorded PASSED/FAILED in the retest Execution
 [ ] Traceability verified. xray: Story↔ATS (`test` slug, coverage) + ATS membership complete
@@ -310,6 +318,7 @@ the stage NEEDS REVISION.
 [ ] The STR links to the sprint STP via the `testPlan` edge (`STR → STP`) and to the RTP
     (`STR → RTP`, dual membership); the STP is closed out with its final scope/progress and
     transitioned to its terminal state
+[ ] Open shift-right plan rows checked for an arrived precondition; unresolved rows keep the plan open
 [ ] Skip with a stated note only when the `Test Plan` / `Test Execution` work types are absent
     (no field fallback at sprint altitude); never a silent skip
 [ ] Artifact statuses match §"Lifecycle expectations per stage"; light stage verifier run

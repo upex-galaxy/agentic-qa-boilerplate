@@ -202,9 +202,13 @@ one counted indirect evidence as a pass and the other did not. One definition of
 
 A `NOT RUN` case does not wait. It climbs this ladder, in this order:
 
-1. **Recreate** the precondition in the test environment: a fixture identity or a reset path the product
-   already has (`./test-design-doctrine.md` "Unreachable preconditions", outcomes 1 and 2).
-2. **QA defers, on its own authority**, when it cannot be recreated: write the `DEFERRED (execution)` line
+1. **Preflight and recreate** (`sprint-testing/references/preflight-gate.md`): prove the case is in scope
+   (an out-of-scope case is dropped, never deferred) and the block is real, then recreate the precondition in
+   the test environment: existing data, a fixture identity or a reset path the product already has
+   (`./test-design-doctrine.md` "Unreachable preconditions", outcomes 1 and 2).
+2. **QA defers, on its own authority**, when it cannot be recreated and the preflight finds the cause
+   external (anything else stays `BLOCKED`). On a Story this is a **shift-right deferral**
+   (`sprint-testing/references/shift-right-deferral.md`). Write the `DEFERRED (execution)` line
    and open a follow-up task, a subtask on the coverable, `[QA] Deferred (execution): {TC_KEY}: {what is missing}`,
    assigned to the acting QA user and naming who must provide what. With no subtask level on the instance, the
    follow-up is a comment on the coverable. When the cause is a product or test-environment gap worth its
@@ -224,7 +228,12 @@ with nobody assigned to unblock it).
   is `FAILED` (a FAIL recalibrated to GO-with-debt per `sprint-testing/references/reporting-templates.md`
   §5.0 counts as not FAILED). The QA comment lists every deferral. The person who signs the transition sees
   that list: the deferral is QA's call, the signature is still the person's (`./stage-gates.md` §"Contract table").
+- A Story with any deferral needs three things before `qa_sign_off`: the notice comment on the Story, the
+  owner's explicit OK on the deferral list, cited in the results, and the `qa.deferral.label` label applied
+  and read back. Without the OK it stays at `in_test` (`sprint-testing/references/shift-right-deferral.md`).
 - The acceptance Test Execution closes once every non-terminal run carries its `DEFERRED (execution)` line.
+  On a Story with deferrals it closes only after the owner's OK; cases dropped as out of scope have left the
+  run set.
 - When every case is deferred and none was observed, QA does not sign off on its own. That is ladder step 4,
   and the owner decides.
 - A bug retest is never closed on a deferral: `retest_passed` requires the repro case observed PASSED.
