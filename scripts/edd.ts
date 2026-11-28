@@ -9,11 +9,11 @@ import { basename, join } from 'node:path';
 
 import { AGENTIC_SCHEMA, collectChecks, evidenceMessage } from './lib/edd/attest.ts';
 import { ALLOWED_SIGNERS, ContractError, DEPTHS, gateKeysTouched, loadContract, readProjectDoc, refReader, sha256, treeReader } from './lib/edd/contract.ts';
-import { changeDepth, gatePathsTouched, requiredAgentic } from './lib/edd/depth.ts';
+import { gatePathsTouched, requiredAgentic } from './lib/edd/depth.ts';
 import { changedFiles, cleanEnv, commitTime, EMPTY_TREE, git, isCommit, isZeroOid, mergeBase, primaryRoot, repoRoot, resolveCommit, treeOf } from './lib/edd/git.ts';
 import { DiffTooLarge, patchId } from './lib/edd/patch-id.ts';
 import { artifactsRoot, pruneArtifacts, readRecord, RECORD_SCHEMA, RENDER_MARKER, renderMarkdown, scrubLine, writeRecord } from './lib/edd/record.ts';
-import { authorSessions, coverageProblems, isEvidenceCommit, testerProblems, verifyAgentic } from './lib/edd/verify.ts';
+import { authorSessions, changeDepthWithKeys, coverageProblems, isEvidenceCommit, testerProblems, verifyAgentic } from './lib/edd/verify.ts';
 
 const USAGE = `Usage: bun run edd <command>
 
@@ -231,7 +231,7 @@ async function gate(): Promise<number> {
     const agentic = isProtected
       ? verifyAgentic({ cwd: CWD, base, head: r.localSha, loaded, allowedSigners: base === EMPTY_TREE ? null : refReader(CWD, base)(ALLOWED_SIGNERS) })
       : (() => {
-          const d = changeDepth(files, loaded.contract.depth);
+          const d = changeDepthWithKeys(CWD, files, r.localSha, loaded);
           try { return emptyAgentic(d.depth, d.reasons, patchId(CWD, base, r.localSha)); }
           catch (e) {
             if (!(e instanceof DiffTooLarge)) { throw e; }
@@ -265,7 +265,7 @@ async function attest(): Promise<number> {
   const contractSha = resolveCommit(CWD, contractRef) ?? base;
   const loaded = load(refReader(CWD, contractSha), contractSha === base ? baseRef : contractRef);
   for (const w of loaded.warnings) { say(`edd: warning: ${w}`); }
-  const { depth } = changeDepth(changedFiles(CWD, base, subject), loaded.contract.depth, raise as Depth | null);
+  const { depth } = changeDepthWithKeys(CWD, changedFiles(CWD, base, subject), subject, loaded, raise as Depth | null);
   const required = requiredAgentic(loaded.contract.agentic, depth);
   if (required.length === 0) {
     say(`edd attest: depth ${depth} requires no agentic evidence; nothing to attest.`);

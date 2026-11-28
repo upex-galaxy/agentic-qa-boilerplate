@@ -151,6 +151,43 @@ describe('policy reading in the gate', () => {
   });
 });
 
+describe('gate keys and branch contracts', () => {
+  const screens = (cmd: string): string => `evidence:
+  static:
+    - { id: lint, cmd: '${cmd}', where: [pre-push, ci] }
+  agentic:
+    - { id: screens, kind: screenshots, envs: [local], min_depth: standard }
+  depth:
+    default: none
+`;
+
+  test('a push that only changes the evidence contract takes depth standard and needs evidence', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml(screens('true')) });
+    r.git('update-ref', 'refs/remotes/origin/main', base);
+    const head = r.commit('chore: loosen', { '.agents/project.yaml': projectYaml(screens('true').replace('min_depth: standard', 'min_depth: deep')) });
+    const res = run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${base}\n`);
+    expect(res.code).toBe(1);
+    const rec = JSON.parse(readFileSync(join(r.dir, '.session', 'evidence', `${head}.json`), 'utf8'));
+    expect(rec.contract.depth).toBe('standard');
+    expect(rec.contract.depth_reasons.join(' ')).toContain('gate keys changed (evidence)');
+    expect(rec.problems.join(' ')).toContain('requires agentic evidence');
+  });
+
+  test('a policy key change is judged at standard too', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml(screens('true')) });
+    r.git('update-ref', 'refs/remotes/origin/main', base);
+    const head = r.commit('chore: switch off', { '.agents/project.yaml': projectYaml(screens('true'), 'allowed') });
+    const res = run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${base}\n`);
+    expect(res.code).toBe(1);
+    expect(res.out).toContain('depth standard');
+  });
+
+});
+
 describe('verify --ci output', () => {
   test('PR-controlled strings never reach stdout as workflow commands', () => {
     const r = makeRepo();

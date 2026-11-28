@@ -6,8 +6,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { looksLikeEvidence, readEvidenceMessage } from './attest.ts';
-import { DEPTHS, sha256 } from './contract.ts';
-import { changeDepth, depthRank, requiredAgentic } from './depth.ts';
+import { DEPTHS, gateKeysTouched, readProjectDoc, refReader, sha256 } from './contract.ts';
+import { changeDepth, depthRank, raiseForGateKeys, requiredAgentic } from './depth.ts';
 import { changedFiles, commitMessage, git, parentsOf, rangeCount, rangeLog, treeOf } from './git.ts';
 import { DiffTooLarge, MAX_DIFF_BYTES, patchId } from './patch-id.ts';
 
@@ -36,6 +36,17 @@ export interface VerifyInput {
   allowedSigners: string | null
   signatureOf?: (sha: string) => { signature: Signature, signer: string | null }
   limits?: { commits?: number, diffBytes?: number }
+}
+
+export function gateKeysChanged(cwd: string, head: string, loaded: LoadedContract): string[] {
+  let headDoc: Record<string, unknown> | null = null;
+  try { headDoc = readProjectDoc(refReader(cwd, head)); }
+  catch { headDoc = null; }
+  return gateKeysTouched(loaded.doc, headDoc, loaded.contract.human.keys);
+}
+
+export function changeDepthWithKeys(cwd: string, files: string[], head: string, loaded: LoadedContract, raise: Depth | null = null): { depth: Depth, reasons: string[] } {
+  return raiseForGateKeys(changeDepth(files, loaded.contract.depth, raise), gateKeysChanged(cwd, head, loaded));
 }
 
 export function isEvidenceCommit(cwd: string, sha: string): boolean {
@@ -119,7 +130,7 @@ export function verifyAgentic(input: VerifyInput): AgenticVerdict {
     throw e;
   }
   const files = changedFiles(cwd, base, head);
-  const { depth, reasons } = changeDepth(files, loaded.contract.depth);
+  const { depth, reasons } = changeDepthWithKeys(cwd, files, head, loaded);
   const required = requiredAgentic(loaded.contract.agentic, depth);
   const verdict: AgenticVerdict = { ok: true, required: required.map(r => r.id), depth, depthReasons: reasons, patchId: pid, evidenceCommit: null, signature: 'absent', signer: null, checks: [], problems: [] };
   const evidence = findEvidenceCommit(cwd, base, head);

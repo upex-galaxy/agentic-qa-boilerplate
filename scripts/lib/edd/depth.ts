@@ -35,6 +35,11 @@ export function changeDepth(files: string[], depth: Contract['depth'], raise: De
   return { depth: d, reasons };
 }
 
+export function raiseForGateKeys(d: { depth: Depth, reasons: string[] }, keys: string[]): { depth: Depth, reasons: string[] } {
+  if (keys.length === 0 || depthRank(d.depth) >= depthRank('standard')) { return d; }
+  return { depth: 'standard', reasons: [...d.reasons, `gate keys changed (${keys.join(', ')}) -> standard`] };
+}
+
 export function requiredAgentic(agentic: AgenticCheck[], depth: Depth): AgenticCheck[] {
   if (depth === 'none') { return []; }
   return agentic.filter(c => depthRank(c.min_depth) <= depthRank(depth));
