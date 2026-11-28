@@ -476,7 +476,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <table class="tt sm mt-m">
       <thead><tr><th>Quién</th><th>Hace</th><th>Nunca hace</th></tr></thead>
       <tbody>
-        <tr><td><b>Owner</b></td><td>decide desde el board o el chat; su respuesta por chat vale igual</td><td>leer terminales</td></tr>
+        <tr><td><b>Owner</b></td><td>decide desde el board o el chat; la respuesta por chat reflejada no cierra una pregunta que bloquea</td><td>leer terminales</td></tr>
         <tr><td><b>Conductor</b></td><td>arranca, vigila, lanza, responde, cierra; dueño del estado compartido y del registro del sprint</td><td>probar o investigar un ticket; escribirle a un developer sin orden del owner</td></tr>
         <tr><td><b>Worker</b></td><td>un ticket de punta a punta con <span class="mono">/sprint-testing</span>, sin checkpoints</td><td>loguearse, sincronizar el tracker entero, escribir el registro del sprint</td></tr>
       </tbody>
@@ -516,7 +516,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <tr><td>3</td><td>el pre-flight del conductor</td><td><span class="mono">boot-and-resume.md</span> §2</td></tr>
         <tr><td>4</td><td>enlaza o crea el Run y prueba la dirección de respuesta una vez</td><td><span class="mono">boot-and-resume.md</span> §3</td></tr>
         <tr><td>5</td><td>arma el sentinel en segundo plano, con su baseline</td><td><span class="mono">sprint-board.md</span> §7</td></tr>
-        <tr><td>6</td><td>lee el mailbox, el inbox y el replay de <span class="mono">listen --since</span>; primer watch pass</td><td><span class="mono">watch-pass.md</span></td></tr>
+        <tr><td>6</td><td>lee el mailbox, el inbox, los batches y notas sin leer del dock y el replay de <span class="mono">listen --since</span>; primer watch pass</td><td><span class="mono">watch-pass.md</span></td></tr>
         <tr><td>7</td><td>una pantalla: conteos, quién espera a quién, decisiones numeradas</td><td><span class="mono">SKILL.md</span></td></tr>
       </tbody>
     </table>
@@ -600,8 +600,8 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <tbody>
         <tr><td>1</td><td>encontrar los workers por el label de su título (lo que va antes del último <span class="mono">--term_</span>), nunca por el handle viejo que sigue después; actualizar roster y board; renombrar cada pestaña y cada sesión (también en Claude Code) con el handle nuevo; re-enlazar los dispatch</td></tr>
         <tr><td>2</td><td>levantar el server del board</td></tr>
-        <tr><td>3</td><td>re-armar el sentinel con el MISMO baseline</td></tr>
-        <tr><td>4</td><td>replay de lo que hizo el owner con <span class="mono">listen --since</span>, más el inbox</td></tr>
+        <tr><td>3</td><td>re-armar el sentinel con el MISMO baseline; luego <span class="mono">watcher list</span>: volver a arrancar y registrar lo que no esté corriendo, y limpiar lo que ya no se usa</td></tr>
+        <tr><td>4</td><td>replay de lo que hizo el owner con <span class="mono">listen --since</span>, más el inbox y <span class="mono">sweep read --unconsumed</span> para el dock</td></tr>
         <tr><td>5</td><td>leer el mailbox</td></tr>
         <tr><td>6</td><td>un mensaje por worker vivo: sesión de browser con nombre, desde el último paso VERIFICADO</td></tr>
         <tr><td>7</td><td>ningún lanzamiento nuevo hasta que todos respondan</td></tr>

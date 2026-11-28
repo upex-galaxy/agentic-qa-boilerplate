@@ -692,7 +692,7 @@ datos personales -> cajas "redact"</div>
     </div>
     <div class="grid g3 mt-m" style="gap:20px;align-items:start">
       <div class="card card-accent"><p class="lbl">Nada se pierde</p><p class="small mt-s">Cada caso e item anterior conserva su <span class="mono">round</span>. La ronda 0 queda ambar, BEFORE FIX, nunca roja ni verde.</p></div>
-      <div class="card"><p class="lbl">El veredicto mira solo lo actual</p><p class="small mt-s">Una ronda nunca aprueba con un caso DEFERRED vigente.</p></div>
+      <div class="card"><p class="lbl">El veredicto mira solo lo actual</p><p class="small mt-s">Una ronda de retest de un pack de bug nunca aprueba con un caso DEFERRED vigente.</p></div>
       <div class="card card-soft"><p class="lbl">Mismo path, mismo enlace</p><p class="small mt-s">El link del ticket, del bug y del comentario de QA sigue funcionando sin tocarlo.</p></div>
     </div>
     <div class="notes">"The flow" (línea Retest) y pack-schema.md "Retest rounds" del SKILL.md y sus referencias.</div>
@@ -726,7 +726,7 @@ datos personales -> cajas "redact"</div>
       <tr><td style="padding:8px 16px" class="small">Mandar una captura de QA a un servicio externo de imágenes, con permiso en el chat o sin él</td><td style="padding:8px 16px" class="small">trae datos reales de producto y de clientes; el build corre local</td></tr>
       <tr><td style="padding:8px 16px" class="small">Publicar sin leer antes la url que ya trae el pack</td><td style="padding:8px 16px" class="small">crea una segunda página y deja huérfanos los enlaces anteriores</td></tr>
       <tr><td style="padding:8px 16px" class="small">Dejar un valor "marcado" visible en los píxeles</td><td style="padding:8px 16px" class="small">una caja de anotación no tapa nada; el redact se quema antes de codificar</td></tr>
-      <tr><td style="padding:8px 16px" class="small">Aprobar una ronda de retest con un caso DEFERRED vigente</td><td style="padding:8px 16px" class="small">un retest nunca pasa sobre una deferral activa</td></tr>
+      <tr><td style="padding:8px 16px" class="small">Aprobar una ronda de retest de un pack de bug con un caso DEFERRED vigente</td><td style="padding:8px 16px" class="small">un bug nunca pasa sobre una deferral activa</td></tr>
       <tr><td style="padding:8px 16px" class="small">Dar un caso PASSED o FAILED sin evidencia de esa ronda</td><td style="padding:8px 16px" class="small">el veredicto se deriva de lo observado, nunca se declara</td></tr>
       <tr><td style="padding:8px 16px" class="small">Marcar la miniatura de un bug como embebida sin un read-back en vivo</td><td style="padding:8px 16px" class="small">un --dry-run nunca cuenta como adjuntado</td></tr>
       <tr><td style="padding:8px 16px" class="small">Repetir --replace sin el OK de una persona</td><td style="padding:8px 16px" class="small">borra la miniatura anterior y no se puede deshacer</td></tr>
