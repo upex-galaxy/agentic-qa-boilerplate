@@ -113,6 +113,7 @@ git_strategy:
     hotfix_policy: n/a
   policy:
     direct_push_to_protected: allowed
+    merge_mode: auto
     admin_bypass: true
     require_pr_reviews: 1
     accepted_divergences:
@@ -160,6 +161,48 @@ updater:
   protected_paths: []
   declined_denies: []
   declined_hooks: []
+
+evidence:
+  include: [test-automation, sprint-testing]
+  static:
+    - { id: format, cmd: bun run format:check, where: [pre-push, ci] }
+    - { id: lint, cmd: bun run lint:check, where: [pre-push, ci] }
+    - { id: types, cmd: bun run types:check, where: [pre-push, ci] }
+    - { id: unit, cmd: bun test, where: [pre-push, ci] }
+    - { id: repo-gates, cmd: bun run repo:check, where: [ci] }
+  agentic:
+    - id: board-screens
+      kind: screenshots
+      tool: playwright-cli
+      envs: [local]
+      min_depth: light
+  depth:
+    default: none
+    rules:
+      - { paths: ['**/*.md', 'docs/**', '.agents/instructions/**'], depth: none }
+      - { paths: ['.agents/skills/**'], depth: none }
+      - { paths: ['cli/sprint-board/app/**', 'cli/evidence-page/**'], depth: light }
+      - { paths: ['tests/**', 'api/**'], depth: standard }
+      - { paths: ['tests/components/**', 'tests/fixtures/**', 'playwright.config.ts'], depth: deep }
+  human:
+    paths:
+      - '.github/workflows/**'
+      - '.husky/**'
+      - 'scripts/edd.ts'
+      - 'scripts/lib/edd/**'
+      - 'scripts/git-policy.ts'
+      - '.agents/edd/**'
+      - 'CODEOWNERS'
+      - '.agents/skills/*/evidence.yaml'
+    keys: [evidence, git_strategy.policy]
+  review:
+    bot: null
+    max_rounds: 2
+  record:
+    artifact_retention_days: 30
+
+notify:
+  provider: none
 
 checks:
   mcp_parity:

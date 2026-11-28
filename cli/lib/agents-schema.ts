@@ -576,6 +576,10 @@ export const GENERIC_RULES: Readonly<Record<string, GenericRule>> = {
     value: 'confirm',
     why: 'this repo grants itself standing push authorization; a fresh project has authorized nothing',
   },
+  'git_strategy.policy.merge_mode': {
+    value: 'null',
+    why: 'a fresh project has chosen no merge mode; git:policy reads null as auto and only warns until it is declared',
+  },
   'git_strategy.policy.admin_bypass': {
     value: 'false',
     why: 'a fact about this repo\'s admin credential, and a dangerous default for a project that has none',
@@ -756,6 +760,8 @@ export const FILLED_ELSEWHERE: Readonly<Record<string, string>> = {
   'git_strategy.branches.ephemeral_pattern': 'the git-flow-master Strategy Setup questionnaire',
   'git_strategy.meta.created': 'stamped by the git-flow-master Strategy Setup questionnaire',
   'git_strategy.meta.policy_verified': 'stamped by `bun run git:policy verify --stamp`',
+  'evidence.review.bot': 'by hand when the project adopts a review bot; null = none',
+  'git_strategy.policy.merge_mode': 'the git-flow-master Strategy Setup questionnaire; null reads as auto',
   'testing.browser.pair_mode': 'asked once, the first time an agentic browser session starts (agentic-qa-core/references/browser-sessions.md, Agentic Pair Testing)',
   'secrets.onepassword.vault': 'the secret-manager choice of `bun setup` (cli/lib/secret-providers.ts; null while secrets.provider is local)',
   'secrets.onepassword.account': 'the secret-manager choice of `bun setup` (optional: null = the 1Password CLI default account)',

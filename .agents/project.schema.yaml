@@ -224,7 +224,8 @@ git_strategy:
     feature_merge: n/a # merge-commit | squash | rebase-merge | n/a
     hotfix_policy: n/a # branch-off-prod-backmerge | via-integration | none | n/a
   policy: # how strictly protected branches are guarded (set by Strategy Setup Q4; defaults are safe)
-    direct_push_to_protected: confirm # forbidden | confirm | allowed. Ships `confirm` because meta.strategy_source is `inherited`: until Strategy Setup runs, nobody has authorized a direct push here.
+    direct_push_to_protected: confirm # forbidden | confirm | allowed | evidence. `evidence` pushes without asking only when the pre-push evidence gate (`bun run edd gate`) passes; on a fail there is no push and no question. `bun run git:policy` reads a missing or null value as `evidence`. The template ships `confirm` because meta.strategy_source is `inherited`: nobody has authorized a direct push here.
+    merge_mode: null # auto | human-approves | manual. auto: the agent enables GitHub auto-merge at PR open and GitHub merges once the required checks (including edd/evidence) pass, with 0 approvals. human-approves: same call, but the ruleset requires require_pr_reviews approvals first. manual: stop at PR creation, a person merges. `bun run git:policy verify` reads a missing or null value as `auto` and reports its host findings as warnings, and `bun run git:policy apply` derives it as `manual`, until the key is declared.
     admin_bypass: false # true only when the push credential is on the host ruleset's bypass list. While false, a "Bypassed rule violations" line from the remote is a real finding, not noise.
     require_pr_reviews: 1 # required approving reviews on a protected branch. Reconcile against the host with `bun run git:policy verify`.
     # Host divergences that are ACCEPTED, not drift. Each `field` names a `git:policy verify`
@@ -325,6 +326,64 @@ updater:
   # Not a list of strings = ignored with a warning (fails toward MORE hooks). Read directly
   # by the updater (`readDeclinedHooks` in cli/lib/updater-settings.ts), skipped by vars:check.
   declined_hooks: [] # e.g. ['node "$CLAUDE_PROJECT_DIR/.agents/hooks/doc-contracts.mjs"']
+
+# Evidence contract (EDD): what must be proven before a push or merge. Read by `bun run edd`
+# (scripts/edd.ts). `bun run git:policy` reads only the static[].id entries with `where` including
+# `ci`, as required check contexts beside `edd/evidence`. Not the same as board.evidence, which
+# lists hosts an evidence link may point at. Changing this block is a gate-key edit and needs a human.
+evidence:
+  # Skills whose `.agents/skills/<skill>/evidence.yaml` fragment adds checks. Fragments merge in this
+  # order, then this block's own lists; duplicates by `id` resolve to this block.
+  include: [test-automation, sprint-testing]
+  # Commands the gate re-runs. Each entry: {id, cmd, where}. `where` is a list of pre-push | ci.
+  static:
+    - { id: format, cmd: bun run format:check, where: [pre-push, ci] }
+    - { id: lint, cmd: bun run lint:check, where: [pre-push, ci] }
+    - { id: types, cmd: bun run types:check, where: [pre-push, ci] }
+    - { id: unit, cmd: bun test, where: [pre-push, ci] }
+    - { id: repo-gates, cmd: bun run repo:check, where: [ci] }
+  # Checks an agent session runs and attests. Each entry: {id, kind, tool, envs, min_depth}.
+  # kind: what is produced (e.g. screenshots, exploratory, test-run, api-calls). tool: the tool that produces it.
+  # envs: environments to run against. min_depth: lowest depth that requires the check.
+  agentic:
+    - id: board-screens
+      kind: screenshots
+      tool: playwright-cli
+      envs: [local]
+      min_depth: light
+  # Proportional depth. Order: none < light < standard < deep. The agent may raise depth for a run,
+  # never lower it; lowering means editing this block, which needs a human.
+  depth:
+    default: none # depth for a file no rule matches
+    # Each rule: {paths: [glob], depth}. A file takes the first matching rule; the change takes the highest depth over its files.
+    rules:
+      - { paths: ['**/*.md', 'docs/**', '.agents/instructions/**'], depth: none }
+      - { paths: ['.agents/skills/**'], depth: none }
+      - { paths: ['cli/sprint-board/app/**', 'cli/evidence-page/**'], depth: light }
+      - { paths: ['tests/**', 'api/**'], depth: standard }
+      - { paths: ['tests/components/**', 'tests/fixtures/**', 'playwright.config.ts'], depth: deep }
+  # What always needs a person.
+  human:
+    paths: # gate paths: a change touching any of them needs a human
+      - '.github/workflows/**'
+      - '.husky/**'
+      - 'scripts/edd.ts'
+      - 'scripts/lib/edd/**'
+      - 'scripts/git-policy.ts'
+      - '.agents/edd/**'
+      - 'CODEOWNERS'
+      - '.agents/skills/*/evidence.yaml'
+    keys: [evidence, git_strategy.policy] # keys of .agents/project.yaml that are gate keys
+  review:
+    bot: null # login of a review bot whose findings must be resolved before merge, or null
+    max_rounds: 2 # cap on review-bot loop rounds
+  record:
+    artifact_retention_days: 30 # days a run's artifacts are kept; pruning never deletes records
+
+# Notification provider, read by `bun run notify`. `none` sends nothing.
+# Consumers: merged or blocked notices, deferral notices, report upload.
+notify:
+  provider: none # none, or a provider name from the list `bun run notify` defines
 
 # How this project scopes its gates. Absent or empty = every gate behaves exactly as
 # shipped. A malformed value fails the gate that owns the key, naming the key (hooks.scope
