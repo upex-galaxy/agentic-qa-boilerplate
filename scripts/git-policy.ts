@@ -307,7 +307,7 @@ export function protectedBranches(gs: GitStrategy): string[] {
     'main-integration': [prod, integ],
     'enterprise': [prod, integ],
     'gitflow': [prod, integ ?? 'develop'],
-    'gitlab-flow': [prod, integ, 'pre-production'],
+    'gitlab-flow': [prod, integ, 'main', 'pre-production', 'production'],
     // `sdet` runs an EPHEMERAL per-suite trunk (`branches.ephemeral_pattern`) with
     // `integration: null`. Protecting it would put ruleset friction on exactly the
     // intermediate merges the strategy exists to keep frictionless, so only the
@@ -1575,6 +1575,7 @@ FLAGS
   --push <value>      (setup) answer the push question: forbidden | confirm | allowed | evidence
   --merge <mode>      (setup) answer the merge question: auto | human-approves | manual
   --codeowner <who>   (setup) CODEOWNERS owner of the gate paths under human-approves
+  --feature-merge <m> (setup) merge method: merge-commit (default while undecided) | squash | rebase-merge
   --plan-only         (setup) plan and preflight only: no GitHub write can happen
   --write-policy      (setup) write the answers to .agents/project.yaml without asking
   --questions-json    (setup) print the three questions with their defaults as JSON, and exit

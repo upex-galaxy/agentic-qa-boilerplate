@@ -7,6 +7,7 @@ import { parse as parseYaml } from 'yaml';
 
 import {
   actionsSettingsPatch,
+  allowedMergeMethods,
   buildRules,
   describeRules,
   detectLoosening,
@@ -121,7 +122,9 @@ export interface Choice { value: string, label: string, day: string, rec?: boole
 
 export interface SetupQuestion { id: 'strategy' | 'push' | 'merge', title: string, choices: Choice[], default: string }
 
-export interface SetupAnswers { strategy: string, push: string, merge: string }
+export interface SetupAnswers { strategy: string, push: string, merge: string, featureMerge?: string }
+
+export const FEATURE_MERGES = ['merge-commit', 'squash', 'rebase-merge'];
 
 export type AskQuestion
   = | { kind: 'select', id: string, title: string, choices: Choice[], default: string }
@@ -133,6 +136,7 @@ export interface SetupFlags {
   push?: string
   merge?: string
   codeowner?: string
+  featureMerge?: string
   planOnly: boolean
   writePolicy: boolean
   questionsJson?: boolean
@@ -187,7 +191,7 @@ export function setupQuestions(gs: GitStrategy, lang: Lang, gateReady: boolean):
 
 export function parseSetupFlags(argv: string[]): SetupFlags | { error: string } {
   const flags: SetupFlags = { planOnly: false, writePolicy: false };
-  const valued = { '--strategy': 'strategy', '--push': 'push', '--merge': 'merge', '--codeowner': 'codeowner' } as const;
+  const valued = { '--strategy': 'strategy', '--push': 'push', '--merge': 'merge', '--codeowner': 'codeowner', '--feature-merge': 'featureMerge' } as const;
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i] ?? '';
     if (arg === '--plan-only') { flags.planOnly = true; }
@@ -210,6 +214,9 @@ export function parseSetupFlags(argv: string[]): SetupFlags | { error: string } 
   if (flags.merge !== undefined && !MERGE_MODES.includes(flags.merge)) {
     return { error: `--merge must be one of ${MERGE_MODES.join(', ')}` };
   }
+  if (flags.featureMerge !== undefined && !FEATURE_MERGES.includes(flags.featureMerge)) {
+    return { error: `--feature-merge must be one of ${FEATURE_MERGES.join(', ')}` };
+  }
   if (flags.codeowner !== undefined && normalizeOwner(flags.codeowner) === null) {
     return { error: '--codeowner must be a GitHub login, @org/team or an email' };
   }
@@ -227,10 +234,16 @@ export function withAnswers(gs: GitStrategy, a: SetupAnswers): GitStrategy {
   const integration = gs.branches?.integration ?? INTEGRATION_DEFAULT[a.strategy] ?? null;
   const ephemeral = gs.branches?.ephemeral_pattern ?? (a.strategy === 'sdet' ? SDET_TRUNK : null);
   const reviews = gs.policy?.require_pr_reviews ?? null;
+  const declaredProd = gs.branches?.production ?? null;
+  const prodChosen = gs.meta?.strategy_source === 'chosen' && gs.strategy === 'gitlab-flow';
+  const production = a.strategy === 'gitlab-flow' && !prodChosen && (declaredProd === null || declaredProd === 'main') ? 'production' : declaredProd ?? 'main';
+  const ownMerge = gs.decisions?.feature_merge;
+  const featureMerge = a.featureMerge ?? (FEATURE_MERGES.includes(ownMerge ?? '') ? ownMerge : 'merge-commit');
   const next: GitStrategy = {
     ...gs,
     strategy: a.strategy,
-    branches: { production: gs.branches?.production ?? 'main', integration, ephemeral_pattern: ephemeral },
+    branches: { production, integration, ephemeral_pattern: ephemeral },
+    decisions: { ...gs.decisions, feature_merge: featureMerge ?? 'merge-commit' },
     policy: {
       ...gs.policy,
       direct_push_to_protected: a.push,
@@ -251,6 +264,8 @@ export function setupEdits(gs: GitStrategy, a: SetupAnswers): YamlEdit[] {
   const edits: YamlEdit[] = [];
   const at = (path: string[], value: string): void => { edits.push({ path: ['git_strategy', ...path], value }); };
   if (gs.strategy !== next.strategy) { at(['strategy'], next.strategy); }
+  if ((gs.branches?.production ?? null) !== next.branches.production) { at(['branches', 'production'], String(next.branches.production)); }
+  if (gs.decisions && typeof gs.decisions === 'object' && gs.decisions.feature_merge !== next.decisions.feature_merge) { at(['decisions', 'feature_merge'], next.decisions.feature_merge); }
   if ((gs.branches?.integration ?? null) !== next.branches.integration) { at(['branches', 'integration'], String(next.branches.integration)); }
   if ((gs.branches?.ephemeral_pattern ?? null) !== next.branches.ephemeral_pattern) { at(['branches', 'ephemeral_pattern'], JSON.stringify(next.branches.ephemeral_pattern)); }
   if (!sameList(gs.protected, next.protected)) { at(['protected'], `[${next.protected.join(', ')}]`); }
@@ -405,6 +420,10 @@ export function renderPlan(gs: GitStrategy, plan: SetupPlan, host: HostState | n
     : mergesOnChecks(gs)
       ? '  required checks: not managed: the push policy keeps direct pushes open and admin_bypass is false, so a required check would refuse every direct push; auto-merge stays off too'
       : '  required checks: not managed under merge_mode manual (the host rule, if any, is kept)');
+  const methods = allowedMergeMethods(gs);
+  out.push(methods
+    ? `  merge method: ${methods.join(', ')} (decisions.feature_merge: ${gs.decisions.feature_merge}); the ruleset allows only that method and the repo merge buttons match`
+    : '  merge method: not decided (decisions.feature_merge n/a); the host keeps its current methods');
   out.push(`  repo settings: ${Object.keys(plan.repoPatch).length === 0 ? 'no change' : JSON.stringify(plan.repoPatch)}`);
   if (plan.actionsPatch) {
     const now = host?.actions?.can_approve_pull_request_reviews;
@@ -438,7 +457,7 @@ export function renderHandoff(slug: string, gs: GitStrategy, plan: SetupPlan, pr
     '',
     'A) Prompt for the admin\'s AI agent',
     '---',
-    `You are helping an admin configure GitHub for ${slug}. Use only \`gh api\`. Merge preset: ${gs.policy.merge_mode}; push policy: ${gs.policy.direct_push_to_protected}; strategy: ${gs.strategy}; protected branches: ${plan.branches.join(', ')}.`,
+    `You are helping an admin configure GitHub for ${slug}. Use only \`gh api\`. Merge preset: ${gs.policy.merge_mode}; merge method: ${allowedMergeMethods(gs)?.join(', ') ?? 'unchanged'}; push policy: ${gs.policy.direct_push_to_protected}; strategy: ${gs.strategy}; protected branches: ${plan.branches.join(', ')}.`,
     `1. Confirm you are an admin: \`gh repo view ${slug} --json viewerPermission\` must print ADMIN. If not, stop.`,
     `2. Read the current state first, GET only: \`gh api repos/${slug}\`, \`gh api repos/${slug}/rulesets\`, \`gh api repos/${slug}/actions/permissions/workflow\`. Show me the difference with the commands below.`,
     '3. Run the commands below in order, one at a time, after I say yes to each. Never widen bypass actors and never touch another ruleset.',
@@ -563,6 +582,7 @@ export async function runSetup(deps: SetupDeps, flags: SetupFlags): Promise<numb
     strategy: await answer(deps, questions[0], flags.strategy),
     push: await answer(deps, questions[1], flags.push),
     merge: await answer(deps, questions[2], flags.merge),
+    ...(flags.featureMerge ? { featureMerge: flags.featureMerge } : {}),
   };
   while (conflict(answers) !== null) {
     p(conflict(answers) ?? '');
@@ -606,7 +626,7 @@ export async function runSetup(deps: SetupDeps, flags: SetupFlags): Promise<numb
       let after: GitStrategy | undefined;
       try { after = (parseYaml(reread ?? '') as { git_strategy?: GitStrategy } | null)?.git_strategy; }
       catch { after = undefined; }
-      if (after?.strategy !== answers.strategy || after?.policy?.direct_push_to_protected !== answers.push || after?.policy?.merge_mode !== answers.merge) {
+      if (after?.strategy !== answers.strategy || after?.policy?.direct_push_to_protected !== answers.push || after?.policy?.merge_mode !== answers.merge || (gs.decisions && after?.decisions?.feature_merge !== next.decisions.feature_merge)) {
         p('Wrote .agents/project.yaml but it does not read back with the answers.');
         return 1;
       }

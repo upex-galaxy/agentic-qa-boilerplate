@@ -24,7 +24,7 @@ import {
 
 const SLUG = 'acme/widgets';
 
-function projectYaml(policy: { push?: string, merge?: string, source?: string, strategy?: string } = {}): string {
+function projectYaml(policy: { push?: string, merge?: string, source?: string, strategy?: string, featureMerge?: string, production?: string } = {}): string {
   return [
     'project:',
     '  project_name: Widgets',
@@ -32,13 +32,13 @@ function projectYaml(policy: { push?: string, merge?: string, source?: string, s
     'git_strategy:',
     `  strategy: ${policy.strategy ?? 'solo-main'} # DEFAULT, not a decision`,
     '  branches:',
-    '    production: main # release / default branch',
+    `    production: ${policy.production ?? 'main'} # release / default branch`,
     '    integration: null',
     '    ephemeral_pattern: null',
     '  protected: [main]',
     '  decisions:',
     '    promote_method: n/a',
-    '    feature_merge: merge-commit',
+    `    feature_merge: ${policy.featureMerge ?? 'merge-commit'}`,
     '    hotfix_policy: n/a',
     '  policy:',
     `    direct_push_to_protected: ${policy.push ?? 'confirm'} # forbidden | confirm | allowed | evidence`,
@@ -226,6 +226,50 @@ describe('withAnswers / setupEdits: the keys setup writes', () => {
   test('answers equal to the file produce no edit at all', () => {
     const gs = gsOf(projectYaml({ push: 'evidence', merge: 'auto', source: 'chosen' }));
     expect(setupEdits(gs, { strategy: 'solo-main', push: 'evidence', merge: 'auto' })).toEqual([]);
+  });
+});
+
+describe('merge method (owner decision E3)', () => {
+  test('an undecided project gets the merge commit, written with the other keys', () => {
+    const gs = gsOf(projectYaml({ featureMerge: 'n/a' }));
+    const edits = setupEdits(gs, { strategy: 'solo-main', push: 'evidence', merge: 'auto' });
+    expect(edits.find(e => e.path.at(-1) === 'feature_merge')?.value).toBe('merge-commit');
+  });
+
+  test('a project that already chose keeps its own method (D4); a flag overrides', () => {
+    const gs = gsOf(projectYaml({ featureMerge: 'squash' }));
+    expect(withAnswers(gs, { strategy: 'github-flow', push: 'forbidden', merge: 'auto' }).decisions.feature_merge).toBe('squash');
+    expect(withAnswers(gs, { strategy: 'github-flow', push: 'forbidden', merge: 'auto', featureMerge: 'rebase-merge' }).decisions.feature_merge).toBe('rebase-merge');
+    expect(parseSetupFlags(['--feature-merge', 'fast-forward'])).toHaveProperty('error');
+  });
+
+  test('Enter on the three questions ends on the merge commit; the plan and hand-off name it', async () => {
+    const bodies = hostBodies({ [`repos/${SLUG}`]: { permissions: { admin: false, push: true }, owner: { login: 'acme', type: 'Organization' }, allow_merge_commit: true, allow_squash_merge: false, allow_rebase_merge: false } });
+    const h = harness({ text: projectYaml({ featureMerge: 'n/a', push: 'forbidden', source: 'chosen', merge: 'auto' }), interactive: true, answers: [ENTER, ENTER, ENTER, true], bodies });
+    expect(await runSetup(h.deps, NO_FLAGS)).toBe(0);
+    expect(h.asked.map(q => q.id)).toEqual(['strategy', 'push', 'merge', 'write']);
+    expect(gsOf(h.written[0]).decisions.feature_merge).toBe('merge-commit');
+    const out = h.printed.join('\n');
+    expect(out).toContain('merge method: merge (decisions.feature_merge: merge-commit)');
+    expect(out).toContain('"allowed_merge_methods": [');
+    expect(out).toContain('merge method: merge;');
+  });
+});
+
+describe('gitlab-flow protects production', () => {
+  test('an unchosen production becomes production, and main, pre-production and production are protected', () => {
+    const next = withAnswers(gsOf(projectYaml()), { strategy: 'gitlab-flow', push: 'forbidden', merge: 'auto' });
+    expect(next.branches.production).toBe('production');
+    expect(next.protected).toEqual(['production', 'main', 'pre-production']);
+    const edits = setupEdits(gsOf(projectYaml()), { strategy: 'gitlab-flow', push: 'forbidden', merge: 'auto' });
+    expect(edits.find(e => e.path.at(-1) === 'production')?.value).toBe('production');
+  });
+
+  test('a gitlab-flow project that chose its production branch keeps it', () => {
+    const gs = gsOf(projectYaml({ strategy: 'gitlab-flow', source: 'chosen', production: 'live' }));
+    expect(withAnswers(gs, { strategy: 'gitlab-flow', push: 'forbidden', merge: 'auto' }).branches.production).toBe('live');
+    const kept = gsOf(projectYaml({ strategy: 'gitlab-flow', source: 'chosen' }));
+    expect(withAnswers(kept, { strategy: 'gitlab-flow', push: 'forbidden', merge: 'auto' }).branches.production).toBe('main');
   });
 });
 

@@ -59,6 +59,7 @@ import {
   mergeModeDeclared,
   migrationFor,
   missingCheckRuns,
+  protectedBranches,
   pullRequestModeParams,
   repoSettingsPatch,
   requiredCheckContexts,
@@ -941,6 +942,14 @@ describe('spliceKeys: setup writes only the keys it was given', () => {
   test('refuses a block-valued key and a missing parent block', () => {
     expect(() => spliceKeys(YAML, [{ path: ['git_strategy', 'policy'], value: 'x' }])).toThrow('is a block');
     expect(() => spliceKeys(YAML, [{ path: ['git_strategy', 'branches', 'integration'], value: 'staging' }])).toThrow('no block-style git_strategy.branches');
+  });
+});
+
+describe('protectedBranches: gitlab-flow', () => {
+  test('main, pre-production and production are all protected, whatever production is called', () => {
+    const base = strategy();
+    expect(protectedBranches({ ...base, strategy: 'gitlab-flow', branches: { production: 'production', integration: null, ephemeral_pattern: null }, protected: [] })).toEqual(['production', 'main', 'pre-production']);
+    expect(protectedBranches({ ...base, strategy: 'gitlab-flow', branches: { production: 'main', integration: null, ephemeral_pattern: null }, protected: [] })).toEqual(['main', 'pre-production', 'production']);
   });
 });
 
