@@ -35,6 +35,8 @@ harnesses: [claude, opencode, codex, pi]
 qa:
   formal_blocked_gate: true
   qa_artifact_label: QA-Artifact
+  deferral:
+    label: not-fully-tested
   qa_epics:
     master_test_plan_epic:
       name: QA Master Test Plan

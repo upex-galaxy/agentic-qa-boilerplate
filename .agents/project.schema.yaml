@@ -94,6 +94,13 @@ qa:
   # until a skill discovers them — the label works from the first sync.
   # Whoever creates a QA-artifact Epic must apply it; the AI does so automatically.
   qa_artifact_label: QA-Artifact
+  # Shift-right deferral: a Story signed off, after the owner's explicit OK, with in-scope cases
+  # an external block left unobserved carries this Jira LABEL until every deferred case PASSED.
+  # null or absent = the skill asks once and never invents one.
+  # Read directly by skills (not a {{VAR}} token) -> skipped by vars:check.
+  # Doctrine: .agents/skills/sprint-testing/references/shift-right-deferral.md
+  deferral:
+    label: not-fully-tested # no spaces (Jira label); added next to the Story's labels and read back
   # QA process epics — buckets that hold QA artifacts so they never pollute product epics/roadmap.
   # FOUR QA-process epics form the QA-governance cluster: Test Plans parent to `master_test_plan_epic`;
   # Test (TC) issues parent to `test_repository_epic`; Test Executions/Preconditions/Test Sets parent to
