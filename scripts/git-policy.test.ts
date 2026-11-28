@@ -37,6 +37,8 @@ import { applyInsertions, planInsertions } from '../cli/lib/agents-schema.ts';
 
 import {
   acceptedFields,
+  actionsApprovalFinding,
+  actionsSettingsPatch,
   assessBypass,
   buildRules,
   classifyAccepted,
@@ -61,8 +63,10 @@ import {
   repoSettingsPatch,
   requiredCheckContexts,
   resolveIntegrationId,
+  rulesetBody,
   slugFromRemote,
   softenUndeclared,
+  spliceKeys,
   spliceMigration,
   statusChecksManaged,
   verifyExitCode,
@@ -890,5 +894,75 @@ describe('schema back-fill of merge_mode never blocks a downstream push', () => 
     const findings: Finding[] = [{ severity: 'drift', field: 'main.merge_mode', declared: 'allow_auto_merge true', enforced: 'allow_auto_merge false' }];
     softenUndeclared(gs, findings);
     expect(findings[0]?.severity).toBe('info');
+  });
+});
+
+describe('spliceKeys: setup writes only the keys it was given', () => {
+  const YAML = [
+    'git_strategy:',
+    '  strategy: solo-main # DEFAULT, not a decision',
+    '  protected: [main]',
+    '  policy:',
+    '    direct_push_to_protected: confirm # forbidden | confirm | allowed | evidence',
+    '    admin_bypass: false',
+    '  meta:',
+    '    strategy_source: inherited',
+    '',
+    '# a comment that belongs to the next block',
+    'evidence:',
+    '  static: []',
+    '',
+  ].join('\n');
+
+  test('sets scalars in place and keeps their comments', () => {
+    const out = spliceKeys(YAML, [
+      { path: ['git_strategy', 'strategy'], value: 'github-flow' },
+      { path: ['git_strategy', 'protected'], value: '[main, staging]' },
+      { path: ['git_strategy', 'policy', 'direct_push_to_protected'], value: 'forbidden' },
+    ]);
+    expect(out).toContain('  strategy: github-flow # DEFAULT, not a decision');
+    expect(out).toContain('  protected: [main, staging]');
+    expect(out).toContain('    direct_push_to_protected: forbidden # forbidden | confirm | allowed | evidence');
+  });
+
+  test('inserts a missing key at the end of its block, before the next block comment', () => {
+    const out = spliceKeys(YAML, [{ path: ['git_strategy', 'meta', 'setup_version'], value: '1' }, { path: ['git_strategy', 'policy', 'merge_mode'], value: 'auto' }]);
+    const lines = out.split('\n');
+    expect(lines[lines.indexOf('    admin_bypass: false') + 1]).toBe('    merge_mode: auto');
+    expect(lines[lines.indexOf('    strategy_source: inherited') + 1]).toBe('    setup_version: 1');
+    expect(lines[lines.indexOf('# a comment that belongs to the next block') + 1]).toBe('evidence:');
+  });
+
+  test('CRLF line endings survive', () => {
+    const out = spliceKeys(YAML.replaceAll('\n', '\r\n'), [{ path: ['git_strategy', 'policy', 'merge_mode'], value: 'manual' }]);
+    expect(out).toContain('    merge_mode: manual\r\n');
+  });
+
+  test('refuses a block-valued key and a missing parent block', () => {
+    expect(() => spliceKeys(YAML, [{ path: ['git_strategy', 'policy'], value: 'x' }])).toThrow('is a block');
+    expect(() => spliceKeys(YAML, [{ path: ['git_strategy', 'branches', 'integration'], value: 'staging' }])).toThrow('no block-style git_strategy.branches');
+  });
+});
+
+describe('the Actions approval switch (corrections 17)', () => {
+  test('auto and human-approves turn it off; manual leaves it alone', () => {
+    expect(actionsSettingsPatch(strategy({ merge_mode: 'auto' }))).toEqual({ can_approve_pull_request_reviews: false });
+    expect(actionsSettingsPatch(strategy({ merge_mode: 'human-approves' }))).toEqual({ can_approve_pull_request_reviews: false });
+    expect(actionsSettingsPatch(strategy({ merge_mode: 'manual' }))).toBeNull();
+  });
+
+  test('verify notes it when on, never as drift; off or unreadable is silent', () => {
+    expect(actionsApprovalFinding(strategy({ merge_mode: 'auto' }), { can_approve_pull_request_reviews: true })).toMatchObject({ severity: 'info', field: 'repo.actions_can_approve_pull_requests' });
+    expect(actionsApprovalFinding(strategy({ merge_mode: 'auto' }), { can_approve_pull_request_reviews: false })).toBeNull();
+    expect(actionsApprovalFinding(strategy({ merge_mode: 'auto' }), null)).toBeNull();
+    expect(actionsApprovalFinding(strategy({ merge_mode: 'manual' }), { can_approve_pull_request_reviews: true })).toBeNull();
+  });
+});
+
+describe('rulesetBody: one payload for apply and the hand-off', () => {
+  test('an update never carries bypass_actors; a create seeds org-admin bypass only when declared', () => {
+    expect(rulesetBody(strategy({ admin_bypass: true }), ['main'], [], true)).not.toHaveProperty('bypass_actors');
+    expect(rulesetBody(strategy({ admin_bypass: true }), ['main'], [], false).bypass_actors).toEqual([{ actor_type: 'OrganizationAdmin', bypass_mode: 'always' }]);
+    expect(rulesetBody(strategy({ admin_bypass: false }), ['main', 'staging'], [], false)).toMatchObject({ bypass_actors: [], conditions: { ref_name: { include: ['refs/heads/main', 'refs/heads/staging'] } } });
   });
 });

@@ -34,6 +34,10 @@
  *            No host calls.
  *   migrate  Move git_strategy.policy to `evidence` where the migration table
  *            says so. Dry-run by DEFAULT; `--yes` rewrites only the policy lines.
+ *   setup    Ask strategy, push confirmation and merge mode, write those keys,
+ *            print the plan and a read-only preflight, then either apply on a
+ *            person's explicit yes (admins) or print a hand-off for an admin.
+ *            `--plan-only` and a non-interactive run never write to the host.
  *
  * WHY RULESETS AND NOT CLASSIC BRANCH PROTECTION
  * `branches/{b}/protection` returns 404 on a repo governed by rulesets while
@@ -57,17 +61,21 @@
  *     nobody outside the bypass list can ever satisfy.
  */
 
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import type { SetupDeps } from './lib/git-policy-setup.ts';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import process from 'node:process';
 
+import process from 'node:process';
 import pc from 'picocolors';
+
 import { parse as parseYaml } from 'yaml';
+import { pickLang } from '../cli/lib/ui/strings.ts';
+import { parseSetupFlags, promptAsk, runSetup } from './lib/git-policy-setup.ts';
 
 const REPO_ROOT = join(import.meta.dir, '..');
 const PROJECT_YAML = join(REPO_ROOT, '.agents', 'project.yaml');
-const RULESET_NAME = 'ProtectPublic';
+export const RULESET_NAME = 'ProtectPublic';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -127,6 +135,13 @@ export interface RepoSettingsPatch {
 }
 
 export interface MigrationTarget { direct_push_to_protected: string, merge_mode: string }
+
+export interface YamlEdit { path: string[], value: string }
+
+export interface ActionsWorkflowPermissions {
+  default_workflow_permissions?: string
+  can_approve_pull_request_reviews?: boolean
+}
 
 export type Migration
   = | { action: 'setup', note: string }
@@ -377,7 +392,7 @@ export function effectiveForApply(gs: GitStrategy): GitStrategy {
   return { ...gs, policy: { ...gs.policy, merge_mode: 'manual' } };
 }
 
-function mergesOnChecks(gs: GitStrategy): boolean {
+export function mergesOnChecks(gs: GitStrategy): boolean {
   const mode = mergeMode(gs);
   return mode === 'auto' || mode === 'human-approves';
 }
@@ -468,6 +483,21 @@ export function repoSettingsPatch(gs: GitStrategy, rules: Rule[]): RepoSettingsP
     patch.allow_rebase_merge = methods.includes('rebase');
   }
   return patch;
+}
+
+export function actionsSettingsPatch(gs: GitStrategy): { can_approve_pull_request_reviews: false } | null {
+  return mergesOnChecks(gs) ? { can_approve_pull_request_reviews: false } : null;
+}
+
+export function actionsApprovalFinding(gs: GitStrategy, perms: ActionsWorkflowPermissions | null): Finding | null {
+  if (!mergesOnChecks(gs) || perms?.can_approve_pull_request_reviews !== true) { return null; }
+  return {
+    severity: 'info',
+    field: 'repo.actions_can_approve_pull_requests',
+    declared: 'false (a workflow must never approve a pull request)',
+    enforced: 'true ("Allow GitHub Actions to create and approve pull requests" is on)',
+    note: 'bun run git:policy apply --yes (or setup) turns it off.',
+  };
 }
 
 export function mergeMethodWidening(patch: RepoSettingsPatch, repo: RepoSettingsPatch | null): string[] {
@@ -600,6 +630,70 @@ export function spliceMigration(text: string, target: MigrationTarget): string {
   return out;
 }
 
+function deletePath(obj: unknown, path: string[]): void {
+  let node = obj as Record<string, unknown> | null | undefined;
+  for (const key of path.slice(0, -1)) {
+    const child = node?.[key];
+    if (child === null || typeof child !== 'object') { return; }
+    node = child as Record<string, unknown>;
+  }
+  if (node && typeof node === 'object') { delete node[path[path.length - 1] ?? '']; }
+}
+
+function readPath(obj: unknown, path: string[]): unknown {
+  let node = obj;
+  for (const key of path) {
+    if (node === null || typeof node !== 'object') { return undefined; }
+    node = (node as Record<string, unknown>)[key];
+  }
+  return node;
+}
+
+export function spliceKeys(text: string, edits: YamlEdit[]): string {
+  const lines = text.split('\n');
+  for (const e of edits) {
+    const [top, ...rest] = e.path;
+    if (!top || rest.length === 0) { throw new Error(`not a nested key: ${e.path.join('.')}`); }
+    let at = lines.findIndex(l => new RegExp(`^${top}:\\s*(?:#.*)?\\r?$`).test(l));
+    if (at === -1) { throw new Error(`no block-style top-level ${top}: key`); }
+    let inserted = false;
+    for (let i = 0; i < rest.length; i++) {
+      const key = rest[i] ?? '';
+      const block = childBlock(lines, at);
+      if (!block) { throw new Error(`no block under ${e.path.slice(0, i + 1).join('.')}`); }
+      const found = findKeyLine(lines, block, key);
+      if (found !== -1) {
+        at = found;
+        continue;
+      }
+      if (i < rest.length - 1) { throw new Error(`no block-style ${e.path.slice(0, i + 2).join('.')}: key`); }
+      let end = block.end;
+      while (end > block.start && !isYamlContent(lines[end - 1] ?? '')) { end--; }
+      const eol = (lines[end - 1] ?? '').endsWith('\r') ? '\r' : '';
+      lines.splice(end, 0, `${' '.repeat(block.indent)}${key}: ${e.value}${eol}`);
+      inserted = true;
+    }
+    if (!inserted) {
+      if (childBlock(lines, at) !== null) { throw new Error(`${e.path.join('.')} is a block, not a scalar line`); }
+      lines[at] = setScalar(lines[at] ?? '', e.value);
+    }
+  }
+  const out = lines.join('\n');
+
+  const before = parseYaml(text) as unknown;
+  const after = parseYaml(out) as unknown;
+  for (const e of edits) {
+    const want = (parseYaml(`v: ${e.value}`) as { v: unknown }).v;
+    if (!Bun.deepEquals(readPath(after, e.path), want)) {
+      throw new Error(`the spliced file does not parse back to ${e.path.join('.')}: ${e.value}`);
+    }
+    deletePath(before, e.path);
+    deletePath(after, e.path);
+  }
+  if (!Bun.deepEquals(before, after)) { throw new Error('the splice changed more than the keys it was given'); }
+  return out;
+}
+
 /** Fields formally accepted as divergent in `policy.accepted_divergences`. */
 export function acceptedFields(gs: GitStrategy): string[] {
   return (gs.policy?.accepted_divergences ?? [])
@@ -680,6 +774,33 @@ export function buildRules(
   }
 
   return rules;
+}
+
+export function rulesetBody(gs: GitStrategy, branches: string[], rules: Rule[], existing: boolean): Record<string, unknown> {
+  return {
+    name: RULESET_NAME,
+    target: 'branch',
+    enforcement: 'active',
+    conditions: { ref_name: { include: branches.map(b => `refs/heads/${b}`), exclude: [] } },
+    rules,
+    // bypass_actors is intentionally omitted on PATCH so the host keeps whatever
+    // is configured. On CREATE, seed org-admin bypass only when policy asks for it.
+    ...(existing ? {} : { bypass_actors: gs.policy?.admin_bypass ? [{ actor_type: 'OrganizationAdmin', bypass_mode: 'always' }] : [] }),
+  };
+}
+
+export function describeRules(rules: Rule[]): string[] {
+  return rules.map((r) => {
+    if (r.type === 'pull_request') {
+      const p = r.parameters as unknown as PullRequestParams;
+      return `pull_request  reviews=${p.required_approving_review_count} codeowner=${p.require_code_owner_review} methods=[${p.allowed_merge_methods.join(', ')}]`;
+    }
+    if (r.type === 'required_status_checks') {
+      const checks = statusChecksOf([r]).map(c => c.integration_id === undefined ? c.context : `${c.context}@${c.integration_id}`);
+      return `required_status_checks  contexts=[${checks.join(', ')}] strict=${String(r.parameters?.strict_required_status_checks_policy)}`;
+    }
+    return r.type;
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -993,6 +1114,10 @@ function verify(gs: GitStrategy, slug: string, stamp: boolean): number {
     console.log('');
   }
 
+  // --- the Actions approval switch, reported from the EDD rollout on (corrections 17) ---
+  const actionsFinding = actionsApprovalFinding(gs, gh(`repos/${slug}/actions/permissions/workflow`) as ActionsWorkflowPermissions | null);
+  if (actionsFinding) { findings.push(actionsFinding); }
+
   // --- accepted divergences: declared drift the project has formally signed off ---
   const acceptedByField = classifyAccepted(findings, accepted);
   softenUndeclared(gs, findings);
@@ -1183,20 +1308,18 @@ function apply(gs: GitStrategy, slug: string, write: boolean, allowLoosening: bo
   console.log(`CODEOWNERS:  ${codeowners ? 'present -> require_code_owner_review: true' : 'absent -> require_code_owner_review: false'}`);
   console.log('');
   console.log(pc.bold('Rules to write:'));
-  for (const r of nextRules) {
-    if (r.type === 'pull_request') {
-      const p = r.parameters as unknown as PullRequestParams;
-      console.log(`  pull_request  reviews=${p.required_approving_review_count} codeowner=${p.require_code_owner_review} methods=[${p.allowed_merge_methods.join(', ')}]`);
-    }
-    else if (r.type === 'required_status_checks') {
-      const checks = statusChecksOf([r]).map(c => c.integration_id === undefined ? c.context : `${c.context}@${c.integration_id}`);
-      console.log(`  required_status_checks  contexts=[${checks.join(', ')}] strict=${String(r.parameters?.strict_required_status_checks_policy)}`);
-    }
-    else { console.log(`  ${r.type}`); }
-  }
+  for (const line of describeRules(nextRules)) { console.log(`  ${line}`); }
   console.log('');
   console.log(pc.bold('Repo settings patch:'));
   console.log(Object.keys(repoPatch).length === 0 ? '  <none>' : `  ${JSON.stringify(repoPatch)}`);
+  console.log('');
+  const actionsPatch = actionsSettingsPatch(eff);
+  const actionsHost = actionsPatch ? gh(`repos/${slug}/actions/permissions/workflow`) as ActionsWorkflowPermissions | null : null;
+  const actionsWrite = actionsPatch !== null && actionsHost?.can_approve_pull_request_reviews === true;
+  console.log(pc.bold('Actions settings patch:'));
+  if (!actionsPatch) { console.log('  <none>'); }
+  else if (actionsHost === null) { console.log('  UNKNOWN — actions/permissions/workflow is not readable by this account; not written'); }
+  else { console.log(actionsWrite ? `  ${JSON.stringify(actionsPatch)}` : '  <none> (can_approve_pull_request_reviews is already false)'); }
   console.log('');
 
   // Loosening check against every branch currently covered.
@@ -1218,16 +1341,7 @@ function apply(gs: GitStrategy, slug: string, write: boolean, allowLoosening: bo
     console.log('');
   }
 
-  const body = {
-    name: RULESET_NAME,
-    target: 'branch',
-    enforcement: 'active',
-    conditions: { ref_name: { include: branches.map(b => `refs/heads/${b}`), exclude: [] } },
-    rules: nextRules,
-    // bypass_actors is intentionally omitted on PATCH so the host keeps whatever
-    // is configured. On CREATE, seed org-admin bypass only when policy asks for it.
-    ...(existing ? {} : { bypass_actors: gs.policy?.admin_bypass ? [{ actor_type: 'OrganizationAdmin', bypass_mode: 'always' }] : [] }),
-  };
+  const body = rulesetBody(gs, branches, nextRules, existing !== null);
 
   if (!write) {
     console.log(pc.bold('Payload (dry run — nothing sent):'));
@@ -1260,6 +1374,21 @@ function apply(gs: GitStrategy, slug: string, write: boolean, allowLoosening: bo
     }
     log.ok(`PATCH repos/${slug} succeeded.`);
   }
+  if (actionsWrite) {
+    const actionsTmp = join(tmpdir(), `git-policy-actions-${process.pid}.json`);
+    const payload = {
+      ...(typeof actionsHost?.default_workflow_permissions === 'string' ? { default_workflow_permissions: actionsHost.default_workflow_permissions } : {}),
+      ...actionsPatch,
+    };
+    writeFileSync(actionsTmp, JSON.stringify(payload));
+    const ap = Bun.spawnSync(['gh', 'api', '-X', 'PUT', `repos/${slug}/actions/permissions/workflow`, '--input', actionsTmp], { stdout: 'pipe', stderr: 'pipe' });
+    if (ap.exitCode !== 0) {
+      log.err(`PUT repos/${slug}/actions/permissions/workflow failed (a 409 means the organization locks this setting):`);
+      console.log(ap.stderr.toString().trim());
+      return 1;
+    }
+    log.ok(`PUT repos/${slug}/actions/permissions/workflow succeeded.`);
+  }
   log.dim('Re-run `bun run git:policy verify --stamp` to record the reconciliation.');
   return 0;
 }
@@ -1280,7 +1409,7 @@ function verifyMerge(base: string): number {
   return 1;
 }
 
-function lineDiff(before: string, after: string): string[] {
+export function lineDiff(before: string, after: string): string[] {
   const a = before.split('\n');
   const b = after.split('\n');
   const out: string[] = [];
@@ -1305,16 +1434,52 @@ function lineDiff(before: string, after: string): string[] {
   return out;
 }
 
+function gateHere(): EddGate {
+  const pkg = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf8')) as { scripts?: Record<string, unknown> } | null;
+  return eddGateReady({
+    hasScript: existsSync(join(REPO_ROOT, 'scripts', 'edd.ts')),
+    hasPackageScript: pkg?.scripts !== null && typeof pkg?.scripts === 'object' && 'edd' in pkg.scripts,
+  });
+}
+
+function ghScopes(): string[] | null {
+  try {
+    const p = Bun.spawnSync(['gh', 'api', '-i', 'user'], { stdout: 'pipe', stderr: 'pipe' });
+    if (p.exitCode !== 0) { return null; }
+    const m = /^x-oauth-scopes:(.*)$/im.exec(p.stdout.toString());
+    return m ? (m[1] ?? '').split(',').map(s => s.trim()).filter(Boolean) : null;
+  }
+  catch { return null; }
+}
+
+function setupDeps(slug: string | null): SetupDeps {
+  const codeownersPath = ['CODEOWNERS', '.github/CODEOWNERS', 'docs/CODEOWNERS'].map(p => join(REPO_ROOT, p)).find(p => existsSync(p)) ?? null;
+  return {
+    interactive: process.stdin.isTTY === true && process.stdout.isTTY === true,
+    lang: pickLang(process.env),
+    ask: promptAsk,
+    print: line => console.log(line),
+    readProject: () => (existsSync(PROJECT_YAML) ? readFileSync(PROJECT_YAML, 'utf8') : null),
+    writeProject: (text) => { writeFileSync(PROJECT_YAML, text); },
+    slug,
+    gh: path => gh(path),
+    scopes: ghScopes,
+    gateReady: gateHere().ready,
+    codeowners: () => (codeownersPath === null ? null : readFileSync(codeownersPath, 'utf8')),
+    writeCodeowners: (text) => {
+      mkdirSync(join(REPO_ROOT, '.github'), { recursive: true });
+      writeFileSync(join(REPO_ROOT, '.github', 'CODEOWNERS'), text);
+    },
+    applyHost: write => (slug === null ? 1 : apply(readStrategy(), slug, write, false)),
+  };
+}
+
 function migrate(write: boolean): number {
   if (!existsSync(PROJECT_YAML)) { fail(`.agents/project.yaml not found at ${PROJECT_YAML}`); }
   const text = readFileSync(PROJECT_YAML, 'utf8');
   const doc = parseYaml(text) as Record<string, unknown> | null;
   const gs = (doc?.git_strategy ?? null) as GitStrategy | null;
-  const pkg = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf8')) as { scripts?: Record<string, unknown> } | null;
-  const verdict = migrationFor(gs, eddGateReady({
-    hasScript: existsSync(join(REPO_ROOT, 'scripts', 'edd.ts')),
-    hasPackageScript: pkg?.scripts !== null && typeof pkg?.scripts === 'object' && 'edd' in pkg.scripts,
-  }));
+  const verdict = migrationFor(gs, gateHere());
 
   console.log(pc.bold('\nGit Policy Migrate'));
   console.log('='.repeat(50));
@@ -1388,7 +1553,14 @@ COMMANDS
                       check run exists to read the integration_id from, or when
                       a required context has no check run on the production
                       branch.
-  plan                Print the implied ruleset and repo settings. No host calls.
+  plan                Print the implied ruleset, repo and Actions settings. No host calls.
+  setup               Ask the branching strategy, who confirms a push and how a PR
+                      is merged (Enter keeps each default), write those keys to
+                      .agents/project.yaml, print the plan and a read-only
+                      preflight. An admin then sees the apply dry run and is asked
+                      before anything is written to GitHub (default no); anyone
+                      else gets a hand-off for an admin. Never loosens, never
+                      widens bypass actors.
   migrate             Print the migration verdict for git_strategy.policy and the
                       diff it would make. Dry-run unless --yes. A rewrite to
                       evidence is blocked until scripts/edd.ts and the edd
@@ -1399,6 +1571,13 @@ FLAGS
   --merge <base>      (verify) check only the auto-merge guard on <base>
   --yes               (apply, migrate) actually write; without it, a dry run
   --allow-loosening   (apply) permit a change that removes a guard or lowers the review bar
+  --strategy <slug>   (setup) answer the strategy question
+  --push <value>      (setup) answer the push question: forbidden | confirm | allowed | evidence
+  --merge <mode>      (setup) answer the merge question: auto | human-approves | manual
+  --codeowner <who>   (setup) CODEOWNERS owner of the gate paths under human-approves
+  --plan-only         (setup) plan and preflight only: no GitHub write can happen
+  --write-policy      (setup) write the answers to .agents/project.yaml without asking
+  --questions-json    (setup) print the three questions with their defaults as JSON, and exit
   --help              this text
 
 NOTES
@@ -1421,6 +1600,13 @@ function main(): void {
   }
   if (cmd === 'migrate') {
     process.exit(migrate(argv.includes('--yes')));
+  }
+  if (cmd === 'setup') {
+    const flags = parseSetupFlags(argv.slice(1));
+    if ('error' in flags) { fail(flags.error); }
+    const url = originUrl();
+    void runSetup(setupDeps(url === null ? null : slugFromRemote(url)), flags).then(code => process.exit(code));
+    return;
   }
   const gs = readStrategy();
 
@@ -1453,6 +1639,7 @@ function main(): void {
         policy: { direct_push_to_protected: directPushPolicy(gs), merge_mode: mergeMode(eff) },
         rules,
         repo_settings: repoSettingsPatch(eff, rules),
+        actions_settings: actionsSettingsPatch(eff) ?? {},
         integration_id: 'resolved by apply from the latest edd/evidence check run',
       }, null, 2));
       process.exit(0);
