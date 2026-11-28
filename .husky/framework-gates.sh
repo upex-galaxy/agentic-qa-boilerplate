@@ -424,13 +424,29 @@ _fg_policy_value() {
   '
 }
 
+_fg_remote_refs() {
+  _fg_prod=$(awk '
+    { sub(/\r$/, "") }
+    /^[^[:space:]#]/ { ings = ($0 ~ /^git_strategy:[[:space:]]*(#.*)?$/); next }
+    ings && !/^[[:space:]]*#/ && match($0, /production:[[:space:]]*[^,}#[:space:]]+/) {
+      v = substr($0, RSTART, RLENGTH); sub(/production:[[:space:]]*/, "", v); gsub(/["\047]/, "", v)
+      if (v != "null") print v; exit
+    }
+  ' .agents/project.yaml 2>/dev/null)
+  printf '%s\n' refs/remotes/origin/HEAD refs/remotes/origin/main refs/remotes/origin/master
+  case "$_fg_prod" in
+    ''|main|master) ;;
+    *) printf 'refs/remotes/origin/%s\n' "$_fg_prod" ;;
+  esac
+}
+
 # The gate is on when the working tree OR the remote's copy reads as
 # `evidence`, so an uncommitted local edit cannot switch it off; leaving
 # `evidence` is a push the gate itself checks. A remote ref without the file
 # does not count.
 _fg_evidence_on() {
   if [ ! -f .agents/project.yaml ] || [ "$(_fg_policy_value < .agents/project.yaml 2>/dev/null)" = evidence ]; then return 0; fi
-  for _fg_ref in refs/remotes/origin/HEAD refs/remotes/origin/main refs/remotes/origin/master; do
+  for _fg_ref in $(_fg_remote_refs); do
     _fg_yaml=$(git show "$_fg_ref:.agents/project.yaml" 2>/dev/null) || continue
     if [ "$(printf '%s\n' "$_fg_yaml" | _fg_policy_value 2>/dev/null)" = evidence ]; then return 0; fi
   done
@@ -445,7 +461,7 @@ _fg_evidence_on() {
 framework_gate_evidence() {
   _fg_evidence_on || return 0
   if [ ! -f scripts/edd.ts ]; then
-    for _fg_ref in refs/remotes/origin/HEAD refs/remotes/origin/main refs/remotes/origin/master; do
+    for _fg_ref in $(_fg_remote_refs); do
       if git cat-file -e "$_fg_ref:scripts/edd.ts" 2>/dev/null; then
         echo "❌ The evidence policy is on and scripts/edd.ts is missing here but present on $_fg_ref: restore it, the gate cannot be skipped by deleting it."
         return 1

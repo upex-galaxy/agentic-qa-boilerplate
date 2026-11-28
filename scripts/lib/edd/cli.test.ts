@@ -365,6 +365,20 @@ describe('framework_gate_evidence (.husky/framework-gates.sh)', () => {
     expect(p.stdout.toString()).toContain('cannot be skipped by deleting it');
   });
 
+  test('deleting scripts/edd.ts is refused against origin/<production> when origin has no main', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const yaml = projectYaml('', 'evidence').replace('production: main', 'production: trunk');
+    const sha = r.commit('chore: base', { '.agents/project.yaml': yaml, 'scripts/edd.ts': 'x\n' });
+    r.git('update-ref', 'refs/remotes/origin/trunk', sha);
+    const script = join(r.dir, '..', 'gate.sh');
+    writeFileSync(script, `. '${GATES}'\nframework_gate_evidence\n`);
+    r.git('rm', '-q', 'scripts/edd.ts');
+    const p = Bun.spawnSync(['sh', script], { cwd: r.dir, stdin: Buffer.from('x\n'), stdout: 'pipe', stderr: 'pipe' });
+    expect(p.exitCode).toBe(1);
+    expect(p.stdout.toString()).toContain('present on refs/remotes/origin/trunk');
+  });
+
   test('the remote copy of the policy turns it on even when the working tree says allowed', () => {
     const r = makeRepo();
     repos.push(r);
