@@ -170,8 +170,15 @@ jobs:
         if: always() && env.AUTO_SYNC == 'true' && (env.TMS_PROVIDER != 'xray' || env.STP_EXECUTION_KEY != '')
         run: bun run test:sync
 
-      - name: Upload Allure Results
+      # Nothing is uploaded unless this passed: the artifact is what the published report is
+      # built from. It knows only the secrets this job holds.
+      - name: Scrub Secrets From Allure Attachments
+        id: scrub
         if: always()
+        run: bun --no-env-file scripts/launch.ts --warn bun cli/oneshot-report/scrub.ts --results allure-results
+
+      - name: Upload Allure Results
+        if: always() && steps.scrub.outcome == 'success'
         uses: actions/upload-artifact@v7
         with:
           name: sanity-allure-results
