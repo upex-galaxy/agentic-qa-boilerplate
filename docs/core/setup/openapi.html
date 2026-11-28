@@ -108,11 +108,11 @@
         <code>.mcp.json</code> (las versiones están fijadas ahí):
       </p>
       <pre data-lang="json"><code>"openapi": {
-  "command": "bunx",
+  "command": "bun",
   "args": [
-    "-p", "varlock@&lt;pin&gt;", "varlock", "run", "--no-redact-stdout",
+    "x", "-p", "varlock@&lt;pin&gt;", "varlock", "run", "--no-redact-stdout",
     "--inject", "vars", "--filter", "API_BASE_URL,OPENAPI_SPEC_PATH", "--",
-    "bunx", "-y", "@ivotoby/openapi-mcp-server", "--tools", "dynamic"
+    "bun", "x", "-y", "@ivotoby/openapi-mcp-server@&lt;pin&gt;", "--tools", "dynamic"
   ]
 }</code></pre>
       <p>
