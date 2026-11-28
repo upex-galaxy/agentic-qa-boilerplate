@@ -126,6 +126,24 @@ describe('devLinkedDestinations', () => {
     return { base, store: join(base, '.agents', 'skills'), claude: join(base, '.claude', 'skills'), checkout, folder, link };
   }
 
+  it('a skill declared with no name is judged only against its own package, never an unrelated link', () => {
+    const { base, store, checkout, folder, link } = layout();
+    link(join(checkout, 'mkd'), join(store, 'mkd'));
+    expect(devLinkedDestinations(undefined, 'project', base, {}, 'https://github.com/resend/resend-cli')).toEqual([]);
+    expect(devLinkedDestinations(undefined, 'project', base, {})).toEqual([]);
+    folder(join(checkout, 'resend-cli'));
+    link(join(checkout, 'resend-cli'), join(store, 'resend-cli'));
+    expect(devLinkedDestinations(undefined, 'project', base, {}, 'resend/resend-cli')).toEqual([join(store, 'resend-cli')]);
+  });
+
+  it('a nameless package also covers the skills its lock entry recorded under other names', () => {
+    const { base, store, checkout, folder, link } = layout();
+    folder(join(checkout, 'mailer'));
+    link(join(checkout, 'mailer'), join(store, 'mailer'));
+    writeFileSync(join(base, 'skills-lock.json'), JSON.stringify({ skills: { mailer: { source: 'resend/resend-skills' } } }));
+    expect(devLinkedDestinations(undefined, 'project', base, {}, 'https://github.com/resend/resend-skills')).toEqual([join(store, 'mailer')]);
+  });
+
   it('finds nothing in real folders and the CLI fan-out', () => {
     const { base, store, claude, folder, link } = layout();
     folder(join(store, 'mkd'));
@@ -247,12 +265,13 @@ describe('devLinkedDestinations', () => {
     }
   });
 
-  it('judges every entry for a package declared without a skill name', () => {
+  it('judges a package declared without a skill name by its own names, for undefined and *', () => {
     const { base, store, checkout, folder, link } = layout();
     folder(join(store, 'retro'));
     link(join(checkout, 'mkd'), join(store, 'mkd'));
     for (const name of [undefined, '*']) {
-      expect(devLinkedDestinations(name, 'global', base, {})).toEqual([join(store, 'mkd')]);
+      expect(devLinkedDestinations(name, 'global', base, {}, 'upex-galaxy/retro')).toEqual([]);
+      expect(devLinkedDestinations(name, 'global', base, {}, 'someone/mkd')).toEqual([join(store, 'mkd')]);
     }
   });
 });

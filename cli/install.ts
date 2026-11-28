@@ -441,7 +441,7 @@ export async function addCommunitySkill(
   base: string,
   env: Record<string, string | undefined> = process.env,
 ): Promise<{ devLinks: string[], result: StreamResult | null }> {
-  const devLinks = devLinkedDestinations(item.skill, level, base, env);
+  const devLinks = devLinkedDestinations(item.skill, level, base, env, item.package);
   if (devLinks.length > 0) { return { devLinks, result: null }; }
   return { devLinks, result: await run(buildCommunitySkillArgs(item, level, agents)) };
 }

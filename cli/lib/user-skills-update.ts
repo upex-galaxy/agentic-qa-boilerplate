@@ -33,7 +33,7 @@
  */
 
 import { spawn } from 'node:child_process';
-import { cpSync, lstatSync, mkdirSync, readdirSync, readlinkSync, realpathSync } from 'node:fs';
+import { cpSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 
@@ -162,11 +162,26 @@ function agentSkillsDirs(scope: SkillScope, base: string, env: Record<string, st
   return [...parents.map(parent => join(parent, 'skills')), ...OFF_PATTERN_DIRS[scope].map(dir => join(base, dir))];
 }
 
+export function packageSkillNames(pkg: string, scope: SkillScope, base: string, env: Record<string, string | undefined> = process.env): string[] {
+  const lockPath = scope === 'project'
+    ? join(base, 'skills-lock.json')
+    : env.XDG_STATE_HOME ? join(env.XDG_STATE_HOME, 'skills', '.skill-lock.json') : join(base, '.agents', '.skill-lock.json');
+  let locked: string[] = [];
+  try {
+    const lock = JSON.parse(readFileSync(lockPath, 'utf8')) as { skills?: Record<string, { source?: unknown }> };
+    locked = Object.entries(lock.skills ?? {}).filter(([, e]) => typeof e?.source === 'string' && normalizeSource(e.source) === normalizeSource(pkg)).map(([name]) => name);
+  }
+  catch { locked = []; }
+  const repo = normalizeSource(pkg).split('/').pop()?.replace(/\.git$/, '') ?? '';
+  return [...new Set([...locked, ...(repo ? [repo] : [])])];
+}
+
 export function devLinkedDestinations(
   skill: string | undefined,
   scope: SkillScope,
   base: string,
   env: Record<string, string | undefined> = process.env,
+  pkg?: string,
 ): string[] {
   const { store, claude } = skillsDirs(scope, base, env);
   const unlinked = (dir: string): string => {
@@ -176,7 +191,7 @@ export function devLinkedDestinations(
   const canonical = [store, claude].map(unlinked);
   const found: string[] = [];
   for (const dir of new Set([store, claude, ...agentSkillsDirs(scope, base, env)])) {
-    for (const name of !skill || skill === '*' ? entryNames(dir) : [skill]) {
+    for (const name of !skill || skill === '*' ? (pkg ? packageSkillNames(pkg, scope, base, env) : []) : [skill]) {
       const entry = join(dir, name);
       if (!isPresent(entry)) { continue; }
       // A fan-out or alias onto the store entry: that entry is judged on its own.
