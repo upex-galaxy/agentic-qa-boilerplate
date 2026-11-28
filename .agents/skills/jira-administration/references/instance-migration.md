@@ -311,7 +311,7 @@ If the manifest pre-flight produced a change, that is a third commit and it goes
 chore(jira): sync jira-required.yaml work types with upstream
 ```
 
-Follow the repo's git strategy through `/git-flow-master`. Push only with explicit confirmation, because in a boilerplate, publishing catalogs affects every downstream project that later runs `--upex`.
+Follow the repo's git strategy through `/git-flow-master`, and push as the git policy decides (`AGENTS.md` Critical Rule 5). In a boilerplate that push publishes the catalogs to every downstream project that later runs `--upex`, which is why the closing report's last item warns the team.
 
 ---
 

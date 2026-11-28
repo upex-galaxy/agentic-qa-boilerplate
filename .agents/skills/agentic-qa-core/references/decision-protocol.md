@@ -165,7 +165,7 @@ At an autonomy-3 stage the stated limits are the plan.
 | which technique fires and how far an AC explodes (`./test-design-doctrine.md`) | what the AC means when it is ambiguous about behaviour |
 | UI, API or DB leg for a check; seed data; which existing role runs a case | adding a role, an environment or a surface the plan left out |
 | Bug, Defect or Improvement by `./defect-management-doctrine.md`; severity by its derivation | filing the issue at all, and any security severity recalibration (the person signs both) |
-| KATA shape inside the approved `automation-plan.md`: locator, component, fixture choice | the plan before a line of code, and the merge |
+| KATA shape inside the approved `automation-plan.md`: locator, component, fixture choice | the plan before a line of code; the merge only where `git_strategy.policy.merge_mode` gives it to a person (the approval under `human-approves`, the merge itself under `manual`) |
 | how to investigate a red test before classifying it | the CAUTION verdict |
 
 Most calls need only a choice and one line of why in the report.
@@ -212,9 +212,12 @@ The list is exhaustive, and a question outside it is the agent's.
    production surface with anything but its dedicated account, or accepting a risk nobody accepted
    before escalates.
 3. Irreversible or outward with no undo. Deleting tracker issues or test data, a destructive write on
-   a shared environment's database, a production action with no rollback, a merge, a history rewrite or a
-   force push, a message to someone outside the session, spending money. A write the approved plan
-   already names (creating the ATP, firing a mapped transition) is the plan, not an escalation.
+   a shared environment's database, a production action with no rollback, a history rewrite, a force
+   push or a remote branch deletion, a message to someone outside the session, spending money. A write
+   the approved plan already names (creating the ATP, firing a mapped transition) is the plan, not an
+   escalation. A push or a merge is not on this list by itself: the git policy decides whose it is
+   (`AGENTS.md` Critical Rule 5 and `git_strategy.policy.merge_mode`), and what stays a person's under
+   every policy is the closed list in `edd/references/human-gates.md`.
 4. What a person signs, or reserved. The "The person signs" column of `./stage-gates.md`
    §"Contract table", for the stage being run, plus every standing instruction from the operator: a line
    in the brief, a Critical Rule that requires confirmation (Rule #5 under `confirm`), an owner decision

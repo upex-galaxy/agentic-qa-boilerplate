@@ -84,7 +84,7 @@ The scaffold ships a **default** git strategy (`solo-main`) with `strategy_sourc
 
 > **"set up our git strategy"**
 
-That runs git-flow-master's Strategy Setup: it resolves your branching flow (solo-main / main-integration / sdet / others), asks the merge + hotfix + protection-policy questions, materializes any long-lived branches, and writes the `git_strategy:` block with `strategy_source: chosen`. Until you do this, the agent offers it on your first git intent, and the synced `pre-push` hook (`bun run git:policy verify`) prints any difference between the inherited policy and the host as warnings that point here, and lets the push through. No origin yet, or one that is not GitHub, is a warning too. Once the strategy is `chosen`, unaccepted drift blocks the push.
+That runs git-flow-master's Strategy Setup: it resolves your branching flow (solo-main / main-integration / sdet / others), asks the merge + hotfix + protection-policy questions, materializes any long-lived branches, and writes the `git_strategy:` block with `strategy_source: chosen`. Until you do this, the agent offers it on your first git intent, and the synced `pre-push` hook (`bun run git:policy verify`) prints any difference between the inherited policy and the host as warnings that point here, and lets the push through. No origin yet, or one that is not GitHub, is a warning too. Once the strategy is `chosen`, unaccepted drift blocks the push. When `git_strategy.policy.direct_push_to_protected` is `evidence`, the same hook first runs the evidence gate (`bun run edd gate`): it re-runs the contract's pre-push checks, writes the record and refuses the push when the gate fails. Under any other value the evidence gate does nothing.
 
 ### Where the run is shown
 
