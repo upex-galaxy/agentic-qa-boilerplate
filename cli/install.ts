@@ -2655,6 +2655,17 @@ function reseedCopiedTemplate(): 'reseeded' | 'kept' | 'failed' {
   return 'reseeded';
 }
 
+export function eddSignersArgs(replace: boolean): string[] {
+  return ['scripts/edd.ts', 'signers', ...(replace ? ['--replace'] : [])];
+}
+
+function seedSigners(replace: boolean): { ok: boolean, message: string } {
+  if (!existsSync(join(REPO_ROOT, 'scripts', 'edd.ts'))) { return { ok: false, message: 'scripts/edd.ts is not in this project yet' }; }
+  const r = spawnSync('bun', eddSignersArgs(replace), { cwd: REPO_ROOT, encoding: 'utf8' });
+  const first = `${r.stdout ?? ''}${r.stderr ?? ''}`.trim().split('\n')[0] ?? '';
+  return { ok: r.status === 0, message: r.status === 0 ? first : `${first} Run bun run edd signers for the steps.` };
+}
+
 interface ProjectValues {
   name: string
   key: string
@@ -3695,6 +3706,8 @@ async function main(): Promise<void> {
       ? tr(`desde ${SCHEMA_FILE}: cada campo vacío, la estrategia de git heredada`, `from ${SCHEMA_FILE}: every field empty, the git strategy inherited`)
       : tr(`${SCHEMA_FILE} falta o está dañado; restáuralo desde upstream`, `${SCHEMA_FILE} is missing or damaged; restore it from upstream`));
   }
+  const signers = seedSigners(reseed === 'reseeded');
+  ui.step({ phase: 'pre', title: tr('Tu clave de firma en <code>.agents/edd/allowed_signers</code>', 'Your signing key in <code>.agents/edd/allowed_signers</code>') }).end(signers.ok ? 'ok' : 'skipped', signers.message);
   applyTracker();
   ui.phaseEnd('pre', pre.verdict === 'warn' ? 'warn' : 'done', pre.verdict === 'warn' ? tr(`${pre.checks.filter(c => c.state === 'warn').length} aviso(s)`, `${pre.checks.filter(c => c.state === 'warn').length} warning(s)`) : undefined);
 

@@ -446,6 +446,8 @@ export const TEMPLATE_EXCLUDES = [
   // is THAT workspace's answer). The installer writes the `{}` placeholder and
   // `jira:sync-link-types` fills it from the project's own site.
   '.agents/jira-link-types.json',
+  // The maintainers' evidence signer: a project gets its own user's key from bun run edd signers.
+  '.agents/edd/allowed_signers',
   // The boilerplate's own worker and audit reports. Framework documentation
   // travels; our working notes about evolving the framework do not. Mirrored in
   // `repoOnlyPaths` (cli/update-boilerplate.ts) so `bun sync` cannot

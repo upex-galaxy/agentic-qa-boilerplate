@@ -345,6 +345,10 @@ describe('pruneBootstrapExcludes', () => {
     ]);
   });
 
+  test('the maintainers\' evidence signer never reaches a scaffolded project', () => {
+    expect(TEMPLATE_EXCLUDES as readonly string[]).toContain('.agents/edd/allowed_signers');
+  });
+
   // `bun sync` must not re-deliver what the scaffold pruned, nor prune less.
   test('the test excludes mirror the updater\'s repo-only lists exactly', () => {
     expect(TEMPLATE_EXCLUDE_PATTERNS.map(String)).toEqual(BOILERPLATE_TEST_PATTERNS.map(String));

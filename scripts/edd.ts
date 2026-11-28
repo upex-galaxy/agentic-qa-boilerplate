@@ -13,6 +13,7 @@ import { gatePathsTouched, requiredAgentic } from './lib/edd/depth.ts';
 import { changedFiles, cleanEnv, commitTime, EMPTY_TREE, git, isCommit, isZeroOid, mergeBase, primaryRoot, repoRoot, resolveCommit, treeOf } from './lib/edd/git.ts';
 import { DiffTooLarge, patchId } from './lib/edd/patch-id.ts';
 import { artifactsRoot, pruneArtifacts, readRecord, RECORD_SCHEMA, RENDER_MARKER, renderMarkdown, scrubLine, writeRecord } from './lib/edd/record.ts';
+import { seedAllowedSigners } from './lib/edd/signers.ts';
 import { authorSessions, changeDepthWithKeys, coverageProblems, gateKeysChanged, isEvidenceCommit, testerProblems, verifyAgentic } from './lib/edd/verify.ts';
 
 const USAGE = `Usage: bun run edd <command>
@@ -38,6 +39,9 @@ const USAGE = `Usage: bun run edd <command>
            Run one static check of the contract whose where includes ci.
   check --list
            Print the ids of the contract's ci checks as a JSON array.
+  signers [--replace]
+           Write the public key of git's user.signingkey to .agents/edd/allowed_signers
+           when the file lists no signer yet (--replace: even when it does).
 `;
 
 const argv = process.argv.slice(2);
@@ -486,6 +490,11 @@ async function main(): Promise<number> {
     case 'render': return render();
     case 'prune': return prune();
     case 'check': return check();
+    case 'signers': {
+      const seed = seedAllowedSigners(CWD, { replace: has('--replace') });
+      say(seed.message);
+      return seed.status === 'no-key' ? 1 : 0;
+    }
     case undefined:
     case '--help':
     case '-h':

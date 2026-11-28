@@ -228,6 +228,78 @@ describe('gate keys and branch contracts', () => {
   });
 });
 
+describe('the first signer is trusted on first use', () => {
+  const gated = `evidence:
+  static:
+    - { id: lint, cmd: 'true', where: [pre-push, ci] }
+  agentic:
+    - { id: screens, kind: screenshots, envs: [local], min_depth: standard }
+  depth:
+    default: none
+    rules:
+      - { paths: ['.agents/edd/**'], depth: standard }
+`;
+
+  test('adding allowed_signers where the base has none needs no signed evidence', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml(gated) });
+    r.git('update-ref', 'refs/remotes/origin/main', base);
+    const head = r.commit('chore(edd): first signer', { '.agents/edd/allowed_signers': 'me namespaces="git" ssh-ed25519 AAAAme\n' });
+    const res = run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${base}\n`);
+    expect(res.code).toBe(0);
+    const rec = JSON.parse(readFileSync(join(r.dir, '.session', 'evidence', `${head}.json`), 'utf8'));
+    expect(rec.contract.depth_reasons.join(' ')).toContain('trusted on first use');
+  });
+
+  test('a base file with only its comment header counts as no signer', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml(gated), '.agents/edd/allowed_signers': '# Public SSH keys only\n' });
+    r.git('update-ref', 'refs/remotes/origin/main', base);
+    const head = r.commit('chore(edd): first signer', { '.agents/edd/allowed_signers': '# Public SSH keys only\nme namespaces="git" ssh-ed25519 AAAAme\n' });
+    expect(run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${base}\n`).code).toBe(0);
+  });
+
+  test('once the base lists a signer, changing the file needs signed evidence as before', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml(gated), '.agents/edd/allowed_signers': 'me namespaces="git" ssh-ed25519 AAAAme\n' });
+    r.git('update-ref', 'refs/remotes/origin/main', base);
+    const head = r.commit('chore(edd): another signer', { '.agents/edd/allowed_signers': 'me namespaces="git" ssh-ed25519 AAAAme\nyou namespaces="git" ssh-ed25519 AAAAyou\n' });
+    const res = run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${base}\n`);
+    expect(res.code).toBe(1);
+    expect(res.out).toContain('requires agentic evidence');
+  });
+});
+
+describe('edd signers and the path-scoped attest', () => {
+  test('edd signers writes the git signing key, and exits 1 with the steps when there is none', () => {
+    const { r } = fixture('allowed');
+    r.git('config', 'gpg.format', 'ssh');
+    r.git('config', 'user.signingkey', 'key::ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFakeKeyForTestsOnlyFakeKeyForTestsOnly00');
+    const ok = run(r.dir, ['signers']);
+    expect(ok.code).toBe(0);
+    expect(readFileSync(join(r.dir, '.agents', 'edd', 'allowed_signers'), 'utf8')).toContain('test@example.com namespaces="git" ssh-ed25519 AAAAC3');
+    const { r: bare } = fixture('allowed');
+    bare.git('config', 'gpg.format', 'openpgp');
+    const none = run(bare.dir, ['signers']);
+    expect(none.code).toBe(1);
+    expect(none.out).toContain('git config --global gpg.format ssh');
+  });
+
+  test('attest asks only for the checks whose paths the change touches', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml('evidence:\n  agentic:\n    - { id: changed-specs, kind: test-run, envs: [local], min_depth: standard, paths: [\'tests/**\'] }\n  depth:\n    default: standard\n') });
+    r.git('update-ref', 'refs/remotes/origin/main', base);
+    r.commit('feat: x', { 'app/a.ts': '1\n' });
+    const res = run(r.dir, ['attest']);
+    expect(res.code).toBe(0);
+    expect(res.out).toContain('requires no agentic evidence');
+  });
+});
+
 describe('verify --ci ready line', () => {
   test('no assignee, a bad title and an unlinked key stay in the Ready line and fail nothing', () => {
     const r = makeRepo();

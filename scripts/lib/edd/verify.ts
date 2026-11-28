@@ -6,10 +6,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { looksLikeEvidence, readEvidenceMessage } from './attest.ts';
-import { DEPTHS, gateKeysTouched, readProjectDoc, refReader, sha256 } from './contract.ts';
+import { ALLOWED_SIGNERS, DEPTHS, gateKeysTouched, readProjectDoc, refReader, sha256 } from './contract.ts';
 import { changeDepth, depthRank, raiseForGateKeys, requiredAgentic } from './depth.ts';
-import { changedFiles, commitMessage, EMPTY_TREE, git, mergeBase, parentsOf, rangeCount, rangeLog, treeOf } from './git.ts';
+import { changedFiles, commitMessage, EMPTY_TREE, git, mergeBase, parentsOf, rangeCount, rangeLog, showFile, treeOf } from './git.ts';
 import { DiffTooLarge, MAX_DIFF_BYTES, patchId } from './patch-id.ts';
+import { listsASigner } from './signers.ts';
 
 export const MAX_COMMITS = 2000;
 
@@ -132,9 +133,14 @@ export function verifyAgentic(input: VerifyInput): AgenticVerdict {
     if (e instanceof DiffTooLarge) { return refused(`${e.message}; verification refused`); }
     throw e;
   }
-  const files = changedFiles(cwd, base, head);
-  const { depth, reasons } = changeDepthWithKeys(cwd, base, files, head, loaded);
-  const required = requiredAgentic(loaded.contract.agentic, depth);
+  const baseHasSigner = input.allowedSigners !== null && listsASigner(input.allowedSigners);
+  const headSigners = baseHasSigner ? null : showFile(cwd, head, ALLOWED_SIGNERS);
+  const firstSigner = headSigners !== null && listsASigner(headSigners);
+  const files = changedFiles(cwd, base, head).filter(f => !(firstSigner && f === ALLOWED_SIGNERS));
+  const keyed = changeDepthWithKeys(cwd, base, files, head, loaded);
+  const depth = keyed.depth;
+  const reasons = firstSigner ? [...keyed.reasons, `${ALLOWED_SIGNERS} gets its first signer while the base lists none: the file itself needs no signed evidence (trusted on first use)`] : keyed.reasons;
+  const required = requiredAgentic(loaded.contract.agentic, depth, files);
   const verdict: AgenticVerdict = { ok: true, required: required.map(r => r.id), depth, depthReasons: reasons, patchId: pid, evidenceCommit: null, signature: 'absent', signer: null, checks: [], problems: [] };
   const evidence = findEvidenceCommit(cwd, base, head);
   if (required.length === 0 && evidence === null) { return verdict; }

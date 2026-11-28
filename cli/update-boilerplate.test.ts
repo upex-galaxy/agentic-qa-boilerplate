@@ -80,6 +80,11 @@ describe('component registry', () => {
     expect(COMPONENTS.find(c => c.name === 'playwright-cli-config')).toMatchObject({ type: 'file-list', paths: ['.playwright'], files: ['cli.config.json'], bootstrapOnly: true });
   });
 
+  test('bun sync never walks .agents/edd: a project\'s allowed_signers is its own', () => {
+    const covered = COMPONENTS.flatMap(c => c.type === 'file-list' ? (c.files ?? []).map(f => `${c.paths[0]}/${f}`.replace(/^\.\//, '')) : c.paths);
+    expect(covered.filter(p => p === '.agents' || p.startsWith('.agents/edd'))).toEqual([]);
+  });
+
   test('the two EDD workflows ship once (bootstrap-only): the required edd/evidence gets a poster, a project copy is never overwritten', () => {
     expect(COMPONENTS.find(c => c.name === 'edd-workflows')).toMatchObject({ type: 'file-list', paths: ['.github/workflows'], files: ['evidence.yml', 'evidence-push.yml'], bootstrapOnly: true });
     const applied = ['.github/workflows/evidence.yml', '.github/workflows/unit-tests.yml', 'scripts/edd.ts'].map(path => ({ entry: { path } }));
