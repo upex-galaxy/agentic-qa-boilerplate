@@ -339,6 +339,21 @@ describe('collectChecks', () => {
     expect(checks).toEqual([{ id: 'screens', verdict: 'pass', verdict_by: 'tester-1', env: 'local', claim: 'home renders', artifacts: [{ path: 'home.png', sha256: sha256('png'), bytes: 3 }] }]);
   });
 
+  test('--tester supplies verdict_by when verdict.json names none, and must agree when it does', () => {
+    const r = repo();
+    const root = join(r.dir, '..', 'art');
+    art(root, 'screens/local/home.png', 'png');
+    art(root, 'screens/local/verdict.json', JSON.stringify({ verdict: 'pass' }));
+    const none = collectChecks({ root, required: [required[0]], depth: 'light', subjectTime: 0, environments: envs });
+    expect(none.problems.join(' ')).toContain('unless attest gets --tester');
+    const flagged = collectChecks({ root, required: [required[0]], depth: 'light', subjectTime: 0, environments: envs, tester: 'author-7/tester' });
+    expect(flagged.problems).toEqual([]);
+    expect(flagged.checks[0].verdict_by).toBe('author-7/tester');
+    art(root, 'screens/local/verdict.json', JSON.stringify({ verdict: 'pass', verdict_by: 'someone-else' }));
+    const clash = collectChecks({ root, required: [required[0]], depth: 'light', subjectTime: 0, environments: envs, tester: 'author-7/tester' });
+    expect(clash.problems.join(' ')).toContain('--tester says');
+  });
+
   test('refuses a missing verdict, a wrong kind, a stale file and a trace on another host', () => {
     const r = repo();
     const root = join(r.dir, '..', 'art');

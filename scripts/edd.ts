@@ -17,9 +17,12 @@ import { authorSessions, coverageProblems, isEvidenceCommit, testerProblems, ver
 
 const USAGE = `Usage: bun run edd <command>
 
-  attest [--base <ref>] [--depth <d>] [--session <label>] [--worktree <name>]
+  attest [--base <ref>] [--depth <d>] [--tester <label>] [--session <label>] [--worktree <name>]
            Hash the artifacts of HEAD under .session/evidence/artifacts/<sha>/<check>/<env>/
-           and create the signed, empty evidence commit on top of HEAD.
+           and create the signed, empty evidence commit on top of HEAD. --tester
+           (or EDD_TESTER) is the tester's own label, the verdict_by of every
+           check whose verdict.json names none; it must differ from the
+           Session trailer of the code commits at depth standard and deeper.
   gate     Pre-push evidence gate (reads git's pre-push refs on stdin; with none,
            checks HEAD against the production branch). Writes the record.
   verify [--base <ref>] [<head>]
@@ -51,7 +54,7 @@ function positional(): string[] {
   const out: string[] = [];
   for (let i = 1; i < argv.length; i++) {
     if (argv[i].startsWith('--')) {
-      if (['--base', '--depth', '--session', '--worktree', '--days'].includes(argv[i])) { i++; }
+      if (['--base', '--depth', '--tester', '--session', '--worktree', '--days'].includes(argv[i])) { i++; }
       continue;
     }
     out.push(argv[i]);
@@ -255,7 +258,7 @@ async function attest(): Promise<number> {
     return 0;
   }
   const root = artifactsRoot(PRIMARY, subject);
-  const { checks, problems } = collectChecks({ root, required, depth, subjectTime: commitTime(CWD, subject), environments: loaded.facts.environments });
+  const { checks, problems } = collectChecks({ root, required, depth, subjectTime: commitTime(CWD, subject), environments: loaded.facts.environments, tester: flag('--tester') ?? process.env.EDD_TESTER ?? null });
   problems.push(...coverageProblems(required, checks, depth), ...testerProblems(checks, authorSessions(CWD, base, subject), depth));
   if (problems.length > 0) {
     console.error(`edd attest: refused for ${subject.slice(0, 12)} at depth ${depth} (artifacts: ${root})`);

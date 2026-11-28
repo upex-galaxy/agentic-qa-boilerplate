@@ -58,6 +58,7 @@ export interface CollectInput {
   subjectTime: number
   environments: Record<string, { web_url: string | null }>
   hosts?: TraceHosts
+  tester?: string | null
 }
 
 export function collectChecks(input: CollectInput): { checks: AttestedCheck[], problems: string[] } {
@@ -86,10 +87,17 @@ export function collectChecks(input: CollectInput): { checks: AttestedCheck[], p
       let v: { verdict?: unknown, verdict_by?: unknown, claim?: unknown };
       try { v = JSON.parse(readFileSync(verdictPath, 'utf8')) as typeof v; }
       catch { problems.push(`${c.id}/${env}: ${VERDICT_FILE} is not JSON`); continue; }
-      if (typeof v.verdict !== 'string' || typeof v.verdict_by !== 'string' || !v.verdict_by.trim()) {
-        problems.push(`${c.id}/${env}: ${VERDICT_FILE} needs string verdict and verdict_by`);
+      const tester = input.tester?.trim() || null;
+      const fileBy = typeof v.verdict_by === 'string' && v.verdict_by.trim() ? v.verdict_by.trim() : null;
+      if (typeof v.verdict !== 'string' || (fileBy === null && tester === null)) {
+        problems.push(`${c.id}/${env}: ${VERDICT_FILE} needs a string verdict, and verdict_by unless attest gets --tester`);
         continue;
       }
+      if (fileBy !== null && tester !== null && fileBy !== tester) {
+        problems.push(`${c.id}/${env}: ${VERDICT_FILE} says verdict_by "${fileBy}", --tester says "${tester}"`);
+        continue;
+      }
+      const verdictBy = (fileBy ?? tester) as string;
       if (v.verdict !== 'pass') { problems.push(`${c.id}/${env}: verdict is ${v.verdict}, not pass`); }
       const files = walk(envDir).filter(f => f !== verdictPath);
       const re = KIND_FILES[c.kind];
@@ -112,7 +120,7 @@ export function collectChecks(input: CollectInput): { checks: AttestedCheck[], p
       checks.push({
         id: c.id,
         verdict: v.verdict,
-        verdict_by: v.verdict_by.trim(),
+        verdict_by: verdictBy,
         env,
         artifacts: files.map((f) => {
           const bytes = readFileSync(f);
