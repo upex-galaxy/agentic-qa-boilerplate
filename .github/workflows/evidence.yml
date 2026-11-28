@@ -13,10 +13,18 @@
 # `ref:` to the checkout, a `bun install` with scripts, a `bun run` of a
 # package.json key, or a `${{ }}` of a PR-controlled string inside `run:`.
 #
-# `push` runs the same job after a direct push (detection after the fact,
-# spec 5.2); the script exits 0 for a branch the base contract does not
-# protect. Making `edd/evidence` a required check is a host write the
-# owner authorizes separately (`bun run git:policy apply`).
+# `push` runs a separately named job after a direct push (detection after
+# the fact, spec 5.2), so a branch push never posts `edd/evidence` itself.
+# It exits 0 for a branch the base contract does not protect or a base policy
+# other than evidence. Making `edd/evidence` a required check is a host write
+# the owner authorizes separately (`bun run git:policy apply`).
+#
+# WHAT THE CHECK PROVES. A required check pinned to the GitHub Actions app
+# cannot tell this job from any other Actions run: a branch can add its own
+# workflow with a job named `edd/evidence` and post a green check. So this
+# check catches mistakes and drift; it does not stop an agent that
+# deliberately forges a check (accepted residual risk, spec-corrections item
+# 19; the upgrade path is a dedicated GitHub App as the check source).
 
 name: EDD Evidence
 run-name: ${{ github.actor }} triggered EDD Evidence on ${{ github.ref_name }}
@@ -37,6 +45,7 @@ concurrency:
 jobs:
   Evidence:
     name: edd/evidence
+    if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -50,7 +59,6 @@ jobs:
           fetch-depth: 0
 
       - name: Fetch the pull request as data
-        if: github.event_name == 'pull_request_target'
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: git fetch --no-tags origin "+refs/pull/${PR_NUMBER}/head:refs/remotes/pull/${PR_NUMBER}/head"
@@ -66,6 +74,40 @@ jobs:
       - name: Verify the evidence
         env:
           GH_TOKEN: ${{ github.token }}
+        run: bun scripts/edd.ts verify --ci
+
+      - name: Upload the record
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: edd-evidence-${{ github.run_id }}
+          path: .session/evidence/*.json
+          include-hidden-files: true
+          if-no-files-found: ignore
+
+  PushEvidence:
+    name: edd/evidence (push)
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Verify the evidence
         run: bun scripts/edd.ts verify --ci
 
       - name: Upload the record

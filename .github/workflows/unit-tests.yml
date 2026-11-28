@@ -35,9 +35,7 @@ env:
 
 jobs:
   UnitTests:
-    # Named `unit`: the evidence contract's static check id (evidence.static in
-    # .agents/project.yaml), which a ruleset can require by this name.
-    name: unit
+    name: bun test + repo gates
     # A PR from this repository already got the push run on the same commit,
     # and GitHub shows that run on the PR. Only a fork PR (no push run here)
     # needs its own. A manual dispatch always runs.
@@ -113,16 +111,15 @@ jobs:
   ContractChecks:
     # One check per ci id of the evidence contract (evidence.static in
     # .agents/project.yaml), named by the id so a ruleset can require it. The
-    # command comes from the contract, not from this file. `unit` is the
-    # UnitTests job above.
+    # command comes from the contract at the base commit, not from this file.
+    # No job-level skip: a skipped job reports success to a required check.
     name: ${{ matrix.id }}
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        id: [format, lint, types, repo-gates]
+        id: [format, lint, types, unit, repo-gates]
 
     steps:
       - name: Checkout Repo
@@ -153,6 +150,7 @@ jobs:
       - name: Contract Check
         env:
           CHECK_ID: ${{ matrix.id }}
+          EDD_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
           if [ -f scripts/edd.ts ]; then
             bun scripts/edd.ts check "$CHECK_ID"
