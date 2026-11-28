@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { looksLikeEvidence, readEvidenceMessage } from './attest.ts';
-import { ALLOWED_SIGNERS, ALWAYS_GATE_KEYS, DEPTHS, gateKeysTouched, readProjectDoc, refReader, sha256 } from './contract.ts';
+import { ALLOWED_SIGNERS, ALWAYS_GATE_KEYS, canonical, DEPTHS, gateKeysTouched, loadContract, readProjectDoc, refReader, sha256 } from './contract.ts';
 import { changeDepth, depthRank, raiseForGateKeys, requiredAgentic } from './depth.ts';
 import { changedFiles, commitMessage, EMPTY_TREE, git, mergeBase, parentsOf, rangeCount, rangeLog, showFile, treeOf } from './git.ts';
 import { DiffTooLarge, MAX_DIFF_BYTES, patchId } from './patch-id.ts';
@@ -44,9 +44,46 @@ function docAt(cwd: string, ref: string): Record<string, unknown> | null {
   catch { return null; }
 }
 
+export const RESOLVED_CONTRACT_KEY = 'evidence (resolved contract)';
+const BUN_RUN = /\bbun\s+run\s+([^\s;&|()<>'"`]+)/g;
+
+export function staticScriptNames(cmds: string[]): string[] {
+  return [...new Set(cmds.flatMap(c => [...c.matchAll(BUN_RUN)].map(m => m[1])))];
+}
+
+function scriptsAt(cwd: string, ref: string): Record<string, unknown> | null {
+  const raw = showFile(cwd, ref, 'package.json');
+  if (raw === null) { return {}; }
+  try {
+    const scripts = (JSON.parse(raw) as { scripts?: unknown } | null)?.scripts;
+    return scripts !== null && typeof scripts === 'object' && !Array.isArray(scripts) ? scripts as Record<string, unknown> : {};
+  }
+  catch { return null; }
+}
+
+function scriptValue(scripts: Record<string, unknown> | null, name: string): string {
+  return scripts === null ? 'unreadable package.json' : canonical(scripts[name]);
+}
+
+function digestAt(cwd: string, ref: string): string | null {
+  try { return loadContract(refReader(cwd, ref), ref).digest; }
+  catch { return null; }
+}
+
 export function gateKeysChanged(cwd: string, base: string, head: string, loaded: LoadedContract): string[] {
   const fork = base === EMPTY_TREE ? null : mergeBase(cwd, base, head) ?? base;
-  return gateKeysTouched(fork === null ? loaded.doc : docAt(cwd, fork), docAt(cwd, head), [...new Set([...ALWAYS_GATE_KEYS, ...loaded.contract.human.keys])]);
+  const keys = gateKeysTouched(fork === null ? loaded.doc : docAt(cwd, fork), docAt(cwd, head), [...new Set([...ALWAYS_GATE_KEYS, ...loaded.contract.human.keys])]);
+  if (fork === null) { return keys; }
+  if (!keys.includes('evidence')) {
+    const before = digestAt(cwd, fork);
+    if (before === null || before !== digestAt(cwd, head)) { keys.push(RESOLVED_CONTRACT_KEY); }
+  }
+  const before = scriptsAt(cwd, fork);
+  const after = scriptsAt(cwd, head);
+  for (const name of staticScriptNames(loaded.contract.static.map(s => s.cmd))) {
+    if (scriptValue(before, name) !== scriptValue(after, name)) { keys.push(`package.json scripts.${name}`); }
+  }
+  return keys;
 }
 
 export function changeDepthWithKeys(cwd: string, base: string, files: string[], head: string, loaded: LoadedContract, raise: Depth | null = null): { depth: Depth, reasons: string[] } {

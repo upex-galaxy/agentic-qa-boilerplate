@@ -248,6 +248,37 @@ describe('gate keys and branch contracts', () => {
     expect(res.out).toContain('depth standard');
   });
 
+  test('a change to the package.json script a static check runs is a gate change; another script is not', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const pkg = (lint: string, other: string): string => JSON.stringify({ scripts: { 'lint:check': lint, 'other': other } });
+    const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml(screens('bun run lint:check')), 'package.json': pkg('exit 0', 'exit 0') });
+    r.git('update-ref', 'refs/remotes/origin/main', base);
+    const other = r.commit('chore: other script', { 'package.json': pkg('exit 0', 'true') });
+    expect(run(r.dir, ['gate'], `refs/heads/main ${other} refs/heads/main ${base}\n`).code).toBe(0);
+    r.git('update-ref', 'refs/remotes/origin/main', other);
+    const head = r.commit('chore: empty the check', { 'package.json': pkg('true', 'true') });
+    const res = run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${other}\n`);
+    expect(res.code).toBe(1);
+    const rec = JSON.parse(readFileSync(join(r.dir, '.session', 'evidence', `${head}.json`), 'utf8'));
+    expect(rec.contract.depth).toBe('standard');
+    expect(rec.touches_gate.keys).toEqual(['package.json scripts.lint:check']);
+  });
+
+  test('a changed include fragment changes the resolved contract and is a gate change', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const withInclude = `${screens('true')}  include: [frag]\n`;
+    const frag = (cmd: string): string => `static:\n  - { id: extra, cmd: '${cmd}', where: [pre-push] }\n`;
+    const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml(withInclude), '.agents/skills/frag/evidence.yaml': frag('true') });
+    r.git('update-ref', 'refs/remotes/origin/main', base);
+    const head = r.commit('chore: change fragment', { '.agents/skills/frag/evidence.yaml': frag('exit 0') });
+    const res = run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${base}\n`);
+    expect(res.code).toBe(1);
+    const rec = JSON.parse(readFileSync(join(r.dir, '.session', 'evidence', `${head}.json`), 'utf8'));
+    expect(rec.touches_gate.keys).toEqual(['evidence (resolved contract)']);
+  });
+
   test('a branch push reads the contract from origin/<production>, not from the branch it updates', () => {
     const r = makeRepo();
     repos.push(r);
