@@ -1,7 +1,7 @@
 {
   "description": "Files byte-identical in agentic-qa-boilerplate and agentic-dev-boilerplate (installer-ui owner answer Q8). Checked by `bun run shared:check`; re-hash with `--write`; header of scripts/shared-check.ts says how a change travels.",
   "files": {
-    ".agents/skills/edd/SKILL.md": "83a72c11d380504d14398114cb72165c5f5549e4247ca8d2e18f624c6b727989",
+    ".agents/skills/edd/SKILL.md": "782c382a863dcde525e924ebcfb9b8a061b6086963d3c5e98dda68441ec83c64",
     ".agents/skills/edd/evals/evals.json": "7c283d6f4e1c8a102f874b78ba161b3601c968f15b809989103b3e4c907eb63c",
     ".agents/skills/edd/references/contract.md": "510785bc0a48f0efb980a111234d99c4ea603b62a6831815935bd3b6d52cef2a",
     ".agents/skills/edd/references/flows.md": "33223980eabbd23a24dff53d0fae5153d89305e8acf10e765b445790ddf876fe",

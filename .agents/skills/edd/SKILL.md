@@ -54,7 +54,7 @@ The branching strategy in `git_strategy` picks one of three flows. `references/f
 
 ## What the evidence proves
 
-The gate catches mistakes and drift: a red check, evidence for another diff, a contract weakened by the change it judges, an author testing its own work. It does not stop an agent that deliberately forges a check. A PR can add its own workflow that posts a green `edd/evidence`, and GitHub cannot tell it from the real verifier because both come from the same Actions app. Nor can the signature prove the agentic test happened the way the agent says. The upgrade that closes the forged-check gap is a dedicated GitHub App as the only source of `edd/evidence`. `references/record-and-signature.md` states both halves. `references/record-and-signature.md` states both halves and what covers the gap.
+The gate catches mistakes and drift: a red check, evidence for another diff, a contract weakened by the change it judges, an author testing its own work. It does not stop an agent that deliberately forges a check. A PR can add its own workflow that posts a green `edd/evidence`, and GitHub cannot tell it from the real verifier because both come from the same Actions app. Nor can the signature prove the agentic test happened the way the agent says. The upgrade that closes the forged-check gap is a dedicated GitHub App as the only source of `edd/evidence`. `references/record-and-signature.md` states both halves and what covers the gap.
 
 ## References
 
