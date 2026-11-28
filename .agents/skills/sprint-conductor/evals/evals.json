@@ -15,7 +15,7 @@
     {
       "name": "should-trigger-spanish-resume",
       "prompt": "Se reinició la compu con tres workers corriendo. Retoma el conductor del sprint y vuelve a armar el centinela.",
-      "expected_behavior": "Activates sprint-conductor by meaning in Spanish: takes the resume path of references/boot-and-resume.md §4 (finds workers by the label in their tab title, re-issues tab and session renames, restarts the board, re-arms the sentinel with the same baseline, one resume message per live worker, no launch until all confirmed). Replies in Spanish; files stay English.",
+      "expected_behavior": "Activates sprint-conductor by meaning in Spanish: takes the resume path of references/boot-and-resume.md §4 (finds workers by the label in their tab title, re-issues tab and session renames, restarts the board, re-arms the sentinel with the same baseline and checks bun run board watcher list, replays owner actions with listen --since and reads the unconsumed dock batches and notes (bun run board sweep read --unconsumed --json), one resume message per live worker, no launch until all confirmed). Replies in Spanish; files stay English.",
       "category": "positive"
     },
     {
@@ -45,7 +45,7 @@
     {
       "name": "resume-after-reboot",
       "prompt": "The laptop rebooted in the middle of the sprint with three workers running. /sprint-conductor --resume",
-      "expected_behavior": "Takes the resume path of references/boot-and-resume.md §4 instead of boot Steps 2-6: finds the workers by title (old handles are dead), updates the roster and the board worker names and re-binds the dispatches, restarts the board server, re-arms the sentinel with the SAME baseline file, replays owner actions with listen --since, reads the mailbox, sends one resume message per live worker, and launches nothing until every live worker answered.",
+      "expected_behavior": "Takes the resume path of references/boot-and-resume.md §4 instead of boot Steps 2-6: finds the workers by title (old handles are dead), updates the roster and the board worker names and re-binds the dispatches, restarts the board server, re-arms the sentinel with the SAME baseline file, checks bun run board watcher list, replays owner actions with listen --since, reads the unconsumed dock batches and notes (bun run board sweep read --unconsumed --json), reads the mailbox, sends one resume message per live worker, and launches nothing until every live worker answered.",
       "category": "positive"
     },
     {

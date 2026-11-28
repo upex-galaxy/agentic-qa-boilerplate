@@ -5,10 +5,11 @@
 > none of this.
 
 The Sprint Board (`cli/sprint-board/`, live page at `http://127.0.0.1:4477`) is the owner's surface
-for a sprint run: what needs the owner, what runs, what failed, passed or is held, the Slack drafts
-the owner sends, metrics and evidence. The tracker stays the system of record. The board reads it
-through `cli/lib/sprint-source/` (`sync` is read-only) and adds what the tracker does not hold:
-questions, holds, waits, drafts and the inbox between the owner and Claude. Its vocabulary is the `board:` block of
+for a sprint run: what needs the owner, what runs, what failed, passed or is held, the messages the
+owner sends and the Decision dock, metrics and evidence. The tracker stays the system of record. The
+board reads it through `cli/lib/sprint-source/` (`sync` is read-only) and adds what the tracker does
+not hold: questions, holds, waits, asks, dock items and the inbox between the owner and Claude. Its
+vocabulary is the `board:` block of
 `.agents/project.yaml` (statuses in buckets, people, evidence hosts, brand), checked by
 `bun run board:check`. Data lives in `.session/sprint-board/` (gitignored, resolved through the git
 common dir, so a worktree writes to the main checkout). Command reference: `cli/sprint-board/README.md`,
@@ -43,10 +44,10 @@ still call the page's routes or edit the log.
 | 3 run | `evidence-artifact <KEY> <url> [--bug <BUG>] --by conductor` when the worker could not publish or record it (§6) | conductor |
 | 3 run | `inbox` (what the owner wrote that Claude owes), `listen --since <last id seen>` under Monitor (§3), `say`, `say --reply <msg-id>`, `answer <KEY> "<text>" --id <need-id> --by conductor`, `resolve <KEY> --id <need-id> --by conductor`, `unhold`, `unwait <KEY> --on <person> --by conductor` | conductor |
 | 3 run | `ask --to <person> --ticket <KEY> --kind blocker\|bug\|decision --file <draft.txt> --by conductor` (a message the owner sends); the owner moves it on the page (sent, answered, closed, dropped). What the conductor saw itself it records with `ask-state <ask-id> <state> --by conductor --expect <current state>` (§4) | conductor, owner |
-| 4 round close | `verdict ... --by conductor` reconciled with the tracker, `worker <KEY> --state done`, `snapshot --mode share` when the team should see it (allowlist copy: no drafts, waits, questions, inbox or evidence); the full close of a worker and a round: `sprint-conductor/references/round-close.md` | conductor |
+| 4 round close | `verdict ... --by conductor` reconciled with the tracker, `worker <KEY> --state done`, `snapshot --mode share` when the team should see it (allowlist copy: no asks, waits, questions, dock items, inbox or evidence); the full close of a worker and a round: `sprint-conductor/references/round-close.md` | conductor |
 | sprint close | `snapshot --mode report --fragment --stp-url <test plan url>` (the sprint QA report: allowlist state, counted by bucket); publish the fragment as a private claude.ai artifact and link it from the sprint test plan; then `archive` (freezes the board) | conductor |
 | any | `sentinel --baseline .session/sprint-board/sprints/<slug>/sentinel-baseline.json` as a background task, armed at session start and after every wake (§7) | conductor |
-| any | the Decision dock (§3): `sweep add --question "<question>" [--ticket <KEY>] [--option "<label> \| <cost>"] [--recommend a] --by conductor` for a small decision that blocks nothing; `sweep read --unconsumed --json` then `sweep consume <batch or note id> --by conductor` for what the owner sent; `sweep list` and `sweep close <item-id> --why "<why>" --by conductor` | conductor |
+| any | the Decision dock (§3): `sweep add --question "<question>" [--ticket <KEY>] [--option "<label> \| <cost>"] [--recommend a] --by conductor` for a small decision that blocks nothing (`--option` 2 to 4 times, or none for a free-text question); `sweep read --unconsumed --json` then `sweep consume <batch or note id> --by conductor` for what the owner sent; `sweep list` and `sweep close <item-id> --why "<why>" --by conductor` | conductor |
 | any | `watcher register <name> --pid <n> [--match=<text>]` for a long-running process the conductor starts besides the sentinel; `watcher clear <name>` for one it retires on purpose; `watcher list` (§7) | conductor |
 | any | `arrivals [--sync] [--json]`: tickets in the `in_test` bucket still needing a conductor decision, with denominators, plus `UNTRACKED` sprint tickets in test that are not on the board; `--sync` waits for the server's sync lock; `watch-pass ["note"]` for a pass that did not sync | conductor |
 
@@ -83,7 +84,7 @@ conductor's.
 ## 3. Four channels
 
 ```
-OWNER  -- board (Needs you, inbox, drafts) + chat ------------------+
+OWNER  -- board (Needs you, inbox, dock, asks) + chat --------------+
   |                                                                  |
 CONDUCTOR -- Run mailbox (record) + terminal pointer (nudge) -- WORKERS
   |                                                                  |
@@ -95,7 +96,7 @@ CONDUCTOR -- Run mailbox (record) + terminal pointer (nudge) -- WORKERS
 | 1 | Run mailbox | the worker record: status, question, escalation, done | byte-intact, the channel of record between workers and the conductor (`/agent-orchestration` channel discipline) |
 | 2 | Board | the owner surface: Needs you, the inbox, the Decision dock, drafts, holds, waits | everything the owner must decide reaches the board and the chat, so the owner never has to read a terminal |
 | 3 | Owner chat | answers when the owner cannot open the board | relay it, then mirror it under the conductor's name: `say --reply <msg-id> "answered by chat: <text>"` for an inbox thread, `answer <KEY> "<text>" --id <need-id> --by conductor` for a Needs-you. The mirror is not the owner's board answer: `listen` does not print it, and the question stays open on the page. A question that gates nothing is then closed with `resolve <KEY> --id <need-id> --by conductor`. A question that gates something (a deferral OK, a transition, any step the owner signs) is not resolved by an agent before the owner's own record exists, on the board (their answer on the page, which `listen` prints) or in the tracker (their own comment) |
-| 4 | Slack | messages to developers | only on the owner's order. The board drafts (`ask`) and copies tables ("Copy for Slack") and sends nothing |
+| 4 | Slack | messages to developers | only on the owner's order. The board holds proposed messages (`ask`) and copies tables ("Copy for Slack") and sends nothing |
 
 To relay an owner answer to a worker, send a mailbox reply (the record) plus a one-line terminal
 pointer (the nudge, because mail does not reach a busy worker). The worker echoes the decision back
@@ -121,9 +122,9 @@ the first time, arm `listen` with a starting point:
   need, ask or event id the previous listener printed, or an ISO time. It replays every owner
   action after that point, then streams.
 - On a watch pass or at session start with no listener armed, run `bun run board inbox` for inbox
-  threads, plus a bounded replay for Needs-you answers and draft states: `listen --since <time of the
-  last pass>` under a short timeout, which prints the replayed actions and
-  `replayed N owner action(s) since ...` before the timeout ends it.
+  threads, plus a bounded replay for Needs-you answers, ask moves and dock sends:
+  `listen --since <time of the last pass>` under a short timeout, which prints the replayed actions
+  and `replayed N owner action(s) since ...` before the timeout ends it.
 
 ---
 
@@ -136,8 +137,9 @@ the first time, arm `listen` with a starting point:
   `--by conductor` and refuses `--by owner`. A move recorded as `owner` came from the page, so it
   counts as the owner's word. A move the owner only mentions in chat is recorded with
   `--by conductor`, and so is a reply:
-  `ask-state <ask-id> answered --reply "<their words>" --by conductor`. Pass `--expect` so a stale view
-  is refused, and read a refusal before retrying, because it says who moved the ask and when.
+  `ask-state <ask-id> answered --reply "<their words>" --by conductor`. An ask still in `draft` cannot go
+  straight to `answered`: record `sent` first, then `answered`. Pass `--expect` so a stale view is
+  refused, and read a refusal before retrying, because it says who moved the ask and when.
 - No messenger is configured unless the board's code provides one. Then there is nothing to approve:
   the owner copies the message, sends it and marks it sent.
 - The conductor does not message a developer on its own initiative, a watch pass included.

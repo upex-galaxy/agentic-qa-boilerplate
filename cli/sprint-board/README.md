@@ -14,7 +14,8 @@ conductor's side lives in `.agents/skills/sprint-testing/references/sprint-board
 ```
 the tracker (read-only `sync`)      -> source.json      statuses and buckets, titles, devs, TCs, linked bugs
 each worker's own files             -> read in place    ## Live Progress, evidence/ images
-this CLI (conductor, owner, worker) -> events.ndjson    verdicts, questions, holds, waits, drafts
+this CLI (conductor, sentinel, worker),
+the page (owner)                    -> events.ndjson    verdicts, questions, holds, waits, drafts
                      fold() -> lanes, metrics, next steps -> the page
 ```
 
