@@ -368,6 +368,22 @@ bun setup</code></pre>
           administras el repositorio te muestra el cambio y te pregunta antes de escribir; si no, te
           deja un mensaje listo para quien lo administre, con los comandos <code>gh api</code>.
         </p>
+        <p>
+          Antes de esas preguntas, el instalador escribe tu clave pública de firma en
+          <code>.agents/edd/allowed_signers</code> (<code>bun run edd signers</code>): la clave con
+          la que firma git, con su huella SHA256 y el archivo del que la leyó, para que compruebes
+          que es tuya. Es el primer firmante del proyecto y se acepta sin firma mientras la base no
+          liste ninguno, así que súbela en un cambio aparte. Si no tienes una clave SSH de firma
+          configurada, no escribe nada y te dice qué configurar.
+        </p>
+        <p>
+          Con la política de push por defecto, GitHub no exige ningún check, así que con la fusión
+          <code>auto</code> el agente fusiona su propio pull request:
+          <code>bun run git:policy verify --merge &lt;base&gt;</code> lee en verde todos los checks
+          del contrato sobre el último commit, y el agente fusiona ese commit. Con
+          <code>human-approves</code> espera además a que una persona apruebe ese commit, y con
+          <code>manual</code> fusiona una persona.
+        </p>
       </div>
       <p>
         Las conexiones con datos reales (Jira y Xray, la base de datos, la API) tienen su propia

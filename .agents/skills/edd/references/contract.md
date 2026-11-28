@@ -11,7 +11,7 @@ The contract says which checks a delivery needs, how deep the agentic part goes 
 | `evidence.agentic` | `{id, kind, tool, envs, min_depth, paths}` rows | `kind` names the artifact the check must leave (`screenshots`, `exploratory`, `test-run`, `api-calls`). `paths` (optional globs) makes the check required only when the change touches one. A `test-run` check leaves a JUnit XML or Playwright JSON report of the changed tests: at least one test, none failing |
 | `evidence.depth.default` | depth of a file no rule matches | |
 | `evidence.depth.rules` | `{paths, depth}` rows | the first matching rule decides a file's depth |
-| `evidence.human.paths`, `evidence.human.keys` | paths and `project.yaml` keys that make up the gate itself | a match sets `touches_gate` in the record and adds one line to the PR's evidence block, information for the reader that stops nothing. These paths take depth `standard` or deeper through a depth rule, and a repo on `human-approves` lists them in CODEOWNERS |
+| `evidence.human.paths`, `evidence.human.keys` | paths and `project.yaml` keys that make up the gate itself | a match sets `touches_gate` in the record and adds one line to the PR's evidence block, information for the reader. These paths take depth `standard` or deeper through a depth rule, and a repo on `human-approves` lists them in CODEOWNERS. A changed key takes depth `standard` (see "What counts as a change to the gate") |
 | `evidence.review.bot` | login of a review bot whose findings must be resolved before merge | `null` when there is none |
 | `evidence.review.max_rounds` | how many fix rounds the agent runs against the bot | after the cap the finding goes to a person (`human-gates.md`) |
 | `evidence.record.artifact_retention_days` | how long local artifacts stay after merge | records themselves are never pruned |
@@ -32,6 +32,16 @@ The gate computes depth from the files the change touches (`git diff --name-only
 | `deep` | `standard`, plus the flows next to the touched ones (the smoke of the touched modules), on every environment the check lists |
 
 The paths in `evidence.human.paths` (the gate itself) need a rule of their own placed before any rule that would give them `none`, so a change that replaces the verifier or the signers still carries evidence.
+
+## What counts as a change to the gate
+
+A change to a gate key takes depth `standard` or deeper on every path: the pre-push gate, the PR check and the CI push check. The verifier compares the key at the fork point of the change with the key at its head. These are gate keys:
+
+- the five keys that decide which branch is protected and which policy applies: `evidence`, `git_strategy.strategy`, `git_strategy.branches`, `git_strategy.protected` and `git_strategy.policy`. They count whatever `evidence.human.keys` lists, and that list can only add keys;
+- the resolved contract: a change that leaves the `evidence:` block alone but changes what the contract resolves to (an included fragment, the shipped default set a project with no block gets from `package.json`);
+- each `package.json` script a static `cmd` of the base contract names through `bun run <name>`, reported as `package.json scripts.<name>`.
+
+The script following goes one level and stops there. It reads the script's own text and nothing that script runs: a script it calls with another `bun run`, the files it executes (`scripts/*.ts`), the tool configs (`eslint.config.*`, `tsconfig.json`, `.prettierignore`), the test files `bun test` finds and a `cmd` that is not `bun run <name>` are ordinary code, judged at the depth their paths take. The static checks run the pushed tree on purpose, since they test the change; a project that wants one of those files treated as the gate gives it a depth rule.
 
 The agent may raise depth for one delivery with `--depth` when it judges the change riskier than its paths say. It never lowers it. A rule that sets the wrong depth is fixed in the contract, in its own change, so the reader sees the correction.
 

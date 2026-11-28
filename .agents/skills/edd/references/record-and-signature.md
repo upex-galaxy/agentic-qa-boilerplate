@@ -67,6 +67,10 @@ Static checks run as ordinary required CI jobs next to it.
 
 **The first signer is trusted on first use.** The installer and `bun run agents:setup` write the user's own public signing key (`git config user.signingkey`) to `.agents/edd/allowed_signers` with `bun run edd signers`, and say what to configure when there is none. While the base lists no signer, the change that adds the file needs no signature for it; anything else in that change that needs agentic evidence still needs evidence signed by a key the base lists, so the first signer lands in a change of its own. From then on only a key already listed at the base can add another. `bun sync` never writes the file.
 
+A line counts as a signer only when it parses as `principal [options] keytype base64` and the base64 key names its own key type, so a file with only its comment header, blank lines or a malformed line lists no signer, and the next change can still seat the first one. The verifier never follows a symlink at that path: at the base a symlink lists no signer, and in a change it fails the verification with the fix (`git rm` the link, run `bun run edd signers`, commit the file it writes on its own). `bun run edd signers` refuses to write through one.
+
+Trust is per key, not per committer. Git finds the principal by the key that signed, so the principal in `allowed_signers` is a label and never binds to the commit's author, and the record's `signer` is the key fingerprint. `bun run edd signers` resolves a relative `user.signingkey` from the top of the worktree, the way git does when it runs `ssh-keygen` to sign, and prints the key's SHA256 fingerprint and the file it read it from, so the user can check that the key is their own.
+
 ## What this can and cannot guarantee
 
 The gate protects against mistakes and drift, not against an agent that deliberately forges a check. An agent that follows this doctrine cannot push red code, attest the wrong diff or test its own work without the gate noticing. An agent that sets out to cheat, using the owner's identity, can.
@@ -74,10 +78,10 @@ The gate protects against mistakes and drift, not against an agent that delibera
 | Caught: mistakes and drift | Not caught: an agent that deliberately forges |
 |---|---|
 | a static check that fails: the pre-push gate re-runs it and CI runs it again | a green `edd/evidence` posted by a workflow the PR itself adds: same Actions app, same name, so the ruleset accepts it |
-| evidence attested for another diff, or left stale by a later code change (patch-id) | a weakened static level: the static jobs run the PR's own workflow files and `package.json` scripts, so a PR that edits them is judged by its edited checks |
+| evidence attested for another diff, or left stale by a later code change (patch-id) | a weakened static level below the script a contract `cmd` names: the static jobs run the PR's own workflow files, tool configs and the files that script runs, so a PR that edits them is judged by its edited checks (a changed `package.json` script itself is a gate key, `contract.md`) |
 | a contract, signer list or verifier weakened by the change it judges, when the real verifier runs | that the agentic test happened as claimed: an agent holding the signing key and the tools can fabricate artifacts and the tester's claim |
 | the author giving its own agentic verdict (`verdict_by` against the `Session:` trailer) | that session labels are real: they are self-declared and as honest as the harness's identity hook |
-| a status posted with a personal token | a direct push beyond the local hook: the agent controls that machine, and CI on the pushed branch catches a problem only after the fact |
+| a status posted with a personal token | a direct push beyond the local hook: the agent controls that machine, and CI on the pushed branch catches a problem only after the fact. A force push fails that CI run, because the previous tip is gone and the range cannot be verified |
 | every attested delivery stays in git history with its digests | the artifacts themselves after the retention window |
 
 A change to the gate itself is delivered like any other change, so the right column includes a PR that loosens the gate. What covers it: the change takes depth `standard` or deeper, the record flags it as `touches_gate`, and a repo on `human-approves` lists the gate paths in CODEOWNERS so a person reviews them. Agents push with the owner's own GitHub identity, so the host cannot tell the owner from the agent, and the owner accepted this risk for their repositories.

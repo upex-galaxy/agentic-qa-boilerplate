@@ -11,7 +11,7 @@
 | --- | --- | --- | --- | --- |
 | `bun run git:policy plan` | no | no | no | 0 |
 | `bun run git:policy verify` | yes | no | no | 1 on unaccepted drift; 0 in parity, when every drift is ACCEPTED (§2b), when the host is unreachable or there is no GitHub origin (warned, not verified), or while `meta.strategy_source` is `inherited` (drift printed as warnings) |
-| `bun run git:policy verify --merge <base>` | yes | no | no | 1 unless `<base>` requires `edd/evidence` with an `integration_id` (§2c); fail-closed, an unreachable host is not a pass |
+| `bun run git:policy verify --merge <base>` | yes | no | no | 0 when `<base>` requires `edd/evidence` with an `integration_id` (§2c), or when every contract check is green on the head; 1 otherwise, always under `manual`, and under `human-approves` without an approval of the last push or of the head. `merge_mode` comes from `origin/<base>`. Fail-closed: an unreachable host is not a pass |
 | `bun run git:policy verify --stamp` | yes | no | `meta.policy_verified` + `policy_source` (`verified`, or `accepted` when accepted divergences exist) when clean | same |
 | `bun run git:policy apply` | yes | no (dry run) | no | 0, or 1 on a refusal: an unreachable host (an empty reading would derive a payload that drops every host rule), no GitHub Actions check run to read the `integration_id` from, a required context with no check run (§2c), or a loosening without `--allow-loosening` (§4) |
 | `bun run git:policy apply --yes` | yes | yes | no | 0, or 1 on the same refusals or a failed write |
@@ -108,7 +108,7 @@ From the same check runs, `apply` also confirms that every required context has 
 | `<branch>.required_checks` | required contexts and their `integration_id` against the contract |
 | `repo.allowed_merge_methods` | the repo's `allow_*_merge` flags against `decisions.feature_merge` |
 
-`verify --merge <base>` is the guard the PR flow calls before every `gh pr merge --auto`. It exits 1 unless `<base>` requires `edd/evidence` with an `integration_id`, and an unreachable host fails it too, because a missing answer must not enable a merge.
+`verify --merge <base>` is the guard the PR flow calls before every merge. It allows `gh pr merge --auto` only where `<base>` requires `edd/evidence` with an `integration_id`, and the agent's own merge only where every contract check is green on the head. It reads `merge_mode` from `origin/<base>`: `manual` always exits 1, and `human-approves` also needs an approval of the last push or of the head commit. An unreachable host fails it too, because a missing answer must not enable a merge.
 
 ### 2d. Migrating an existing repo
 

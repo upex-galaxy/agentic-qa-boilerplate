@@ -1,5 +1,5 @@
 # Public SSH keys whose signature the EDD verifier accepts on an evidence commit
 # (gpg.ssh.allowedSignersFile format: principal, namespaces, key). The verifier
-# reads this file from the BASE ref, so a pull request cannot add its own key.
+# reads this file from the BASE ref, so a pull request cannot add its own key once one is listed.
 # Public keys only. Add a signer by appending one line in a reviewed change.
 owner namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIInZZXBSD8v49PZrtNF+KiooYml3r99AVGQgmA0ZvLf+

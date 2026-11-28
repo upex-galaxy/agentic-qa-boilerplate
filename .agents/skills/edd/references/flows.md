@@ -14,8 +14,10 @@ Two policy keys decide who lets a change land: `git_strategy.policy.direct_push_
 | `merge_mode` | A PR into a protected branch |
 |---|---|
 | `auto` | the agent runs `bun run git:policy verify --merge <base>` at PR open. Where the host requires the checks (the `forbidden` push preset), it runs `gh pr merge --auto --<method>` and GitHub merges when they pass, `edd/evidence` among them. Under the shipped default (push `evidence`, no required check on the host) the agent merges the PR itself, with `--match-head-commit` pinned to the head `verify --merge` read, once every contract check is green there; nobody on the host enforces it. No approval required |
-| `human-approves` | the same call; the ruleset requires approvals, so GitHub merges after a person approves. Where nothing on the host requires the approval, `verify --merge` lets the agent merge only after it reads a person's approval on the PR |
-| `manual` | the agent stops after opening the PR and a person merges |
+| `human-approves` | the same call. Where the host requires the checks and an approval of the last push, GitHub merges after a person approves. Anywhere else `verify --merge` lets the agent merge only after it reads a person's approval of the head commit being merged; an approval of an older commit does not count |
+| `manual` | the agent stops after opening the PR and a person merges, whatever the host requires |
+
+`verify --merge` reads `merge_mode` and the contract from `origin/<base>`, never from the PR branch or the working tree, so a change cannot choose its own merge mode. When `origin/<base>` has no readable `.agents/project.yaml`, it exits 1.
 
 The method is a merge commit unless `git_strategy.decisions.feature_merge` declares another. A squash folds the evidence commit into a message body: the signature and the binding to the diff are lost.
 

@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-11-28T10:31:52.478Z`
+> Generated: `2026-11-28T11:13:53.896Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -199,7 +199,7 @@ Skills indexed: 30
 - Only the gate writes the record (`bun run edd gate` before a push, `bun run edd verify --ci` in CI), and only `bun run edd attest` creates the evidence commit. Never write either by hand, never edit one after the fact.
 - Depth may be raised (`--depth`), never lowered, and no required check is skipped. A check that cannot run (environment down, tool missing) is reported and the delivery waits; lowering depth means editing the contract, which is a change like any other.
 - At depth `standard` or deeper, the agentic verdict comes from a session other than the author: a subagent with fresh context or another session, under a label that differs from the author's `Session:` trailer. The label is self-declared, so this guards against honest mistakes, not against a dishonest agent. The author reading its own evidence is not a review.
-- Before any merge, run `bun run git:policy verify --merge <base>`. Exit 0 names the merge: the host requires `edd/evidence`, so `gh pr merge --auto` is safe; or nothing on the host requires a check (the shipped `evidence` push default, a stacked PR, an unprotected trunk) and every contract check is green on the PR head, so the agent merges now with `gh pr merge --<method> --match-head-commit <sha>` (the sha it read) and no `--auto`. Nobody on the host enforces those checks then: the agent does. Under `human-approves` that merge also waits for a person's approval, and under `manual` a person merges. Exit 1 with checks red or pending: wait through the watcher, fix, run it again.
+- Before any merge, run `bun run git:policy verify --merge <base>`. Exit 0 names the merge: the host requires `edd/evidence`, so `gh pr merge --auto` is safe; or nothing on the host requires a check (the shipped `evidence` push default, a stacked PR, an unprotected trunk) and every contract check is green on the PR head, so the agent merges now with `gh pr merge --<method> --match-head-commit <sha>` (the sha it read) and no `--auto`. Nobody on the host enforces those checks then: the agent does. Under `human-approves` that merge also waits for a person's approval of the head commit, and under `manual` a person merges whatever the host requires. Exit 1 with checks red or pending: wait through the watcher, fix, run it again.
 - Merge with a merge commit unless the repo declares another method in `git_strategy.decisions.feature_merge`. A squash folds the evidence commit into a message body and loses its signature.
 - Watch your own PR from the moment it opens until it merges, with the bundled watcher (`references/waiting.md`). It ends itself on MERGED or CLOSED after one last event; then confirm the merge commit is an ancestor of the base.
 - A change to the gate itself (workflows, hooks, the evidence script, the contract, the policy) is delivered like any other change. It takes depth `standard` or deeper, the record flags it as `touches_gate` for the reader, and a repo on `human-approves` lists those paths in CODEOWNERS so a person reviews them there. Nothing else stops it.
