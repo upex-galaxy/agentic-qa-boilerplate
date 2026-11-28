@@ -466,7 +466,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <span class="warr">→</span>
         <div class="wnode"><span class="wn">Execution</span><div class="wt">Execution</div><div class="wd">Smoke · trifuerza UI/API/DB</div><div class="wg">smoke No-Go → STOP · bug bloqueante → ⏸</div></div>
         <span class="warr">→</span>
-        <div class="wnode"><span class="wn">Reporting</span><div class="wt">Reporting</div><div class="wd">ATR · QA comment · transición · cierra ATP/ATR · el ATS sigue designing (traspaso al Stage 4)</div><div class="wg">bug solo con tu confirmación</div></div>
+        <div class="wnode"><span class="wn">Reporting</span><div class="wt">Reporting</div><div class="wd">ATR · QA comment · transición · cierra ATP/ATR · el ATS sigue designing (traspaso al Stage 4)</div><div class="wg">bug solo con tu confirmación · deferral solo con el OK del dueño</div></div>
       </div>
       <div class="wrow">
         <span class="wlbl">Salida</span>
@@ -586,7 +586,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <tr><td><b>0 · Triage</b></td><td>Short-circuit solo con evidencia citada: el ATP pre-sprint publicado en Jira, los labels <span class="mono">shift-left-*</span> con menos de 30 días y los ACs sin cambios (salta fases 1-3; los labels solos corren el flujo completo) · veto · risk score · factibilidad de datos: <b>Discover / Modify / Generate</b> por AC</td></tr>
         <tr><td><b>1-2 · Análisis</b></td><td>Contexto de negocio + técnico · ambigüedades y gaps marcados <span class="mono">NEEDS PO/DEV CONFIRMATION</span></td></tr>
         <tr><td><b>3 · ACs refinadas</b></td><td>Cada AC reescrita Given/When/Then con datos específicos</td></tr>
-        <tr><td><b>4-5 · Test outlines</b></td><td>Derivación por técnica (1:N) · nombre <span class="mono">Should &lt;BEHAVIOR&gt; &lt;CONDITION&gt;</span> · edge cases + estrategia de datos</td></tr>
+        <tr><td><b>4-5 · Test outlines</b></td><td>Derivación por técnica (1:N) · nombre <span class="mono">Should &lt;BEHAVIOR&gt; &lt;CONDITION&gt;</span> · edge cases + estrategia de datos · si un caso depende de una precondición que debe otra persona (un dev que corre un sync a mano), <b>se pide ahora</b> en un comentario en la Story: quién y para qué fecha</td></tr>
         <tr><td><b>6 · Trazabilidad</b></td><td>Orden Set-first (xray): <span class="mono">ATS: {KEY}: {título}</span> (Test Set → epic QA Test Artifacts, components de la Story) con TODOS los TCs → <span class="mono">ATP: {KEY}: {título}</span> (Test Plan → epic QA Master Test Plan, creado desde el field del shift-left) → <span class="mono">ATR: {KEY}: Story Testing</span> (Test Execution → epic QA Test Artifacts) SIEMPRE con Test Environment (<span class="mono">active_env</span>) · listas de Plan/Exec derivadas de la membership del ATS</td></tr>
       </tbody>
     </table>
@@ -742,7 +742,7 @@ Listas de tests del ATP y del ATR = DERIVADAS de la membership del ATS (S17)</di
       </tbody>
     </table>
     <div class="grid g2 mt-m">
-      <div class="card"><p class="lbl">Casos dependientes del tiempo</p><p class="small mt-s">TTL, magic links, OTPs: elegir la opción más alta: TTL corto de test → clock-mock → defer explícito documentado. Nunca un «BLOCKED» a secas: al cierre cada TC está <b>PASSED o FAILED solo si se observó</b> en su entorno, o en NOT RUN con su razón (el defer escrito es la deferral de QA, con tarea de seguimiento).</p></div>
+      <div class="card"><p class="lbl">Antes de BLOCKED o DEFERRED</p><p class="small mt-s">Cada caso pasa por un <b>preflight de desbloqueo</b>: fuera de alcance se <b>descarta</b>; si no, QA intenta desbloquearlo. Solo una <b>causa externa</b> probada permite <span class="mono">DEFERRED (execution)</span> con seguimiento; lo demás queda <span class="mono">BLOCKED</span>. TTL, OTPs: TTL corto → clock-mock → el mismo preflight. PASSED o FAILED <b>solo si se observó</b>.</p></div>
       <div class="card"><p class="lbl">Evidencia</p><p class="small mt-s">Capturas, traces y logs bajo <span class="mono">evidence/</span> del ticket (gitignored). Se captura <b>el bug</b>, no la navegación hacia él.</p></div>
     </div>
     <div class="notes">Esta regla protege la cobertura: pausar un pase de 17 TCs por un hallazgo cosmético desperdicia el run; un blocker genuino sí detiene al instante.</div>
@@ -769,16 +769,17 @@ Listas de tests del ATP y del ATR = DERIVADAS de la membership del ATS (S17)</di
       <thead><tr><th>Resultado</th><th>QA comment</th><th>Transición</th></tr></thead>
       <tbody>
         <tr><td><b>Story PASSED</b></td><td>Template A</td><td>→ QA approved (vía qa_sign_off)</td></tr>
+        <tr><td><b>Story PASSED WITH DEFERRALS</b></td><td>Comentario de aviso en la Story (§3.6), después Template A</td><td>OK propio del dueño sobre los casos listados → label (<span class="mono">qa.deferral.label</span>) → QA approved → shift-right test plan; cada caso corre cuando llega su precondición. Sin OK: queda in_test</td></tr>
         <tr><td><b>Story FAILED</b> (defecto confirmado)</td><td>Template B + reporte de bug</td><td>→ blocked (+ issuelink <span class="mono">is blocked by</span>), o queda in_test con el bug linkeado</td></tr>
         <tr><td><b>Bug VERIFIED</b></td><td>Template C</td><td>→ closed (vía retest_passed)</td></tr>
         <tr><td><b>Bug NOT FIXED</b></td><td>Template D</td><td>queda ready_for_qa, se etiqueta al dev</td></tr>
       </tbody>
     </table>
     <div class="grid g2 mt-m">
-      <div class="card"><p class="lbl">ATR por modalidad</p><p class="small mt-s"><b>jira-xray:</b> actualizar la descripción del Test Execution + status de cada Test Run. <b>jira-native:</b> custom field <span class="mono">acceptance_test_results</span> (o comentario fallback) → sync → releer. Sin snapshot de ATR no se reporta nada (S3).</p></div>
+      <div class="card"><p class="lbl">ATR por modalidad</p><p class="small mt-s"><b>jira-xray:</b> descripción del Test Execution + status de cada Test Run. <b>jira-native:</b> custom field <span class="mono">acceptance_test_results</span> (o comentario fallback) → sync → releer. Sin ATR no hay reporte (S3).</p></div>
       <div class="card"><p class="lbl">Recalibración de severidad (§5.0)</p><p class="small mt-s">FAIL de seguridad/auth que huele a default de framework (cookie flags, CSP/HSTS): hipótesis + <b>un hecho</b> de verificación + decisión humana → <span class="mono">PASSED WITH ISSUES</span> (GO-con-deuda), no un blocker.</p></div>
     </div>
-    <div class="card mt-m"><p class="small"><b>Cuerpos rich-text (S6).</b> <span class="dim">Los cuerpos rich-text (ATP, ATR, descripción del Test) se escriben en Markdown, se convierten y validan con el conversor <span class="mono">.agents/skills/acli/scripts/md-to-adf.ts</span>, y lo que se publica es el ADF JSON resultante; por la vía CLI, <span class="mono">acli</span> nunca convierte Markdown solo.</span></p></div>
+    <div class="card mt-m"><p class="small" style="margin:0"><b>Cuerpos rich-text (S6).</b> <span class="dim">Los cuerpos rich-text (ATP, ATR, descripción del Test) se escriben en Markdown, se convierten y validan con el conversor <span class="mono">.agents/skills/acli/scripts/md-to-adf.ts</span>, y lo que se publica es el ADF JSON resultante; por la vía CLI, <span class="mono">acli</span> nunca convierte Markdown solo.</span></p></div>
     <div class="notes">El QA comment es un resumen; el ATR es el registro de auditoría; nunca duplicarlo en un segundo store (S4). Resultados mixtos usan PASSED WITH ISSUES y aún entregan los TCs en pass a Documentation.</div>
   </section>
 
@@ -816,6 +817,8 @@ Listas de tests del ATP y del ATR = DERIVADAS de la membership del ATS (S17)</di
 Reporting · líneas propias
   ATR close · ATP completed · ATS queda en designing (traspaso al Stage 4)
   Story en qa_approved o blocked
+  deferrals: OK del dueño + label + filas del plan
+    (sin OK: in_test, ATR active)
   cada issue reportado: QA Defect Management
     + components + qa_assignee
   todo slug sin mapear: PREGUNTADO</div>
@@ -838,7 +841,7 @@ Reporting · líneas propias
         <li>El alcance sale de una <b>JQL</b> con los work types coverable que declara el proyecto.</li>
         <li>Local: el par de sesión de siempre en <span class="mono">.session/sprint-testing/sprint-&lt;N&gt;/</span>: <span class="mono">plan.md</span> (scope, waves, asignación) y <span class="mono">progress.md</span> (append-only).</li>
         <li>Loop con un ejecutor: primer issue <b>PENDING</b> de Wave 1 → los mismos 4 despachos → resumen → <b>tu OK</b> para el siguiente. STOP en TOOL FAILURE · ⏸ en BUG_FOUND bloqueante.</li>
-        <li><b>Cierre del sprint:</b> se crea el <span class="mono">STR: Sprint#{N}: Regression Testing</span> como recap y el STP se cierra. Cada corrida de regresión del sprint deja su propio RTR, de <span class="mono">/regression-testing</span>.</li>
+        <li><b>Cierre del sprint:</b> se crea el <span class="mono">STR: Sprint#{N}: Regression Testing</span> como recap, el STP se cierra y se revisan las filas abiertas del shift-right plan. Cada corrida de regresión del sprint deja su propio RTR, de <span class="mono">/regression-testing</span>.</li>
       </ul>
       <div class="stack">
         <div class="card card-accent"><p class="lbl">El estado que ve el equipo = el STP</p><p class="small mt-s">La <b>descripción</b> lleva el plan estable (un escritor, read-first); los <b>comentarios</b>, el progreso append-only por issue cerrado. Si chocan con el ATR de una Story, <b>manda el ATR</b>.</p></div>
@@ -861,7 +864,7 @@ Reporting · líneas propias
       </tbody>
     </table>
     <div class="grid g3 mt-m" style="align-items:start">
-      <div class="card"><p class="lbl">Conductor</p><p class="small mt-s">Habla contigo, arma las rondas, siembra un <span class="mono">brief.md</span> por issue, acuña tokens y estados de browser. Único escritor del sprint: <span class="mono">plan.md</span>, <span class="mono">progress.md</span>, STP.</p></div>
+      <div class="card"><p class="lbl">Conductor</p><p class="small mt-s">Habla contigo, arma las rondas, siembra un <span class="mono">brief.md</span> por issue, acuña tokens y estados de browser. Único escritor del sprint: <span class="mono">plan.md</span>, <span class="mono">progress.md</span>, STP y las filas del shift-right plan. Traslada al dueño el pedido de OK de deferrals; nunca lo responde.</p></div>
       <div class="card"><p class="lbl">Worker</p><p class="small mt-s">single-issue sobre su KEY. Lo reconoce el token <span class="mono">fleet worker</span> del prompt y su brief, no las env vars. Sin checkpoints, sin saltear preflight ni sondas MCP, hasta <span class="mono">worker_done</span>.</p></div>
       <div class="card"><p class="lbl"><span class="mono">launch.txt</span>, siempre</p><p class="small mt-s">En <span class="mono">.session/sprint-testing/sprint-&lt;N&gt;/</span>: una línea autocontenida por issue, regenerado entero en cada ronda. Sin orquestador, abres N terminales y pegas una línea en cada una.</p></div>
     </div>
@@ -895,7 +898,7 @@ También la disparan frases como
       <div class="stack">
         <div class="card"><p class="lbl">El primer token decide</p><p class="small mt-s">Si el primer argumento nombra un modo, ese es el modo; si no, Session Start pregunta. Abrí el host tal cual (<span class="mono">claude</span>, <span class="mono">opencode</span>, <span class="mono">codex</span>, <span class="mono">pi</span> o su app): cada MCP lee <span class="mono">.env</span> por su cuenta.</p></div>
         <div class="card"><p class="lbl">Se lee en Session Start</p><p class="small mt-s"><span class="mono">.agents/project.yaml</span> · catálogos Jira · mapas de contexto + MTP · el ticket vía <span class="mono">jira:sync-issues</span>. El <span class="mono">.env</span> no entra: la IA nunca lo abre.</p></div>
-        <div class="card card-accent"><p class="lbl">El humano conserva los juicios</p><p class="small mt-s">Modo · OK de la Story · triage · cada bug · retry/skip/abort.</p></div>
+        <div class="card card-accent"><p class="lbl">El humano conserva los juicios</p><p class="small mt-s">Modo · Story · triage · bugs · OK deferral · retry/skip/abort.</p></div>
       </div>
     </div>
     <div class="notes">Una sola forma de invocar en cada host: skill más modo. En Claude Code es el slash; en OpenCode y Codex se nombra la skill y el modo en prosa; en Pi es /skill:sprint-testing más el modo. No hay archivos de comando aparte. El resto de los argumentos (el KEY, el número de sprint) se reenvía tal cual. Un worker de una flota arranca con /sprint-testing KEY fleet worker y su brief: el prompt ya responde el modo.</div>
@@ -909,7 +912,7 @@ También la disparan frases como
       <tr><th>Stage</th><th>El agente hace</th><th>La persona firma</th><th>Autonomía</th></tr>
       <tr><td><b>Planning</b></td><td>crea el set ATS → ATP → ATR, deriva TCs u outlines según la modalidad, decide las superficies UI / API / DB por triage, veto y risk score</td><td>el checkpoint de explicación de la Story: la skill explica y espera</td><td><b>2</b></td></tr>
       <tr><td><b>Execution</b></td><td>corre el smoke como Go/No-Go, ejecuta los outlines, explora más allá de ellos por la trifuerza, propone bugs con la severidad ya derivada</td><td>el triage de cada bug y el <b>alta</b> de cada bug; cualquier recalibración de severidad en seguridad o auth</td><td><b>3</b></td></tr>
-      <tr><td><b>Reporting</b></td><td>llena el ATR, escribe el comentario de QA, crea y verifica los links de trazabilidad</td><td>la transición del workflow (<span class="mono">qa_sign_off</span> / <span class="mono">defect_reported</span>)</td><td><b>2</b></td></tr>
+      <tr><td><b>Reporting</b></td><td>llena el ATR, escribe el comentario de QA, crea y verifica los links de trazabilidad</td><td>la transición del workflow (<span class="mono">qa_sign_off</span> / <span class="mono">defect_reported</span>); con deferrals, antes el OK explícito del dueño sobre la lista</td><td><b>2</b></td></tr>
     </table>
     <div class="callout mt-m"><h4>La escala, y su techo</h4><p>CSA 0-5: 0 lo hace la persona · 1 aprobación por acción · 2 aprobación por plan o por lote · 3 decide dentro de límites declarados y escala fuera de ellos · 4 supervisión por monitoreo · 5 sin intervención. <b>Ninguno de estos tres stages pasa de 3</b> (Regression es la excepción: puede llegar a 4 en un GO limpio), y eso es una decisión de arquitectura, no un accidente de lo que se alcanzó a construir. Ninguno de los tres lleva verificador separado: el PO/Dev y el propio checkpoint humano cumplen ese papel.</p></div>
     <div class="notes">Fuente: agentic-qa-core/references/stage-gates.md. El DoD dice qué tiene que ser verdad para avanzar; el contrato dice quién tuvo permiso de hacerlo mientras el stage corría. Los dos son gates: avanzar un stage cuyo contrato no se honró es saltarse un gate igual que tildar un DoD que nunca se verificó.</div>

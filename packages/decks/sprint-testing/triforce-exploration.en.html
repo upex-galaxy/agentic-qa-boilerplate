@@ -1050,10 +1050,10 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="steps s3 mt-m">
     <div class="step"><div class="num">1</div><h4>Fixture / short TTL</h4><p>The best one. If the env exposes a configurable TTL, set it to seconds and test the real 14:59/15:01 edge. It exercises the true expiry code.</p></div>
     <div class="step"><div class="num">2</div><h4>Clock-mock</h4><p>If the stack lets you inject/freeze time, advance the clock and assert the expiry, as long as the mock drives the real logic and not a test branch.</p></div>
-    <div class="step"><div class="num">3</div><h4>Written manual defer</h4><p>Last resort. Document the edge you could not exercise, why, and the concrete follow-up (e.g. "add a <span class="mono">MAGIC_LINK_TTL</span> override").</p></div>
+    <div class="step"><div class="num">3</div><h4>Written manual defer</h4><p>Last resort, through the <b>unblock preflight</b>: only with an external cause. Record the edge, who owes what and the follow-up (e.g. "add a <span class="mono">MAGIC_LINK_TTL</span> override").</p></div>
   </div>
-  <div class="callout warn mt-m"><h4>Never a bare <span class="mono">BLOCKED</span></h4><p>Mark <span class="mono">BLOCKED — needs time fixture</span> with the chosen option (1/2/3) and a one-line reason. A BLOCKED with no decision path loses coverage in silence.</p></div>
-  <div class="notes">The 3-option TTL ladder by priority: fixture > clock-mock > written defer. Never a bare BLOCKED: always "BLOCKED — needs time fixture" + option + reason.</div>
+  <div class="callout warn mt-m"><h4>Never a bare <span class="mono">BLOCKED</span></h4><p>While you try option 1 or 2, mark <span class="mono">BLOCKED — needs time fixture</span> with the option and a one-line reason. With no external cause, option 3 stays BLOCKED. A BLOCKED with no decision path loses coverage in silence.</p></div>
+  <div class="notes">The 3-option TTL ladder by priority: fixture > clock-mock > written defer. The written defer goes through sprint-testing/references/preflight-gate.md and holds only with an external cause. Never a bare BLOCKED: always "BLOCKED — needs time fixture" + option + reason.</div>
 </section>
 
 <!-- 30. OBSERVATION RULE + EVIDENCE -->
@@ -1063,7 +1063,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="grid g2 mt-s">
     <div class="card card-accent">
       <h4>State propagation</h4>
-      <p class="dim">A TC is <b>PASSED or FAILED</b> only if it was observed in the environment its precondition names. A unit test, a green CI, reading the code or another environment leave it at <b>NOT RUN</b>, never FAILED. A NOT RUN climbs the ladder: recreate it in the test environment, QA defers with their authority and leaves a follow-up task, then developers, and the owner only if there is doubt.</p>
+      <p class="dim">A TC is <b>PASSED or FAILED</b> only if it was observed in the environment its precondition names. A unit test, a green CI, reading the code or another environment leave it at <b>NOT RUN</b>, never FAILED. A NOT RUN climbs the ladder. The <b>unblock preflight</b> drops what is out of scope and tries to unblock the case; QA defers only an <b>external cause</b>, with a follow-up. A Story then moves on with a notice comment, the <b>owner's own OK</b>, a label and a shift-right test plan; the case runs when its precondition arrives.</p>
     </div>
     <div class="card card-accent">
       <h4>Evidence discipline</h4>
@@ -1075,7 +1075,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </div>
   </div>
   <div class="callout mt-m"><h4>The log is the handoff to Reporting</h4><p>The Execution block of <span class="mono">test-session-memory.md</span> (smoke + UI/API/DB tables + Findings) is what Reporting consumes: the Findings feed the bugs, the pass/fail results feed the ATR.</p></div>
-  <div class="notes">Pass only if observed: PASSED or FAILED require observing the case in the environment of its precondition; everything else is NOT RUN with its reason (BLOCKED while the ladder is still open, DEFERRED (execution) when QA deferred it with a task). That reason is not the ROI's Deferred verdict. Evidence at the failure state, named and gitignored. The Execution memory is the input to Reporting (Findings→bugs, pass/fail→ATR).</div>
+  <div class="notes">Pass only if observed: PASSED or FAILED require observing the case in the environment of its precondition; everything else is NOT RUN with its reason (BLOCKED while the ladder is still open, DEFERRED (execution) when the preflight found an external cause and QA deferred it with a task; shift-right-deferral.md holds the notice, the OK, the label and the plan). That reason is not the ROI's Deferred verdict. Evidence at the failure state, named and gitignored. The Execution memory is the input to Reporting (Findings→bugs, pass/fail→ATR).</div>
 </section>
 
 <!-- 31. QUIZ 3 -->
@@ -1099,7 +1099,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <div class="opt"><span class="mk">B</span><span>A bare <span class="mono">BLOCKED</span>: it could not be run</span></div>
         <div class="opt" data-correct="1"><span class="mk">C</span><span><span class="mono">NOT RUN</span> with the reason <span class="mono">BLOCKED — needs time fixture</span> + the chosen option, and climb the ladder</span></div>
       </div>
-      <div class="qexp"><b>NOT RUN with its reason.</b> It was not observed, so it cannot be PASSED or FAILED. Never a bare NOT RUN or BLOCKED: document the edge, why it could not be run, and the path forward. Option 3 (written defer) is QA's deferral from the ladder: <span class="mono">DEFERRED (execution)</span> with its follow-up task. That way coverage is not lost in silence and it travels to Reporting.</div>
+      <div class="qexp"><b>NOT RUN with its reason.</b> It was not observed, so it cannot be PASSED or FAILED. Never a bare NOT RUN or BLOCKED: document the edge, why it could not be run, and the path forward. Option 3 (written defer) becomes <span class="mono">DEFERRED (execution)</span> with its follow-up task only if the preflight finds an external cause; otherwise the case stays BLOCKED. That way coverage is not lost in silence and it travels to Reporting.</div>
     </div>
   </div>
   <div class="notes">The two discipline rules: cosmetic = non-blocking (keep going), and never a bare BLOCKED/NOT RUN (always a reason + a path up the ladder).</div>
