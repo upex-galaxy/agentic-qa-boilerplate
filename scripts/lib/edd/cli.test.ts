@@ -186,6 +186,33 @@ describe('gate keys and branch contracts', () => {
     expect(res.out).toContain('depth standard');
   });
 
+  test('a pull request behind main is not charged for a key main changed after it forked', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml(screens('true')) });
+    r.git('checkout', '-q', '-b', 'feat');
+    r.commit('feat: x', { 'app/a.ts': '1\n' });
+    r.git('checkout', '-q', 'main');
+    const moved = r.commit('chore: tighten', { '.agents/project.yaml': projectYaml(screens('true').replace('min_depth: standard', 'min_depth: light')) });
+    r.git('update-ref', 'refs/remotes/origin/main', moved);
+    r.git('checkout', '-q', 'feat');
+    const pr = run(r.dir, ['render', '--pr']);
+    expect(pr.out).toContain('**Result: PASS**');
+    expect(pr.out).toContain('depth `none`');
+    expect(base).not.toBe(moved);
+  });
+
+  test('attest takes the raised depth too: a key-only change needs evidence before it can be attested', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml(screens('true')) });
+    r.git('update-ref', 'refs/remotes/origin/main', base);
+    r.commit('chore: loosen', { '.agents/project.yaml': projectYaml(screens('true'), 'allowed') });
+    const res = run(r.dir, ['attest']);
+    expect(res.code).toBe(1);
+    expect(res.out).toContain('at depth standard');
+  });
+
   test('a branch push reads the contract from origin/<production>, not from the branch it updates', () => {
     const r = makeRepo();
     repos.push(r);

@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { looksLikeEvidence, readEvidenceMessage } from './attest.ts';
 import { DEPTHS, gateKeysTouched, readProjectDoc, refReader, sha256 } from './contract.ts';
 import { changeDepth, depthRank, raiseForGateKeys, requiredAgentic } from './depth.ts';
-import { changedFiles, commitMessage, git, parentsOf, rangeCount, rangeLog, treeOf } from './git.ts';
+import { changedFiles, commitMessage, EMPTY_TREE, git, mergeBase, parentsOf, rangeCount, rangeLog, treeOf } from './git.ts';
 import { DiffTooLarge, MAX_DIFF_BYTES, patchId } from './patch-id.ts';
 
 export const MAX_COMMITS = 2000;
@@ -38,15 +38,18 @@ export interface VerifyInput {
   limits?: { commits?: number, diffBytes?: number }
 }
 
-export function gateKeysChanged(cwd: string, head: string, loaded: LoadedContract): string[] {
-  let headDoc: Record<string, unknown> | null = null;
-  try { headDoc = readProjectDoc(refReader(cwd, head)); }
-  catch { headDoc = null; }
-  return gateKeysTouched(loaded.doc, headDoc, loaded.contract.human.keys);
+function docAt(cwd: string, ref: string): Record<string, unknown> | null {
+  try { return readProjectDoc(refReader(cwd, ref)); }
+  catch { return null; }
 }
 
-export function changeDepthWithKeys(cwd: string, files: string[], head: string, loaded: LoadedContract, raise: Depth | null = null): { depth: Depth, reasons: string[] } {
-  return raiseForGateKeys(changeDepth(files, loaded.contract.depth, raise), gateKeysChanged(cwd, head, loaded));
+export function gateKeysChanged(cwd: string, base: string, head: string, loaded: LoadedContract): string[] {
+  const fork = base === EMPTY_TREE ? null : mergeBase(cwd, base, head) ?? base;
+  return gateKeysTouched(fork === null ? loaded.doc : docAt(cwd, fork), docAt(cwd, head), loaded.contract.human.keys);
+}
+
+export function changeDepthWithKeys(cwd: string, base: string, files: string[], head: string, loaded: LoadedContract, raise: Depth | null = null): { depth: Depth, reasons: string[] } {
+  return raiseForGateKeys(changeDepth(files, loaded.contract.depth, raise), gateKeysChanged(cwd, base, head, loaded));
 }
 
 export function isEvidenceCommit(cwd: string, sha: string): boolean {
@@ -130,7 +133,7 @@ export function verifyAgentic(input: VerifyInput): AgenticVerdict {
     throw e;
   }
   const files = changedFiles(cwd, base, head);
-  const { depth, reasons } = changeDepthWithKeys(cwd, files, head, loaded);
+  const { depth, reasons } = changeDepthWithKeys(cwd, base, files, head, loaded);
   const required = requiredAgentic(loaded.contract.agentic, depth);
   const verdict: AgenticVerdict = { ok: true, required: required.map(r => r.id), depth, depthReasons: reasons, patchId: pid, evidenceCommit: null, signature: 'absent', signer: null, checks: [], problems: [] };
   const evidence = findEvidenceCommit(cwd, base, head);
