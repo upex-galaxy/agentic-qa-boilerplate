@@ -18,17 +18,17 @@ A chat notice is an interface with no provider behind it. Its inputs are a chann
 
 ## 3. The owner's OK
 
-Before the transition, the owner gives an explicit final OK on the list of deferred cases. The **owner** is the person who signs the transition (`stage-gates.md` §"Contract table"): the person who launched the session, or whom the brief names. The OK is evidence the agent cannot mint, given after the notice and covering those case ids. It counts in one of two forms. With the owner at the keyboard of the session that runs the stage: the message they type in that session's chat. With nobody at that keyboard (a fleet worker, a conductor relaying, a routine): a pointer that can be opened, the owner's comment on the Story or their answer on the Sprint Board.
+Before the transition, the owner gives an explicit final OK on the list of deferred cases. The **owner** is the person who signs the transition (`stage-gates.md` §"Contract table"): the person who launched the session, or whom the brief names. The OK is evidence the agent cannot mint, given after the notice and covering those case ids. It counts in one of two forms. With the owner at the keyboard of the session that runs the stage: their own answer there, typed in its chat or picked in the harness's structured-question tool on a question that lists the case ids. With nobody at that keyboard (a fleet worker, a conductor relaying, a routine): a pointer that can be opened, the owner's comment on the Story or their answer on the Sprint Board.
 
 | Who runs | How the OK is obtained |
 |---|---|
-| The owner is at the keyboard of the session running the stage | ask in chat with the case ids listed; record their message in the ATR with its timestamp and the words `owner OK given in session`. A pointer counts here too |
+| The owner is at the keyboard of the session running the stage | ask with the case ids listed, in chat or with the structured-question tool; record their answer in the ATR with its timestamp and the words `owner OK given in session`. A pointer counts here too |
 | Someone else is at that keyboard | they only carry a pointer to the owner's comment or board answer |
 | A supervised worker | escalate to the conductor or launcher, which asks the owner and returns the pointer. It never answers the question itself |
 | A subagent | report to the session that dispatched it, which follows its own row here |
 | A routine with nobody | only an OK it can open through a pointer its brief carries; otherwise stop and report |
 
-- **Not an OK**: a blanket advance approval, anything older than the notice, any wording by the agent, the conductor or the launcher session (a brief included: it never stands in for the owner's own words, a quote of them neither), and a comment an agent session posted, even from the owner's account.
+- **Not an OK**: a blanket advance approval, anything older than the notice, any wording by the agent, the conductor or the launcher session (a brief included: it never stands in for the owner's own words, a quote of them neither), a default or timed-out prompt, an answer another session relays without the pointer, and a comment an agent session posted, even from the owner's account.
 - The ATR cites the pointer and what was read behind it, or the in-session record.
 - **Limit of the in-session form**: the agent writes the record and no verifier can open it. What guarantees it is the owner's presence, not a pointer.
 - The OK covers the cases listed. A case deferred afterwards needs its own.
@@ -36,7 +36,7 @@ Before the transition, the owner gives an explicit final OK on the list of defer
 
 ### Checking the OK and the record
 
-An in-session OK is checked by the session that received it: the owner typed it there, after the notice, naming or accepting the listed case ids, and the ATR carries its timestamp and `owner OK given in session`. For a pointer, the Stage 3 session before the sign-off, and in a fleet the round-close verifier again, open it and record what they read:
+An in-session OK is checked by the session that received it: the owner typed or picked it there, after the notice, naming or accepting the listed case ids, and the ATR carries its timestamp and `owner OK given in session`. For a pointer, the Stage 3 session before the sign-off, and in a fleet the round-close verifier again, open it and record what they read:
 
 | Pointer | Read and record |
 |---|---|

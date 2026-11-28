@@ -233,7 +233,7 @@ with nobody assigned to unblock it).
   that list: the deferral is QA's call, the signature is still the person's (`./stage-gates.md` §"Contract table").
 - A Story, Tech Story or Tech Debt with any deferral needs three things before the sign-off: the notice
   comment on it, the owner's explicit OK on the deferral list, cited in the results (a pointer that was
-  opened and checked, or the message the owner typed in the session running the stage), and the `qa.deferral.label` label applied and read back. Without the OK it stays in
+  opened and checked, or the answer the owner typed or picked in the session running the stage), and the `qa.deferral.label` label applied and read back. Without the OK it stays in
   test. A refused OK returns the listed cases to `BLOCKED`
   (`sprint-testing/references/shift-right-deferral.md`).
 - The acceptance Test Execution closes once every non-terminal run carries its `DEFERRED (execution)` line.
