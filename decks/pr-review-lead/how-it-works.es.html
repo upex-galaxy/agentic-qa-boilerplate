@@ -503,7 +503,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
       <span class="wf-arr">→</span>
       <div class="wf-node gate"><p class="n">verificador · requerido</p><p class="t" style="white-space:nowrap">/pr-review-lead<br>o /judgment-day</p><p class="c">sobre el diff, en un<br>contexto limpio</p></div>
       <span class="wf-arr">→</span>
-      <div class="wf-node alt"><p class="n">la persona firma</p><p class="t">El merge</p><p class="c">nada se mergea<br>solo</p></div>
+      <div class="wf-node alt"><p class="n">después, el merge</p><p class="t">Según merge_mode</p><p class="c">auto, o una persona<br>aprueba o mergea</p></div>
     </div>
     <div class="grid g2 mt-m" style="gap:24px;align-items:start">
       <div class="card card-accent"><p class="lbl">Por qué acá y solo acá</p><p class="small mt-s">Automation es el único stage cuya autonomía llega a 3. Más cuerda a la entrada se paga con un control más duro a la salida: es el único stage con verificador separado obligatorio.</p></div>
@@ -803,7 +803,7 @@ Score: X.X / 10 · &lt;justificación en una línea&gt;</div>
       </div>
       <div class="card">
         <p class="lbl">Al lado y después</p>
-        <p class="small mt-s"><span class="mono">/judgment-day</span>: la otra opción de verificador, o una segunda opinión con otra forma.<br>El merge lo firma una persona.<br><span class="mono">/framework-development</span>: si el PR pide proceso de framework.</p>
+        <p class="small mt-s"><span class="mono">/judgment-day</span>: la otra opción de verificador, o una segunda opinión con otra forma.<br>El merge sigue la política del repo (<span class="mono">git_strategy.policy.merge_mode</span> acá): una persona aprueba con <span class="mono">human-approves</span> y mergea con <span class="mono">manual</span>.<br><span class="mono">/framework-development</span>: si el PR pide proceso de framework.</p>
       </div>
     </div>
     <div class="card card-accent mt-m">

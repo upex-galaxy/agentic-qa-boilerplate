@@ -354,7 +354,11 @@ bun setup</code></pre>
           <code>git_strategy:</code> de <code>.agents/project.yaml</code> falta o no tiene
           estrategia. Con el bloque presente reporta la diferencia entre la política declarada y la
           que aplica GitHub: mientras la estrategia siga heredada (o no haya un origin en GitHub) la
-          muestra como aviso y deja pasar el push; una vez elegida, esa diferencia frena el push.
+          muestra como aviso y deja pasar el push; una vez elegida, esa diferencia frena el push. Si
+          <code>git_strategy.policy.direct_push_to_protected</code> vale <code>evidence</code>, el
+          mismo hook corre antes el gate de evidencia (<code>bun run edd gate</code>): vuelve a
+          correr los checks de pre-push del contrato, escribe el registro y rechaza el push si el
+          gate falla. Con cualquier otro valor, el gate de evidencia no hace nada.
         </p>
       </div>
       <p>

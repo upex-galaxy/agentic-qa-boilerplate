@@ -448,8 +448,9 @@
         <span class="callout-title">Nunca se colapsa</span>
         <p>
           El ATR con su Test Environment declarado. El acuerdo humano explícito antes de filear cada
-          bug. La aprobación del plan de automatización antes de escribir código. La aprobación
-          humana del merge.
+          bug. La aprobación del plan de automatización antes de escribir código. La firma humana
+          del merge allí donde <code>git_strategy.policy.merge_mode</code> la reserva: la aprobación
+          con <code>human-approves</code>, el merge mismo con <code>manual</code>.
         </p>
       </div>
 
@@ -632,8 +633,10 @@
                 <code>/git-flow-master</code>, que abre el pull request.
               </td>
               <td>
-                El plan antes de la primera línea de código, el merge, y la decisión de seguir o
-                parar al tercer intento fallido.
+                El plan antes de la primera línea de código, el merge solo cuando
+                <code>git_strategy.policy.merge_mode</code> se lo deja a una persona (la aprobación
+                con <code>human-approves</code>, el merge mismo con <code>manual</code>), y la
+                decisión de seguir o parar al tercer intento fallido.
               </td>
               <td>2 → 3 dentro del plan aprobado</td>
               <td>Obligatorio (<code>pr-review-lead</code> o <code>judgment-day</code>)</td>
