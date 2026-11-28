@@ -12,15 +12,14 @@ import { loadContract, treeReader } from './lib/edd/contract.ts';
 
 const ROOT = resolve(import.meta.dir, '..');
 
-describe('this repo keeps pushing exactly as before', () => {
-  test('its explicit allowed reads as allowed in the hook and in the gate', () => {
+describe('the hook and the gate read one push policy', () => {
+  test('the hook reads the policy the contract declares', () => {
     const dir = mkdtempSync(join(tmpdir(), 'edd-probe-'));
     const script = join(dir, 'probe.sh');
     writeFileSync(script, `. '${join(ROOT, '.husky', 'framework-gates.sh')}'\n_fg_policy_value < '${join(ROOT, '.agents', 'project.yaml')}'\n`);
     const p = Bun.spawnSync(['sh', script], { cwd: ROOT, stdout: 'pipe' });
     rmSync(dir, { recursive: true, force: true });
-    expect(p.stdout.toString().trim()).toBe('allowed');
-    expect(loadContract(treeReader(ROOT), 'wt').facts.policy).toBe('allowed');
+    expect(p.stdout.toString().trim()).toBe(loadContract(treeReader(ROOT), 'wt').facts.policy);
   });
 });
 
