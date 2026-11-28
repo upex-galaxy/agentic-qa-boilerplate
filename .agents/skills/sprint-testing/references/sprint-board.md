@@ -124,8 +124,9 @@ the first time, arm `listen` with a starting point:
   answer (an access, a credential, a behaviour decision that changes the expected result: the last
   rung of the blocking ladder in `agentic-qa-core/references/discovery-driven-doctrine.md` §5) goes
   into one message per wave, not one per ticket, staged in `.session/sprint-board/staged/` (§8) until
-  the owner sends it. A QA deferral is not one of them: QA takes it on its own once the case cannot be
-  recreated in the test environment. When the answer is to defer, record it on the case with
+  the owner sends it. A QA deferral is not one of them: QA takes it on its own once the unblock preflight
+  (`preflight-gate.md`) finds the case cannot be recreated in the test environment for an external cause.
+  The Story's move on a deferral still needs the owner's OK (`shift-right-deferral.md` §3). When the answer is to defer, record it on the case with
   `tc <KEY> <TC> DEFERRED --approval "<who>, <where>"`; a deferral QA took on its own is recorded
   with `--reason "QA decision <date>: <why>"` instead.
 

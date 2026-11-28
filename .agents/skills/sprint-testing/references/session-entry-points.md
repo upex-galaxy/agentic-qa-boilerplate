@@ -420,7 +420,7 @@ Actions:
 3. Use TCs as guides but explore beyond them (edge cases, boundaries, data variations, user perspectives). Create new TCs for significant discoveries.
 4. Update TC statuses in the TMS: PASSED / FAILED only when observed in the precondition's environment, else NOT RUN with its ladder reason.
 5. File any bugs per `references/reporting-templates.md` (Bug Report template).
-6. Decision: PASSED (incl. recorded deferrals) goes to Stage 3. BLOCKED runs the blocking ladder (recreate, then QA defers with a follow-up task, then developers, then the owner if unsure; `agentic-qa-core/references/discovery-driven-doctrine.md` §5), never an open-ended wait. FAILED is triaged first (a FAIL is not auto-Critical). A **blocking** failure (smoke/env down, data integrity, security-exploitable) stops the pass and is surfaced now; a **non-blocking** finding is logged, the TC marked FAILED, and the pass continues, with the finding surfaced at Stage 2 close. See `exploration-patterns.md` "Finding triage".
+6. Decision: PASSED (incl. recorded deferrals) goes to Stage 3. BLOCKED runs the unblock preflight (`sprint-testing/references/preflight-gate.md`) and the blocking ladder (recreate, then QA defers an external cause only, with a follow-up task, then developers, then the owner if unsure; `agentic-qa-core/references/discovery-driven-doctrine.md` §5), never an open-ended wait. FAILED is triaged first (a FAIL is not auto-Critical). A **blocking** failure (smoke/env down, data integrity, security-exploitable) stops the pass and is surfaced now; a **non-blocking** finding is logged, the TC marked FAILED, and the pass continues, with the finding surfaced at Stage 2 close. See `exploration-patterns.md` "Finding triage".
 
 Output checkpoint:
 
@@ -441,10 +441,11 @@ Reference: `references/reporting-templates.md`.
 Actions:
 
 1. Compile the TC summary (total, PASSED, FAILED, pass rate).
+   A Story with any `DEFERRED (execution)` case first runs `shift-right-deferral.md` §2-3 (notice, then the owner's OK). With the OK pending: no ATR completion, no pass result comment, no transition.
 2. Fill the ATR Test Report via `[TMS_TOOL] atr update {ATR-ID} --report "..."` (or write `{{jira.acceptance_test_results}}` / fallback comment in Modality jira-native). Mark the ATR complete.
 3. Materialize the read-only cache (never hand-written) per modality: jira-native -> `bun run jira:sync-issues get <KEY> --include-comments` -> `acceptance-test-results.md` in the STORY folder; jira-xray -> `bun run jira:sync-issues get <ATR_KEY>` -> `.context/PBI/test-executions/ATR-<ATR_KEY>-<slug>.md`.
 4. Post the QA comment to the ticket via `[ISSUE_TRACKER_TOOL]`, using the user-story templates (PASSED / FAILED) from `reporting-templates.md`.
-5. Transition the ticket via substrate. Decision tree: Story PASSED (every case PASSED, or `DEFERRED (execution)` listed in the QA comment for the signer) -> `{{jira.transition.story.qa_sign_off}}`; Bug PASSED -> `{{jira.transition.bug.retest_passed}}`; Story FAILED with `{{FORMAL_BLOCKED_GATE}}=true` -> `{{jira.transition.story.defect_reported}}` (`in_test` -> `blocked`); Story FAILED non-strict (flag false or no `blocked` slug) -> leave in `{{jira.status.story.in_test}}` with the linked bug; Bug FAILED -> leave in `{{jira.status.bug.ready_for_qa}}` (or `back` / `re_open` if previously closed). `sprint-orchestration.md` Briefing 4 Step 5 has the full decision tree.
+5. Transition the ticket via substrate. Decision tree: Story PASSED (every case PASSED, or `DEFERRED (execution)` listed in the QA comment, and then only with the notice posted, the owner's own OK cited and the `qa.deferral.label` label read back first, per `shift-right-deferral.md`) -> `{{jira.transition.story.qa_sign_off}}`; Bug PASSED -> `{{jira.transition.bug.retest_passed}}`; Story FAILED with `{{FORMAL_BLOCKED_GATE}}=true` -> `{{jira.transition.story.defect_reported}}` (`in_test` -> `blocked`); Story FAILED non-strict (flag false or no `blocked` slug) -> leave in `{{jira.status.story.in_test}}` with the linked bug; Bug FAILED -> leave in `{{jira.status.bug.ready_for_qa}}` (or `back` / `re_open` if previously closed). `sprint-orchestration.md` Briefing 4 Step 5 has the full decision tree.
 6. Give the user the evidence screenshot paths to attach.
 
 Output checkpoint:

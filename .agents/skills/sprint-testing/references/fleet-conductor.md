@@ -52,6 +52,7 @@ Conductor-only operations. Each of these mutates shared state that has exactly o
 | Sprint `progress.md` + STP **comment** | see §10 |
 | `launch.txt`, `roster.md`, `claims.md` | the fleet's own bookkeeping |
 | Fixture setup: seeding data, verifying with ONE query that a fixture named in a brief exists and belongs to whom the brief says, creating an owner-approved fixture user | shared state with one correct value; anything the conductor did not check goes into the brief marked `UNVERIFIED` |
+| Writing the shift-right test plan | one description rewritten wholesale (`shift-right-deferral.md` §5) |
 | Publishing an Epic's `## Module Context (QA)` section | N workers replacing one section race, and the last writer erases the others without an error (§10 "Module learnings") |
 
 The conductor does not investigate an issue. The line is fixture versus finding: making a case executable is shared-state setup and belongs here, while what the case should assert, the code behind it and any identifier the test needs belong to the worker, who has the context and writes the ATR. Measured on the source fleet: asked which blocked cases an authorization would unblock, a conductor read the controller source, traced the sync code and queried the database, duplicated work that then contradicted the worker. Hand the worker the fixture and the constraint, and say the rest is theirs.
@@ -142,6 +143,7 @@ Run: <run id — ONLY when this worker was launched without a supervised dispatc
 - single-issue mode on <KEY>, no checkpoints, preflight gate + MCP probes NOT skippable
 - run every stage without returning to the prompt until the done-report is sent; stage boundaries are not checkpoints
 - no sprint-altitude writes, no token minting, no bulk sync
+- a Story with a deferred case: `ask` the conductor for the owner's OK and send your shift-right plan rows with your report; never write the plan (§10 "Shift-right deferrals")
 - no write to the Epic's `## Module Context (QA)` section: stage what you learned about the module under `## Module Learnings (candidate)` in your test-session-memory.md; the conductor publishes it
 - no heartbeats; report once at the end
 - if your own measurement contradicts an instruction in this brief or a later message, STOP and `ask` with both readings and your evidence — never comply silently and never deviate silently
@@ -294,6 +296,17 @@ The conductor talks to workers through the orchestration mailbox: `[ORCHESTRATIO
 
 A worker never writes to the user: everything reaches the user through the conductor, which decides what is worth an interruption.
 
+### Shift-right deferrals
+
+A worker sends two things (`shift-right-deferral.md`):
+
+| Worker sends | As | Conductor does |
+|---|---|---|
+| the OK request: the Story, the notice comment link, the deferred case ids | `ask` | asks the owner and replies with the owner's message quoted, with its pointer. It never grants or words the OK itself |
+| the plan rows, after its sign-off: Story, case, missing precondition, who owes, follow-up, owner OK pointer, state | in the done report | writes them into the shift-right test plan, its one writer, and reads the description back |
+
+A seed the preflight needs is also an `ask` (§2, "Fixture setup"); the case is not deferred until it is answered.
+
 ### Sprint-altitude record stays with the conductor
 
 When a worker reports done, the conductor does what `sprint-orchestration.md` §STEP 4 says, unchanged: it verifies the checklist, appends one entry to the sprint `progress.md`, mirrors it as one STP comment, moves the queue row off `PENDING` and archives the issue sub-scope.
@@ -364,17 +377,19 @@ Against localhost, each worker reasons about its own issue's branch, and a worki
 - [ ] Each worker released and closed as it finishes
 - [ ] Per closed issue, written by the conductor after Stage 3 is verified: `progress.md` entry, STP comment, queue row, archive, tracker status read back, module learnings merged once per module
 - [ ] `claims.md` shows a release for every granted write claim
+- [ ] Each deferral OK relayed in the owner's own quoted words, and every worker's shift-right plan rows written and read back
 
 ---
 
 ## 14. Who holds each wait
 
-The conductor waits for a person at four points: the executors answer (§2), the test-case format (§4), the round checkpoint (§6) and the third failed login (§7). Whether a question reaches a person at all is decided by `agentic-qa-core/references/decision-protocol.md`.
+The conductor waits for a person at these points: the executors answer (§2), the test-case format (§4), the round checkpoint (§6), the third failed login (§7) and a deferral OK (§10). Whether a question reaches a person at all is decided by `agentic-qa-core/references/decision-protocol.md`.
 
 | Wait | Person present | Supervised worker | Routine with nobody |
 |---|---|---|---|
 | N > 1 executors, test-case format | ask the user | the launching conductor decided it and put it in the brief | the delegating brief is the approval; without one, do the reversible prep (briefs, `launch.txt`), launch nothing and report |
 | round checkpoint | show the dashboard and wait | the launcher reads the dashboard and decides | write the dashboard to the sprint record, form the next round only if the brief covers it, otherwise stop and report |
+| deferral OK | ask the owner | the launcher asks the owner and relays the quoted message | only a brief quoting the owner's OK for those case ids; otherwise the Story stays in test and report |
 | third failed login | stop and ask | `escalation` to the conductor | stop the affected leg, mark `BLOCKED_AUTH_STALE`, report; no Jira write or message |
 
 A fleet worker never waits for a person: its `ask` goes to the conductor (§3, §10).

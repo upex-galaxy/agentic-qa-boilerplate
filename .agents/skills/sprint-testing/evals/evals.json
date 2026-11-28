@@ -31,6 +31,12 @@
       "category": "positive"
     },
     {
+      "name": "blocked-by-stripe-account",
+      "prompt": "Test the user story UPEX-330 on staging. It adds card payment through Stripe. We have no Stripe account and no permission to create one, and the developers shipped it without giving us one.",
+      "expected_behavior": "Activates sprint-testing in single-issue / user-story mode. When the in-scope Stripe case cannot execute, runs the unblock preflight (sprint-testing/references/preflight-gate.md) before writing BLOCKED or DEFERRED: scope test against the synced ACs, proof the change is deployed, self-unblock attempts with evidence, then external cause (third party). Takes the shift-right deferral path: DEFERRED (execution) line plus follow-up, notice comment on the Story, explicit owner OK that the agent never writes itself, the qa.deferral.label label applied and read back, result PASSED WITH DEFERRALS, then qa_sign_off, and a row in the Shift-Right Test Plan. Without the OK the Story stays in test. Never marks the case PASSED or FAILED unobserved.",
+      "category": "positive"
+    },
+    {
       "name": "should-not-trigger-automation",
       "prompt": "Automate the test cases for ticket UPEX-277. Write the Playwright E2E test.",
       "expected_behavior": "Does NOT activate sprint-testing. Should route to test-automation (Stage 5 — Plan -> Code -> Review for KATA component + test file). sprint-testing ends at Stage 3 and hands off.",
