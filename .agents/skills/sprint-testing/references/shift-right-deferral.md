@@ -41,7 +41,9 @@ An in-session OK is checked by the session that received it: the owner typed it 
 | Pointer | Read and record |
 |---|---|
 | Jira comment | its id, author and timestamp, read back from Jira: the author is the owner, the time is after the notice, the text covers the case ids, and no session of the run posted it |
-| Board answer | the `need.answer` event in the board's `events.ndjson`: its text, time and `by`. A `by` other than the owner does not count, an answer a conductor recorded for them included |
+| Board answer | the `need.answer` event in the board's `events.ndjson`: its text, time and `by`. Only `owner`, which the board page writes, counts; an answer recorded with `--by`, a conductor's included, does not |
+
+A board answer is accepted evidence with a stated limit: it proves the record did not come through the board CLI, not who typed it, because a local process can still post to the page. The Story comment read back from Jira is the stronger pointer and is preferred when both exist.
 
 They also open each deferred case's preflight record: it names what was tried, each attempt with an evidence pointer that opens, the external class and who owes it, verdict `DEFER`.
 
@@ -54,7 +56,7 @@ A pending OK is one state, **waiting for owner OK**:
 - The Story stays at `{{jira.status.story.in_test}}`, with no label and no pass result comment.
 - The ATR stays `active`, and no closing step touches the ATP or the ATS.
 - The sprint queue row and the report read `waiting for owner OK`.
-- On the Sprint Board: `needs-you` with the case ids, `verdict` `BLOCKED` and `hold --reason other --on` the owner (`sprint-board.md` §2). Never `PASSED`.
+- On the Sprint Board: `needs-you` with the case ids and `--by <writer>`, `verdict` `BLOCKED` with `--by <writer>`, and `hold --reason other --on` the owner (`sprint-board.md` §2; `<writer>` is `conductor`, `sentinel` or `worker`). Never `PASSED`.
 - The worker may be closed, and the round and the sprint may close with the Story listed.
 
 A late OK resumes at §4, then §5.
