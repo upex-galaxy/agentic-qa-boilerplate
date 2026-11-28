@@ -186,6 +186,19 @@ describe('gate keys and branch contracts', () => {
     expect(res.out).toContain('depth standard');
   });
 
+  test('a branch push reads the contract from origin/<production>, not from the branch it updates', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml(contract('test -f ok.txt')) });
+    r.git('update-ref', 'refs/remotes/origin/main', base);
+    r.git('checkout', '-q', '-b', 'feat');
+    const weak = r.commit('chore: weaken', { '.agents/project.yaml': projectYaml(contract('true')) });
+    const head = r.commit('feat: x', { 'app/a.ts': '1\n' });
+    const res = run(r.dir, ['gate'], `refs/heads/feat ${head} refs/heads/feat ${weak}\n`);
+    expect(res.code).toBe(1);
+    const rec = JSON.parse(readFileSync(join(r.dir, '.session', 'evidence', `${head}.json`), 'utf8'));
+    expect(rec.contract.read_from).toBe(base);
+  });
 });
 
 describe('verify --ci output', () => {

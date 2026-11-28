@@ -211,14 +211,20 @@ async function gate(): Promise<number> {
   for (const r of refs) {
     if (isZeroOid(r.localSha) || !r.remoteRef.startsWith('refs/heads/')) { continue; }
     const base = baseFor(r.localSha, r.remoteSha, wt.facts.production);
-    const source = base === EMPTY_TREE ? 'working tree' : base;
+    let source = base === EMPTY_TREE ? 'working tree' : base;
     const problems: string[] = [];
-    const read = base === EMPTY_TREE ? treeReader(CWD) : refReader(CWD, base);
-    const tried = tryLoad(read, source);
+    let read = base === EMPTY_TREE ? treeReader(CWD) : refReader(CWD, base);
+    let tried = tryLoad(read, source);
+    const branch = r.remoteRef.startsWith('refs/heads/') ? r.remoteRef.slice('refs/heads/'.length) : null;
+    const prodTip = resolveCommit(CWD, `refs/remotes/origin/${wt.facts.production}`);
+    if (branch !== null && !(typeof tried === 'string' ? wt : tried).facts.protected.includes(branch) && prodTip && prodTip !== base) {
+      source = prodTip;
+      read = refReader(CWD, prodTip);
+      tried = tryLoad(read, source);
+    }
     const loaded = typeof tried === 'string' ? wt : tried;
     if (wt.facts.policy !== 'evidence' && loaded.facts.policy !== 'evidence' && typeof tried !== 'string') { continue; }
     if (typeof tried === 'string') { problems.push(tried); }
-    const branch = r.remoteRef.startsWith('refs/heads/') ? r.remoteRef.slice('refs/heads/'.length) : null;
     const isProtected = branch !== null && loaded.facts.protected.includes(branch);
     const head = resolveCommit(CWD, 'HEAD');
     if (head !== r.localSha) { problems.push(`HEAD is ${head?.slice(0, 12) ?? 'unborn'}, the push sends ${r.localSha.slice(0, 12)}: check out the commit you push so the checks run on it`); }
