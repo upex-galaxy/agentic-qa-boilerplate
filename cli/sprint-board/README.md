@@ -121,6 +121,19 @@ $B inbox [--all]                            what the owner wrote that Claude has
 $B listen [--since <iso|id>]                one line per owner action, live; run it under Monitor.
                                             --since replays what the owner did after that point first
 
+# the Decision dock: small questions the owner answers on the page in one batch (see Decision dock)
+$B sweep add --question "..." --by conductor|sentinel [--ticket PROJ-1] [--header Scope] [--context "..."]
+           [--option "label | description"] [--recommend a] [--multi] [--no-free-text]
+           [--media "<image> | caption"] [--path <text>] [--link "title | <url>"] [--at <iso>]
+                                            --option 2 to 4 times, or none for a free-text question; refused on a
+                                            closed board
+$B sweep list [--all] [--json] [--stale-days <n>]   open items with their age, STALE past the threshold;
+                                            --all adds answered, consumed and closed ones
+$B sweep read [--unconsumed] [--json]       the batches the owner sent (question, labels, free text,
+                                            tookRecommended copied in) and the dock notes
+$B sweep consume <batch-id|note-id> --by conductor    it was read (a second call writes nothing)
+$B sweep close <item-id> --why "..." --by conductor|sentinel   retire an open item nobody needs to answer
+
 # test-environment watch (the sentinel wakes the conductor, the conductor runs one pass)
 $B sentinel [--baseline <file>] [--every 10] [--hours 9-18] [--days 1-5] [--stop-at 18:07]
            [--recheck-every 120] [--stale-after 30] [--port 4477] [--once] [--dry-run]
@@ -158,11 +171,14 @@ machine that calls the page's routes, or edits the log, is not stopped.
 | Commands | `--by` |
 |---|---|
 | `answer` with text, `needs-you`, `resolve`, `ask`, `ask-state`, `verdict`, `tc` with `DEFERRED` or `--approval`, `arrival`, `unwait`: the event states what someone said or decided | required: `conductor`, `sentinel` or `worker` |
+| `sweep add`, `sweep close` | required: `conductor` or `sentinel`; a worker raises a `needs-you` card, which reaches the same dock, and cannot retire a question the owner may be answering |
+| `sweep consume` | required: `conductor`, since what is marked read is never handed to it again |
 | `evidence-artifact` (`evidence-page`) | required: `worker` or `conductor` |
 | `accept-risk` | required: the person and where they said it |
 | `add`, `remove`, `meta`, `start`, `worker`, any other `tc`, `bug`, `evidence`, `fixture`, `hold`, `unhold`, `wait`, `log`: scope, progress or an observation, and nothing reads their author | optional |
 
-`say` always signs as `claude`; `watch-pass`, `arrivals --sync` and the sentinel sign their own passes.
+`say` always signs as `claude`; `watch-pass`, `arrivals --sync` and the sentinel sign their own passes. A
+dock answer, its batch and a dock note are written by the page's routes alone: no command writes them.
 
 **A question stays the owner's.** One answered by anyone else stays in Needs you, and the page keeps
 offering it, naming who recorded that answer, until the owner answers or it is resolved. An owner
@@ -313,9 +329,10 @@ link.
 `toReportState` builds the state by **allowlist**, like `toShareState`: sprint meta, the report
 tickets with their TCs, the report bugs, the counted numbers (`report`), tracker links, the
 already-validated evidence page URLs, the verdict / bug / release / tracker timeline lines of
-report tickets and `generatedAt`. Never: asks, the inbox, answers, waits, holds, needs, worker
-names, fixtures, local paths, screenshots or captions. The write is refused when the state still
-holds an ask's text, reply or failure, an inbox message's text, a local path, or a worker name of three or more characters as a whole value (the tripwire; the allowlist is the guarantee). Every
+report tickets and `generatedAt`. Never: asks, the inbox, answers, waits, holds, needs, the
+Decision dock, worker names, fixtures, local paths, screenshots or captions. The write is refused when the state still
+holds an ask's text, reply or failure, an inbox message's text, dock text that the board does not also
+publish from another source, a local path, or a worker name of three or more characters as a whole value (the tripwire; the allowlist is the guarantee). Every
 tracker value reaches the page escaped; a link becomes an anchor only when it is https, and
 `--stp-url` must be https on the tracker host (`issue_tracker.atlassian_url`) or an evidence host.
 
@@ -410,8 +427,8 @@ types in the box or clicks an option, which the page sends as `POST /api/msg`. E
 
 Messages are `msg` events in the same `events.ndjson`, so nothing is lost when no session is
 listening: `inbox` lists what is still owed. `listen` is the live path, one stdout line per owner
-action (`msg`, `need.answer`, `ask.state`), meant for the Monitor tool. Inbox messages never reach
-the share snapshot.
+action (`msg`, `need.answer`, `ask.state`, and the dock's `sweep.answer` and `sweep.batch`), meant
+for the Monitor tool. Inbox messages never reach the share snapshot.
 
 `listen` starts at the end of the log, so an answer the owner gave while no listener ran (Monitor
 expired, session resumed) would never print. Re-arm it with `listen --since <point>` and it first
@@ -421,6 +438,88 @@ event id, which resolves to that event's time. The replay ends with one line say
 actions it found and how many events it searched; an id that matches nothing on any open board
 stops the command (measured on the source board: an owner answer given one minute before `listen`
 was re-armed surfaced only because the owner mentioned it in chat).
+
+## Decision dock
+
+A floating drawer at the bottom center of the live page where the owner answers, in one go, the small
+questions agents left and the open needs-you cards, then sends them as one batch. It is an addition:
+the Needs you cards and the inbox panel work as before. It needs no orchestrator and no messenger: with
+no item ever posted, it still lists the needs-you cards.
+
+It is mounted outside the views, so it stays put while they change, and has three sizes: hidden (a
+round button with the counter), collapsed (a pill with the counter, one segment per item and how many
+are ready) and expanded (a sheet, never full screen). The browser remembers hidden or collapsed
+(`sprint-board-dock-mode`). A click outside, `Esc` or the chevron collapse it; the minus hides it.
+With the ticket panel open it centers on the free area. A new item bumps the counter, and with alerts
+enabled a posted item raises a notification (a needs-you card already raises the board's own).
+
+- **One queue, two origins.** The open dock items, and every needs-you card on an in-scope ticket that
+  still waits for the owner. A card an agent answered is listed with who recorded that answer, and the
+  owner's answer replaces it. The needs the board raises itself stay on their ticket. Single choice,
+  multi choice and free text, the recommended option first, a ticket chip that opens the ticket
+  panel, images, paths with a copy button and links in a new tab. A card shows its decision rows.
+- **Drafts and the batch.** Choices are drafts kept in this browser
+  (`sprint-board-dock-<sprint>`), merged item by item, so two open tabs keep each other's. "Review and
+  send" lists every answer and what stays open, and Send writes the batch. A send is final. The send
+  answers per item (`written`, `answered-elsewhere`, `closed`, `unknown`), so one stale card never
+  sinks the rest. A draft that was not sent and whose item was answered or closed meanwhile is moved to
+  the Notes tab, where it can be added to a note or discarded; if it was being typed at that moment, the
+  text moves straight into the note and the typing carries on there. A send that fails keeps the drafts
+  and says why. A server started before the dock existed cannot take answers: the dock says so, and to
+  restart it.
+- **Notes.** The second tab sends a free message at once, optionally about a ticket: an owner `msg`
+  with `via: "dock"`, in the same thread as the "Claude <-> you" panel. Text typed while a note is
+  being sent stays in the box.
+- **Keys.** Outside the dock only `D` opens it. Inside the expanded dock: the left and right arrows
+  move between items, the letter shown on an option picks it (the stored key, whatever order the
+  options are listed in), `Cmd+Enter` (or `Ctrl+Enter`) opens the review and then, pressed again, sends
+  (on Notes it sends the note), digit keys do not switch views and `Tab` stays inside. Reduced motion
+  is respected, and the prose follows the page language.
+- **Age and stale.** Each item shows how long it has waited and a Stale chip after
+  `DOCK_STALE_DAYS` whole days (`sweep.ts`); `dockStaleDays` in the sprint's `sprint.json` changes it,
+  and `sweep list --stale-days <n>` overrides it for one listing.
+- **Where it is not drawn.** A frozen copy (archive, full, share, report), its tour included, and a
+  closed sprint. None of them carries the dock's items or batches; a dock note stays in the full
+  copy's inbox like any other message.
+
+**Events** (`events.ndjson`). A batch is one `sweep.answer` per item plus one marker, so every line
+stays under the atomic append limit.
+
+| Event | By | Data |
+|---|---|---|
+| `sweep.add` | an agent | `id`, `question`, `header?`, `context?`, `options[]` (`key` by position, `label`, `desc?`), `recommend[]`, `multi`, `freeText`, `media[]` (`path`, `caption?`), `paths[]`, `links[]` (`title`, `url`); `ticket` on the event |
+| `sweep.answer` | owner | `batch`, `item`, `kind` (`sweep` or `need`), `choice[]`, `text?` |
+| `sweep.batch` | owner | `batch`, `skipped[]`, `results{}`: the marker that completes the batch |
+| `sweep.consume` | conductor | `id`: a batch id or a dock note's message id |
+| `sweep.close` | conductor or sentinel | `id`, `why` |
+
+An answer to a card is also a `need.answer` by the owner with `via: "dock"`, so a worker reads it as it
+reads one given on the card. The send is `POST /api/sweep/send`
+(`{ answers: [{ item, kind, choice, text }], skipped }`) under `sweep.lock`: it checks the board as it is
+then and writes the card answers, the item answers and the marker in one append, so a send that fails
+does not leave part of a batch behind. A malformed answer (an unknown
+option, two picks on a single choice, no answer, free text or a number of answers over the limits in
+`sweep.ts`) is a 400 and writes nothing; a send where nothing could be written is a 409. `sweep consume`
+and `sweep close` take the same lock.
+
+**Reading the answers.** `sweep read --unconsumed --json` prints `{ batches, notes }`, with each question
+and option label copied in:
+
+```json
+{ "batch": "swb-...", "sentAt": "<iso>", "consumed": false,
+  "answers": [ { "item": "sw-...", "kind": "sweep", "ticket": "PROJ-7340", "question": "Defer TC-3 or hold?",
+                 "askedBy": "conductor", "choice": ["a"], "labels": ["Defer TC-3"], "text": null,
+                 "tookRecommended": true } ],
+  "skipped": ["sw-..."], "results": { "sw-...": "written" } }
+```
+
+A batch appears only once its marker is written. A note counts as read after `sweep consume` alone: a
+`say --reply` answers it in the inbox and leaves it unread here, since any session can post one.
+
+**What may be shown.** An item is agent text and the page escapes it. `--media` takes an image under
+`.session/` or `.context/PBI/`, the roots `/files/` serves, and `--link` takes a URL that passes the
+evidence page rule (`board.evidence.allowed_hosts`, §Evidence pages); the page drops anything else a
+log holds.
 
 ## Test-environment watch
 
@@ -472,16 +571,17 @@ reason: `.agents/skills/sprint-testing/references/sprint-board.md` §Sentinel.
 Every `--every` minutes on the wall-clock grid (:00, :10, ...) inside `--hours` on `--days` (local
 time), it reads `source.json` and `events.ndjson` (never the tracker) and builds a signature: the
 arrivals list (NEW and RECHECK, by ticket), the UNTRACKED tickets (filtered against the board as
-`arrivals` does), the newest owner answer (`need.answer` or an inbox `msg` by the owner) and every
-open needs-you a worker raised that nobody answered, plus every ask with its state and the time it
-took it. It wakes only on an ADDITION against its
+`arrivals` does), the newest owner answer (`need.answer` or an inbox `msg` by the owner, dock ones
+aside) and every open needs-you a worker raised that nobody answered, plus every ask with its state and
+the time it took it, the dock batches and notes nobody consumed, and each open dock item's ticket
+bucket. It wakes only on an ADDITION against its
 baseline: an item that left the list was dealt with, and a NEW that became RECHECK is the conductor's
 own hold; a ticket that turns NEW again does wake. A quiet cycle appends one `watch.pass` event
 (`by: sentinel`), which keeps the "Last watch pass" chip green; a red chip means the sentinel died.
 
 | Wake line | When | JSON details |
 |---|---|---|
-| `SENTINEL WAKE change (<parts>)` | an addition, on the tick or between ticks (see Fast wake); parts: `arrivals`, `untracked`, `owner-answer`, `worker-need`, `ask-approved`, `ask-sent`, `ask-changed` | `parts`, `arrivals`, `untracked`, `ownerAnswer`, `workerNeeds`, `askApproved`, `askSent`, `askChanged` (only the new items) |
+| `SENTINEL WAKE change (<parts>)` | an addition, on the tick or between ticks (see Fast wake); parts: `arrivals`, `untracked`, `owner-answer`, `worker-need`, `ask-approved`, `ask-sent`, `ask-changed`, `sweep-answered`, `dock-note`, `dock-recheck` | `parts`, `arrivals`, `untracked`, `ownerAnswer`, `workerNeeds`, `askApproved`, `askSent`, `askChanged`, `sweepAnswered`, `dockNotes`, `dockRecheck` (only the new items) |
 | `SENTINEL WAKE recheck-sweep` | `--recheck-every` minutes since the last wake while a RECHECK or held ticket exists (its blocker may be gone) | `recheck`, `held`, `minutesSinceLastWake` |
 | `SENTINEL WAKE sync-stale` | `source.json` older than `--stale-after` minutes in hours, counted from the latest of its sync, the start of hours and a server start; once per stale `syncedAt` | `syncedAt`, `ageMin`, `staleAfterMin`, `boardPids` |
 | `SENTINEL WAKE board-down` | two server starts in a row did not listen within 30 s | `port`, `attempts`, `log` |
@@ -494,6 +594,13 @@ back into `sent` is the same send and is not reported again. `ask-changed` is an
 state it came from (`draft` for an ask the baseline never held). `ask-approved` appears only when a
 messenger is configured. A write by the conductor or the sentinel never wakes, a new proposal and a
 one-way send wake nobody, and the wake carries no message text.
+
+**Dock parts.** `sweep-answered` is a batch the owner sent (`id`, `at`, `items`, `tickets`; read it with
+`sweep read --unconsumed --json`). `dock-note` is a note from the dock (`id`, `at`, `ticket?`, the start
+of its text). A card answer or a note sent from the dock does not also raise `owner-answer`.
+`dock-recheck` is an open dock item whose ticket moved to another bucket of `board.statuses` in
+`source.json` (`item`, `ticket`, `question`, `since`, `from`, `to`): its question may no longer hold. It
+waits for the tick. A new item, and a baseline saved before the dock, adopt without a wake.
 
 **Fast wake.** Between ticks it looks at the size and modification time of `events.ndjson` every few
 seconds (a poll, no `fs.watch`, and no read while the file is unchanged). When the file changed it lets
@@ -508,7 +615,8 @@ the start-up one described below and checks against that. A failed read, or a bo
 **Baseline.** Without `--baseline` it compares against what it saw at start. A start with no saved
 signature leaves out the newest owner answer while any owner answer is still pending (its need is not
 resolved, or Claude has not replied in its inbox thread), so the sentinel wakes once, at once, instead of
-taking it as history; the pass then reads every pending answer. With a messenger, it also leaves out
+taking it as history; the pass then reads every pending answer. It also leaves out every unread dock
+batch and note. With a messenger, it also leaves out
 every ask still `approved`. A saved baseline with no asks in it adopts the current ones without a wake. With
 `--baseline <file>` (convention: `.session/sprint-board/sprints/<slug>/sentinel-baseline.json`) it
 saves the signature, the sweep clock, the last stale `syncedAt`, the day it last stopped the board, the
@@ -594,6 +702,8 @@ view pick.
 as an image) or, with no logo, `board.brand.name` (default `project.project_name`) as text; the rail
 shows the logo's mark or the name's first letter.
 
+**Decision dock**: `D` opens it from any view (§Decision dock).
+
 **Ticket panel**: drag its left edge to resize it (420 px to 95% of the window), or focus the edge
 and use the arrow keys (Shift for bigger steps, Home and End for the limits); double-click or Enter
 resets it to 560 px. The width is saved per browser under `sprint-board-drawer-w`. At phone width
@@ -655,14 +765,15 @@ listed without an expectation.
 `ask-transition.ts` the one writer of an ask's state · `messenger.ts` the drafting interface, with no provider ·
 `sentinel.ts` the sentinel's decisions and loop, on injected deps · `sentinel-run.ts` its port probe, server lifecycle and exit ·
 `watchers.ts` registered background processes and their pid check ·
+`sweep.ts` the Decision dock's pure core (fold, queue, send plan, what a reader gets) ·
 `store.ts` files and the event log · `sources.ts` Live Progress + evidence + the automated outcomes file ·
 `sync.ts` the tracker read through `cli/lib/sprint-source/` · `server.ts` local server + SSE ·
 `build.ts` page bundle · `brand.ts` the header's brand slot · `snapshot.ts` frozen HTML ·
 `merge.ts` Merge Line lanes, order and freshness (pure) · `merge-read.ts` reads the collector's
 documents · `merge-collect.ts` + `merge-build.ts` the collector · `app/` the page (views,
-merge-view, charts, tour, demo, i18n) · `demo/` the demo sprint · `fixtures/` recorded readings.
+merge-view, dock, charts, tour, demo, i18n) · `demo/` the demo sprint · `fixtures/` recorded readings.
 
-`model.ts`, `merge.ts` and `app/` are bundled for the browser: they import only pure modules
+`model.ts`, `merge.ts`, `sweep.ts` and `app/` are bundled for the browser: they import only pure modules
 (`cli/lib/sprint-source/types.ts`, `cli/lib/evidence-page/statuses.ts`), never a file that touches
 `node:*` (`build.test.ts` fails on one).
 

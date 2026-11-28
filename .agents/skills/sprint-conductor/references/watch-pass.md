@@ -21,8 +21,8 @@ costs nothing, and the ticket shows up on the next one. After §6, re-arm the se
 
 - The CURRENT board must be `<slug>` (`bun run board sprints`). If it is not, say so once and stop.
 - On a scheduled pass (the fallback), outside working hours: do nothing, say nothing.
-- A sentinel wake runs its pass whatever the hour: an owner answer or an ask moved on the page wakes
-  it at any time.
+- A sentinel wake runs its pass whatever the hour: an owner answer, a Decision dock send or note, or
+  an ask moved on the page wakes it at any time.
 - First pass of the day: check what died overnight and report it in one line instead of restarting it
   on your own: the board page answers, the orchestration runtime is reachable, the mailbox read returns
   `ok`, and `bun run board status` shows a recent "Last watch pass" and no unexpected
@@ -132,6 +132,11 @@ Nothing NEW or RECHECK: go straight to §5.
    to the messenger itself. If a later pass still shows it `approved`, record
    `ask-state <ask-id> draft-failed --error "<what is known>" --by conductor`, which gives the owner a
    Retry. Every ask move the pass records carries `--by conductor` (`sprint-board.md` §4).
+   The Decision dock is read on every pass too: `bun run board sweep read --unconsumed --json`. Act on
+   each answer and note (a card answer goes to its worker like any other), then
+   `sweep consume <batch or note id> --by conductor`. On `dock-recheck`, check the named question
+   against the ticket as it is now and `sweep close <item-id> --why "..." --by conductor` when it no
+   longer holds (`sprint-board.md` §3).
 2. The Run mailbox: the runtime pushes a notice when messages wait; read and ack them per
    `references/boot-and-resume.md` §3 step 3, then answer each worker by replying to one of its messages.
 3. A waited-on developer (optional, only when a read-only chat tool is configured for this project):

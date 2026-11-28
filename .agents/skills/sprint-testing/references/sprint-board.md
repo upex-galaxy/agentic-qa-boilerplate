@@ -44,6 +44,7 @@ signs as `owner`, which only the page does (`cli/sprint-board/README.md` §Autho
 | 4 round close | `verdict ... --by conductor` reconciled with the tracker, `worker <KEY> --state done`, `snapshot --mode share` when the team should see it (allowlist copy: no drafts, waits, questions, inbox or evidence); the full close of a worker and a round: `sprint-conductor/references/round-close.md` | conductor |
 | sprint close | `snapshot --mode report --fragment --stp-url <test plan url>` (the sprint QA report: allowlist state, counted by bucket); publish the fragment as a private claude.ai artifact and link it from the sprint test plan; then `archive` (freezes the board) | conductor |
 | any | `sentinel --baseline .session/sprint-board/sprints/<slug>/sentinel-baseline.json` as a background task, armed at session start and after every wake (§7) | conductor |
+| any | the Decision dock (§3): `sweep add --question "<question>" [--ticket <KEY>] [--option "<label> \| <cost>"] [--recommend a] --by conductor` for a small decision that blocks nothing; `sweep read --unconsumed --json` then `sweep consume <batch or note id> --by conductor` for what the owner sent; `sweep list` and `sweep close <item-id> --why "<why>" --by conductor` | conductor |
 | any | `watcher register <name> --pid <n> [--match=<text>]` for a long-running process the conductor starts besides the sentinel; `watcher clear <name>` for one it retires on purpose; `watcher list` (§7) | conductor |
 | any | `arrivals [--sync] [--json]`: tickets in the `in_test` bucket still needing a conductor decision, with denominators, plus `UNTRACKED` sprint tickets in test that are not on the board; `--sync` waits for the server's sync lock; `watch-pass ["note"]` for a pass that did not sync | conductor |
 
@@ -68,7 +69,7 @@ at Stage 3, right after publishing the ticket's evidence page `bun run board evi
 on reusable data found (a store, user or combination another ticket could use) `bun run board fixture <KEY> "<data found>" --module <module> --by worker` (the ticket's module);
 at stage changes `bun run board worker <KEY> --stage plan|execute|report|close --by worker`;
 at the end `bun run board verdict <KEY> <PASSED|FAILED|BLOCKED> --note "<one line>" --by worker` (PENDING is rejected: it is the board's own "no verdict yet"; an owner or developer wait is BLOCKED plus `hold --reason no-data|other --on <who>`).
-Never `say`, `ask`, `ask-state` or `answer`: those are the conductor's and the owner's. A board error never stops the run.
+Never `say`, `ask`, `ask-state`, `answer` or `sweep`: those are the conductor's and the owner's. A board error never stops the run.
 ```
 
 Measured on the board this was ported from: workers wrote their events from this block alone and
@@ -90,7 +91,7 @@ CONDUCTOR -- Run mailbox (record) + terminal pointer (nudge) -- WORKERS
 | # | Channel | Carries | Rule |
 |---|---|---|---|
 | 1 | Run mailbox | the worker record: status, question, escalation, done | byte-intact, the channel of record between workers and the conductor (`/agent-orchestration` channel discipline) |
-| 2 | Board | the owner surface: Needs you, the inbox, drafts, holds, waits | everything the owner must decide reaches the board and the chat, so the owner never has to read a terminal |
+| 2 | Board | the owner surface: Needs you, the inbox, the Decision dock, drafts, holds, waits | everything the owner must decide reaches the board and the chat, so the owner never has to read a terminal |
 | 3 | Owner chat | answers when the owner cannot open the board | relay it, then mirror it under the conductor's name: `say --reply <msg-id> "answered by chat: <text>"` for an inbox thread, `answer <KEY> "<text>" --id <need-id> --by conductor` for a Needs-you. The mirror is not the owner's board answer: `listen` does not print it, and the question stays open on the page. A question that gates nothing is then closed with `resolve <KEY> --id <need-id> --by conductor`. A question that gates something (a deferral OK, a transition, any step the owner signs) is not resolved by an agent before the owner's own record exists, on the board (their answer on the page, which `listen` prints) or in the tracker (their own comment) |
 | 4 | Slack | messages to developers | only on the owner's order. The board drafts (`ask`) and copies tables ("Copy for Slack") and sends nothing |
 
@@ -98,6 +99,17 @@ To relay an owner answer to a worker, send a mailbox reply (the record) plus a o
 pointer (the nudge, because mail does not reach a busy worker). The worker echoes the decision back
 before acting. A worker question that only the owner can answer goes to the board as `needs-you` and
 to the chat in the same pass.
+
+The Decision dock (`cli/sprint-board/README.md` §Decision dock) lets the owner answer several things
+in one send: the open needs-you cards, which need nothing extra from anyone, and the items the
+conductor posts with `sweep add`. A dock item is a small decision that blocks nothing (an A or B, a
+default to confirm); it moves no lane, so a question that blocks a ticket or gates a step the owner
+signs is a `needs-you` card. A card answered from the dock is the owner's own board answer, recorded
+like one given on the card. `sweep read --unconsumed --json` hands over the batches and the dock notes;
+act on each, relay a card answer to its worker as below, then `sweep consume <id> --by conductor`
+(only the conductor can, and a `say --reply` does not mark a note read).
+An item whose question no longer holds is retired with `sweep close`, and posted again if something
+is still to decide.
 
 Reading the owner takes care. A bare `listen` starts at the end of the log, so an answer given while
 it was not running never prints, and `inbox` lists inbox threads only, not Needs-you answers. After
@@ -211,8 +223,8 @@ A scheduled model pass every few minutes re-reads the whole session context, and
 finds nothing. The sentinel moves the detection into code: `bun run board sentinel`
 (`cli/sprint-board/README.md` §Sentinel) costs no tokens while quiet and ends, waking the conductor,
 only when there is something to do. Most changes are found on its tick inside working hours; an owner
-answer (Needs-you or inbox) or an ask the owner moved on the page wakes it within seconds, at any hour
-(`cli/sprint-board/README.md` §Sentinel).
+answer (Needs-you or inbox), a Decision dock send or note, or an ask the owner moved on the page wakes
+it within seconds, at any hour (`cli/sprint-board/README.md` §Sentinel).
 
 The conductor arms it at the start of its session and again after every wake, as a background task
 of the harness:
@@ -234,7 +246,7 @@ The wake's first line `SENTINEL WAKE <reason>`, then one JSON line with the deta
 
 | Reason | Means | Conductor |
 |---|---|---|
-| `change (arrivals, untracked, owner-answer, worker-need, ask-approved, ask-sent, ask-changed)` | something new against the baseline: a NEW or returning ticket in test, an UNTRACKED sprint ticket in test, a new owner answer (Needs-you or inbox), a worker's unanswered Needs-you, or an ask someone other than the conductor or the sentinel moved: marked sent and expecting a reply (`ask-sent`), any other move (`ask-changed`), or approved and not yet drafted (`ask-approved`, only with a messenger). With `owner-answer` or an ask part it can arrive outside working hours | one pass, then re-arm. Act on the owner answer and `resolve` its need or reply in its thread (`say --reply`): a sentinel started without a saved baseline wakes again for one left open. For the ask parts, follow `sprint-conductor/references/watch-pass.md` §5 |
+| `change (arrivals, untracked, owner-answer, worker-need, ask-approved, ask-sent, ask-changed, sweep-answered, dock-note, dock-recheck)` | something new against the baseline: a NEW or returning ticket in test, an UNTRACKED sprint ticket in test, a new owner answer (Needs-you or inbox), a worker's unanswered Needs-you, or an ask someone other than the conductor or the sentinel moved: marked sent and expecting a reply (`ask-sent`), any other move (`ask-changed`), or approved and not yet drafted (`ask-approved`, only with a messenger), a dock batch the owner sent (`sweep-answered`) or a dock note (`dock-note`), or an open dock item whose ticket moved to another bucket (`dock-recheck`). With `owner-answer`, an ask part, `sweep-answered` or `dock-note` it can arrive outside working hours | one pass, then re-arm. Act on the owner answer and `resolve` its need or reply in its thread (`say --reply`): a sentinel started without a saved baseline wakes again for one left open. For the ask and dock parts, follow `sprint-conductor/references/watch-pass.md` §5 |
 | `recheck-sweep` | the recheck interval passed while a RECHECK or held ticket exists; its blocker (a deploy) may be gone | one pass (the deploy check on each RECHECK), then re-arm |
 | `sync-stale` | `source.json` older than the stale limit in working hours: the board server's sync stalled | read `.session/sprint-board/board-server.log`, run the pass with `arrivals --sync` (it syncs itself), tell the owner in one line if the server keeps failing; re-arm |
 | `board-down` | two starts of the board server in a row did not listen | report it to the owner with the log path; run the pass anyway (`arrivals --sync` needs no server); re-arm |

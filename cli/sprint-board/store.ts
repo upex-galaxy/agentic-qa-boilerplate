@@ -13,11 +13,13 @@ import type { BoardEvent, EventKind, Sprint, TrackerSnapshot } from './model.ts'
  *     archive/<slug>.html           frozen snapshot of a closed sprint
  *     archive/<slug>.state.json     the state it was rendered from
  *
- * An append needs no lock: the log is append-only, and each line goes out in a single
- * appendFileSync well under 4 KB (atomic on local APFS in practice). source.json
+ * An append needs no lock: the log is append-only, and each line stays well under 4 KB and
+ * goes out in a single appendFileSync (atomic on local APFS in practice), a dock batch's
+ * lines together in one. source.json
  * has two possible writers (the CLI `sync` and `serve --sync-every`), so a
  * sync holds source.json.lock beside it (withSourceLock). An ask's state is read,
- * checked and appended under asks.lock (withAskLock), so two writers cannot fork it.
+ * checked and appended under asks.lock (withAskLock), and a Decision dock send,
+ * consume or close under sweep.lock (withSweepLock), so two writers cannot fork either.
  */
 import { appendFileSync, closeSync, existsSync, fstatSync, linkSync, mkdirSync, openSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -128,6 +130,10 @@ const ASK_LOCK_STALE_MS = 30_000;
 
 export async function withAskLock<T>(slug: string, fn: (held: () => boolean) => Promise<T>, wait: LockWait = {}): Promise<T> {
   return withSprintLock(slug, { file: 'asks.lock', task: 'ask transition', staleMs: ASK_LOCK_STALE_MS, deadHolderIsStale: true }, fn, { waitMs: 10_000, pollMs: 15, ...wait });
+}
+
+export async function withSweepLock<T>(slug: string, fn: (held: () => boolean) => Promise<T>, wait: LockWait = {}): Promise<T> {
+  return withSprintLock(slug, { file: 'sweep.lock', task: 'dock write', staleMs: ASK_LOCK_STALE_MS, deadHolderIsStale: true }, fn, { waitMs: 10_000, pollMs: 15, ...wait });
 }
 
 interface SprintLock { file: string, task: string, staleMs: number, deadHolderIsStale?: boolean }
@@ -247,10 +253,9 @@ export function isoAt(raw: string | undefined): string | undefined {
   return t.toISOString();
 }
 
-export function appendEvent(
-  slug: string,
-  e: { kind: EventKind, text: string, ticket?: string, by?: string, at?: string, data?: Record<string, unknown> },
-): BoardEvent {
+export interface NewEvent { kind: EventKind, text: string, ticket?: string, by?: string, at?: string, data?: Record<string, unknown> }
+
+function eventLine(e: NewEvent): { ev: BoardEvent, line: string } {
   const ev: BoardEvent = {
     v: SCHEMA,
     id: `e${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
@@ -263,8 +268,18 @@ export function appendEvent(
   };
   const line = `${JSON.stringify(ev)}\n`;
   if (Buffer.byteLength(line) > MAX_LINE) { throw new Error(`event too large (${Buffer.byteLength(line)} bytes > ${MAX_LINE}); shorten the text`); }
-  appendFileSync(join(sprintDir(slug), 'events.ndjson'), line);
-  return ev;
+  return { ev, line };
+}
+
+export function appendEvent(slug: string, e: NewEvent): BoardEvent {
+  return appendEvents(slug, [e])[0];
+}
+
+// Every line is built and size-checked before the one write, so a dock batch does not land without its marker.
+export function appendEvents(slug: string, list: NewEvent[]): BoardEvent[] {
+  const built = list.map(eventLine);
+  if (built.length) { appendFileSync(join(sprintDir(slug), 'events.ndjson'), built.map(b => b.line).join('')); }
+  return built.map(b => b.ev);
 }
 
 /** A last line without its newline is a write in flight: skip it, count the rest. */

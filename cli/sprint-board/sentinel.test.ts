@@ -378,7 +378,7 @@ describe('fast wake', () => {
   });
 
   test('quickCheck wakes only on an immediate part, then carries every addition, takes the baseline and resets the sweep clock', () => {
-    expect(IMMEDIATE_PARTS).toEqual(['owner-answer', 'ask-approved', 'ask-sent', 'ask-changed']);
+    expect(IMMEDIATE_PARTS).toEqual(['owner-answer', 'ask-approved', 'ask-sent', 'ask-changed', 'sweep-answered', 'dock-note']);
     const st = fresh(signatureOf([], tracker({})), mon(8, 0));
     const events = [workerNeed(), ownerAnswer()];
     const c = tracker({ 'DEMO-5': 'Ready for QA' });
@@ -861,5 +861,80 @@ describe('the CLI', () => {
       expect(runCli(dir, 'sentinel', '--once', '--stop-at', '17:00').err).toContain('--stop-at must not fall inside --hours');
     }
     finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+});
+
+describe('the Decision dock', () => {
+  const answer = (batch: string, item: string, ticket?: string) => ev('sweep.answer', ticket, { batch, item, kind: 'sweep', choice: ['a'] }, 'owner');
+  const marker = (batch: string) => ev('sweep.batch', undefined, { batch, skipped: [], results: {} }, 'owner', '2026-10-19T12:00:01Z');
+  const note = (id: string, ticket?: string) => ev('msg', ticket, { id, from: 'owner', text: `note ${id}`, via: 'dock' }, 'owner');
+  const item = ev('sweep.add', 'DEMO-3', { id: 'sw-1', question: 'Q?', options: [], recommend: [], freeText: true }, 'conductor', '2026-10-19T08:00:00Z');
+  const board = tracker({ 'DEMO-3': 'In Progress' });
+  const sig = (events: BoardEvent[], c = board) => signatureOf(events, c);
+
+  test('a sent batch wakes sweep-answered; a half-written one does not; the same batch never wakes twice', () => {
+    const base = sig([item]);
+    expect(additions(base, sig([item, answer('swb-1', 'sw-1', 'DEMO-3')]))).toBeNull();
+    const sent = [item, answer('swb-1', 'sw-1', 'DEMO-3'), marker('swb-1')];
+    const added = additions(base, sig(sent))!;
+    expect(added.parts).toEqual(['sweep-answered']);
+    expect(added.sweepAnswered).toEqual([{ id: 'swb-1', at: '2026-10-19T12:00:01Z', items: 1, tickets: ['DEMO-3'] }]);
+    expect(additions(sig(sent), sig(sent))).toBeNull();
+  });
+
+  test('consuming the batch is not a wake; a second batch is', () => {
+    const sent = [item, answer('swb-1', 'sw-1'), marker('swb-1')];
+    const consumed = [...sent, ev('sweep.consume', undefined, { id: 'swb-1' }, 'conductor')];
+    expect(additions(sig(sent), sig(consumed))).toBeNull();
+    expect(sig(consumed).sweep!.batches).toEqual([]);
+    const second = [...consumed, answer('swb-2', 'sw-1'), marker('swb-2')];
+    expect(additions(sig(consumed), sig(second))?.parts).toEqual(['sweep-answered']);
+  });
+
+  test('a note from the dock wakes dock-note and not also owner-answer, which a plain inbox msg still does', () => {
+    const base = sig([item]);
+    const added = additions(base, sig([item, note('msg-a', 'DEMO-3')]))!;
+    expect(added.parts).toEqual(['dock-note']);
+    expect(added.dockNotes).toEqual([{ id: 'msg-a', at: '2026-10-19T12:00:00Z', ticket: 'DEMO-3', text: 'note msg-a' }]);
+    const plain = ev('msg', undefined, { id: 'msg-p', from: 'owner', text: 'from the rail' }, 'owner');
+    expect(additions(base, sig([item, plain]))?.parts).toEqual(['owner-answer']);
+    expect(sig([item, note('msg-a'), ev('sweep.consume', undefined, { id: 'msg-a' }, 'conductor')]).sweep!.notes).toEqual([]);
+    expect(sig([item, note('msg-a'), ev('msg', undefined, { id: 'msg-r', from: 'claude', text: 'ok', replyTo: 'msg-a' }, 'claude')]).sweep!.notes.map(n => n.id)).toEqual(['msg-a']);
+  });
+
+  test('the card answers a batch writes do not also raise owner-answer', () => {
+    const open = ev('need.open', 'DEMO-3', { id: 'need-1', question: 'q?' }, 'worker');
+    const sent = [open, ev('need.answer', 'DEMO-3', { id: 'need-1', text: 'a: go', via: 'dock', batch: 'swb-1' }, 'owner'), answer('swb-1', 'need-1', 'DEMO-3'), marker('swb-1')];
+    expect(additions(sig([open]), sig(sent))?.parts).toEqual(['sweep-answered']);
+  });
+
+  test('a sentinel started cold wakes for unread batches and notes; an older baseline reads them as empty and never wakes for an old log', () => {
+    const events = [item, answer('swb-1', 'sw-1'), marker('swb-1'), note('msg-a')];
+    const waiting = sig(events);
+    expect(additions(freshBaseline(events, waiting), waiting)?.parts).toEqual(['sweep-answered', 'dock-note']);
+    const { sweep: _sweep, dock: _dock, ...old } = sig([item]);
+    expect(additions(old, sig([item]))).toBeNull();
+    expect(additions(old, sig([item], tracker({ 'DEMO-3': 'Blocked' })))).toBeNull();
+    expect(additions(old, waiting)?.parts).toEqual(['sweep-answered', 'dock-note']);
+  });
+
+  test('an open item whose ticket changes bucket is a dock-recheck; a status rename inside a bucket and a new item are not', () => {
+    const base = sig([item], tracker({ 'DEMO-3': 'In Progress' }));
+    expect(additions(base, sig([item], tracker({ 'DEMO-3': 'Code Review' })))).toBeNull();
+    const moved = additions(base, sig([item], tracker({ 'DEMO-3': 'Blocked' })))!;
+    expect(moved.parts).toEqual(['dock-recheck']);
+    expect(moved.dockRecheck).toEqual([{ item: 'sw-1', ticket: 'DEMO-3', question: 'Q?', since: '2026-10-19T08:00:00Z', from: 'not_ready', to: 'blocked' }]);
+    expect(additions(sig([], tracker({ 'DEMO-3': 'In Progress' })), sig([item], tracker({ 'DEMO-3': 'Blocked' })))).toBeNull();
+    const closed = [item, ev('sweep.close', 'DEMO-3', { id: 'sw-1', why: 'moot' }, 'conductor')];
+    expect(additions(base, sig(closed, tracker({ 'DEMO-3': 'Blocked' })))).toBeNull();
+  });
+
+  test('quickCheck wakes on a batch or a note and takes the baseline; a dock-recheck alone waits for the tick', async () => {
+    const st = fresh(sig([item]), mon(8, 0));
+    expect(quickCheck(st, { events: [item], tracker: tracker({ 'DEMO-3': 'Blocked' }) }, mon(10))).toBeNull();
+    const wake = quickCheck(st, { events: [item, note('msg-a')], tracker: board }, mon(10))!;
+    expect(wake.details.parts).toEqual(['dock-note']);
+    expect(quickCheck(st, { events: [item, note('msg-a')], tracker: board }, mon(10))).toBeNull();
+    expect((IMMEDIATE_PARTS as readonly string[]).includes('dock-recheck')).toBe(false);
   });
 });

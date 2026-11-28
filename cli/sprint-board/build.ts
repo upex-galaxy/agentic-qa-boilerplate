@@ -10,7 +10,7 @@ const APP = join(import.meta.dir, 'app');
 let cache: { key: string, js: string, css: string } | null = null;
 
 function sourceKey(): string {
-  const files = [...readdirSync(APP).map(f => join(APP, f)), join(import.meta.dir, 'model.ts'), join(import.meta.dir, 'merge.ts')];
+  const files = [...readdirSync(APP).map(f => join(APP, f)), join(import.meta.dir, 'model.ts'), join(import.meta.dir, 'merge.ts'), join(import.meta.dir, 'sweep.ts')];
   return files.map(f => `${f}:${statSync(f).mtimeMs}`).join('|');
 }
 

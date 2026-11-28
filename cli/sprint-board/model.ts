@@ -10,8 +10,10 @@
  *        -> fold() -> BoardState
  */
 import type { BugBucket, SourceKind, TicketBucket } from '../lib/sprint-source/types.ts';
+import type { SweepView } from './sweep.ts';
 import { CASE_STATUSES, VERDICTS as EVIDENCE_VERDICTS } from '../lib/evidence-page/statuses.ts';
 import { countedOutcome } from '../lib/sprint-source/types.ts';
+import { foldSweep } from './sweep.ts';
 
 export const SCHEMA = 1;
 
@@ -70,6 +72,11 @@ export const EVENT_KINDS = [
   'arrival',
   'watch.pass',
   'fixture',
+  'sweep.add',
+  'sweep.answer',
+  'sweep.batch',
+  'sweep.consume',
+  'sweep.close',
 ] as const;
 /** What the conductor did with a ticket that reached the test environment (`arrival`). */
 export const ARRIVAL_ACTIONS = ['launched', 'held', 'skipped'] as const;
@@ -137,6 +144,8 @@ export interface Sprint {
   people?: Person[]
   /** `board.evidence.allowed_hosts`, copied by `new` and `sync` so the pure fold can check evidence links. */
   evidenceHosts?: string[]
+  // Days an open Decision dock item waits before it is marked stale; DOCK_STALE_DAYS when absent.
+  dockStaleDays?: number
 }
 
 export interface TrackerTc { id: string, name?: string, status: TcStatus, updatedAt?: string }
@@ -408,6 +417,8 @@ export interface BoardState {
   tickets: TicketView[]
   asks: Ask[]
   inbox: InboxThread[]
+  // The owner's own: no share, report or frozen copy carries it.
+  sweep?: SweepView
   people: Person[]
   /** Test data found during the sprint, newest first. */
   fixtures: Fixture[]
@@ -810,7 +821,7 @@ export function fold(input: {
       else { threads.set(m.id, { ...m, replyTo: undefined, replies: [], state: 'done', lastAt: m.at }); rootOf.set(m.id, m.id); }
       continue;
     }
-    if (!e.ticket) { continue; }
+    if (!e.ticket || e.kind.startsWith('sweep.')) { continue; }
     const d = get(e.ticket);
     if (e.kind !== 'note' && e.kind !== 'evidence' && e.kind !== 'evidence.artifact' && e.kind !== 'evidence.page' && e.kind !== 'fixture') { d.lastAt = e.at; }
     switch (e.kind) {
@@ -1080,7 +1091,7 @@ export function fold(input: {
   // A watch pass every few minutes would bury the timeline; it lives in the topbar instead.
   const passes = events.filter(e => e.kind === 'watch.pass');
   const timeline: TimelineItem[] = events
-    .filter(e => e.kind !== 'ask.create' && e.kind !== 'ask.state' && e.kind !== 'watch.pass')
+    .filter(e => e.kind !== 'ask.create' && e.kind !== 'ask.state' && e.kind !== 'watch.pass' && !e.kind.startsWith('sweep.'))
     .map(e => ({ at: e.at, kind: e.kind, ticket: e.ticket, text: e.text, by: e.by, bucket: e.kind === 'tracker' ? str(e.data?.bucket) as TicketBucket | undefined : undefined, need: e.kind.startsWith('need.') ? str(e.data?.id) : undefined }));
   for (const [id, l] of Object.entries(live)) {
     for (const line of l.lines) { if (line.at) { timeline.push({ at: line.at, kind: 'progress', ticket: id, text: line.text }); } }
@@ -1097,6 +1108,7 @@ export function fold(input: {
     tickets: tickets.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true })),
     asks: asks.sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
     inbox: [...threads.values()].sort((a, b) => b.lastAt.localeCompare(a.lastAt)),
+    sweep: foldSweep(events, url => safeArtifactUrl(url, sprint.evidenceHosts)),
     people: [...people.values()],
     fixtures: listFixtures(fixtures),
     bugs: bugView.bugs,

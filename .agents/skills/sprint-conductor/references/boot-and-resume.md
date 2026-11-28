@@ -155,7 +155,8 @@ browser session, because a browser call without the named session falls back to 
    Then `bun run board watcher list`: start again and re-register every other process it shows as not
    running, and clear each one this run no longer uses (`sprint-board.md` §7).
 4. Owner actions missed while down: `bun run board inbox` plus the bounded
-   `bun run board listen --since <last pass or last id seen>` replay (`sprint-board.md` §3).
+   `bun run board listen --since <last pass or last id seen>` replay, and
+   `bun run board sweep read --unconsumed --json` for the Decision dock (`sprint-board.md` §3).
 5. Mailbox: read it per §3 step 3.
 6. One message per live worker, through the mailbox with a terminal pointer as the nudge
    (`/agent-orchestration` channel discipline), with `<KEY>` filled in:

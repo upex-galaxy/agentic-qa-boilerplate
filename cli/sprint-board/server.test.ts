@@ -223,6 +223,131 @@ describe('a question an agent answered', () => {
   });
 });
 
+describe('the Decision dock', () => {
+  let board: Board;
+  beforeAll(async () => { board = await startBoard(port => ['bun', CLI, 'serve', '--port', String(port), '--merge-every', '0']); });
+  afterAll(() => { board.stop(); });
+
+  const request = async (route: string, body: Record<string, unknown>): Promise<Reply> => {
+    const r = await fetch(`http://127.0.0.1:${board.port}${route}`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-sprint-board': '1' }, body: JSON.stringify(body) });
+    return { status: r.status, json: await r.json() as Record<string, unknown> };
+  };
+  const send = async (body: Record<string, unknown>) => request('/api/sweep/send', body);
+  const item = (question: string) => {
+    cli(board, 'sweep', 'add', '--question', question, '--option', 'Yes | do it', '--option', 'No', '--ticket', 'DEMO-1', '--by', 'conductor', '--recommend', '1');
+    return String(events(board).filter(e => e.kind === 'sweep.add').at(-1)!.data!.id);
+  };
+  const card = () => {
+    cli(board, 'needs-you', 'DEMO-1', 'Defer TC-3 or fix AC2?', '--option', 'a: Defer TC-3 | cost: none', '--option', 'b: Fix AC2 | cost: 1 day', '--recommend', 'b', '--by', 'worker');
+    return String(events(board).filter(e => e.kind === 'need.open').at(-1)!.data!.id);
+  };
+  const state = async () => await (await fetch(`http://127.0.0.1:${board.port}/api/state`)).json() as { sweep?: { notes: { text: string }[] } };
+
+  test('one send writes the card answer, one sweep.answer per item and the marker last, all as the owner whatever the body claims', async () => {
+    const sw = item('Ship it?');
+    const need = card();
+    const before = events(board).length;
+    const r = await send({ by: 'conductor', via: 'cli', answers: [{ item: sw, kind: 'sweep', choice: ['a'], by: 'worker' }, { item: need, kind: 'need', choice: ['b'], text: 'ask Dev' }], skipped: [] });
+    expect(r.status).toBe(200);
+    expect(r.json).toMatchObject({ ok: true, results: { [sw]: 'written', [need]: 'written' } });
+    const written = events(board).slice(before);
+    expect(written.map(e => e.kind)).toEqual(['sweep.answer', 'need.answer', 'sweep.answer', 'sweep.batch']);
+    expect(written.map(e => e.by)).toEqual(['owner', 'owner', 'owner', 'owner']);
+    expect(written[1]).toMatchObject({ ticket: 'DEMO-1', data: { id: need, text: 'b: Fix AC2. ask Dev', via: 'dock' } });
+    const r2 = Bun.spawnSync(['bun', CLI, 'sweep', 'read', '--unconsumed', '--json'], { env: env(board.dir) });
+    const batch = JSON.parse(r2.stdout.toString()).batches.at(-1);
+    expect(batch.answers.map((a: { item: string }) => a.item)).toEqual([sw, need]);
+    expect(batch.answers[1]).toMatchObject({ kind: 'need', labels: ['Fix AC2'], text: 'ask Dev', tookRecommended: true });
+    cli(board, 'sweep', 'consume', batch.batch, '--by', 'conductor');
+  });
+
+  test('a card the owner answered meanwhile gets its own result without sinking the batch; a send that writes nothing is 409', async () => {
+    const sw = item('Second?');
+    const need = card();
+    expect((await request('/api/answer', { ticket: 'DEMO-1', needId: need, text: 'b' })).status).toBe(200);
+    const before = events(board).length;
+    const r = await send({ answers: [{ item: need, kind: 'need', choice: ['a'] }, { item: sw, kind: 'sweep', choice: ['b'] }] });
+    expect(r.status).toBe(200);
+    expect(r.json.results).toEqual({ [need]: 'answered-elsewhere', [sw]: 'written' });
+    expect(events(board).slice(before).map(e => e.kind)).toEqual(['sweep.answer', 'sweep.batch']);
+    const none = await send({ answers: [{ item: sw, kind: 'sweep', choice: ['a'] }] });
+    expect(none.status).toBe(409);
+    expect(none.json).toMatchObject({ ok: false, results: { [sw]: 'answered-elsewhere' } });
+  });
+
+  test('a card an agent answered is sendable from the dock', async () => {
+    const need = card();
+    cli(board, 'answer', 'DEMO-1', 'agent heard a', '--id', need, '--by', 'conductor');
+    expect((await send({ answers: [{ item: need, kind: 'need', choice: ['b'] }] })).json).toMatchObject({ ok: true, results: { [need]: 'written' } });
+    expect(events(board).filter(e => e.kind === 'need.answer' && e.data?.id === need).map(e => e.by)).toEqual(['conductor', 'owner']);
+  });
+
+  test('a malformed send is 400 and writes nothing', async () => {
+    const sw = item('Valid?');
+    const before = events(board).length;
+    expect((await send({ answers: [{ item: sw, kind: 'sweep', choice: ['zzz'] }] })).status).toBe(400);
+    expect((await send({ answers: [{ item: sw, kind: 'sweep', choice: ['a'] }, { item: sw, kind: 'sweep', choice: ['b'] }] })).status).toBe(400);
+    expect((await send({ answers: [] })).status).toBe(400);
+    expect((await send({})).status).toBe(400);
+    expect((await send({ sprint: 'sprint-9', answers: [{ item: sw, choice: ['a'] }] })).status).toBe(400);
+    expect(events(board)).toHaveLength(before);
+  });
+
+  test('concurrent sends write one answer per item, waiting on the same lock', async () => {
+    const ids = [item('Racing one?'), item('Racing two?')];
+    const lock = join(board.dir, 'sprints', 'sprint-1', 'sweep.lock');
+    writeFileSync(lock, `${process.pid} ${new Date().toISOString()}\n`);
+    const all = Promise.all(Array.from({ length: 8 }, async (_, i) => send({ answers: ids.map(id => ({ item: id, kind: 'sweep', choice: [i % 2 ? 'a' : 'b'] })) })));
+    await Bun.sleep(500);
+    expect(events(board).filter(e => e.kind === 'sweep.answer' && ids.includes(String(e.data?.item)))).toEqual([]);
+    rmSync(lock);
+    const statuses = (await all).map(r => r.status).sort();
+    expect(statuses).toEqual([200, 409, 409, 409, 409, 409, 409, 409]);
+    expect(events(board).filter(e => e.kind === 'sweep.answer' && ids.includes(String(e.data?.item))).map(e => e.data?.item).sort()).toEqual([...ids].sort());
+  }, 20_000);
+
+  test('a note from the dock is an owner msg with via and an optional ticket; a bad via or ticket is 400', async () => {
+    expect((await request('/api/msg', { text: 'prioritise this one', via: 'dock', ticket: 'DEMO-1', by: 'claude' })).status).toBe(200);
+    expect(events(board).at(-1)).toMatchObject({ kind: 'msg', by: 'owner', ticket: 'DEMO-1', data: { from: 'owner', text: 'prioritise this one', via: 'dock' } });
+    expect((await request('/api/msg', { text: 'x', via: 'smoke-signal' })).status).toBe(400);
+    expect((await request('/api/msg', { text: 'x', via: 'dock', ticket: 'DEMO-404' })).status).toBe(400);
+    expect((await request('/api/msg', { text: 'from the rail' })).status).toBe(200);
+    expect(events(board).at(-1)!.data).not.toHaveProperty('via');
+    expect((await state()).sweep!.notes.map(n => n.text)).toEqual(['prioritise this one']);
+  });
+
+  test('a closed sprint takes no send and its state carries no dock', async () => {
+    const sw = item('After close?');
+    cli(board, 'sprint', '--closed', 'true');
+    expect((await send({ sprint: 'sprint-1', answers: [{ item: sw, choice: ['a'] }] })).status).toBe(400);
+    expect((await state()).sweep).toBeUndefined();
+  });
+});
+
+describe('a dock send that cannot finish', () => {
+  let board: Board;
+  // The disk fails exactly at the write that carries the batch marker.
+  beforeAll(async () => {
+    board = await startBoard(port => ['bun', '-e', `import { spyOn } from 'bun:test'; import * as fs from 'node:fs';
+      const append = fs.appendFileSync;
+      spyOn(fs, 'appendFileSync').mockImplementation((path, data, options) => { if (String(data).includes('"sweep.batch"')) { throw new Error('ENOSPC: no space left on device'); } return append(path, data, options); });
+      const { serve } = await import(${SERVER});
+      await serve({ port: ${port}, open: false, syncMinutes: 0, mergeEvery: 0 });`]);
+  });
+  afterAll(() => { board.stop(); });
+
+  test('writes no half batch: the card stays open and the item unanswered', async () => {
+    cli(board, 'sweep', 'add', '--question', 'Ship it?', '--option', 'Yes', '--option', 'No', '--by', 'conductor');
+    cli(board, 'needs-you', 'DEMO-1', 'defer it?', '--by', 'worker');
+    const [item, need] = ['sweep.add', 'need.open'].map(kind => String(events(board).find(e => e.kind === kind)!.data!.id));
+    const before = events(board);
+    const r = await fetch(`http://127.0.0.1:${board.port}/api/sweep/send`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-sprint-board': '1' }, body: JSON.stringify({ answers: [{ item, kind: 'sweep', choice: ['a'] }, { item: need, kind: 'need', text: 'yes' }] }) });
+    expect(r.status).toBe(400);
+    expect(String((await r.json() as { error: string }).error)).toContain('ENOSPC');
+    expect(events(board)).toEqual(before);
+  });
+});
+
 describe('POST /api/ask with an injected messenger', () => {
   let board: Board;
   beforeAll(async () => {

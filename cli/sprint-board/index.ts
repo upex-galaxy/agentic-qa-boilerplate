@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import type { BoardConfig } from '../lib/sprint-source/index.ts';
 import type { BoardEvent, Sprint } from './model.ts';
+import type { SweepOption } from './sweep.ts';
 /**
  * Sprint Board CLI. Every write appends one fact to the sprint's events.ndjson;
  * `serve` folds the log + the tracker (source.json) + the workers' own files into the live page.
@@ -20,6 +21,7 @@ import {
   boardTicketIds,
   bugEvidenceReminder,
   decisionOptions,
+  DEFAULT_EVIDENCE_HOSTS,
   defaultTwoWay,
   EVIDENCE_ARTIFACT_BY,
   EVIDENCE_OUTCOMES,
@@ -61,15 +63,17 @@ import {
   setCurrent,
   SOURCE_LOCK_WAIT_MS,
   sprintDir,
+  withSweepLock,
   writeSprint,
 } from './store.ts';
+import { dockAgeDays, isDockMedia, isDockStale, openSweepItems, readBatches, SWEEP_MAX_OPTIONS, unreadNotes } from './sweep.ts';
 import { boardConfig } from './sync.ts';
 import { checkWatcherName, clearWatcher, registerWatcher, watcherViews } from './watchers.ts';
 
 interface Args { _: string[], flags: Record<string, string[]>, bare: Set<string> }
 
 /** Flags that never take a value: `say --ask "text"` must not swallow the text. */
-const BOOLEAN_FLAGS = new Set(['all', 'ask', 'discover', 'dry-run', 'embed-evidence', 'evidence-embedded', 'fragment', 'json', 'once', 'one-way', 'open', 'out-of-scope', 'reuse', 'sync', 'two-way']);
+const BOOLEAN_FLAGS = new Set(['all', 'ask', 'discover', 'dry-run', 'embed-evidence', 'evidence-embedded', 'fragment', 'json', 'multi', 'no-free-text', 'once', 'one-way', 'open', 'out-of-scope', 'reuse', 'sync', 'two-way', 'unconsumed']);
 
 function parse(argv: string[]): Args {
   const out: Args = { _: [], flags: {}, bare: new Set() };
@@ -172,6 +176,150 @@ function lockWait(a: Args): number {
   if (!Number.isFinite(s) || s < 0) { throw new Error(`--lock-wait must be a number of seconds >= 0 (got "${raw}")`); }
   return s * 1000;
 }
+
+function pipePair(raw: string, what: string): [string, string | undefined] {
+  const at = raw.indexOf('|');
+  const head = (at < 0 ? raw : raw.slice(0, at)).trim();
+  const tail = at < 0 ? undefined : raw.slice(at + 1).trim() || undefined;
+  if (!head) { throw new Error(`${what} "${raw}" has nothing before the "|"`); }
+  return [head, tail];
+}
+
+function dockMedia(raw: string): { path: string, caption?: string } {
+  const [file, caption] = pipePair(raw, '--media');
+  const path = repoPath(file).replaceAll('\\', '/');
+  if (!isDockMedia(path)) { throw new Error(`--media must be a png, jpg, gif or webp image under .session/ or .context/PBI/, the roots the board serves (got ${path})`); }
+  return { path, caption };
+}
+
+function dockLink(raw: string, hosts: readonly string[]): { title: string, url: string } {
+  const [head, tail] = pipePair(raw, '--link');
+  const url = (tail ?? head).replace(/\/$/, '');
+  const refused = evidenceUrlError(url, hosts);
+  if (refused) { throw new Error(`--link "${url}" cannot be posted: ${refused}`); }
+  const safe = evidenceArtifactUrl(url, hosts);
+  return { title: tail ? head : new URL(safe).hostname, url: safe };
+}
+
+const DOCK_PATH_MAX = 300;
+function dockPath(raw: string): string {
+  const path = raw.trim();
+  if (!path || /[\n\r]/.test(path) || path.length > DOCK_PATH_MAX) { throw new Error(`--path "${path.slice(0, 40)}" must be one line of 1 to ${DOCK_PATH_MAX} characters`); }
+  return path;
+}
+
+function dockOptions(a: Args): { options: SweepOption[], recommend: string[], multi: boolean, freeText: boolean } {
+  const labelled = (a.flags.option ?? []).map(o => pipePair(o, '--option'));
+  if (labelled.length === 1 || labelled.length > SWEEP_MAX_OPTIONS) { throw new Error(`--option takes 2 to ${SWEEP_MAX_OPTIONS} options, or none for a free-text question (got ${labelled.length})`); }
+  const options = labelled.map(([label, desc], i) => ({ key: String.fromCharCode(97 + i), label, desc }));
+  const multi = flag(a, 'multi') === 'true';
+  const freeText = flag(a, 'no-free-text') !== 'true';
+  if (!options.length && !freeText) { throw new Error('an item with no options needs free text: drop --no-free-text'); }
+  if (!options.length && multi) { throw new Error('--multi needs options'); }
+  const recommend = [...new Set(flags(a, 'recommend').map((r) => {
+    const key = /^\d+$/.test(r) ? String.fromCharCode(96 + Number(r)) : r.toLowerCase();
+    if (!options.some(o => o.key === key)) { throw new Error(`--recommend "${r}" matches no option (keys ${options.map(o => o.key).join(', ') || 'none'}; positions 1 to ${options.length})`); }
+    return key;
+  }))];
+  if (!multi && recommend.length > 1) { throw new Error('a single-choice item recommends one option; add --multi to recommend several'); }
+  return { options, recommend, multi, freeText };
+}
+
+const stamp = (iso: string) => `${iso.slice(0, 16).replace('T', ' ')}Z`;
+
+const sweepCommands: Record<string, (a: Args, slug: string) => void | Promise<void>> = {
+  add(a, slug) {
+    const who = writer(a);
+    if (who === 'worker') { throw new Error('sweep add is not for a worker: raise a needs-you card (needs-you <ticket> "<question>" --by worker), which reaches the same dock'); }
+    const { closedAt } = readSprint(slug);
+    if (closedAt) { throw new Error(`${slug} is closed (${closedAt}): nobody can answer a dock item on it`); }
+    const question = need(flag(a, 'question'), '--question');
+    const choices = dockOptions(a);
+    const ticket = flag(a, 'ticket') === undefined ? undefined : knownTicket(slug, flag(a, 'ticket'));
+    const hosts = config()?.evidenceHosts ?? readSprint(slug).evidenceHosts ?? DEFAULT_EVIDENCE_HOSTS;
+    const media = (a.flags.media ?? []).map(dockMedia);
+    const paths = (a.flags.path ?? []).map(dockPath);
+    const links = (a.flags.link ?? []).map(l => dockLink(l, hosts));
+    const refused = futureRefusal(flag(a, 'at'));
+    if (refused) { throw new Error(refused); }
+    const id = `sw-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+    appendEvent(slug, { kind: 'sweep.add', ticket, text: `Dock: ${question}`, by: who, at: flag(a, 'at'), data: { id, question, header: flag(a, 'header'), context: flag(a, 'context'), ...choices, media, paths, links } });
+    print(`${id} posted to the dock (${openSweepItems(buildState(slug)).length} open on ${slug})`);
+  },
+
+  list(a, slug) {
+    const state = buildState(slug);
+    const all = state.sweep?.items ?? [];
+    const everything = flag(a, 'all') === 'true';
+    const shown = everything ? all : openSweepItems(state);
+    const raw = flag(a, 'stale-days');
+    if (raw !== undefined && !(Number(raw) > 0)) { throw new Error(`--stale-days "${raw}" must be a number above 0`); }
+    const staleDays = raw === undefined ? state.sprint.dockStaleDays : Number(raw);
+    const now = Date.now();
+    const aged = shown.map(i => (i.state === 'open' ? { ...i, ageDays: dockAgeDays(i.createdAt, now), stale: isDockStale(i.createdAt, now, staleDays) } : { ...i, ageDays: undefined, stale: undefined }));
+    if (flag(a, 'json') === 'true') { console.log(printableJson(aged, 2)); return; }
+    for (const i of aged) {
+      const age = i.ageDays === undefined ? '' : `  ${i.ageDays}d${i.stale ? ' STALE' : ''}`;
+      const options = i.options.length ? `  [${i.options.map(o => `${o.key}: ${o.label}`).join(' | ')}]` : '';
+      print(`${i.id}  ${i.state}${i.ticket ? `  ${i.ticket}` : ''}${age}  asked by ${i.by ?? '?'}: ${i.question}${options}`);
+    }
+    print(`${aged.length} shown of ${all.length} dock item(s) on ${slug}${everything ? '' : ' (open only; --all for the rest)'}`);
+  },
+
+  read(a, slug) {
+    const state = buildState(slug);
+    const unconsumed = flag(a, 'unconsumed') === 'true';
+    const batches = readBatches(state, { unconsumed });
+    const notes = unconsumed ? unreadNotes(state) : state.sweep?.notes ?? [];
+    if (flag(a, 'json') === 'true') { console.log(printableJson({ batches, notes: notes.map(n => ({ id: n.id, at: n.at, ticket: n.ticket ?? null, text: n.text, consumed: n.consumed })) }, 2)); return; }
+    for (const b of batches) {
+      print();
+      print(`${b.batch}  sent ${stamp(b.sentAt)}${b.consumed ? '  (consumed)' : ''}`);
+      for (const r of b.answers) {
+        print(`  ${r.kind === 'need' ? 'card ' : ''}${r.ticket ? `${r.ticket} ` : ''}${r.item} asked by ${r.askedBy ?? '?'}: ${r.question}`);
+        print(`    owner answered: ${[...r.labels, r.text ? `"${r.text}"` : ''].filter(Boolean).join(' + ')}${r.tookRecommended ? '  (took the recommendation)' : ''}`);
+      }
+      if (b.skipped.length) { print(`  skipped: ${b.skipped.join(', ')}`); }
+      const unwritten = Object.entries(b.results).filter(([, v]) => v !== 'written');
+      if (unwritten.length) { print(`  not written: ${unwritten.map(([k, v]) => `${k} (${v})`).join(', ')}`); }
+    }
+    for (const n of notes) {
+      print();
+      print(`note ${n.id}  ${stamp(n.at)}${n.ticket ? `  ${n.ticket}` : ''}${n.consumed ? '  (consumed)' : ''}`);
+      print(`  owner wrote: ${n.text}`);
+    }
+    if (!batches.length && !notes.length) { print(`Nothing ${unconsumed ? 'unread' : 'sent'} from the dock (${state.sweep?.batches.length ?? 0} batch(es), ${state.sweep?.notes.length ?? 0} note(s) searched on ${slug}).`); }
+  },
+
+  async consume(a, slug) {
+    const who = writer(a);
+    if (who !== 'conductor') { throw new Error(`sweep consume is the conductor's (got --by ${who}): a batch or note marked read is one the conductor is never told about`); }
+    const id = need(a._[0], 'a batch id (swb-...) or a note id (msg-...)');
+    await withSweepLock(slug, async () => {
+      const view = buildState(slug).sweep;
+      const sent = view?.batches.filter(b => b.complete) ?? [];
+      const found = sent.find(b => b.id === id) ?? view?.notes.find(n => n.id === id);
+      if (!found) { throw new Error(`${id} is no sent batch or dock note on ${slug} (${sent.length} batch(es), ${view?.notes.length ?? 0} note(s) searched)`); }
+      if (found.consumed) { print(`${id} already consumed`); return; }
+      appendEvent(slug, { kind: 'sweep.consume', text: `${id} read by ${who}`, by: who, data: { id } });
+      print(`${id} consumed`);
+    });
+  },
+
+  async close(a, slug) {
+    const who = writer(a);
+    if (who === 'worker') { throw new Error('sweep close is not for a worker: the owner may be answering that item; tell the conductor why it no longer holds'); }
+    const id = need(a._[0], 'an item id (sw-...)');
+    const why = need(flag(a, 'why'), '--why');
+    await withSweepLock(slug, async () => {
+      const item = buildState(slug).sweep?.items.find(i => i.id === id);
+      if (!item) { throw new Error(`${id} is no dock item on ${slug}`); }
+      if (item.state !== 'open') { print(`${id} is already ${item.state}; nothing to close`); return; }
+      appendEvent(slug, { kind: 'sweep.close', ticket: item.ticket, text: `${id} retired: ${why}`, by: who, data: { id, why } });
+      print(`${id} closed`);
+    });
+  },
+};
 
 /** One small `watch.pass` event per test-environment watch pass (liveness). */
 function recordPass(slug: string, note?: string, counts?: Record<string, number>): BoardEvent {
@@ -603,6 +751,12 @@ const commands: Record<string, (a: Args) => void | Promise<void>> = {
       }
     }
     if (!shown) { print(`Nothing open in the inbox (${searched} threads searched on ${slugs.join(', ') || 'no open board'}).`); }
+  },
+
+  async sweep(a) {
+    const sub = a._.shift() ?? '';
+    if (!Object.hasOwn(sweepCommands, sub)) { throw new Error(`sweep needs a subcommand: ${Object.keys(sweepCommands).join(' | ')} (got "${sub}")`); }
+    await sweepCommands[sub](a, slugOf(a));
   },
 
   /**

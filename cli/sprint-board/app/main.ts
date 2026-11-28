@@ -10,6 +10,7 @@ import type { Ctx, View } from './views.ts';
  */
 import { askPhaseCounts, isUnsent, localHhmm, slackBugSummary, slackTableHtml, slackTablePlain, trackerName, WATCH_STALE_MIN, watchersDown, watchLiveness } from '../model.ts';
 import { makeDemo } from './demo.ts';
+import { initDock } from './dock.ts';
 import { getLang, setLang, tr } from './i18n.ts';
 import { mergeNeeds, prDrawer, viewMerge } from './merge-view.ts';
 import { startTour } from './tour.ts';
@@ -86,6 +87,8 @@ function ctx(state: BoardState): Ctx {
   return ctxOf(state, { filter, canWrite: Boolean(demoState) || (live() && !state.sprint.closedAt), img, sprints, archives, viewingSlug: viewingSlug ?? state.sprint.slug, replyTo, focusModule, bugGroup, evidenceFilter, evidenceOpen });
 }
 
+const dock = initDock({ slug: () => current()?.sprint.slug, img, demo: () => Boolean(demoState), served: live(), refresh: async () => fetchState() });
+
 /** The Now rail's test data follows the ticket open in the drawer, without a full re-render. */
 function refreshFixtures(): void {
   const state = current();
@@ -108,6 +111,8 @@ function renderMergeBadge(): void {
 
 function render(): void {
   const state = current();
+  // Mounted outside the views, so it follows every state whatever view shows.
+  dock.update(state);
   const v = view();
   for (const a of $$('nav.side a')) { a.classList.toggle('on', a.dataset.view === v); }
   for (const b of $$('[data-set-lang]')) { b.setAttribute('aria-pressed', String(b.dataset.setLang === getLang())); }

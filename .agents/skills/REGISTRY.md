@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-11-28T04:15:43.563Z`
+> Generated: `2026-11-28T05:02:03.186Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -589,6 +589,7 @@ Skills indexed: 29
 - The sentinel is armed at boot and re-armed after EVERY wake, as a background task, one per board, with the same `--baseline` file. No homemade monitor, no scheduled pass when background tasks exist, no mailbox polling.
 - Any other long-running process the conductor starts is registered with `bun run board watcher register <name> --pid <n> --match=<text>`; one retired on purpose, the sentinel included, is cleared with `bun run board watcher clear <name>`, or the board keeps flagging it. Full: `sprint-testing/references/sprint-board.md` §7.
 - Every watch pass records each decision with `bun run board arrival <KEY> launched|held|skipped "<why>" --by conductor`, so a missed pass costs nothing. The deploy check always runs: a tracker status is a hint, the deployed build is the truth. Fixture gaps are asked at triage. The cap counts every live worker, an ad-hoc retest included, and collisions are checked against the LIVE workers, not the round plan.
+- The Decision dock is read on every pass (`bun run board sweep read --unconsumed --json`), and each batch or note acted on is marked with `bun run board sweep consume <id> --by conductor`. `sweep add` is for a small decision that blocks nothing; a question that blocks a ticket or gates a step the owner signs is a `needs-you` card. Full: `sprint-testing/references/sprint-board.md` §3.
 - A board question that gates something (a deferral OK, a transition, any step the owner signs) is not resolved by an agent before the owner's own record exists, on the board (their answer on the page) or in the tracker. A chat answer mirrored with `--by conductor` leaves it open. Full: `sprint-testing/references/sprint-board.md` §3.
 - The CONDUCTOR reads back a finished worker's final ticket status itself, with a bounded poll for the expected value; a worker's or a subagent's "verified" is not proof (Critical Rule #16). The round close is ONE subagent per finished worker that verifies the artifacts, not the report; closes whose workers touched the same Epic run one after another, so only one of them publishes that Epic's `## Module Context (QA)` section at a time.
 - A redeploy while workers are live: fetch only (do not fast-forward a sibling repo while a worker is live), then tell EVERY live worker once, with the repo, the old and new build and whether its own change's files moved.

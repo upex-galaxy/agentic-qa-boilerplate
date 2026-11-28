@@ -9,9 +9,12 @@
  *           the counted numbers, tracker links and evidence page URLs; lands on
  *           the Report view. `stpUrl` adds the "Full record: STP" footer link.
  *
+ * No mode carries the Decision dock (`sweep`).
+ *
  * `--fragment` drops the document skeleton, for the Claude artifact publisher
  * (it wraps the page itself).
  */
+import type { BoardState } from './model.ts';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { extname, join } from 'node:path';
@@ -20,6 +23,7 @@ import { buildApp } from './build.ts';
 import { stpUrl, toReportState, toShareState } from './model.ts';
 import { buildState } from './sources.ts';
 import { archiveDir, REPO_ROOT, sprintDir, writeAtomic } from './store.ts';
+import { dockLeak } from './sweep.ts';
 
 /** `</script` inside inlined code or JSON would end the script element early. */
 const scriptSafe = (s: string) => s.replace(/<\/script/gi, '<\\/script').replace(/<!--/g, '<\\!--');
@@ -51,7 +55,9 @@ export async function snapshot(slug: string, opts: { mode: SnapshotMode, out?: s
   const hosts = opts.stpHosts ?? [];
   const stp = opts.stpUrl === undefined ? undefined : stpUrl(opts.stpUrl, hosts);
   const full = buildState(slug, undefined, { closingAt: opts.closingAt });
-  const state = opts.mode === 'share' ? toShareState(full) : opts.mode === 'report' ? toReportState(full, { stpUrl: stp, stpHosts: hosts }) : { ...full, mode: 'snapshot' as const };
+  const { sweep, ...frozen } = full;
+  const publish = (board: BoardState) => (opts.mode === 'report' ? toReportState(board, { stpUrl: stp, stpHosts: hosts }) : toShareState(board));
+  const state = opts.mode === 'full' ? { ...frozen, mode: 'snapshot' as const } : publish(full);
   const images: Record<string, string> = {};
   if (opts.embedEvidence && opts.mode === 'full') {
     const paths = new Set([...full.tickets.flatMap(t => t.evidence.map(e => e.path)), ...full.asks.flatMap(a => a.attach)]);
@@ -85,6 +91,10 @@ export async function snapshot(slug: string, opts: { mode: SnapshotMode, out?: s
         if (probe.length > 12 && data.includes(probe)) { throw new Error(`${opts.mode} snapshot leaked draft ${a.id}; refusing to write`); }
       }
     }
+    const bare = jsonSafe(publish(buildState(slug, full.generatedAt, { closingAt: opts.closingAt, withoutDock: true })));
+    const leaked = dockLeak(sweep, data, bare, jsonSafe);
+    if (leaked) { throw new Error(`${opts.mode} snapshot leaked ${leaked}; refusing to write`); }
+    const dockNotes = new Set(sweep?.notes.map(n => n.id));
     if (data.includes('.session/') || data.includes('.context/PBI')) { throw new Error(`${opts.mode} snapshot contains a local path; refusing to write`); }
     if (opts.mode === 'report') {
       for (const t of full.tickets) {
@@ -93,7 +103,8 @@ export async function snapshot(slug: string, opts: { mode: SnapshotMode, out?: s
       }
       for (const th of full.inbox) {
         const probe = jsonSafe(th.text.slice(0, 40)).slice(1, -1);
-        if (probe.length > 12 && data.includes(probe)) { throw new Error(`report snapshot leaked inbox message ${th.id}; refusing to write`); }
+        const elsewhere = dockNotes.has(th.id) && bare.includes(probe);
+        if (probe.length > 12 && data.includes(probe) && !elsewhere) { throw new Error(`report snapshot leaked inbox message ${th.id}; refusing to write`); }
       }
     }
   }
@@ -102,6 +113,6 @@ export async function snapshot(slug: string, opts: { mode: SnapshotMode, out?: s
     ? join(archiveDir(), `${slug}.html`)
     : join(sprintDir(slug), `${slug}-${opts.mode}${opts.fragment ? '-fragment' : ''}.html`));
   writeAtomic(out, html);
-  if (opts.archive) { writeAtomic(join(archiveDir(), `${slug}.state.json`), `${JSON.stringify(full, null, 2)}\n`); }
+  if (opts.archive) { writeAtomic(join(archiveDir(), `${slug}.state.json`), `${JSON.stringify(frozen, null, 2)}\n`); }
   return out;
 }

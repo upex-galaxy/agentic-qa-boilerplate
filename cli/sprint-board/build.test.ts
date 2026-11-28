@@ -1,5 +1,5 @@
 /**
- * The page bundle and its brand slot. `model.ts`, `merge.ts` and `app/` run in the browser, so they
+ * The page bundle and its brand slot. `model.ts`, `merge.ts`, `sweep.ts` and `app/` run in the browser, so they
  * may import only pure modules: a `node:` import (from `hosts.ts`, `config.ts`, ...) breaks the page.
  */
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -15,6 +15,8 @@ describe('page bundle', () => {
     expect(js.length).toBeGreaterThan(1000);
     expect(js).not.toMatch(/["']node:/);
     expect(css).toContain('.brand-logo');
+    expect(css).toContain('.dk-sheet');
+    expect(js).toContain('/api/sweep/send');
   });
 });
 

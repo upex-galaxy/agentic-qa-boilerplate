@@ -1,5 +1,6 @@
 import type { Messenger } from './messenger.ts';
 import type { Ask, AskState } from './model.ts';
+import type { SendInput } from './sweep.ts';
 /**
  * Local live server, http://127.0.0.1:4477
  *
@@ -13,7 +14,8 @@ import type { Ask, AskState } from './model.ts';
  *   /archive/<file>    frozen snapshots
  *   POST /api/answer   { ticket, needId?, text }  -> need.answer event
  *   POST /api/ask      { id, action | state, expect? } -> ask.state event, through the ask lock
- *   POST /api/msg      { text, replyTo? }         -> msg event from the owner (the inbox)
+ *   POST /api/msg      { text, replyTo?, via?, ticket? }  -> msg event from the owner (the inbox; via "dock" is a dock note)
+ *   POST /api/sweep/send { answers, skipped? }    -> one Decision dock batch, through the sweep lock
  *
  * Change detection is a 1 s fingerprint poll of known files, not fs.watch:
  * FSEvents reports real paths through the .session symlink and atomic renames
@@ -28,7 +30,8 @@ import { readMergeLine } from './merge-read.ts';
 import { resolveMessenger } from './messenger.ts';
 import { ASK_ACTIONS, ASK_STATES, awaitsOwner, needTarget, oneOf } from './model.ts';
 import { buildState, watchedFiles } from './sources.ts';
-import { appendEvent, archiveDir, BOARD_DIR, currentSlug, listArchives, listSprints, readSprint, REPO_ROOT, serverFile, sprintDir, writeAtomic } from './store.ts';
+import { appendEvent, appendEvents, archiveDir, BOARD_DIR, currentSlug, listArchives, listSprints, readSprint, REPO_ROOT, serverFile, sprintDir, withSweepLock, writeAtomic } from './store.ts';
+import { DOCK_VIA, planSend } from './sweep.ts';
 import { watcherViews } from './watchers.ts';
 
 const APP_DIR = join(import.meta.dir, 'app');
@@ -90,6 +93,16 @@ async function postAsk(slug: string, body: Record<string, string>, messenger: Me
     void draftApproved(slug, id, messenger).catch((err: Error) => console.warn(`${id}: the draft was not recorded: ${err.message}`));
   }
   return json(result);
+}
+
+async function postSweep(slug: string, body: SendInput): Promise<Response> {
+  const plan = await withSweepLock(slug, async (held) => {
+    const planned = planSend(buildState(slug), { answers: body.answers, skipped: body.skipped });
+    if (!held()) { throw new Error('another writer took sweep.lock before this one wrote. Nothing was written, send it again'); }
+    appendEvents(slug, planned.events.map(e => ({ kind: e.kind, ticket: e.ticket, by: 'owner', text: e.text, data: e.data })));
+    return planned;
+  });
+  return json({ ok: plan.written > 0, batch: plan.written ? plan.batch : undefined, results: plan.results }, plan.written ? 200 : 409);
 }
 
 async function alreadyRunning(): Promise<string | null> {
@@ -248,10 +261,15 @@ export async function serve(opts: { port: number, open: boolean, syncMinutes: nu
             if (replyTo && !buildState(slug).inbox.some(t => t.id === replyTo || t.replies.some(r => r.id === replyTo))) {
               return json({ error: `no message ${replyTo} to reply to` }, 400);
             }
+            if (body.via !== undefined && body.via !== DOCK_VIA) { return json({ error: `via must be "${DOCK_VIA}" or absent` }, 400); }
+            const via = body.via;
+            const ticket = body.ticket ? String(body.ticket).toUpperCase() : undefined;
+            if (ticket && !buildState(slug).tickets.some(t => t.id === ticket)) { return json({ error: `${ticket} is not on the ${slug} board` }, 400); }
             const id = `msg-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
-            appendEvent(slug, { kind: 'msg', by: 'owner', text: `Owner: ${text}`, data: { id, from: 'owner', text, replyTo } });
+            appendEvent(slug, { kind: 'msg', ticket, by: 'owner', text: `Owner: ${text}`, data: { id, from: 'owner', text, replyTo, via } });
             return json({ ok: true, id });
           }
+          if (p === '/api/sweep/send') { return await postSweep(slug, body); }
           if (p === '/api/ask') { return await postAsk(slug, body, messenger); }
         }
         catch (err) {
@@ -281,7 +299,8 @@ export async function serve(opts: { port: number, open: boolean, syncMinutes: nu
           if (!/^sprint-\d+$/.test(slug)) { return json({ error: 'bad sprint' }, 400); }
           const state = buildState(slug);
           state.messenger = messenger?.id;
-          if (!state.sprint.closedAt) {
+          if (state.sprint.closedAt) { delete state.sweep; }
+          else {
             idsBySlug.set(slug, state.tickets.map(t => t.id));
             try { state.watchers = watcherViews(slug); }
             catch (err) { state.warnings.push(`watchers could not be read: ${(err as Error).message}`); }

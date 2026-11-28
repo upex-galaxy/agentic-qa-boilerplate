@@ -112,6 +112,32 @@ export function makeDemo(now = Date.now()): Demo {
       text: 'Hi Lena, quick one on DEMO-7904 (returning-customer window)\n- when a store turns returns off, the code still pays the *loyalty bonus*\n- the AC only talks about the discount\nShould the bonus be zeroed too, or is paying it right?',
     }),
     ev(now - 7.5 * H, 'ask.state', undefined, 'Draft ask-demo3 marked sent', { id: 'ask-demo3', state: 'sent' }),
+    { ...ev(now - 0.4 * H, 'sweep.add', 'DEMO-7906', 'Dock: hold DEMO-7906 or defer its cases?', {
+      id: 'sw-demo1',
+      question: 'The trend chart needs the sync worker, which is not on staging yet. Hold DEMO-7906 or defer its two cases?',
+      header: 'Scope',
+      context: 'Both cases are NOT RUN. Tom can redeploy the worker tomorrow.',
+      options: [
+        { key: 'a', label: 'Hold the ticket until the deploy', desc: 'It stays in Held and every watch pass rechecks it.' },
+        { key: 'b', label: 'Defer both cases with a reason', desc: 'The ticket can close as Passed with two DEFERRED cases.' },
+      ],
+      recommend: ['a'],
+      multi: false,
+      freeText: true,
+    }), by: 'conductor' },
+    { ...ev(now - 0.2 * H, 'sweep.add', undefined, 'Dock: which checks belong in the retest?', {
+      id: 'sw-demo2',
+      question: 'Which extra checks belong in the DEMO-7903 retest?',
+      header: 'Retest',
+      options: [
+        { key: 'a', label: 'Direct API update on a locked month', desc: 'The failing case, again.' },
+        { key: 'b', label: 'Unlock by admin', desc: 'Not run yet.' },
+        { key: 'c', label: 'Lock icon after a page reload', desc: 'Cheap to add.' },
+      ],
+      recommend: ['a'],
+      multi: true,
+      freeText: true,
+    }), by: 'conductor' },
   );
 
   const live: Record<string, LiveTicket> = {

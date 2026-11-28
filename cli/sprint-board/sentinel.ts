@@ -1,3 +1,4 @@
+import type { TicketBucket } from '../lib/sprint-source/types.ts';
 import type { Messenger } from './messenger.ts';
 import type { Ask, AskState, BoardEvent, TrackerSnapshot } from './model.ts';
 /**
@@ -21,6 +22,7 @@ import type { Ask, AskState, BoardEvent, TrackerSnapshot } from './model.ts';
  */
 import { resolveMessenger } from './messenger.ts';
 import { arrivals, boardTicketIds, foldAsks, printableJson, untrackedInTest } from './model.ts';
+import { DOCK_VIA, foldSweep, openSweepItems, unreadNotes } from './sweep.ts';
 
 // ---------------------------------------------------------------------------
 // Signature: what the conductor must react to
@@ -32,6 +34,10 @@ export interface SigOwner { event: string, ticket?: string, text: string }
 export interface SigNeed { id: string, ticket: string, by?: string, question: string }
 export type SigAsk = Pick<Ask, 'id' | 'to' | 'state' | 'stateAt' | 'sentAt' | 'kind' | 'twoWay' | 'tickets' | 'by'>;
 export interface SigAskChange { id: string, to: string, from: AskState, state: AskState, by?: string }
+export interface SigBatch { id: string, at: string, items: number, tickets: string[] }
+export interface SigNote { id: string, at: string, ticket?: string, text: string }
+export interface SigDock { item: string, ticket: string, question: string, since: string, bucket: TicketBucket }
+export type SigDockRecheck = Omit<SigDock, 'bucket'> & { from: TicketBucket, to: TicketBucket };
 
 /**
  * Compared by key only (ids and kinds); the other fields are there so a wake can say what
@@ -47,9 +53,14 @@ export interface Signature {
   // Absent in a baseline saved before asks were watched, which adopts them.
   asks?: SigAsk[]
   drafting?: boolean
+  // Dock batches and notes nobody consumed; a baseline saved before the dock reads as empty.
+  sweep?: { batches: SigBatch[], notes: SigNote[] }
+  // Open dock items that name a ticket with a synced row; a baseline saved before the dock adopts them.
+  dock?: SigDock[]
 }
 
-const isOwnerAnswer = (e: BoardEvent) => e.by === 'owner' && (e.kind === 'need.answer' || e.kind === 'msg');
+// What the owner sends from the dock has its own wake parts, and a batch carries the card answers it wrote.
+const isOwnerAnswer = (e: BoardEvent) => e.by === 'owner' && (e.kind === 'need.answer' || e.kind === 'msg') && e.data?.via !== DOCK_VIA;
 const byId = <T extends { id: string }>(a: T, b: T) => a.id.localeCompare(b.id, undefined, { numeric: true });
 const str = (v: unknown) => (typeof v === 'string' && v ? v : undefined);
 /** Whoever records a need for the owner and is not the owner, the conductor or Claude's inbox. */
@@ -101,6 +112,26 @@ const asksOf = (events: BoardEvent[]): SigAsk[] => foldAsks(events)
   .map(({ id, to, state, stateAt, sentAt, kind, twoWay, tickets, by }) => ({ id, to, state, stateAt, sentAt, kind, twoWay, tickets, by }))
   .sort(byId);
 
+const NOTE_CHARS = 300;
+const QUESTION_CHARS = 200;
+const byNumber = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true });
+
+function dockOf(events: BoardEvent[], tracker: TrackerSnapshot | null | undefined): Required<Pick<Signature, 'sweep' | 'dock'>> {
+  const view = foldSweep(events);
+  const batches = view.batches.filter(b => b.complete && !b.consumed).map(b => ({
+    id: b.id,
+    at: b.at,
+    items: b.answers.length,
+    tickets: [...new Set(b.answers.flatMap(a => (a.ticket ? [a.ticket] : [])))].sort(byNumber),
+  }));
+  const notes = unreadNotes({ sweep: view }).map(n => ({ id: n.id, at: n.at, ticket: n.ticket, text: n.text.slice(0, NOTE_CHARS) }));
+  const dock = openSweepItems({ sweep: view }).flatMap((it) => {
+    const bucket = it.ticket ? tracker?.tickets[it.ticket]?.bucket : undefined;
+    return it.ticket && bucket ? [{ item: it.id, ticket: it.ticket, question: it.question.slice(0, QUESTION_CHARS), since: it.createdAt, bucket }] : [];
+  }).sort((a, b) => byNumber(a.item, b.item));
+  return { sweep: { batches, notes }, dock };
+}
+
 export function signatureOf(events: BoardEvent[], tracker: TrackerSnapshot | null | undefined, messenger: Messenger | null = resolveMessenger()): Signature {
   const r = arrivals(events, tracker);
   const untracked = untrackedInTest(tracker?.discover?.untracked ?? [], boardTicketIds(events, tracker));
@@ -112,6 +143,7 @@ export function signatureOf(events: BoardEvent[], tracker: TrackerSnapshot | nul
     workerNeeds: openWorkerNeeds(events),
     asks: asksOf(events),
     drafting: Boolean(messenger),
+    ...dockOf(events, tracker),
   };
 }
 
@@ -120,7 +152,7 @@ const askKey = (a: SigAsk) => `${a.state}@${a.stateAt ?? ''}`;
 const wakesOnAsk = (a: SigAsk) => a.by !== undefined && a.by !== 'conductor' && a.by !== 'sentinel';
 
 export interface Additions {
-  parts: ('arrivals' | 'untracked' | 'owner-answer' | 'worker-need' | 'ask-approved' | 'ask-sent' | 'ask-changed')[]
+  parts: ('arrivals' | 'untracked' | 'owner-answer' | 'worker-need' | 'ask-approved' | 'ask-sent' | 'ask-changed' | 'sweep-answered' | 'dock-note' | 'dock-recheck')[]
   arrivals: SigArrival[]
   untracked: SigUntracked[]
   ownerAnswer?: SigOwner
@@ -128,6 +160,9 @@ export interface Additions {
   askApproved: SigAsk[]
   askSent: SigAsk[]
   askChanged: SigAskChange[]
+  sweepAnswered: SigBatch[]
+  dockNotes: SigNote[]
+  dockRecheck: SigDockRecheck[]
 }
 
 /**
@@ -159,6 +194,16 @@ export function additions(base: Signature, now: Signature): Additions | null {
     const isNewDraft = a.state === 'draft' && !baseAsks?.has(a.id);
     return isNewDraft || a.state === 'approved' || a.state === 'sent' ? [] : [{ id: a.id, to: a.to, from, state: a.state, by: a.by }];
   });
+  const baseBatches = new Set(base.sweep?.batches.map(b => b.id));
+  const sweepAnswered = (now.sweep?.batches ?? []).filter(b => !baseBatches.has(b.id));
+  const baseNotes = new Set(base.sweep?.notes.map(n => n.id));
+  const dockNotes = (now.sweep?.notes ?? []).filter(n => !baseNotes.has(n.id));
+  // An item the baseline never held adopts silently: its question was just written.
+  const baseDock = new Map(base.dock?.map(d => [d.item, d]));
+  const dockRecheck = (now.dock ?? []).flatMap(({ bucket, ...item }) => {
+    const from = baseDock.get(item.item)?.bucket;
+    return from && from !== bucket ? [{ ...item, from, to: bucket }] : [];
+  });
   const parts: Additions['parts'] = [];
   if (arr.length) { parts.push('arrivals'); }
   if (unt.length) { parts.push('untracked'); }
@@ -167,10 +212,13 @@ export function additions(base: Signature, now: Signature): Additions | null {
   if (askApproved.length) { parts.push('ask-approved'); }
   if (askSent.length) { parts.push('ask-sent'); }
   if (askChanged.length) { parts.push('ask-changed'); }
-  return parts.length ? { parts, arrivals: arr, untracked: unt, ownerAnswer: owner, workerNeeds: needs, askApproved, askSent, askChanged } : null;
+  if (sweepAnswered.length) { parts.push('sweep-answered'); }
+  if (dockNotes.length) { parts.push('dock-note'); }
+  if (dockRecheck.length) { parts.push('dock-recheck'); }
+  return parts.length ? { parts, arrivals: arr, untracked: unt, ownerAnswer: owner, workerNeeds: needs, askApproved, askSent, askChanged, sweepAnswered, dockNotes, dockRecheck } : null;
 }
 
-export const IMMEDIATE_PARTS: readonly Additions['parts'][number][] = ['owner-answer', 'ask-approved', 'ask-sent', 'ask-changed'];
+export const IMMEDIATE_PARTS: readonly Additions['parts'][number][] = ['owner-answer', 'ask-approved', 'ask-sent', 'ask-changed', 'sweep-answered', 'dock-note'];
 
 function hasPendingOwnerAnswer(events: BoardEvent[]): boolean {
   const rootOf = new Map<string, string>();
@@ -189,9 +237,10 @@ function hasPendingOwnerAnswer(events: BoardEvent[]): boolean {
   });
 }
 
-// With no saved baseline, an owner answer nobody has acted on, or an ask approved and not drafted, is work and not history: leaving it out makes it wake.
+// With no saved baseline, an owner answer nobody has acted on, an unread dock batch or note, or an ask approved and not drafted, is work and not history: leaving it out makes it wake.
 export function freshBaseline(events: BoardEvent[], sig: Signature): Signature {
-  const base = hasPendingOwnerAnswer(events) ? { ...sig, ownerAnswer: null } : sig;
+  const unread = { ...sig, sweep: { batches: [], notes: [] } };
+  const base = hasPendingOwnerAnswer(events) ? { ...unread, ownerAnswer: null } : unread;
   return sig.drafting ? { ...base, asks: base.asks?.filter(a => a.state !== 'approved') } : base;
 }
 

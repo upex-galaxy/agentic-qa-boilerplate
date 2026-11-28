@@ -9,6 +9,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { applyAutomated, fold, MARKERS } from './model.ts';
 import { readEvents, readSprint, readTracker, REPO_ROOT } from './store.ts';
+import { DOCK_VIA } from './sweep.ts';
 
 const PBI = join(REPO_ROOT, '.context', 'PBI');
 const SESSIONS = join(REPO_ROOT, '.session', 'sprint-testing');
@@ -136,9 +137,11 @@ export function watchedFiles(ids: string[]): string[] {
  * workers' files: the archive is taken BEFORE sprint.json records the close, so
  * the frozen copy keeps the evidence and Live Progress a closed board skips.
  */
-export function buildState(slug: string, now = new Date().toISOString(), opts: { closingAt?: string } = {}): BoardState {
+export function buildState(slug: string, now = new Date().toISOString(), opts: { closingAt?: string, withoutDock?: boolean } = {}): BoardState {
   const sprint = readSprint(slug);
-  const { events, bad } = readEvents(slug);
+  const log = readEvents(slug);
+  const { bad } = log;
+  const events = opts.withoutDock ? log.events.filter(e => !e.kind.startsWith('sweep.') && e.data?.via !== DOCK_VIA) : log.events;
   const tracker = readTracker(slug);
   const ids = [...new Set([...events.map(e => e.ticket).filter((x): x is string => Boolean(x)), ...Object.keys(tracker?.tickets ?? {})])];
   // A closed sprint's worker files moved on to other sprints; do not read them.

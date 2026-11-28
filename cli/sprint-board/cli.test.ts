@@ -3,12 +3,12 @@
  * finding from a review of the source board.
  */
 import type { BoardEvent, Sprint } from './model.ts';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { ownerRefusal } from './ask-transition.ts';
-import { takeOverStaleLock } from './store.ts';
+import { REPO_ROOT, takeOverStaleLock } from './store.ts';
 
 const CLI = join(import.meta.dir, 'index.ts');
 /** The demo project's `board:` block (key DEMO-n), so the cases never depend on this checkout's config. */
@@ -267,8 +267,13 @@ describe('who spoke', () => {
     ['evidence-artifact', [TK, URL1]],
     ['evidence-page', [TK, URL1]],
     ['accept-risk', [TK]],
+    ['sweep', ['add', '--question', 'defer?']],
+    ['sweep', ['consume', 'swb-x']],
+    ['sweep', ['close', 'sw-x', '--why', 'x']],
   ];
   const EVERY_COMMAND: [string, string[]][] = [
+    ['sweep', ['list']],
+    ['sweep', ['read']],
     ...STATEMENTS,
     ['new', ['--sprint', '2']],
     ['use', ['sprint-1']],
@@ -309,7 +314,9 @@ describe('who spoke', () => {
 
   test('the table below names every command', () => {
     const listed = run('no-such-command').out.split('Commands: ')[1].trim().split(', ');
-    expect(EVERY_COMMAND.map(([name]) => name).sort()).toEqual(listed.sort());
+    expect([...new Set(EVERY_COMMAND.map(([name]) => name))].sort()).toEqual(listed.sort());
+    const verbs = /sweep needs a subcommand: ([a-z |]+?) \(/.exec(run('sweep', 'no-such-verb').out)![1].split(' | ');
+    expect(EVERY_COMMAND.filter(([name]) => name === 'sweep').map(([, args]) => args[0]).sort()).toEqual(verbs.sort());
   });
 
   test('--by owner is refused on every command, and nothing is written', () => {
@@ -440,6 +447,32 @@ describe('agent text cannot draw a line of its own', () => {
     printed(run(`nope${PAYLOAD}`).out);
   });
 
+  test('sweep list and read keep it on its own line, after the name of who wrote it', () => {
+    ok('sweep', 'add', '--question', PAYLOAD, '--option', `${PAYLOAD} | ${PAYLOAD}`, '--option', 'no', '--ticket', TK, '--by', 'conductor');
+    const id = String(events().at(-1)!.data!.id);
+    const list = ok('sweep', 'list');
+    printed(list);
+    expect(list).toContain('asked by conductor: status?');
+    const line = (e: object) => `${JSON.stringify({ v: 1, id: `o${Math.random().toString(36).slice(2, 8)}`, at: new Date().toISOString(), by: 'owner', text: 'x', ...e })}\n`;
+    appendFileSync(join(dir, 'sprints', 'sprint-1', 'events.ndjson'), [
+      line({ kind: 'sweep.answer', ticket: TK, data: { batch: 'swb-1', item: id, kind: 'sweep', choice: ['a'], text: PAYLOAD } }),
+      line({ kind: 'sweep.batch', data: { batch: 'swb-1', skipped: [PAYLOAD], results: { [id]: 'written' } } }),
+      line({ kind: 'msg', data: { id: 'msg-1', from: 'owner', text: PAYLOAD, via: 'dock' } }),
+    ].join(''));
+    const read = ok('sweep', 'read');
+    printed(read);
+    expect(read).toContain(`${id} asked by conductor: status?`);
+    expect(read).toContain('owner answered: status?');
+    expect(read).toContain('owner wrote: status?');
+    for (const args of [['sweep', 'list', '--all', '--json'], ['sweep', 'read', '--json']]) {
+      const out = ok(...args);
+      expect(RAW.test(out)).toBe(false);
+      expect(() => JSON.parse(out)).not.toThrow();
+    }
+    ok('sweep', 'add', '--question', 'q?', '--by', 'sentinel');
+    printed(ok('sweep', 'close', String(events().at(-1)!.data!.id), '--why', 'x', '--by', 'conductor') + ok('sweep', 'list', '--all'));
+  });
+
   test('JSON outputs, the sentinel signature included, escape it and keep the value', () => {
     ok('needs-you', TK, PAYLOAD, '--by', 'worker');
     ok('fixture', TK, PAYLOAD, '--by', 'worker');
@@ -452,6 +485,218 @@ describe('agent text cannot draw a line of its own', () => {
     expect(JSON.parse(ok('fixtures', '--json')).fixtures[0].text).toBe(PAYLOAD);
     const need = JSON.parse(ok('sentinel', '--once', '--port', '59999')).signature.workerNeeds[0];
     expect(Object.keys(need)).toEqual(['id', 'ticket', 'by', 'question']);
+  });
+});
+
+describe('sweep (the Decision dock)', () => {
+  const add = (...extra: string[]) => run('sweep', 'add', '--question', 'Defer TC-4 or hold the ticket?', '--option', 'Defer it | closes as Passed', '--option', 'Hold it', '--ticket', TK, '--by', 'conductor', ...extra);
+  const bare = (...extra: string[]) => run('sweep', 'add', '--question', 'q', '--by', 'conductor', ...extra);
+  const log = () => join(dir, 'sprints', 'sprint-1', 'events.ndjson');
+  const owner = (kind: BoardEvent['kind'], data: Record<string, unknown>, ticket?: string) =>
+    appendFileSync(log(), `${JSON.stringify({ v: 1, id: `o${Math.random().toString(36).slice(2, 8)}`, at: new Date().toISOString(), kind, ticket, by: 'owner', text: kind, data })}\n`);
+  const lastId = () => String(events().at(-1)!.data!.id);
+
+  test('add posts an item with keys by position and the recommendation, and validates every field', () => {
+    const r = add('--recommend', '2', '--header', 'Scope', '--context', 'The worker stopped at TC-4');
+    expect(r.code).toBe(0);
+    expect(r.out).toMatch(/^sw-\w+ posted to the dock \(1 open on sprint-1\)/);
+    const e = events().at(-1)!;
+    expect(e).toMatchObject({ kind: 'sweep.add', ticket: TK, by: 'conductor' });
+    expect(e.data).toMatchObject({
+      question: 'Defer TC-4 or hold the ticket?',
+      header: 'Scope',
+      context: 'The worker stopped at TC-4',
+      options: [{ key: 'a', label: 'Defer it', desc: 'closes as Passed' }, { key: 'b', label: 'Hold it' }],
+      recommend: ['b'],
+      multi: false,
+      freeText: true,
+    });
+    expect(bare('--option', 'only one').out).toContain('takes 2 to 4 options');
+    expect(bare('--option', 'a', '--option', 'b', '--option', 'c', '--option', 'd', '--option', 'e').out).toContain('takes 2 to 4 options');
+    expect(add('--recommend', '3').out).toContain('matches no option');
+    expect(add('--recommend', 'a,b').out).toContain('single-choice item recommends one');
+    expect(add('--recommend', 'a,b', '--multi').code).toBe(0);
+    expect(bare('--ticket', 'DEMO-1').out).toContain('is not on the sprint-1 board');
+    expect(run('sweep', 'add', '--by', 'conductor').out).toContain('missing --question');
+    expect(bare().code).toBe(0);
+    expect(bare('--no-free-text').out).toContain('needs free text');
+    expect(bare('--multi').out).toContain('--multi needs options');
+    expect(bare('--at', '2999-01-01T00:00:00Z').out).toContain('is in the future');
+    expect(bare('--context', 'x'.repeat(5000)).out).toContain('event too large');
+  });
+
+  test('a worker cannot post to the dock; a sentinel or conductor can, and so can a board with no conductor event at all', () => {
+    const before = events().length;
+    const r = run('sweep', 'add', '--question', 'q', '--by', 'worker');
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('sweep add is not for a worker');
+    expect(r.out).toContain('needs-you');
+    expect(events()).toHaveLength(before);
+    expect(run('sweep', 'add', '--question', 'q', '--by', 'sentinel').code).toBe(0);
+  });
+
+  test('no verb writes the owner\'s answer, batch or dock note', () => {
+    add();
+    const id = lastId();
+    const before = events().length;
+    for (const sub of ['answer', 'send', 'batch', 'note']) { expect(run('sweep', sub, id, '--by', 'conductor').out).toContain('sweep needs a subcommand'); }
+    expect(run('sweep', 'close', id, '--why', 'x', '--by', 'owner').out).toContain('--by owner is refused');
+    run('say', 'note', '--via', 'dock', '--ticket', TK);
+    run('log', 'note', '--via', 'dock');
+    expect(events().slice(before).filter(e => e.by === 'owner' || e.data?.via !== undefined || e.kind === 'sweep.answer' || e.kind === 'sweep.batch')).toEqual([]);
+  });
+
+  test('media must be an image under the roots the board serves; links pass the evidence URL rule', () => {
+    expect(add('--media', join(REPO_ROOT, 'package.json')).out).toContain('must be a png, jpg, gif or webp image under');
+    expect(add('--media', join(dir, 'nope.png')).out).toContain('file not found');
+    expect(add('--link', 'http://claude.ai/artifact/abc').out).toContain('must be https');
+    expect(add('--link', 'x | javascript:alert(1)').out).toContain('must be https');
+    expect(add('--link', 'x | https://claude.ai/chat/123').out).toContain('claude.ai/artifact/<id>');
+    expect(add('--link', 'Docs | https://example.com/page').out).toContain('not in board.evidence.allowed_hosts');
+    expect(add('--path', 'two\nlines').out).toContain('must be one line');
+    expect(add('--link', 'Evidence page | https://claude.ai/artifact/abc123/', '--link', 'https://claude.ai/artifact/def', '--path', '.context/PBI/x/evidence/a.png').code).toBe(0);
+    expect(events().at(-1)!.data).toMatchObject({
+      paths: ['.context/PBI/x/evidence/a.png'],
+      links: [{ title: 'Evidence page', url: 'https://claude.ai/artifact/abc123' }, { title: 'claude.ai', url: 'https://claude.ai/artifact/def' }],
+    });
+  });
+
+  test('list shows open items with the denominator; --all adds the answered ones', () => {
+    expect(run('sweep', 'list').out).toContain('0 shown of 0 dock item(s) on sprint-1');
+    add();
+    const id = lastId();
+    expect(run('sweep', 'list').out).toContain(`${id}  open`);
+    owner('sweep.answer', { batch: 'swb-1', item: id, kind: 'sweep', choice: ['a'] });
+    expect(run('sweep', 'list').out).toContain('0 shown of 1 dock item(s)');
+    expect(run('sweep', 'list', '--all').out).toContain(`${id}  answered`);
+    expect(JSON.parse(run('sweep', 'list', '--all', '--json').out)[0]).toMatchObject({ id, state: 'answered' });
+  });
+
+  test('list shows each open item\'s age and marks it STALE past the threshold, from --stale-days or sprint.json', () => {
+    add();
+    const id = lastId();
+    const fresh = run('sweep', 'list').out;
+    expect(fresh).toContain('0d');
+    expect(fresh).not.toContain('STALE');
+    const old = new Date(Date.now() - 5 * 86_400_000).toISOString();
+    writeFileSync(log(), readFileSync(log(), 'utf8').split('\n').map(l => (l.includes('"sweep.add"') ? l.replace(/"at":"[^"]+"/, `"at":"${old}"`) : l)).join('\n'));
+    expect(run('sweep', 'list').out).toContain('5d STALE');
+    expect(run('sweep', 'list', '--stale-days', '7').out).not.toContain('STALE');
+    expect(JSON.parse(run('sweep', 'list', '--json').out)[0]).toMatchObject({ id, ageDays: 5, stale: true });
+    expect(run('sweep', 'list', '--stale-days', '0').out).toContain('must be a number above 0');
+    writeFileSync(join(dir, 'sprints', 'sprint-1', 'sprint.json'), JSON.stringify({ ...sprintJson(), dockStaleDays: 10 }));
+    expect(run('sweep', 'list').out).not.toContain('STALE');
+  });
+
+  test('read prints a sent batch and the unread notes, consume marks them, and a second consume is a no-op', () => {
+    add('--recommend', '1');
+    const id = lastId();
+    expect(run('sweep', 'read', '--unconsumed').out).toContain('Nothing unread from the dock (0 batch(es), 0 note(s) searched on sprint-1)');
+    owner('sweep.answer', { batch: 'swb-1', item: id, kind: 'sweep', choice: ['a'], text: 'and soon' }, TK);
+    expect(JSON.parse(run('sweep', 'read', '--unconsumed', '--json').out).batches).toEqual([]);
+    expect(run('sweep', 'consume', 'swb-1', '--by', 'conductor').out).toContain('is no sent batch or dock note');
+    owner('sweep.batch', { batch: 'swb-1', skipped: ['sw-zz'], results: { [id]: 'written' } });
+    owner('msg', { id: 'msg-n1', from: 'owner', text: 'call me after lunch', via: 'dock' });
+    const j = JSON.parse(run('sweep', 'read', '--unconsumed', '--json').out);
+    expect(j.batches).toHaveLength(1);
+    expect(j.batches[0]).toMatchObject({ batch: 'swb-1', consumed: false, skipped: ['sw-zz'], results: { [id]: 'written' } });
+    expect(j.batches[0].answers[0]).toEqual({ item: id, kind: 'sweep', ticket: TK, question: 'Defer TC-4 or hold the ticket?', askedBy: 'conductor', choice: ['a'], labels: ['Defer it'], text: 'and soon', tookRecommended: true });
+    expect(j.notes).toEqual([expect.objectContaining({ id: 'msg-n1', text: 'call me after lunch', consumed: false })]);
+    const human = run('sweep', 'read', '--unconsumed').out;
+    expect(human).toContain('(took the recommendation)');
+    expect(human).toContain('owner wrote: call me after lunch');
+
+    expect(run('sweep', 'consume', 'swb-1', '--by', 'conductor').out).toContain('swb-1 consumed');
+    expect(run('sweep', 'consume', 'swb-1', '--by', 'conductor').out).toContain('already consumed');
+    expect(run('sweep', 'consume', 'msg-n1', '--by', 'conductor').out).toContain('msg-n1 consumed');
+    expect(run('sweep', 'consume', 'swb-nope', '--by', 'conductor').out).toContain('is no sent batch or dock note');
+    expect(JSON.parse(run('sweep', 'read', '--unconsumed', '--json').out)).toEqual({ batches: [], notes: [] });
+    expect(events().filter(e => e.kind === 'sweep.consume').map(e => e.by)).toEqual(['conductor', 'conductor']);
+  });
+
+  test('only the conductor can mark a batch or a note read, and a reply in the thread does not', () => {
+    add();
+    const id = lastId();
+    owner('sweep.answer', { batch: 'swb-1', item: id, kind: 'sweep', choice: ['a'] }, TK);
+    owner('sweep.batch', { batch: 'swb-1' });
+    owner('msg', { id: 'msg-n1', from: 'owner', text: 'call me', via: 'dock' });
+    const before = events().length;
+    for (const who of ['worker', 'sentinel']) {
+      for (const target of ['swb-1', 'msg-n1']) {
+        const r = run('sweep', 'consume', target, '--by', who);
+        expect([who, target, r.code]).toEqual([who, target, 1]);
+        expect(r.out).toContain('sweep consume is the conductor\'s');
+      }
+    }
+    expect(events()).toHaveLength(before);
+    ok('say', 'on it', '--reply', 'msg-n1', '--by', 'worker');
+    const unread = JSON.parse(run('sweep', 'read', '--unconsumed', '--json').out);
+    expect([unread.batches.length, unread.notes.map((n: { id: string }) => n.id)]).toEqual([1, ['msg-n1']]);
+  });
+
+  test('a worker cannot retire an open item; the conductor or the sentinel can', () => {
+    add();
+    const first = lastId();
+    const before = events().length;
+    const r = run('sweep', 'close', first, '--why', 'done with it', '--by', 'worker');
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('sweep close is not for a worker');
+    expect(events()).toHaveLength(before);
+    expect(ok('sweep', 'close', first, '--why', 'moot', '--by', 'sentinel')).toContain(`${first} closed`);
+  });
+
+  test('nothing is posted to the dock of a closed sprint', () => {
+    ok('sprint', '--closed', 'true');
+    const before = events().length;
+    const r = add();
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('is closed');
+    expect(events()).toHaveLength(before);
+  });
+
+  test('dock text that the board publishes anyway does not block a share or a report snapshot', () => {
+    const title = 'Checkout applies a discount code';
+    ok('meta', TK, '--title', title);
+    ok('sweep', 'add', '--question', title, '--ticket', TK, '--by', 'conductor');
+    owner('msg', { id: 'msg-n1', from: 'owner', text: title, via: 'dock' }, TK);
+    for (const mode of ['share', 'report']) {
+      const out = join(dir, `${mode}.html`);
+      ok('snapshot', '--mode', mode, '--out', out);
+      expect(readFileSync(out, 'utf8')).toContain(title);
+    }
+  });
+
+  test('close retires an open item once; an unknown or already retired item is reported, not closed', () => {
+    add();
+    const id = lastId();
+    const close = (...args: string[]) => run('sweep', 'close', ...args, '--by', 'conductor').out;
+    expect(close(id)).toContain('missing --why');
+    expect(close(id, '--why', 'moot now')).toContain(`${id} closed`);
+    expect(close(id, '--why', 'again')).toContain('is already closed');
+    expect(close('sw-nope', '--why', 'x')).toContain('is no dock item');
+    expect(run('sweep', 'list', '--all').out).toContain(`${id}  closed`);
+    expect(run('sweep').out).toContain('sweep needs a subcommand');
+    expect(run('sweep', 'constructor').out).toContain('sweep needs a subcommand');
+  });
+
+  test('no snapshot carries the dock: not share, not report, not the full copy, not the archive and its state file', () => {
+    add('--question', 'Confidential dock question about the renewal?');
+    const id = lastId();
+    owner('sweep.answer', { batch: 'swb-1', item: id, kind: 'sweep', choice: ['a'], text: 'Private owner answer about the renewal' }, TK);
+    owner('sweep.batch', { batch: 'swb-1' });
+    for (const mode of ['share', 'report', 'full']) {
+      const out = join(dir, `${mode}.html`);
+      ok('snapshot', '--mode', mode, '--out', out);
+      const html = readFileSync(out, 'utf8');
+      for (const secret of ['Confidential dock question', 'Private owner answer', id]) { expect(html).not.toContain(secret); }
+      expect(JSON.parse(/<script id="board-data" type="application\/json">([\s\S]*?)<\/script>/.exec(html)![1]).sweep).toBeUndefined();
+    }
+    ok('archive');
+    for (const name of ['sprint-1.html', 'sprint-1.state.json']) {
+      const kept = readFileSync(join(dir, 'archive', name), 'utf8');
+      expect(kept).not.toContain('Confidential dock question');
+      expect(kept).not.toContain('Private owner answer');
+    }
   });
 });
 
