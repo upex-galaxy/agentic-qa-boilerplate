@@ -67,7 +67,7 @@ What the gate cannot see, so look at the file before sending it when the run tou
 
 An expected failure that failed is filed by Allure as `passed`. The report shows it as a known defect instead, keeps it out of the passes, and counts it as executed. A marked expected failure that passed is an **unexpected pass**: the run is red and the defect may be fixed.
 
-The bug key reaches the report only when the results carry it: an annotation declared on the test (`{ type: 'known-defect', description: '<BUG-KEY>' }`), a `@blocked:<BUG-KEY>` tag, or a declared `fail` description starting `Blocked by <BUG-KEY>`. An annotation pushed while the test runs, which is what `knownDefect()` in `tests/utils/knownDefect.ts` does, is missing from the Allure results. Such a test shows as a known defect with no defect key, and its unexpected pass shows as a failure with no error. Take the key from `reports/test-outcomes.json` in that case.
+The bug key reaches the report only when the results carry it: `knownDefect('<BUG-KEY>')` from `tests/utils/knownDefect.ts`, an annotation declared on the test (`{ type: 'known-defect', description: '<BUG-KEY>' }`), a `@blocked:<BUG-KEY>` tag, or a declared `fail` description starting `Blocked by <BUG-KEY>`. An annotation pushed by hand while the test runs is missing from the Allure results: such a test shows as a known defect with no defect key, and its unexpected pass shows as a failure with no error. Use the helper, or take the key from `reports/test-outcomes.json`.
 
 ## Reading it out
 

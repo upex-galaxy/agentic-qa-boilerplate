@@ -593,7 +593,7 @@ test('TICKET-ID: should reject signup with invalid email @blocked:UPEX-999', asy
 
 The test stays in the suite instead of being silently skipped, so the failure stays informative, and the `@blocked:{BUG-KEY}` tag lets regression runs filter it out of GO/NO-GO until the bug is fixed. Remove both markers when the bug closes and the test goes green.
 
-Inside the test body, `knownDefect('{BUG-KEY}')` (`tests/utils/knownDefect.ts`) replaces the `test.fail(...)` line: one call sets the expected failure and records the key, so the two never drift apart. Keep the `@blocked:{BUG-KEY}` title tag for the regression filter. `KataReporter` classifies the test as `known-defect` while it fails and as `unexpected-pass` once it passes, an action item that keeps the run headline red until the markers are removed (ADR-0020). A bare `test.fail()` that names no key is an action item too. Mark an expected failure only through these forms.
+Inside the test body, `knownDefect('{BUG-KEY}')` (`tests/utils/knownDefect.ts`) replaces the `test.fail(...)` line: one call sets the expected failure and records the key, so the two never drift apart. The call is synchronous (no `await`) and also writes the Allure tag `blocked:{BUG-KEY}`, so the key reaches the Allure results and every report built from them. Keep the `@blocked:{BUG-KEY}` title tag for the regression filter. `KataReporter` classifies the test as `known-defect` while it fails and as `unexpected-pass` once it passes, an action item that keeps the run headline red until the markers are removed (ADR-0020). A bare `test.fail()` that names no key is an action item too. Mark an expected failure only through these forms.
 
 | Marker | Means | Use when |
 |--------|-------|----------|
