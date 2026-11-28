@@ -132,7 +132,7 @@ button {
 .lbl {
   font-family: var(--label);
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.08em;
   font-weight: 700;
   font-size: 11px;
   color: var(--muted);
