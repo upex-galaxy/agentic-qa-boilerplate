@@ -1,6 +1,6 @@
 # Push and merge flows
 
-Two policy keys decide who lets a change land: `git_strategy.policy.direct_push_to_protected` for a push straight to a protected branch, and `git_strategy.policy.merge_mode` for a PR into one. Both are read from `.agents/project.yaml`. A value the team chose keeps its meaning; when the block is missing, the default is the schema's, so read it there instead of assuming.
+Two policy keys decide who lets a change land: `git_strategy.policy.direct_push_to_protected` for a push straight to a protected branch, and `git_strategy.policy.merge_mode` for a PR into one. Both are read from `.agents/project.yaml`. A value the team chose keeps its meaning. When the value or the `git_strategy` block is missing, a direct push reads as `evidence` (the gate, the hook and `git:policy verify` agree), and `merge_mode` reads as `auto` in `git:policy verify` and as `manual` in `git:policy apply`.
 
 ## Policy values
 

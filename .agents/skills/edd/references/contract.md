@@ -27,7 +27,7 @@ The gate computes depth from the files the change touches (`git diff --name-only
 | Depth | Agentic requirement |
 |---|---|
 | `none` | static checks only |
-| `light` | screenshots of every top-level page or view the app exposes, on one environment |
+| `light` | screenshots on one environment: `attest` needs at least one, and the tester covers every top-level page or view the app exposes |
 | `standard` | every agentic check with `min_depth` up to `standard`, run against the change's acceptance criteria |
 | `deep` | `standard`, plus the flows next to the touched ones (the smoke of the touched modules), on every environment the check lists |
 

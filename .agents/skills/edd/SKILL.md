@@ -23,7 +23,7 @@ This file is the doctrine and fits any repository, application code or test code
 | depth | how much agentic checking a change needs, computed from the paths it touches: `none`, `light`, `standard`, `deep` |
 | evidence | what the checks leave for a person: outcomes plus artifacts (logs, traces, screenshots, transcripts) |
 | contract | the `evidence:` block of `.agents/project.yaml`: which checks, at which depth, where they run |
-| record | one JSON file per push, written by the gate, never by the agent |
+| record | one JSON file per gate run, written by the gate, never by the agent; a later hook gate can still refuse the push |
 | evidence commit | an empty signed commit that `bun run edd attest` puts on top of the code; its message carries the agentic results and binds them to the exact diff |
 | author session | the session that wrote the change, named by the `Session:` trailer of its commits |
 | reviewer session | any other session that reads the evidence and gives a verdict. Never the author |

@@ -10,7 +10,7 @@ Two artifacts carry a delivery's evidence. The **record** is the gate's full acc
 | Artifacts | `<primary-root>/.session/evidence/artifacts/<subject-sha>/<check-id>/<env>/`: traces, screenshots, transcripts, plus one `verdict.json` per folder |
 | In git | never; `.session/` is ignored |
 | Writer | `bun run edd gate` (pre-push hook) and `bun run edd verify --ci` (CI). The agent never writes it |
-| When | every push the hook sees and every CI run of the verifier; the CI copy goes to the job summary and an Actions artifact |
+| When | every gate run of the pre-push hook and every CI run of the verifier. One file per gate run: a later hook gate can still refuse the push. The CI copy goes to the job summary and an Actions artifact |
 
 The schema is `edd-evidence/1`. Its sections, in order:
 
@@ -26,7 +26,7 @@ The schema is `edd-evidence/1`. Its sections, in order:
 | `producer` | hash of the gate script that wrote it, worktree and session |
 | `result` | `pass` or `fail` |
 
-How a person sees it: in a PR, the body's evidence section is rendered from the record (`bun run edd render --pr`) and the CI verifier keeps one sticky comment with the verified copy. After a direct push the hook prints the record path and a one-line verdict, and `git log --format='%(trailers:key=Evidence-Digest)'` lists every attested push. Heavy artifacts are published for a person separately; the record holds only their hashes.
+How a person sees it: in a PR, the body's evidence section is a fresh verification against the merge base (`bun run edd render --pr` never reads a local record), and the CI verifier keeps one sticky comment with the verified copy. After a direct push the hook prints the record path and a one-line verdict, and `git log --format='%(trailers:key=Evidence-Digest)'` lists every attested push. Heavy artifacts are published for a person separately; the record holds only their hashes.
 
 ## The evidence commit
 
@@ -61,7 +61,7 @@ The check `edd/evidence` runs the verifier from the **default** branch's code (`
 | the signature is valid against the allowed-signers list read from the base | a PR cannot add its own key |
 | the contract digest matches the base's contract | a PR cannot weaken its own contract |
 | recomputed depth is not above the attested depth | the attest cannot under-declare |
-| every `verdict_by` differs from the `Session:` trailer of the code commits | the author is not its own tester |
+| at depth `standard` or deeper, every `verdict_by` differs from the `Session:` trailer of the code commits | the author is not its own tester |
 
 Static checks run as ordinary required CI jobs next to it.
 

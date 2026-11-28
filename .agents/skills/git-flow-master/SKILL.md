@@ -292,7 +292,7 @@ Policy gate (read `git_strategy.policy.direct_push_to_protected` before any dire
 
 | `git_strategy.policy.direct_push_to_protected` | Behaviour |
 | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `evidence` (default: a missing or null value or block reads as this) | Push without asking. The pre-push hook runs `bun run edd gate`, which re-runs the `pre-push` static checks and verifies the evidence commit when depth needs one. On fail there is no push and no question: fix forward, re-attest if the diff changed, retry. Never `--no-verify`. |
+| `evidence` (default: a missing or null value or block reads as this) | Push without asking. The pre-push hook runs `bun run edd gate`, which re-runs the `pre-push` static checks and verifies the evidence commit when depth needs one. On fail there is no push and no question: fix forward, re-attest if the diff changed, retry. `--no-verify` skips this gate, so it is human gate #2 like any other use of it. |
 | `allowed`                                      | Standing authorization: push without asking and without a gate. The recorded value is the authorization (stamped by Strategy Setup with the user); asking anyway collapses `allowed` into `confirm`. |
 | `confirm`                                      | The team chose to be asked: ask before every push and wait for an explicit yes.                            |
 | `forbidden`                                    | Never direct-push. Route the change through the PR flow (3.4) without asking.                              |
