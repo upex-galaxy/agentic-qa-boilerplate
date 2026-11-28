@@ -94,7 +94,7 @@ CONDUCTOR -- Run mailbox (record) + terminal pointer (nudge) -- WORKERS
 | # | Channel | Carries | Rule |
 |---|---|---|---|
 | 1 | Run mailbox | the worker record: status, question, escalation, done | byte-intact, the channel of record between workers and the conductor (`/agent-orchestration` channel discipline) |
-| 2 | Board | the owner surface: Needs you, the inbox, the Decision dock, drafts, holds, waits | everything the owner must decide reaches the board and the chat, so the owner never has to read a terminal |
+| 2 | Board | the owner surface: Needs you, the inbox, the Decision dock, asks, holds, waits | everything the owner must decide reaches the board and the chat, so the owner never has to read a terminal |
 | 3 | Owner chat | answers when the owner cannot open the board | relay it, then mirror it under the conductor's name: `say --reply <msg-id> "answered by chat: <text>"` for an inbox thread, `answer <KEY> "<text>" --id <need-id> --by conductor` for a Needs-you. The mirror is not the owner's board answer: `listen` does not print it, and the question stays open on the page. A question that gates nothing is then closed with `resolve <KEY> --id <need-id> --by conductor`. A question that gates something (a deferral OK, a transition, any step the owner signs) is not resolved by an agent before the owner's own record exists, on the board (their answer on the page, which `listen` prints) or in the tracker (their own comment) |
 | 4 | Slack | messages to developers | only on the owner's order. The board holds proposed messages (`ask`) and copies tables ("Copy for Slack") and sends nothing |
 
@@ -128,10 +128,10 @@ the first time, arm `listen` with a starting point:
 
 ---
 
-## 4. Drafts and the team-decision message
+## 4. Asks and the team-decision message
 
 - Draft first, on the board. Draft with `ask` only when something is blocked on that person. A pass,
-  a closed ticket or a thanks is not a reason to write. The `good-news` and `fyi` draft kinds exist
+  a closed ticket or a thanks is not a reason to write. The `good-news` and `fyi` ask kinds exist
   for the record and are not sent unprompted.
 - An ask moves through one locked writer (`cli/sprint-board/README.md` §Asks). `ask-state` needs
   `--by conductor` and refuses `--by owner`. A move recorded as `owner` came from the page, so it

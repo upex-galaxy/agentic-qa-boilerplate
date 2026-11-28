@@ -621,7 +621,7 @@ All references are self-contained. Load one at a time.
 |-----------|-----------|
 | `sprint-orchestration.md` | Sprint-wide mode: the session pair and the STP, resuming, the sprint log, dispatching stage sub-agents, stop, pause and `continue-from`. |
 | `fleet-conductor.md` | Sprint-wide with more than one executor: worker identity, brief seeding, `launch.txt`, rounds, auth one-writer, browser isolation, claims, liveness, blocked tokens. Skip it at N=1. |
-| `sprint-board.md` | A fleet run with the Sprint Board (`cli/sprint-board/`): the board at every stage, the brief block, the four channels, decision cards, evidence and fixtures, the watch-pass sentinel. Skip it at N=1. |
+| `sprint-board.md` | A fleet run with the Sprint Board (`cli/sprint-board/`): the board at every stage, the brief block, the four channels, the Decision dock, decision cards, evidence and fixtures, the watch-pass sentinel. Skip it at N=1. |
 | `session-entry-points.md` | Initializing a session (any mode): project and module context, the PBI folder and `context.md`, the session dir and `test-session-memory.md`, Team Discussion extraction, the user-story and bug workflow order. |
 | `acceptance-test-planning.md` | Stage 1: the ATP, Test Analysis, TC nomenclature `{US_ID}: TC#: should <expected outcome> [<connector> <condition>] [given <precondition>]`, traceability creation and verification, the Bug Analysis variant. |
 | `feature-test-planning.md` | Stage 1 at feature or multi-story level: the feature test plan, risk triage rubric, scenario decomposition, variable and test-data identification. |

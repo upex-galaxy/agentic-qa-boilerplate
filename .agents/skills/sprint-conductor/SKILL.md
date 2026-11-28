@@ -50,7 +50,7 @@ The skill is thin on purpose: almost everything it does has a canonical home, an
 | Concern | Canon |
 |---|---|
 | Fleet mode: worker identity, briefs, `launch.txt`, rounds, auth one-writer, claims, ad-hoc retest, Live Progress, the dashboard, the sprint record | `sprint-testing/references/fleet-conductor.md` |
-| The board: commands per stage, the block a worker's brief carries, the four channels, drafts, decision cards, evidence, fixtures, the sentinel wake table, staged artifacts | `sprint-testing/references/sprint-board.md`, command reference `cli/sprint-board/README.md` |
+| The board: commands per stage, the block a worker's brief carries, the four channels, asks, the Decision dock, decision cards, evidence, fixtures, the sentinel wake table, staged artifacts | `sprint-testing/references/sprint-board.md`, command reference `cli/sprint-board/README.md` |
 | The transport: Run, Tasks, native launch, the mailbox, liveness, closing, the conductor handoff | `agent-orchestration` (its `SKILL.md`, conductor cycle, Orca provider and gotchas) |
 | The deploy check (the deployed environment is truth, the tracker is a hint) | `sprint-testing/references/session-entry-points.md` Step 1c |
 | This skill: the boot, one watch pass, the round close, the resume | `references/boot-and-resume.md`, `references/watch-pass.md`, `references/round-close.md` |
@@ -155,7 +155,7 @@ In the owner's language, counts and tables, no narrative (`agent-orchestration` 
 
 - In the test environment: each ticket launched, held (and on whom), skipped or new, one reason each.
 - Who waits on whom: workers waiting on the owner, the owner waiting on developers (open waits and
-  drafts), tickets waiting on a deploy.
+  asks), tickets waiting on a deploy.
 - What the owner must decide: each open question with its options, numbered so one line answers it, and
   for each blocker the person to ask (developer, product owner, or a named owner of the access).
 - Boot facts: board URL, the sentinel armed (its task id) or not, the Run id, the pre-flight result and

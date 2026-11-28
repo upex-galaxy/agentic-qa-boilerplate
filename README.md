@@ -294,7 +294,7 @@ Project values (URLs, project key, Jira fields) live in `.agents/project.yaml` a
 | **Multi-harness**          | One instruction body and one skill store, consumed by Claude Code, OpenCode, Codex and Pi; a project keeps only the harnesses it declares in `harnesses:` (`.agents/project.yaml`) |
 | **Secrets by name**        | `.env` (or a secret manager, ADR-0010) is read per process; MCP servers read it through a filtered `.env` loader (ADR-0011); the AI never sees a value (Critical Rule #1) |
 | **MCP Integration**        | Local servers declared once in `.mcp.json` and mirrored for each host; browser automation runs through `/playwright-cli`, with no browser MCP |
-| **Sprint Board**           | A live local page for a sprint run with several workers (`bun run board:up`, 127.0.0.1:4477): lanes, Needs you, metrics, evidence, the QA report, and Merge Line for the open PRs. Reads the tracker through the `board:` block (`bun run board:check`); commands and a demo sprint in `cli/sprint-board/README.md` |
+| **Sprint Board**           | A live local page for a sprint run with several workers (`bun run board:up`, 127.0.0.1:4477): lanes, Needs you, the Decision dock, metrics, evidence, the QA report, and Merge Line for the open PRs. Reads the tracker through the `board:` block (`bun run board:check`); commands and a demo sprint in `cli/sprint-board/README.md` |
 
 <br />
 
