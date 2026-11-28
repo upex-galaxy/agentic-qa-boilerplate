@@ -66,7 +66,7 @@ The skill extracts the key in this order:
 
 1. Current branch name regex: `(?:feat|feature|fix|test|docs|refactor|chore)/([A-Z]+-\d+)-`.
 2. `$ARGUMENTS` for `[A-Z]+-\d+`.
-3. Ask the user once, and accept "no key". With nobody present, commit without a key and say so in the report.
+3. None found: commit without a key and say so in the report. Never ask for one.
 
 
 ## Scope (without an issue key)

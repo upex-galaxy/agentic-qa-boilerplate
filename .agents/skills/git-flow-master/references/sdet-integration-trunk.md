@@ -9,7 +9,7 @@ This is the runbook behind the `sdet` strategy. The catalogue entry is in `branc
 ## TL;DR
 
 - One integration trunk acts as the local stand-in for `main` for the whole suite (for example `test/checkout-suite`). It is ephemeral per suite: created when the suite starts, deleted after the final PR merges.
-- Each ticket is cut from the trunk (never stacked on the previous ticket branch), worked, validated locally on both `local` and `staging`, pushed, run through Sanity CI, PR'd into the trunk (not `main`), reviewed, fixed, and merged with `--no-ff` (never squash).
+- Each ticket is cut from the trunk (never stacked on the previous ticket branch), worked, validated locally on both `local` and `staging`, pushed, run through Sanity CI, PR'd into the trunk (not `main`), reviewed, fixed, and merged with `--no-ff` (never squash) once `edd/evidence` passes.
 - The next ticket is cut from the updated trunk after each merge.
 - Adjacent non-test work (docs, tooling, fixes) goes on Plus Branches inserted between tickets; they PR into the trunk like ticket branches.
 - Before the final PR, a sync gate (`git merge origin/main`) runs on the trunk so the `trunk → main` diff shows only this suite's test work.
@@ -101,16 +101,20 @@ bun run lint:check
 git push -u origin test/{KEY}-{slug}
 #    trigger the Sanity/smoke suite via GitHub Actions (/regression-testing, workflow_dispatch)
 
-# 5. PR INTO the trunk (NOT main)
+# 5. PR INTO the trunk (NOT main); evidence block per pr-templating.md (bun run edd render --pr; the CI verifier's PR comment is the reader's copy)
 gh pr create --base test/<module>-suite --head test/{KEY}-{slug}
+#    set labels (from gh label list) and the assignee before review; no question asked
+#    arm the PR watcher and end the turn (references/pr-loop.md)
 
 # 6. Review loop
 #    - address Critical + High; triage Low; re-run Sanity after fixes
-#    - optional adversarial gate: /judgment-day on a large or scaffolding-touching diff
+#    - a large or scaffolding-touching diff gets /judgment-day before the PR opens, verdict in the body (the agent's call)
 #    - iterate until review is quiet (max 2 revision rounds per /test-automation rule)
 
-# 7. Merge into the trunk preserving history
+# 7. Merge into the trunk preserving history, once edd/evidence has passed
 gh pr merge --merge   # merge commit (--no-ff equivalent); NEVER squash here
+#    --auto only when the trunk carries a ruleset with required checks and
+#    bun run git:policy verify --merge <trunk> exits 0; otherwise merge after the watcher reports edd/evidence green
 
 # 8. Next ticket → back to step 0 (cut from the now-updated trunk)
 ```
@@ -130,7 +134,7 @@ gh pr merge --merge   # merge commit (--no-ff equivalent); NEVER squash here
 The loop above is written for one session walking the chain, and that stays the default. When a fleet works a batch (`.agents/skills/test-automation/references/batch-fleet.md`), the shape changes in exactly three places:
 
 - Ticket branches are cut from the trunk in parallel: each worker in its own worktree, each branch off the trunk's then-current tip. Still never off another ticket branch.
-- The trunk has one writer. Only the conductor merges into it, one PR at a time, in an order it decides; a worker opens its PR and stops. Step 0 ("start from a clean, up-to-date trunk") becomes the conductor's job between merges, and a worker whose branch is now behind re-merges the trunk into its branch instead of waiting.
+- Merges into the trunk are serial. Each worker merges its own PR once `edd/evidence` passes, one at a time, and a worker whose branch is now behind re-merges the trunk into its branch before merging instead of waiting. Step 0 ("start from a clean, up-to-date trunk") repeats for each worker before its merge.
 - After each merge the conductor regenerates `kata-manifest.json` and re-runs the suite on the merged state, because two green branches can be red together.
 
 The sync gate, the final PR, `--no-ff` and the local double-env gate are unchanged. The double-env gate runs in each worker's own worktree.
@@ -175,7 +179,7 @@ git add <only the adjacent files>            # be surgical — never `git add .`
 git commit -m "chore: <what>"
 git push -u origin chore/<batch-descriptor>
 gh pr create --base test/<module>-suite ...    # PR into the trunk like the rest
-gh pr merge --merge
+gh pr merge --merge                             # after edd/evidence passes (references/pr-loop.md)
 ```
 
 Rules for Plus Branches:
@@ -215,14 +219,14 @@ git diff origin/main...HEAD --stat     # should list ONLY tests/** + this suite'
 
 ## Final PR to main
 
-This is the only PR that must satisfy `main`'s branch protection (required checks and rulesets). How much history survives depends on the merge method the repo allows on `main`:
+This is the only PR that must satisfy `main`'s branch protection (required checks and rulesets). Before opening the final PR, run `bun run edd attest --depth <highest depth of the children>` on the trunk tip: a fresh attest at the tip, with the children's evidence commits left in the range (`.agents/skills/edd/references/flows.md` Flow 3). The PR follows `git_strategy.policy.merge_mode` (read `.agents/project.yaml`) with `--merge`: under `auto` the agent runs `gh pr merge --auto --merge` once `bun run git:policy verify --merge main` exits 0, under `human-approves` the same call waits for a person's approval, under `manual` the agent opens the PR and stops. If `verify --merge` fails on `main`, stop and tell the person. The doctrine is `.agents/skills/edd/references/flows.md`. How much history survives depends on the merge method the repo allows on `main`:
 
 - If `main` allows merge-commit, the per-ticket `--no-ff` structure survives and the merge looks like several branches merged. That is the intended outcome.
 - If `main` forces squash, the whole suite collapses to one commit on `main`. The detailed chain still lives on the pushed trunk and its merged ticket PRs for traceability, but `main`'s first-parent history shows one commit. Confirm the repo's merge setting before counting on the multi-branch look.
 
 Title the final PR after the suite, not a single ticket (for example `test(checkout): automate E2E suite {KEY1}…{KEYn}`), and list the contained tickets and their TC IDs in the body for TMS traceability. Use the body structure in `references/pr-test-automation.md`.
 
-After the final PR merges and CI is green on `main`, delete the trunk (`git push origin --delete test/<module>-suite`); the next suite starts a fresh trunk.
+After the final PR merges and CI is green on `main`, the trunk is deleted. Remote branch deletion is a human gate (`.agents/skills/edd/references/human-gates.md`), so rely on the host's delete-head-branch-on-merge setting when it is on, and otherwise ask the person to approve `git push origin --delete test/<module>-suite` once, with the merged PR as the reason. The next suite starts a fresh trunk.
 
 ---
 
@@ -268,13 +272,13 @@ On resume (Phase 0), read the tail of `progress.md` and take the last `git:` lin
 
 ## With nobody at the keyboard
 
-Three points in this runbook wait for judgment. The rule for each, for the cases a person is not the one deciding (the person-present path is unchanged):
+The loop runs exactly as attended: push, PR, watcher and merge need no one. Three points still reach a person, because they are on the human-gates list or need a classification:
 
 | Point | Supervised worker | Routine or no one present |
 | --- | --- | --- |
-| Review loop (step 6) | The conductor reviews and holds the gate; a worker opens its PR and stops. | Do the local gate and the push of the ticket branch only if the delegating brief covers pushes; otherwise stop with the branch committed locally and report. |
-| CI-fallback clause | The conductor decides whether the red is ENVIRONMENT-class. | Merge into the trunk only when the brief authorizes it and both proofs hold; otherwise leave the PR open and report the red. |
-| Final `trunk → main` PR and trunk deletion | The conductor opens and merges it. | An outward and irreversible action: do the sync gate and the diff check, then stop and report. Open the PR only when the brief names it. |
+| CI-fallback clause | The worker sends the ENVIRONMENT-class question, with the proofs, to its launcher. | Merge into the trunk only when both proofs hold and the brief covers it; otherwise leave the PR open and report the red. |
+| Final `trunk → main` PR under `merge_mode: manual` or `human-approves` | The worker opens the PR (with the auto-merge call under `human-approves`) and reports; a person merges or approves. | Same. |
+| Trunk deletion (remote branch deletion) | The worker asks its launcher with the options. | Report it as waiting; do not delete. |
 
 `agentic-qa-core/references/decision-protocol.md` has the general rule for what reaches a person.
 

@@ -457,10 +457,10 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </div>
     <p class="wf-lane">Las seis operaciones (paso 3)</p>
     <div class="wf-row">
-      <div class="wf-node"><p class="n">Branch</p><p class="t">Proponer nombre</p><p class="c">prefijo + clave + slug</p></div>
+      <div class="wf-node"><p class="n">Branch</p><p class="t">Elegir nombre</p><p class="c">prefijo + clave + slug</p></div>
       <div class="wf-node"><p class="n">Commit</p><p class="t">Agrupar por responsabilidad</p><p class="c">conventional + trailers</p></div>
       <div class="wf-node"><p class="n">Push</p><p class="t">Política de protegidas</p><p class="c">Regla #5 · nunca --force</p></div>
-      <div class="wf-node"><p class="n">PR</p><p class="t">Base según estrategia</p><p class="c">gh pr create · sin merge</p></div>
+      <div class="wf-node"><p class="n">PR</p><p class="t">Base según estrategia</p><p class="c">gh pr create · auto-merge con evidencia</p></div>
       <div class="wf-node"><p class="n">Conflict</p><p class="t">Diagnosticar primero</p><p class="c">opciones por seguridad</p></div>
       <div class="wf-node"><p class="n">Strategy Setup</p><p class="t">Establecer el flujo</p><p class="c">Q1-Q4 · materializar</p></div>
     </div>
@@ -567,11 +567,11 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
           <tr><td class="mono"><b>Q3</b></td><td class="small">hotfix: rama desde producción, PR a producción y back-merge el mismo día</td></tr>
           <tr><td class="mono" style="color:var(--accent)"><b>Q4</b></td><td class="small">todas las estrategias: <span class="mono">direct_push_to_protected</span> · <span class="mono">admin_bypass</span> · <span class="mono">require_pr_reviews</span></td></tr>
         </table>
-        <p class="small dim">Después materializa: crea ramas solo si faltan y sincroniza solo por fast-forward real, nunca <span class="mono">--force</span>. El push de ese sync a una rama protegida siempre pregunta.</p>
+        <p class="small dim">Después materializa: crea ramas solo si faltan y sincroniza solo por fast-forward real, nunca <span class="mono">--force</span>. El push de ese sync a una rama protegida sigue la política de push como cualquier otro push.</p>
         <p class="small dim mt-s">Al cierre <b>ofrece</b> llevar la política al host: primero <span class="mono">bun run git:policy verify</span> (solo lectura), y si hay deriva muestra el dry run de <span class="mono">apply</span> y escribe únicamente con tu sí.</p>
       </div>
     </div>
-    <div class="notes">Disparadores: "set up our git strategy", "configura el flujo de git", "bootstrap branching". Las estrategias de una sola rama no responden Q1 a Q3; Q4 aplica siempre, porque un main solitario también está protegido. Una pregunta ya respondida en decisions.* no se repite, y la creación de ramas siempre se propone antes. Mecánica completa: references/strategy-setup.md.</div>
+    <div class="notes">Disparadores: "set up our git strategy", "configura el flujo de git", "bootstrap branching". Las estrategias de una sola rama no responden Q1 a Q3; Q4 aplica siempre, porque un main solitario también está protegido. Una pregunta ya respondida en decisions.* no se repite, y una vez respondido el cuestionario las ramas se crean sin un segundo OK y se reportan. Mecánica completa: references/strategy-setup.md.</div>
   </section>
 
   <!-- 6. PUSH POLICY -->
@@ -579,16 +579,17 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     <p class="kicker">Push · 6 de 19</p>
     <h2 class="h2">Push a una protegida: la <span class="grad">Regla #5</span> lee una variable</h2>
     <p class="small dim mt-s"><span class="mono">git_strategy.policy.direct_push_to_protected</span> en <span class="mono">.agents/project.yaml</span>. AGENTS.md no fija la respuesta: la variable es la decisión.</p>
-    <div class="grid g3 mt-m" style="gap:22px">
-      <div class="card" style="border-color:var(--bad)"><p class="lbl" style="color:var(--bad)">forbidden</p><p class="small mt-s">Rechaza el push directo y redirige al flujo de PR: propone una rama de trabajo y <span class="mono">gh pr create</span>.</p></div>
-      <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">confirm</p><p class="small mt-s">Pregunta antes de <b>cada</b> push y espera un sí explícito. Es también lo que pasa si el bloque falta o está en <span class="mono">null</span>.</p></div>
-      <div class="card" style="border-color:var(--good)"><p class="lbl" style="color:var(--good)">allowed</p><p class="small mt-s">Autorización permanente: pushea sin preguntar. Preguntar igual convertiría <span class="mono">allowed</span> en <span class="mono">confirm</span>.</p></div>
+    <div class="grid g4 mt-m" style="gap:22px">
+      <div class="card" style="border-color:var(--bad)"><p class="lbl" style="color:var(--bad)">forbidden</p><p class="small mt-s">Rechaza el push directo y redirige al flujo de PR: abre una rama de trabajo y <span class="mono">gh pr create</span>, sin preguntar.</p></div>
+      <div class="card" style="border-color:var(--warn)"><p class="lbl" style="color:var(--warn)">confirm</p><p class="small mt-s">Pregunta antes de <b>cada</b> push y espera un sí explícito. Un equipo eligió este valor a propósito, así que la pregunta se mantiene.</p></div>
+      <div class="card" style="border-color:var(--good)"><p class="lbl" style="color:var(--good)">allowed</p><p class="small mt-s">Autorización permanente: pushea sin preguntar y sin gate. Preguntar igual convertiría <span class="mono">allowed</span> en <span class="mono">confirm</span>.</p></div>
+      <div class="card" style="border-color:var(--accent)"><p class="lbl" style="color:var(--accent)">evidence</p><p class="small mt-s">Pushea sin preguntar <b>solo si</b> el gate del pre-push pasa (el hook corre <span class="mono">bun run edd gate</span>). Si falla: no hay push, no hay pregunta, se corrige hacia adelante y se reintenta. Un valor o bloque ausente o en <span class="mono">null</span> se lee como <span class="mono">evidence</span>.</p></div>
     </div>
     <div class="grid g2 mt-m" style="gap:22px">
       <div class="card card-soft"><p class="lbl">Bypass de admin</p><p class="small mt-s">Solo con <span class="mono">admin_bypass: true</span> la skill puede <b>ofrecer</b> saltear el PR en una urgencia, y aun así reconfirma que el operador tiene permisos de admin y la acción misma. Con <span class="mono">false</span>, nunca.</p></div>
       <div class="card card-soft"><p class="lbl">Push según upstream</p><p class="small mt-s">Sin upstream: <span class="mono">git push -u origin {branch}</span>. Atrasado: <span class="mono">git push</span>. Divergido: <b>parar</b> y pasar a resolución de conflictos, nunca forzar.</p></div>
     </div>
-    <div class="notes">El valor allowed lo estampa Strategy Setup con el usuario, por eso vale como autorización. La lista de protegidas sale de la estrategia (slide 4) unida a git_strategy.protected.</div>
+    <div class="notes">El valor allowed lo estampa Strategy Setup con el usuario, por eso vale como autorización. La lista de protegidas sale de la estrategia (slide 4) unida a git_strategy.protected. La doctrina de la evidencia vive en .agents/skills/edd/ (SKILL.md y references/flows.md); este deck solo muestra las operaciones de git.</div>
   </section>
 
   <!-- 7. INVARIANTES -->
@@ -637,7 +638,7 @@ Session: bulk-assign-w2 (c0ffee12)</div>
         <div class="card card-accent"><p class="lbl" style="color:var(--bad)">Sin atribución a la IA</p><p class="small mt-s">Nada de "Generated with…", ni <span class="mono">Co-Authored-By</span> de una IA, ni <span class="mono">Claude-Session:</span> u otro trailer con marca de harness. El commit se ve escrito por una persona.</p></div>
       </div>
     </div>
-    <div class="notes">La skill propone todos los commits como un bloque y espera OK, cambios o rechazo antes de ejecutarlos uno por uno. Lo mismo vale para nombres de rama y cuerpos de PR.</div>
+    <div class="notes">La skill elige el nombre de la rama, agrupa los commits y los ejecuta, y después reporta lo que hizo. No pide OK por un nombre de rama, un conjunto de commits ni un cuerpo de PR. La clave del issue sale del nombre de la rama y luego de los argumentos; si no hay ninguna, commitea sin clave y lo dice. Las únicas paradas son la lista cerrada de .agents/skills/edd/references/human-gates.md.</div>
   </section>
 
   <!-- 9. TRAILERS FORENSES -->
@@ -724,28 +725,29 @@ $ bun run git:policy apply --yes      # escribe el ruleset
   <!-- 12. PULL REQUESTS -->
   <section class="slide compact" data-title="Pull requests">
     <p class="kicker">PR · 12 de 19</p>
-    <h2 class="h2">El PR: base por estrategia, <span class="grad">sin merge</span></h2>
+    <h2 class="h2">El PR: base por estrategia, <span class="grad">auto-merge con evidencia</span></h2>
     <div class="grid g2 mt-s" style="gap:28px;align-items:start">
       <div>
         <div class="mk" style="font-size:14px">$ gh pr create \
     --title "{type}({ISSUE-KEY}): {description}" \
     --body-file "$(mktemp)" \
     --base {base} \
-    [--reviewer {users}] [--label {labels}] [--draft]</div>
+    --assignee {owner} --label {labels} [--reviewer {users}] [--draft]</div>
         <table class="tt tight mt-s">
           <tr><th>Rama</th><th>Plantilla del cuerpo</th></tr>
           <tr><td class="mono">test/*</td><td class="small"><span class="mono">references/pr-test-automation.md</span>: Summary, Changes, Test Plan, Traceability (issue, ATP, ATR, TCs), evidencia, Merge danger, checklist</td></tr>
           <tr><td class="small">el resto</td><td class="small"><span class="mono">references/pr-templating.md</span></td></tr>
         </table>
-        <div class="card mt-s"><p class="lbl">Merge danger y evidencia</p><p class="small mt-s">Puerta de un solo sentido o de dos, y el radio de impacto en una o dos palabras. La evidencia va por peso: capturas, el test que falló y ahora pasa, y al final la salida de consola.</p></div>
+        <div class="card mt-s"><p class="lbl">Merge danger y evidencia</p><p class="small mt-s">Puerta de un solo sentido o de dos, y el radio de impacto en una o dos palabras. La evidencia va por peso: capturas, el test que falló y ahora pasa, y al final la salida de consola. El cuerpo lleva el bloque que imprime <span class="mono">bun run edd render --pr</span>.</p></div>
+        <div class="card mt-s"><p class="lbl">Tras abrir: el watcher</p><p class="small mt-s">Arma <span class="mono">.agents/skills/edd/scripts/pr-watch.sh</span> sobre su propio PR, rotula la pestaña de la terminal <span class="mono">PR#{n} {título previo}</span> y cierra el turno. Al despertar actúa según <span class="mono">references/waiting.md</span>. Con el PR fusionado: <span class="mono">git fetch</span>, <span class="mono">git merge-base --is-ancestor</span> y se restaura el título de la pestaña.</p></div>
       </div>
       <div class="stack" style="gap:14px">
-        <div class="card"><p class="lbl">Título y placeholders</p><p class="small mt-s">Menos de 70 caracteres. Un placeholder que la skill no pudo llenar queda <b>visible</b> para el autor; ninguna sección se borra en silencio. Labels: verificar con <span class="mono">gh label list</span>.</p></div>
-        <div class="card card-accent"><p class="lbl">Se detiene en la creación</p><p class="small mt-s">El merge es el paso del usuario. Excepción: un worker supervisado cuyo brief <b>nombra</b> el merge ejecuta la instrucción del owner y lo dice en su reporte.</p></div>
-        <div class="card"><p class="lbl">Gate adversarial opcional</p><p class="small mt-s">Diff de más de 400 líneas o con scaffolding compartido: la skill ofrece <span class="mono">/judgment-day</span> antes de abrir y no lo invoca sola.</p></div>
+        <div class="card"><p class="lbl">Título y placeholders</p><p class="small mt-s">Menos de 70 caracteres. Un placeholder que la skill no pudo llenar queda <b>visible</b> para el autor; ninguna sección se borra en silencio. Los metadatos se fijan antes del review, sin preguntar: labels elegidos de <span class="mono">gh label list</span> (nunca inventados), assignee es el dueño del trabajo, reviewer solo bajo <span class="mono">human-approves</span> (desde CODEOWNERS).</p></div>
+        <div class="card card-accent"><p class="lbl">Merge según el modo</p><p class="small mt-s">Lee <span class="mono">git_strategy.policy.merge_mode</span>. <span class="mono">auto</span>: cuando <span class="mono">bun run git:policy verify --merge {base}</span> sale con 0, <span class="mono">gh pr merge --auto --{method}</span>; GitHub fusiona cuando los checks, <span class="mono">edd/evidence</span> incluido, pasan. <span class="mono">human-approves</span>: la misma llamada, y una persona aprueba. <span class="mono">manual</span>: abre el PR y se detiene. El método es merge commit salvo que <span class="mono">git_strategy.decisions.feature_merge</span> diga otro; un squash pliega el commit de evidencia y pierde su firma. Si verify falla en una base protegida, se detiene y avisa a la persona.</p></div>
+        <div class="card"><p class="lbl">Gate adversarial</p><p class="small mt-s">Diff de más de 400 líneas o con scaffolding compartido: el agente corre <span class="mono">/judgment-day</span> antes de abrir y pone su veredicto en el cuerpo del PR. Sin ofrecerlo ni preguntar.</p></div>
       </div>
     </div>
-    <div class="notes">El cuerpo se escribe a un tempfile y se pasa con --body-file para evitar problemas de escape. Merge danger es la sección que antes se llamaba riesgo; el placeholder de la plantilla sigue siendo RISK. Sin nadie al teclado, una rutina escribe el cuerpo a un archivo y reporta, salvo que su brief nombre abrir el PR. Sin gh o sin auth, la skill reporta el bloqueo; nunca da a entender que el PR existe.</div>
+    <div class="notes">El cuerpo se escribe a un tempfile y se pasa con --body-file para evitar problemas de escape. Merge danger es la sección que antes se llamaba riesgo; el placeholder de la plantilla sigue siendo RISK. Sin nadie al teclado, la entrega es igual que con alguien presente; un ítem de la lista de human-gates va al que lanzó la sesión como pregunta con opciones, y solo ese cambio espera. Los anuncios de PR salen de la plantilla de git-flow-master por notify.provider (none no publica nada). Sin gh o sin auth, la skill reporta el bloqueo; nunca da a entender que el PR existe.</div>
   </section>
 
   <!-- 13. PRs ENCADENADOS -->
@@ -947,7 +949,7 @@ $ bun run git:policy apply --yes      # escribe el ruleset
       <tr><td style="padding:8px 16px"><b class="mono">SKILL.md 3.4</b></td><td style="padding:8px 16px" class="small">Apilar PRs sin nombrar la cadena de dependencias en el cuerpo.</td></tr>
       <tr><td style="padding:8px 16px"><b class="mono">SKILL.md 12</b></td><td style="padding:8px 16px" class="small">Descartes globales del working tree (Regla #15 de AGENTS.md).</td></tr>
     </table>
-    <div class="notes">El SKILL.md ya no tiene una lista aparte de anti-patrones: cada prohibición vive una sola vez en las Compact Rules y en las Critical rules numeradas, y la tabla apunta a dónde. Force-push, amend, rebase de lo pusheado y --no-verify son la misma Regla 5; los descartes globales son la Regla 12 (la Regla #15 de AGENTS.md). Las reglas protegen distinto: unas el trabajo de otros, otras la historia, otras el review. Sin nadie al teclado, la skill hace el trabajo local y reversible (leer el estado, ramas, commits) y se detiene antes de push, PR, merge, un flag de fuerza o un bypass, y reporta. Una persona ausente nunca convierte confirm en allowed.</div>
+    <div class="notes">El SKILL.md ya no tiene una lista aparte de anti-patrones: cada prohibición vive una sola vez en las Compact Rules y en las Critical rules numeradas, y la tabla apunta a dónde. Force-push, amend, rebase de lo pusheado y --no-verify son la misma Regla 5; los descartes globales son la Regla 12 (la Regla #15 de AGENTS.md). Las reglas protegen distinto: unas el trabajo de otros, otras la historia, otras el review. Sin nadie al teclado, la skill hace el trabajo local y reversible (leer el estado, ramas, commits) y entrega igual que con alguien presente, pero un ítem de la lista de human-gates (un flag de fuerza, un bypass, una escritura al host) va al que lanzó la sesión como pregunta y solo ese cambio espera. Una persona ausente nunca convierte confirm en allowed.</div>
   </section>
 
   <!-- 19. CIERRE -->
@@ -966,12 +968,12 @@ $ bun run git:policy apply --yes      # escribe el ruleset
       </div>
       <div class="card">
         <p class="lbl">A quién llama</p>
-        <p class="small mt-s"><span class="mono">/judgment-day</span>: gate opcional antes del PR.<br><span class="mono">/regression-testing</span>: Sanity CI del trunk <span class="mono">sdet</span>.<br><span class="mono">/acli</span>: operaciones Jira que dispara un commit o PR.<br>Testing de tickets: vuelve a <span class="mono">/sprint-testing</span> y compañía.</p>
+        <p class="small mt-s"><span class="mono">/judgment-day</span>: gate adversarial antes de un PR grande.<br><span class="mono">/regression-testing</span>: Sanity CI del trunk <span class="mono">sdet</span>.<br><span class="mono">/acli</span>: operaciones Jira que dispara un commit o PR.<br>Testing de tickets: vuelve a <span class="mono">/sprint-testing</span> y compañía.</p>
       </div>
     </div>
     <div class="card card-accent mt-m">
       <p class="lbl">Lo que deja la skill</p>
-      <p class="small mt-s">Ramas con prefijo y clave · commits atómicos con trailers forenses · un PR por <span class="mono">gh</span> que espera tu merge · el bloque <span class="mono">git_strategy:</span> actualizado · <span class="mono">meta.policy_*</span> estampado por <span class="mono">git:policy verify --stamp</span>.</p>
+      <p class="small mt-s">Ramas con prefijo y clave · commits atómicos con trailers forenses · un PR por <span class="mono">gh</span> con su bloque de evidencia, fusionado por auto-merge cuando los checks pasan · el bloque <span class="mono">git_strategy:</span> actualizado · <span class="mono">meta.policy_*</span> estampado por <span class="mono">git:policy verify --stamp</span>.</p>
     </div>
     <p class="small dim mt-m">Referencias: <span class="mono">.agents/skills/git-flow-master/references/</span></p>
     <div class="notes">Fin del recorrido. El mapa del slide 2 resume todo: leer el estado, reconciliar política, resolver la estrategia y recién ahí operar.</div>

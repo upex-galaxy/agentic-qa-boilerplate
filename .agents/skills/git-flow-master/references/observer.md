@@ -23,8 +23,8 @@ The observer only reads GitHub. It makes no merge, approval, review comment, lab
 orchestrator's `worktree list` / `terminal list`, the board's own `source.json`) and its only writes go to
 `.session/gitflow-master/`. It does not switch a branch, stage or commit, so it can run
 against the primary checkout while other sessions work there. Tracker drift is shown, never fixed:
-the PR's drawer names who fixes it. The interactive work of this skill (merges and pushes, with the
-owner's yes) is a different persona.
+the PR's drawer names who fixes it. The operating work of this skill (commits, pushes, PRs and merges under the
+EDD flow, `references/pr-loop.md`) is a different persona.
 
 ## 3 · How it works
 

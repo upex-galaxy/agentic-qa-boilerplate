@@ -1,14 +1,14 @@
 # Conflict resolution: per-type playbooks
 
-Diagnose a conflict before resolving it. The user is rarely in a hurry, and a wrong fix here costs hours of recovery. Every playbook has the same shape:
+Diagnose a conflict before resolving it. A wrong fix here costs hours of recovery. The agent diagnoses and resolves a non-destructive conflict itself, and reports what it did. Every playbook has the same shape:
 
 1. **Explain** what happened: the root cause, in the user's language.
-2. **Present options** ranked by safety. A destructive option is the user's choice, so it is never picked silently.
-3. **Guide** the resolution step by step.
+2. **Choose** the safest option that works (the options are listed safest first) and say which and why. A destructive option (force push, `reset --hard`, discarding someone's work) is a human gate (`.agents/skills/edd/references/human-gates.md`): ask with the options, never pick it. A conflict whose two sides disagree on product behaviour is a human gate too.
+3. **Resolve** step by step.
 4. **Verify** with `git status`, `git log --oneline -3` and a clean working tree.
 5. **Teach prevention** in one short note on how to avoid it next time.
 
-When in doubt, abort (`git merge --abort`, `git rebase --abort`, `git cherry-pick --abort`) instead of pushing forward. An abort always beats a guess.
+When in doubt, abort (`git merge --abort`, `git rebase --abort`, `git cherry-pick --abort`), then retry with a better plan, instead of pushing forward. An abort always beats a guess. After the conflict is resolved, the push follows the push policy and the evidence gate like any other push (SKILL.md 3.3).
 
 ---
 
@@ -54,9 +54,7 @@ Classify by the `git status` output and any state files in `.git/`:
 | `error: Your local changes to the following files would be overwritten by merge` | none                                            | Stash needed before pull/merge             |
 | `CONFLICT (cherry-pick)`                                                         | `CHERRY_PICK_HEAD`                              | Cherry-pick conflict (use rebase playbook) |
 
-If the user gave context, use it. If not, ask:
-
-> _"What were you trying to do when this happened: pull/fetch, push, merge, rebase, checkout, stash apply, or something else?"_
+Infer what was being attempted from the state files, `git reflog -n 20` and the branch (its name, its upstream, the commits on each side), and report the inference in one line before acting: _"The reflog shows a `pull --rebase` onto `origin/<base>` that stopped on `<file>`."_ When the user gave context, use it. Ask only when the two sides disagree on product behaviour (human gate 1 in `.agents/skills/edd/references/human-gates.md`). A `git rebase --skip` that drops commits and a `git reset --hard` stay stops: they destroy committed work, the same class as human gate 2.
 
 ---
 
@@ -74,7 +72,7 @@ If the user gave context, use it. If not, ask:
    git diff --name-only --diff-filter=U
    ```
 
-2. For each file, show the conflict block(s) and ask which side to keep:
+2. For each file, read the conflict block(s) and both sides' intent (`git log -p` on each side when needed). Where both intents are clear, merge the content so both survive. Where one side is plainly stale or generated, keep the other and say why. Where the two sides disagree on product behaviour (which value the product should have), stop and ask the person with both options. Example of that last case:
 
    ```
    src/auth/login.ts (lines 45-52)
@@ -85,8 +83,7 @@ If the user gave context, use it. If not, ask:
    const timeout = 10000;
    >>>>>>> feature/performance
 
-   Choose: [1] keep yours (5000) [2] use theirs (10000) [3] combine
-   [4] view more context
+   Options: [1] keep yours (5000) [2] use theirs (10000) [3] combine
    ```
 
 3. Apply the resolution. Git has shortcuts for "keep ours" and "keep theirs":
@@ -134,7 +131,7 @@ If the user gave context, use it. If not, ask:
    git log --diff-filter=D --name-only -1    # find the deletion commit
    ```
 
-2. Decide:
+2. Decide from the intent of both commits (the deletion commit message and the modifying commit):
    - **Keep the deletion** (the file is gone, the modifications are discarded):
      ```bash
      git rm <file>
@@ -168,9 +165,9 @@ If the user gave context, use it. If not, ask:
    git rebase --show-current-patch     # full diff of the failing commit
    ```
 
-2. Present the options:
-   - **Resolve and continue**: edit the conflicted files, `git add`, then `git rebase --continue`.
-   - **Skip this commit**: `git rebase --skip` drops the commit, which is destructive, so confirm with the user first.
+2. Pick from the options:
+   - **Resolve and continue**: edit the conflicted files, `git add`, then `git rebase --continue`. The default.
+   - **Skip this commit**: `git rebase --skip` drops the commit, which is destructive: a human gate, so ask the person first.
    - **Abort the rebase**: `git rebase --abort` returns to the pre-rebase state and is safe.
 
 3. When resolving, follow the content-conflict flow above (`git checkout --ours/--theirs` or a manual edit, then `git add`, then `git rebase --continue`).
@@ -203,7 +200,7 @@ If the user gave context, use it. If not, ask:
    git log origin/{branch}..HEAD --oneline    # commits you have that aren't on remote
    ```
 
-2. Present the options, ranked by safety:
+2. Pick the first option that fits, in order of safety:
 
    **[1] Pull with merge** (safest, creates a merge commit):
 
@@ -223,7 +220,7 @@ If the user gave context, use it. If not, ask:
 
    This reapplies your commits on top of the remote for a linear history. It is safe only when the branch is yours alone, because the rebase rewrites your local commits, which is fine if no one else has them.
 
-   **[3] Force push** (dangerous: only with the user's explicit opt-in, and only on unshared branches):
+   **[3] Force push** (dangerous and a human gate: ask the person, never run it unasked, and only on unshared branches):
 
    ```bash
    # Confirm the branch is unshared before running this.
@@ -304,7 +301,7 @@ If the user gave context, use it. If not, ask:
    git stash list                      # list of stashes
    ```
 
-2. Options:
+2. Options (resolve by default; abort when the conflict is not clear):
 
    **[1] Resolve manually**: edit the conflicting files (same content-conflict flow), then:
 
@@ -393,7 +390,7 @@ If the user gave context, use it. If not, ask:
 
 4. Do not `git commit --amend` here. The hook rejected the commit, so it does not exist, and `--amend` would mutate the previous commit and destroy context. Make forward commits only (Critical Rule #6 in `AGENTS.md`).
 
-5. Do not `git commit --no-verify` to bypass the hook unless the user explicitly authorises it. The hooks are the repo's quality gate.
+5. Do not `git commit --no-verify` to bypass the hook: it is a human gate, so only the person's explicit yes authorises it. The hooks are the repo's quality gate.
 
 **Prevention**: run the hooks' commands locally before committing (`bun run lint:check`, `bun run types:check`, and so on). That is faster than finding out at commit time.
 
@@ -432,10 +429,10 @@ The reflog is the safety net. A commit disappears only after `git gc` runs (defa
 
 ## With nobody at the keyboard
 
-The waits here are the choice among ranked options, the skip-commit confirmation, the force-push opt-in and every emergency command. `agentic-qa-core/references/decision-protocol.md` says which of them reach a person.
+The only stops here are the human gates: a conflict whose sides disagree on product behaviour, a skip that drops commits, a force push, `reset --hard`, `--no-verify`, discarding someone else's work and every emergency command. `.agents/skills/edd/references/human-gates.md` is the closed list.
 
 | Who runs it | The gate |
 | --- | --- |
-| A person is present | Unchanged. |
-| A supervised worker | The conductor or launcher holds the gate and picks the option. The worker diagnoses, lists the options and reports. |
-| A routine with nobody | The delegating brief is the approval source when it covers the decision. Without one, do the reversible work (diagnose, resolve a content conflict, make a forward commit locally), abort anything unresolved, and stop before a force push, `--skip`, `reset --hard`, `--no-verify` or any push; report what is waiting. |
+| A person is present | Resolve as written; ask only at a gate above. |
+| A supervised worker | Resolve as a person would. An item on the gate list goes to the launcher as a question with options, and only that change waits. |
+| A routine with nobody | Same. Resolve non-destructive conflicts, push under the push policy and the evidence gate, abort anything unresolved. A force push, a `--skip` that drops commits, `reset --hard`, `--no-verify` or a discard of others' work goes to the launcher as a question with options; report what is waiting. |

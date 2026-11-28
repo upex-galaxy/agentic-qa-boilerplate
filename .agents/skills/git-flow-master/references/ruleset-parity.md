@@ -54,7 +54,7 @@ Derived from the strategy shape, then unioned with whatever `protected:` already
 
 ### 2b. Accepted divergences: intended disagreement, formally declared
 
-Sometimes both sides are right on purpose: this boilerplate declares `direct_push_to_protected: allowed` (how work actually lands: the admin credential is on the bypass list) while the host keeps a `pull_request` rule (protecting every non-bypass contributor). The pair is a decision to record, and there is no drift to fix.
+Sometimes both sides are right on purpose: a repo can declare `direct_push_to_protected: allowed` (how work actually lands: the admin credential is on the bypass list) while the host keeps a `pull_request` rule (protecting every non-bypass contributor). The pair is a decision to record, and there is no drift to fix.
 
 Declare it in `.agents/project.yaml`:
 
@@ -162,7 +162,7 @@ A tool that can silently open `main` is a worse problem than the drift it fixes.
 
 Read a `verify` failure before running `apply`. Drift has three resolutions and only one of them changes the host: the yaml may be the wrong side, or the divergence may be intended, in which case record it in `git_strategy.policy.accepted_divergences` (§2b) with a reason, and summarize the WHY in the project's own `.agents/instructions/agent-project.md` → `## Git Strategy (this repository)` if it needs prose context.
 
-`apply --yes` writes to the host, an outward action. With a person present, show the dry run and get a yes. A supervised worker leaves the yes to its conductor. A routine runs `verify` and the dry run, then stops and reports unless the delegating brief names the `apply`; `--allow-loosening` always needs a person or a brief that names it (`agentic-qa-core/references/decision-protocol.md`).
+`apply --yes` writes to the host, an outward action. Writing host protection is a human gate (`.agents/skills/edd/references/human-gates.md`): with a person present, show the dry run and get a yes. A supervised worker sends the question, with the dry run, to its launcher. A routine runs `verify` and the dry run, then stops and reports unless the delegating brief names the `apply`; `--allow-loosening` always needs a person or a brief that names it (`agentic-qa-core/references/decision-protocol.md`).
 
 
 ## 6. Worked example: the drift this tool was built from

@@ -43,7 +43,11 @@ Render this as written, substituting the placeholders:
 - Base: `{base}`
 - Strategy: `{strategy}`
 
-## Evidence
+<<EDD_RECORD>>
+
+<<READY_BLOCK>>
+
+### Before and after
 
 <<EVIDENCE>>
 
@@ -64,14 +68,16 @@ Render this as written, substituting the placeholders:
 | `{branch}`      | Current branch name (computed by the skill).                                                                                                                                                                               |
 | `{base}`        | PR base branch (resolved from the strategy, see the table below).                                                                                                                                                             |
 | `{strategy}`    | Active strategy slug (`solo-main`, `main-integration`, etc.). Helps reviewers understand the merge target.                                                                                                                 |
-| `<<EVIDENCE>>`  | Pointer to `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/evidence/` when applicable (screenshots, traces, logs). For backend/CLI PRs without visual evidence, leave the placeholder so the author can fill it in or delete it. |
+| `<<EDD_RECORD>>` | The output of `bun run edd render --pr`, pasted as printed; it opens with its own `## Evidence` heading and marker. Under policy `evidence` it prints the local record the pre-push gate wrote; under any other policy it prints a fresh verification of the head. The CI verifier (the "EDD Evidence" workflow) posts the same block as its own PR comment and keeps it current: that comment is the copy a reader sees. Never hand-write the record. |
+| `<<READY_BLOCK>>` | The agent's checklist from `pr-loop.md` section 5: required checks green with `edd/evidence` among them, review-bot rounds clean or capped, every comment answered, resolved and reacted, labels, assignee, a reviewer only under `human-approves`, the tracker link when an issue key exists, a conventional title under 70 characters. Regenerate it whenever a precondition changes. The machine status is the record's `Ready:` line, not this block. |
+| `<<EVIDENCE>>`  | The human-readable part (see Evidence below). Pointer to `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/evidence/` when applicable (screenshots, traces, logs). For backend/CLI PRs without visual evidence, leave the placeholder so the author can fill it in or delete it. |
 | `<<RISK>>`      | The merge danger, two lines (`**Door:**` one-way or two-way, `**Blast radius:**` in a word or two), each with optional detail; see Merge danger below.                                                                                                                                       |
 
 A padded section invites skim-reads, so write each one at the size its content needs.
 
 ### Evidence
 
-Show a before and after: what the change did not do, then what it does. Rank by weight:
+The `## Evidence` section has three parts. The record is machine output and says what ran; it sits here or in the verifier's PR comment (`<<EDD_RECORD>>` above). The ready block is the agent's checklist of the preconditions it made true (`pr-loop.md` section 5). `### Before and after` is the part a person reads to see the change work. In it, show a before and after: what the change did not do, then what it does. Rank by weight:
 
 1. Screenshots, when the environment allows it and the change is visual. These carry the most weight.
 2. Execution output: a test run, console output. Name the exact test that failed before and passes now, in a line of pseudocode.
@@ -99,14 +105,12 @@ The blast radius is one word for the scope of impact (`docs`, `one module`, `all
 | `gitlab-flow`      | `main`                                                           | Promotion MRs target `pre-production`, then `production`.       |
 | `sdet`             | integration trunk `test/<module>-suite` for `test/{KEY}-*` + Plus Branches | The single final suite PR targets `main` (after the sync gate) and uses the `pr-test-automation.md` body. See `sdet-integration-trunk.md`. |
 
-The user can override with `--base X` in arguments. When overridden, surface it in the confirmation:
-
-> _"PR will target `{base}` instead of the strategy default `{default}`. Confirm?"_
+The user can override with `--base X` in arguments. When overridden, target `{base}`, write `Base: {base} (strategy default: {default})` in Traceability, and say so in the report.
 
 
 ## Labels
 
-Suggest labels based on the dominant commit type:
+Pick labels from the dominant commit type:
 
 | Type                                                           | Label                                        |
 | -------------------------------------------------------------- | -------------------------------------------- |
@@ -117,26 +121,19 @@ Suggest labels based on the dominant commit type:
 | `chore:` / `refactor:` / `style:` / `test:` / `build:` / `ci:` | `chore`                                      |
 | Breaking change (`!`)                                          | `breaking-change`                            |
 
-Combine the type label with `ready-for-review`, or propose `--draft` when the user wants a draft PR.
+Add `ready-for-review` to the type label on a PR that is not a draft.
 
-Repos differ, so run `gh label list` when unsure before applying a label, and treat the table as suggestions the repo may not have configured. When a label is missing, ask whether to create it or skip it.
+The table maps types to names the repo may not have. Run `gh label list` before applying any label and keep only names it returns, because `--add-label` drops a missing label without an error. Skip a missing label and name it in the ready block; never create one. Labels and assignee are set right after the PR opens (`pr-loop.md` section 1).
 
 
 ## Reviewers
 
-- If `.github/CODEOWNERS` exists and matches the modified paths, suggest the matched owners.
-- Otherwise ask the user. Usernames come from the repo's CODEOWNERS or the user, because teams change.
-
-For solo-main / personal projects, reviewers are usually skipped.
+Request a reviewer only when `git_strategy.policy.merge_mode` in `.agents/project.yaml` is `human-approves`. The reviewers are the owners `CODEOWNERS` matches for the modified paths. When nobody can be resolved (no `CODEOWNERS`, no match, or only the author matches), request nobody and name the gap in the ready block. Under `auto` and `manual`, request no reviewer.
 
 
 ## Draft vs ready-for-review
 
-Open as `--draft` when:
-
-- The implementation is intentionally incomplete (early feedback wanted).
-- CI is expected to fail until follow-up commits land.
-- The user explicitly says "draft".
+Open as `--draft` only when the change is knowingly incomplete: follow-up commits are still due, or the user said "draft". A draft gets no auto-merge; once the missing work lands, `gh pr ready <n>` and run the merge enable in `pr-loop.md` section 2.
 
 Otherwise open as ready-for-review with the appropriate label.
 
@@ -156,21 +153,21 @@ gh pr create \
   --title "{title}" \
   --body-file "$TMP" \
   --base "{base}" \
-  [--reviewer {users}] \
+  --assignee {owner} \
   [--label {labels}] \
+  [--reviewer {users}] \
   [--draft]
 
 rm "$TMP"
 ```
 
-Show the rendered body and base branch to the user before running `gh pr create`, so they can edit, accept or reject it. With nobody present (a worker or a routine), the delegating brief authorises the PR when it names it; otherwise stop with the body written to a file and report, because opening a PR is an outward action (see `agentic-qa-core/references/decision-protocol.md`).
+Open the PR as soon as the body is rendered: the body, base and labels are the agent's call, reported in the PR itself. `[--reviewer]` applies only under `human-approves` (Reviewers above). A worker, a routine or a cloud session opens it the same way.
 
 
 ## After creation
 
 - Return the PR URL.
-- Surface the next step: _"Review the PR. Once approved, merge via the GitHub UI or run `gh pr merge {number} {merge-flag}`."_ The flag comes from `SKILL.md` §3.4 "Which merge flag": `--merge` for every PR on an `sdet` suite (never `--squash` into the trunk), otherwise the one matching `git_strategy.decisions.feature_merge`.
-- Leave the merge to the user: it is a separate, explicit action, never part of opening the PR.
+- Run `pr-loop.md`: metadata, merge enable (`bun run git:policy verify --merge <base>` first), the watcher, the review-bot loop, the ready block, the announcement and the close-out. Whether a person approves or merges is `git_strategy.policy.merge_mode` in `.agents/project.yaml`, never a question at PR open.
 
 
 ## Worked example
@@ -211,7 +208,22 @@ model with unit tests; UI uses the existing table-action slot.
 - Base: `staging`
 - Strategy: `main-integration`
 
+<!-- edd-evidence -->
 ## Evidence
+
+**Result: PASS** for `3f2a9c1b7d04` (pre-push, pr), depth `light`, ...
+
+### Ready to merge
+
+- [x] Required checks green, `edd/evidence` included
+- [x] Review bot: not configured
+- [x] Every comment answered, resolved and reacted
+- [x] Labels set
+- [x] Assignee set
+- [x] Tracker link in the body
+- [x] Title conventional, under 70 characters
+
+### Before and after
 
 See `.context/PBI/epics/EPIC-UPEX-100-<epic-slug>/stories/STORY-UPEX-123-bulk-assign/evidence/` for the design
 walkthrough screenshots.

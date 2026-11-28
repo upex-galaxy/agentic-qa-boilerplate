@@ -198,7 +198,7 @@ Three removal paths skip the audit on their own: `git worktree remove` without `
 - [ ] `bun run worktree:audit <path>` exits 0 (after `--rescue` and any hand-resolved conflict).
 - [ ] The branch's work is committed and pushed, or deliberately discarded.
 - [ ] `git worktree remove <path>` (or `ExitWorktree remove`) succeeds, which it does only when clean.
-- [ ] `git branch -d <branch>` once the branch is merged.
+- [ ] `git branch -d <branch>` once the branch is merged and not checked out in any worktree. Never switch a shared checkout's branch just to delete one.
 - [ ] `git worktree prune` if any directory was removed by hand.
 - [ ] Local `info/exclude` entries are cleaned up if the worktree path is gone for good.
 
@@ -228,16 +228,16 @@ When an AI session needs isolation from in-progress work on another branch:
 3. Keep the primary repo's `git status` clean, and check it with `git -C <primary> status`.
 4. Hide the nested worktree from the primary tree through the local `info/exclude`.
 5. Do all further work (edits, verifies, commits) in the worktree. The other branch stays untouched.
-6. On completion, commit on the worktree's branch, open its own PR, run `bun run worktree:audit --rescue` from the worktree, then `ExitWorktree` (`keep` to preserve, `remove` when merged or abandoned, and only once the audit exits 0).
+6. On completion, commit on the worktree's branch, open its own PR (`references/pr-loop.md`), run `bun run worktree:audit --rescue` from the worktree, then `ExitWorktree` (`keep` to preserve, `remove` when merged or abandoned, and only once the audit exits 0).
 
 ---
 
 ## With nobody at the keyboard
 
-The waits here are the choice of worktree, the discard confirmation (`--force`, `discard_changes: true`) and the audit's UNKNOWN and CONFLICT entries. Which of them reach a person is set by `agentic-qa-core/references/decision-protocol.md`.
+Choosing a worktree is the agent's call, made and reported. Removing one after a clean orphan audit (`bun run worktree:audit --rescue` exits 0) goes ahead and is reported. The one stop is a removal with `--force` or `discard_changes: true` over uncommitted, UNKNOWN or CONFLICT content: it destroys work, so it is human gate 2 in `.agents/skills/edd/references/human-gates.md`. Whether it reaches a person is set by `agentic-qa-core/references/decision-protocol.md`.
 
 | Who runs it | The gate |
 | --- | --- |
-| A person is present | Unchanged. |
-| A supervised worker | The conductor or launcher holds the removal gate. The worker audits, rescues and reports, and does not remove. |
-| A routine with nobody | The delegating brief is the approval source when it covers removal. Without one, create and provision worktrees (reversible), run the audit and `--rescue`, and stop before removal or any discard; list the UNKNOWN and CONFLICT entries in the report. |
+| A person is present | The person answers the forced removal or discard. |
+| A supervised worker | The worker chooses and creates the worktree, audits and rescues, and removes it once the audit exits 0. A forced removal or discard goes to its launcher as a question with options; the worker does not run it on its own. |
+| A routine with nobody | Same as a worker, with the delegating brief as the approval source for a forced removal or discard when it covers one. Without one, stop before it and list the UNKNOWN and CONFLICT entries in the report. |

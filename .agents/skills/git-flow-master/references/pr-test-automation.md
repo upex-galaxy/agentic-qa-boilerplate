@@ -21,7 +21,11 @@
 - ATR: <<ATR_LINK>>
 - TCs covered: <<TC_LIST>>
 
-## Evidence
+<<EDD_RECORD>>
+
+<<READY_BLOCK>>
+
+### Before and after
 
 <<EVIDENCE>>
 
@@ -37,4 +41,4 @@
 - [ ] No AI attribution in commits
 - [ ] Traceability links verified
 
-`<<EVIDENCE>>` and `<<RISK>>` follow the rules in `pr-templating.md` (Evidence ranked by weight; Merge danger as door plus blast radius). A test-only PR is usually a two-way door with a blast radius of `tests`, unless it changes a shared fixture or the CI configuration.
+`<<EDD_RECORD>>`, `<<READY_BLOCK>>`, `<<EVIDENCE>>` and `<<RISK>>` follow the rules in `pr-templating.md` (the record is the output of `bun run edd render --pr` with its own `## Evidence` heading, and the CI verifier's PR comment is the reader's copy; never hand-written; the ready block comes from `pr-loop.md`; Evidence ranked by weight; Merge danger as door plus blast radius). A test-only PR is usually a two-way door with a blast radius of `tests`, unless it changes a shared fixture or the CI configuration.

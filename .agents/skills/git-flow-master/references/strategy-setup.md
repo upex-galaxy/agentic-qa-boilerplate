@@ -49,12 +49,23 @@ The defaults (ff-only, merge-commit, branch-off-prod-backmerge) are the `main-in
 ### Q4: protected-branch bypass policy
 
 - **Applies to**: all strategies. A solo `main` is still a protected branch, so Q4 is never skipped for strategy reasons.
-- **Drives**: the Push operation (SKILL.md 3.3), meaning how strictly a direct push to a protected branch is guarded and whether an admin bypass may be offered at all.
+- **Drives**: the Push operation (SKILL.md 3.3), meaning how a direct push to a protected branch is gated, how a PR reaches the base (Open PR operation) and whether an admin bypass may be offered at all. The doctrine behind the values is `.agents/skills/edd/` (SKILL.md and `references/flows.md`); this file only records the answers.
 - **Sub-questions** (defaults are per strategy, see "git_strategy field rules (per strategy)" in `references/branching-strategies.md`):
-  1. **`direct_push_to_protected`**: `forbidden` | `confirm` | `allowed`. `allowed` is standing authorization, so the recorded value is the authorization and no per-push confirm happens. `confirm` always asks. `forbidden` refuses the direct push and redirects to the PR flow. Default per strategy: `solo-main` is `allowed`; the multi-branch strategies (`main-integration` / `enterprise` / `gitflow` / `github-flow` / `trunk-based` / `gitlab-flow`) are `forbidden`; `sdet` is `confirm` (trunk self-merge).
-  2. **`admin_bypass`**: `true` | `false`, default `false`. May a repo admin bypass PR protection for an urgent change? This records team policy, not an enforcement check; the real capability depends on the GitHub user's role. With `true`, the Push op may offer a bypass but re-confirms at runtime that the operator actually holds admin rights (ask, because the skill cannot know the role) and that the action is irreversible. With `false`, no bypass is offered whatever the role.
-  3. **`require_pr_reviews`**: `null` | `0` | `N`, the minimum approvals before merge to a protected branch. It records the team's intent; Section 4.5 can materialize it onto the host in the same run, and `bun run git:policy verify` confirms the host enforces it. Default `null` for solo-main (`0`), and a strategy-appropriate value otherwise (typically `1` for multi-branch flows; `0` on the sdet trunk and `1` on the final sdet PR).
-- **Persisted as**: `git_strategy.policy.direct_push_to_protected`, `git_strategy.policy.admin_bypass` and `git_strategy.policy.require_pr_reviews`.
+  1. **`direct_push_to_protected`**: `forbidden` | `confirm` | `allowed` | `evidence`.
+     - `forbidden`: never direct-push, route through a PR, no question.
+     - `confirm`: ask before every push. A team chose it, so the ask stays.
+     - `allowed`: standing authorization. The recorded value is the authorization, no gate and no question.
+     - `evidence`: push without asking only when the pre-push gate passes (the hook runs `bun run edd gate` itself). On a failed gate there is no push and no question: fix forward and retry.
+     - A missing or null value, or a missing block, reads as `evidence`.
+     - Default per strategy: `solo-main` is `evidence`; every PR strategy (`main-integration`, `enterprise`, `gitflow`, `github-flow`, `gitlab-flow`, `trunk-based`, `sdet`) is `forbidden`.
+  2. **`merge_mode`**: `auto` | `human-approves` | `manual`. Default `auto` for every PR strategy.
+     - `auto`: the agent runs `gh pr merge --auto --<method>` at PR open and GitHub merges when the required checks, including `edd/evidence`, pass. Zero approvals.
+     - `human-approves`: same call, but the ruleset requires a person's approval. Choosing it means `CODEOWNERS` must cover the gate paths (`evidence.human.paths` in `.agents/project.yaml`): when an entry is missing, add it as an ordinary commit and report it. `git:policy` only reports on `CODEOWNERS`; it does not manage the file.
+     - `manual`: the agent opens the PR and stops. A person merges.
+     - A missing or null value reads as `auto` for `verify`. The merge method comes from `git_strategy.decisions.feature_merge` (Q2), merge commit when it is `n/a` or missing.
+  3. **`admin_bypass`**: `true` | `false`, default `false`. May a repo admin bypass PR protection for an urgent change? This records team policy, not an enforcement check; the real capability depends on the GitHub user's role. With `true`, the Push op may offer a bypass but re-confirms at runtime that the operator actually holds admin rights (ask, because the skill cannot know the role) and that the action is irreversible. With `false`, no bypass is offered whatever the role.
+  4. **`require_pr_reviews`**: `null` | `0` | `N`, the minimum approvals before merge to a protected branch. It records the team's intent; Section 4.5 can materialize it onto the host in the same run, and `bun run git:policy verify` confirms the host enforces it. It follows `merge_mode`: under `auto`, `git:policy` derives 0 required approvals whatever this field says; under `human-approves` it derives the larger of 1 and this value. Default `0` for `solo-main`, where no PR is required, and a strategy-appropriate value otherwise.
+- **Persisted as**: `git_strategy.policy.direct_push_to_protected`, `git_strategy.policy.merge_mode`, `git_strategy.policy.admin_bypass` and `git_strategy.policy.require_pr_reviews`.
 
 Q4 has no single global default. Each sub-field's default comes from the resolved strategy, so show each one first and let the user override.
 
@@ -65,7 +76,7 @@ Q4 has no single global default. Each sub-field's default comes from the resolve
 - **Q1 (promotion)** does not apply. There is no production deploy, and `main` holds confirmed tests. The final `trunk` to `main` PR follows the repo's allowed merge method (prefer merge-commit to keep the multi-branch look; squash collapses the suite). Leave `git_strategy.decisions.promote_method: n/a`.
 - **Q2 (work-branch merge)** is fixed at `merge-commit` (`--no-ff`): set `git_strategy.decisions.feature_merge: merge-commit`. Do not offer squash or rebase, because keeping per-ticket history is what defines `sdet`.
 - **Q3 (hotfix)** does not apply. Leave `git_strategy.decisions.hotfix_policy: n/a`.
-- **Q4 (protection policy)** is asked as for every strategy. The `sdet` defaults are `git_strategy.policy.direct_push_to_protected: confirm` (the maintainer self-merges the trunk), `git_strategy.policy.admin_bypass: false`, and `git_strategy.policy.require_pr_reviews: 0` on the trunk and `1` on the final `trunk` to `main` PR.
+- **Q4 (protection policy)** is asked as for every strategy. The `sdet` defaults are `git_strategy.policy.direct_push_to_protected: forbidden`, `git_strategy.policy.merge_mode: auto`, `git_strategy.policy.admin_bypass: false`, and `git_strategy.policy.require_pr_reviews: 0` (the final `trunk` to `main` PR follows `merge_mode`; the sdet reference says how each PR merges).
 
 So Strategy Setup for `sdet` sets `git_strategy.strategy: sdet`, `git_strategy.decisions.feature_merge: merge-commit` and the `sdet` Q4 `policy` defaults. The other `decisions.*` stay `n/a`, `branches.integration` stays null, and `branches.ephemeral_pattern` is `"test/<module>-suite"`. Setup materializes nothing else, because the trunk is per suite and the Branch operation creates it on demand. The per-suite detail is in `references/sdet-integration-trunk.md`.
 
@@ -89,13 +100,13 @@ For the resolved strategy, make sure the long-lived branches in this table exist
 **Branch-creation rules**:
 
 - `solo-main`, `github-flow` and `trunk-based` ensure `main` only. On a normal repo there is nothing to create, and they never get an integration branch.
-- `main-integration`: if the integration branch is missing, ask its name (default `staging`), then propose creating it off `main` and ff-syncing it (Section 3).
+- `main-integration`: if the integration branch is missing, ask its name (default `staging`), then create it off `main` and ff-sync it (Section 3).
 - `gitflow`: ensure `develop`, created off `main` if missing. `release/*` and `hotfix/*` wait for the Branch operation.
 - `gitlab-flow`: ensure `pre-production` and `production`, created off `main` in pipeline order if missing.
 - `enterprise`: ensure integration off `main`. `release/*` and `feature/*` are on demand only.
 - `sdet`: ensure `main` only and create no integration branch. The per-suite trunk `test/<module>-suite` is created off `main` by the Branch operation when a suite starts and deleted after the final PR. It is never ff-synced, because it carries `--no-ff` merge commits by design.
 
-Propose each branch creation (which branch, off what, why) and wait for the OK. A silent `git checkout -b` or `git branch` takes a decision that belongs to the operator.
+The accepted questionnaire is the decision: create each branch the answers imply without a second OK, and report each one in the closing report (which branch, off what, why). A strategy change is a human gate, so the offer and the questionnaire stay asked; only the materialization inside an accepted setup needs no further approval.
 
 ---
 
@@ -128,7 +139,7 @@ For the local checkout of the behind branch, `git merge --ff-only <ahead-ref>` i
 ### 3.3 Hard rules
 
 - No `--force` and no `--force-with-lease` in a setup sync. A sync is a fast-forward or it is not a sync.
-- A push to a protected branch (integration or production) needs explicit confirmation first, and a setup ff-sync push is still a push.
+- A setup ff-sync push to a protected branch follows `git_strategy.policy.direct_push_to_protected` like any other push (SKILL.md 3.3). Under `forbidden` the sync goes through a PR; under `confirm` the ask stays.
 - A pair diverged both ways goes to conflict resolution. Setup does not resolve conflicts itself.
 
 ---
@@ -140,9 +151,9 @@ Once branches are materialized and decisions captured, persist in this order:
 1. **Write the `git_strategy:` block in `.agents/project.yaml`.** Create the block if absent, overwrite the relevant fields if it exists, and keep the rest of the file, which holds project identity and environment config. Write values only, no comments: the file is loaded into every session and `.agents/project.schema.yaml` documents each key (ADR-0025). Fill the fields that apply to the resolved strategy, all nested under `git_strategy`:
    - `strategy`: the resolved slug.
    - `branches`: `production` (release/default branch), `integration` (long-lived integration branch name or `null`), `ephemeral_pattern` (strategy-specific on-demand trunk pattern or `null`).
-   - `protected`: branches whose direct pushes are gated by `policy.direct_push_to_protected` (not always a confirm, since `allowed` is standing authorization).
+   - `protected`: branches whose direct pushes are governed by `policy.direct_push_to_protected`.
    - `decisions`: `promote_method` / `feature_merge` / `hotfix_policy`, each captured from Q1 to Q3 or left `n/a` when the question does not apply.
-   - `policy`: `direct_push_to_protected` / `admin_bypass` / `require_pr_reviews`, captured from Q4 (every strategy, per-strategy defaults).
+   - `policy`: `direct_push_to_protected` / `merge_mode` / `admin_bypass` / `require_pr_reviews`, captured from Q4 (every strategy, per-strategy defaults).
    - `branch_prefixes`: `precedence` plus naming patterns, with the defaults unless the user overrides.
    - `description`: the one-paragraph human summary of the flow for this repo.
    - `meta.created`: the date of the run. Bump `meta.setup_version` on a re-run that changes the schema. Leave `meta.policy_verified: null` and `meta.policy_source: declared`; only a clean `bun run git:policy verify --stamp` changes them (Section 4.5).
@@ -199,7 +210,8 @@ Decisions captured:
   - hotfix_policy:  <value | n/a>
 
 Policy captured (Q4, intent until verified against the host):
-  - direct_push_to_protected: <forbidden | confirm | allowed>
+  - direct_push_to_protected: <forbidden | confirm | allowed | evidence>
+  - merge_mode:               <auto | human-approves | manual>
   - admin_bypass:             <true | false>
   - require_pr_reviews:       <null | 0 | N>
 
@@ -219,10 +231,10 @@ If a diverged pair stopped the sync, the report states the divergence and points
 
 ## With nobody at the keyboard
 
-This flow asks a person for the questionnaire answers, each branch-creation OK, each push confirmation and the ruleset write. The decision protocol (`agentic-qa-core/references/decision-protocol.md`) decides which of those reach a person.
+This flow asks a person for the questionnaire answers (a strategy change is a human gate) and the ruleset write (`apply --yes`, `--allow-loosening`). Branch creation inside an accepted setup and pushes under the declared push policy need no ask. The decision protocol (`agentic-qa-core/references/decision-protocol.md`) and `.agents/skills/edd/references/human-gates.md` decide which items reach a person.
 
 | Who runs it | The gate |
 | --- | --- |
 | A person is present | Ask as written above. |
-| A supervised worker | The conductor or launcher answers the questions and gives the OK; the worker reports what it needs and waits. |
-| A routine with nobody | The delegating brief is the approval source when it names the strategy and answers. Without one, write nothing: the questionnaire defaults, the branch proposals and the `verify` drift are reported, and no branch is created, nothing is pushed and `apply --yes` is not run. |
+| A supervised worker | The worker sends the questionnaire and the ruleset write to its launcher as a question with options, and only that change waits. |
+| A routine with nobody | The delegating brief is the approval source when it names the strategy and answers. Without one, write nothing: the questionnaire defaults, the branches the answers would imply and the `verify` drift are reported, and no branch is created, nothing is pushed and `apply --yes` is not run. |

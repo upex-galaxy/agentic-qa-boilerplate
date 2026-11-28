@@ -36,7 +36,7 @@ Source branch for new work: `main`.
 
 PR base: `main`, when PRs are used at all (solo-main often skips them).
 
-Protected branches: `main`. A direct push follows `git_strategy.policy.direct_push_to_protected` (`allowed` = push without asking, `confirm` = ask every push, `forbidden` = PR).
+Protected branches: `main`. A direct push follows `git_strategy.policy.direct_push_to_protected` (SKILL.md 3.3).
 
 Release model: continuous; every push is a release.
 
@@ -63,7 +63,7 @@ Source branch for new work: the integration branch (for example `staging`).
 
 PR base: the integration branch by default. Promotion PRs (`staging` to `main`) target `main`.
 
-Protected branches: `main` and the integration branch. Confirm before any direct push to either.
+Protected branches: `main` and the integration branch. A direct push to either follows `git_strategy.policy.direct_push_to_protected` (SKILL.md 3.3).
 
 Release model: the integration branch is always deployable to a staging environment; `main` deploys to production on a release event.
 
@@ -105,7 +105,7 @@ Source branch for new work:
 
 PR base: integration; `hotfix/*` goes to `main`; `release/*` goes to `main` (with a back-merge to integration).
 
-Protected branches: `main`, integration, `release/*`. Confirm before any direct push.
+Protected branches: `main`, integration, `release/*`. A direct push follows `git_strategy.policy.direct_push_to_protected` (SKILL.md 3.3).
 
 Release model: release branches stabilise; the release PR merges to `main` and triggers the production deploy.
 
@@ -197,7 +197,7 @@ Source branch for new work: `main`.
 
 PR base: `main`.
 
-Protected branches: `main`, with required status checks and at least one review.
+Protected branches: `main`, with required status checks (`edd/evidence` included). Approvals follow `git_strategy.policy.merge_mode`.
 
 Release model: every merge to `main` deploys. Tags are optional, used for marketing versions.
 
@@ -261,11 +261,11 @@ PR base:
 - Ticket branches and Plus Branches: the integration trunk.
 - The final suite PR: `main`, the only PR that faces `main`'s rulesets.
 
-Protected branches: `main` (the final PR needs review and green CI, with no CI-fallback). The trunk is protected by convention while alive; the maintainer self-merges intermediate ticket and Plus PRs with no ruleset friction.
+Protected branches: `main` (the final PR needs green CI, `edd/evidence` included, with no CI-fallback, and merges per `git_strategy.policy.merge_mode`). The trunk is protected by convention while alive and carries no ruleset by default, so an intermediate ticket or Plus PR waits for `edd/evidence` to pass through the watcher and is then merged with `gh pr merge --merge`, never `--auto`. When the trunk does carry a ruleset with required checks and `bun run git:policy verify --merge <trunk>` exits 0, `--auto` applies there too.
 
 Merge methods (fixed, not a questionnaire choice): ticket and Plus PRs into the trunk are always `--no-ff`, never squash, to preserve per-ticket history. The trunk to `main` follows the repo's allowed merge method; prefer a merge commit to keep the multi-branch look. Squash collapses the suite to one commit on `main` (the chain still lives on the pushed trunk).
 
-Release model: per suite. Tickets accumulate on the trunk behind Sanity CI and review. A sync gate (`git merge origin/main`) runs before the final PR so the diff against `main` shows only this suite's test work. "Automated" means running in CI on `main` after the final merge, never at trunk-merge time.
+Release model: per suite. Tickets accumulate on the trunk behind Sanity CI and review. A sync gate (`git merge origin/main`) runs before the final PR so the diff against `main` shows only this suite's test work, then a fresh `bun run edd attest --depth <highest depth of the children>` on the trunk tip (`.agents/skills/edd/references/flows.md` Flow 3). "Automated" means running in CI on `main` after the final merge, never at trunk-merge time.
 
 CI-fallback clause: when a Sanity-CI red is purely infra or a known flake (proven by a local pass on both `local` and `staging`, and by the red being present independent of the change), the local double-pass authorizes merging into the trunk only, never the final `trunk` to `main` PR. It leaves the tests, types, lint order of Critical Rule 7 intact (the local gate still passes in full) and only governs whether a remote infra-red blocks a trunk-internal merge. `/regression-testing` owns the ENVIRONMENT-class classification.
 
@@ -287,7 +287,7 @@ git_strategy:
 Trade-offs:
 
 - Pros: per-ticket scoped diffs (review is useful); per-ticket Sanity CI; no ruleset friction on intermediate merges; one clean consolidated PR to `main`; `--no-ff` keeps the suite's commit topology.
-- Cons: an extra branch layer; sync-gate ceremony before the final PR; the CI-fallback clause needs human judgment; assumes one maintainer per suite (intermediate PRs are self-merged).
+- Cons: an extra branch layer; sync-gate ceremony before the final PR; the CI-fallback clause needs human judgment; assumes one maintainer per suite (the agent merges intermediate PRs once `edd/evidence` passes).
 
 ---
 
@@ -354,7 +354,7 @@ When a planned change estimates over 400 changed lines (additions plus deletions
 
 ```
 Q1: Is the change mostly mechanical (rename, formatter, generated code, vendor update)?
-├─ Yes → size-exception (requires explicit user override + Why size-exception: rationale)
+├─ Yes → size-exception (the agent's call, recorded as a Why size-exception: line in the PR body)
 └─ No  → continue to Q2
 
 Q2: Is the change linearly decomposable into 2–4 independent slices, each <400 lines,
@@ -386,8 +386,10 @@ The tree is a decision the agent makes from the diff, with no human sign-off nee
 Strategy outputs:
 
 - `stacked-to-main`: 2 to 4 PRs, each branched off the strategy's default base. Each PR is self-contained and the base works after each merge.
-- `feature-branch-chain`: one long-lived integration branch cut from the strategy's default base; child PRs merge into it; the final PR merges integration into base.
+- `feature-branch-chain`: one long-lived integration branch cut from the strategy's default base; child PRs merge into it; the final PR merges integration into base. Before opening that final PR, run `bun run edd attest --depth <highest depth of the children>` on the integration branch tip: a fresh attest, with the children's evidence commits left in the range (`.agents/skills/edd/references/flows.md` Flow 3).
 - `size-exception`: a single PR with an explicit `Why size-exception:` line. The reviewer is told upfront not to read line by line.
+
+When the diff exceeds the 400-line budget or touches shared scaffolding (KATA bases, fixtures, OpenAPI schemas), the agent runs `/judgment-day` before opening the PR and puts its verdict in the PR body. It is the agent's call, not an offer.
 
 The chosen plan is a contract for execution. If the actual diff exceeds the estimate, re-run the decision and replace the block; do not up-budget silently.
 
@@ -398,7 +400,7 @@ The chosen plan is a contract for execution. If the actual diff exceeds the esti
 | Aspect                       | solo-main  | main-integration | enterprise  | trunk-based  | gitflow     | github-flow | gitlab-flow | sdet               |
 | ---------------------------- | ---------- | ---------------- | ----------- | ------------ | ----------- | ----------- | ----------- | ------------------ |
 | Long-lived branches          | 1          | 2                | 3+          | 1            | 3+          | 1           | 2-4         | 1 (+ephemeral trunk) |
-| PR review required           | Optional   | Yes              | Yes         | Yes          | Yes         | Yes         | Yes         | Final PR only      |
+| Approval before merge        | n/a        | merge_mode       | merge_mode  | merge_mode   | merge_mode  | merge_mode  | merge_mode  | merge_mode (final PR) |
 | CI gate                      | Optional   | Yes              | Yes         | **Required** | Yes         | Yes         | Yes         | Yes (Sanity)       |
 | Feature flags                | No         | Optional         | Optional    | **Required** | Optional    | Optional    | Optional    | No                 |
 | Release-branch stabilisation | No         | No               | Yes         | No           | Yes         | No          | No          | No (per-suite trunk) |
@@ -417,9 +419,9 @@ The pieces of the old runbook map to fields like this:
 
 - Markers: `git_strategy.strategy`, `git_strategy.branches.integration` (or `ephemeral_pattern`) and the `git_strategy.decisions.*` that apply. Decisions a strategy does not use stay `n/a`.
 - Invariant: not persisted. `git_strategy.decisions.promote_method: ff-only` implies it ("production is an ancestor of integration" holds only for `ff-only`). The prose lives in the per-strategy section.
-- Branch roles: `git_strategy.branches.production`, `.integration` and `.ephemeral_pattern` capture the long-lived and ephemeral branches; `git_strategy.protected` lists the branches that need confirmation before a push. Work-branch prefixes live in `git_strategy.branch_prefixes`.
+- Branch roles: `git_strategy.branches.production`, `.integration` and `.ephemeral_pattern` capture the long-lived and ephemeral branches; `git_strategy.protected` lists the branches whose direct pushes `policy.direct_push_to_protected` governs. Work-branch prefixes live in `git_strategy.branch_prefixes`.
 - Merge methods, promotion, hotfix: `feature_merge` (work branch into integration or trunk), `promote_method` (integration into production), `hotfix_policy`. Command shapes are read from the catalogue above, not stored in the block.
-- Protection policy (Q4, applies to every strategy): `git_strategy.policy` holds `direct_push_to_protected` (`forbidden`, `confirm` or `allowed`), `admin_bypass` (the team's policy intent, not enforcement) and `require_pr_reviews`. The Push operation (SKILL.md 3.3) consumes it. Per-strategy defaults are in each block below.
+- Protection policy (Q4, applies to every strategy): `git_strategy.policy` holds `direct_push_to_protected` (`forbidden`, `confirm`, `allowed` or `evidence`; a missing value reads as `evidence`), `merge_mode` (`auto`, `human-approves` or `manual`; missing reads as `auto`), `admin_bypass` (the team's policy intent, not enforcement) and `require_pr_reviews`. The Push and Open PR operations (SKILL.md 3.3 and 3.4) consume it. Per-strategy defaults are in each block below: `solo-main` is `evidence`, every PR strategy is `forbidden` with `merge_mode: auto`.
 
 > `git_strategy.decisions.promote_method: ff-only` marks the fast-forward release model and the ancestor invariant. `merge-commit` or `squash` means the invariant does not hold, and the per-strategy section gives the alternative command shape.
 
@@ -443,12 +445,12 @@ git_strategy:
     feature_merge: n/a
     hotfix_policy: n/a
   policy:
-    direct_push_to_protected: allowed   # Q4 — solo dev pushes straight to main
+    direct_push_to_protected: evidence  # Q4 — solo dev pushes straight to main behind the pre-push gate
     admin_bypass: false                 # n/a in practice (single operator); kept false
     require_pr_reviews: 0
 ```
 
-Work lands on `main` directly, or through an optional PR to `main` when a review or CI gate is wanted. Q4 policy: direct push to `main` is `allowed` (standing authorization, no per-push confirm), no admin bypass, zero required reviews.
+Work lands on `main` directly, or through an optional PR to `main` when a review or CI gate is wanted. Q4 policy: direct push to `main` is `evidence` (no question; the pre-push gate decides), no admin bypass, zero required reviews.
 
 ### `github-flow` field rule (minimal)
 
@@ -472,11 +474,12 @@ git_strategy:
     hotfix_policy: n/a
   policy:
     direct_push_to_protected: forbidden   # Q4 — everything lands via PR
+    merge_mode: auto
     admin_bypass: false
-    require_pr_reviews: 1
+    require_pr_reviews: 0
 ```
 
-Every change is a short-lived `feature/*` or `fix/*` branch off `main`, then a PR to `main`. Q4 policy: direct push to `main` is `forbidden` (PR only), no admin bypass, 1 required review.
+Every change is a short-lived `feature/*` or `fix/*` branch off `main`, then a PR to `main`. Q4 policy: direct push to `main` is `forbidden` (PR only), `merge_mode: auto`, no admin bypass.
 
 ### `trunk-based` field rule (minimal)
 
@@ -500,11 +503,12 @@ git_strategy:
     hotfix_policy: n/a
   policy:
     direct_push_to_protected: forbidden   # Q4 — CI-gated PRs only
+    merge_mode: auto
     admin_bypass: false
-    require_pr_reviews: 1
+    require_pr_reviews: 0
 ```
 
-A short-lived branch (off `main`, under a day) gets a fast, CI-gated merge to the trunk. Record `feature_merge` only if Q2 was asked; otherwise leave `n/a`. Q4 policy: direct push to `main` is `forbidden` (the CI gate runs on PRs), no admin bypass, 1 required review.
+A short-lived branch (off `main`, under a day) gets a fast, CI-gated merge to the trunk. Record `feature_merge` only if Q2 was asked; otherwise leave `n/a`. Q4 policy: direct push to `main` is `forbidden` (the CI gate runs on PRs), `merge_mode: auto`, no admin bypass.
 
 ### `main-integration` field rule
 
@@ -530,8 +534,9 @@ git_strategy:
     hotfix_policy: branch-off-prod-backmerge # Q3
   policy:
     direct_push_to_protected: forbidden     # Q4 — main + staging are PR-only
+    merge_mode: auto
     admin_bypass: false
-    require_pr_reviews: 1
+    require_pr_reviews: 0
 ```
 
 - `decisions.promote_method: ff-only` means `main` stays an ancestor of `staging`, and the release is `git merge --ff-only staging`. For `merge-commit` or `squash` the invariant does not hold and the release command is `git merge --no-ff staging` (or `--squash`).
@@ -562,8 +567,9 @@ git_strategy:
     hotfix_policy: branch-off-prod-backmerge # Q3: hotfix off main, back-merge to develop
   policy:
     direct_push_to_protected: forbidden      # Q4 — main + develop are PR-only
+    merge_mode: auto
     admin_bypass: false
-    require_pr_reviews: 1
+    require_pr_reviews: 0
 ```
 
 > Field note: gitflow's `promote_method` is `merge-commit` by nature, because a `release/*` to `main` merge is a merge commit and never a fast-forward. Keep it as is and do not normalize it to the Q1 `ff-only` default. The gitflow invariant is the same-day back-merge to `develop`, not an ancestor relation. `release/*` and `hotfix/*` are on-demand branches (not stored in `branches:`); their roles and command shapes are in the `gitflow` section above.
@@ -593,8 +599,9 @@ git_strategy:
     hotfix_policy: branch-off-prod-backmerge # Q3: branch off production, forward-port up the chain
   policy:
     direct_push_to_protected: forbidden     # Q4 — env branches are promotion-only (ff), work via PR to main
+    merge_mode: auto
     admin_bypass: false
-    require_pr_reviews: 1
+    require_pr_reviews: 0
 ```
 
 - `branches.production` is `production`, not `main`: work integrates at `main` and production is the last environment. The `pre-production` and `production` branches carry the promotion chain; their roles and fast-forward promotion commands are in the `gitlab-flow` section above.
@@ -625,8 +632,9 @@ git_strategy:
     hotfix_policy: branch-off-prod-backmerge # Q3
   policy:
     direct_push_to_protected: forbidden     # Q4 — main + integration (+ release/*) are PR-only
+    merge_mode: auto
     admin_bypass: false
-    require_pr_reviews: 1
+    require_pr_reviews: 0
 ```
 
 `release/*`, `hotfix/*` and `feature/*` are on-demand branches, created by the Branch operation and not at setup. Their roles, the `release/*` to `main` promotion and the back-merge command shapes are in the `enterprise` section above.
@@ -655,12 +663,13 @@ git_strategy:
     feature_merge: merge-commit             # FIXED — ticket/Plus → trunk is always --no-ff, never squash
     hotfix_policy: n/a
   policy:
-    direct_push_to_protected: confirm       # Q4 — maintainer self-merges the trunk; main confirms
+    direct_push_to_protected: forbidden     # Q4 — every sdet change lands via PR
+    merge_mode: auto                        # the final trunk → main PR follows it with --merge
     admin_bypass: false
-    require_pr_reviews: 0                    # 0 on the trunk (self-merge); 1 on the final trunk → main PR
+    require_pr_reviews: 0
 ```
 
 - `git_strategy.branches.ephemeral_pattern` holds the per-suite trunk pattern (`test/<module>-suite`); `git_strategy.branches.integration` stays `null` because no fixed integration branch persists.
 - `git_strategy.decisions.feature_merge: merge-commit` is fixed (a defining property, never a questionnaire choice). `promote_method` and `hotfix_policy` stay `n/a`.
-- `git_strategy.policy`: `direct_push_to_protected: confirm` (the maintainer self-merges the trunk; pushes to `main` are confirmed), `admin_bypass: false`, `require_pr_reviews: 0` on the trunk and `1` on the final `trunk → main` PR.
+- `git_strategy.policy`: `direct_push_to_protected: forbidden`, `merge_mode: auto` (the final `trunk → main` PR merges with `--merge`), `admin_bypass: false`, `require_pr_reviews: 0`. A team that wants a person on the final PR sets `merge_mode: human-approves`.
 - The per-ticket loop, `--no-ff` ticket merges, Plus Branches, the sync gate, the single final `trunk → main` PR and the CI-fallback clause are not in the yaml. They live in `references/sdet-integration-trunk.md` and the `sdet` section above.

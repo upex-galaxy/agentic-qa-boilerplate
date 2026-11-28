@@ -4,21 +4,21 @@
     {
       "id": 1,
       "prompt": "I just finished work on UPEX-277 (empty states for the reservations module). Need to commit the 4 changed files and push the branch — there's no PR yet. Repo uses main + staging.",
-      "expected_output": "Skill detects main-integration strategy from layout (main+staging), persists strategy + branches into the git_strategy block of .agents/project.yaml (in place, never a separate file) if git_strategy.strategy is null, groups the 4 files into atomic conventional commits with scope UPEX-277, asks before pushing to current feature branch, and offers to open PR against staging next. No AI attribution. No git add -A.",
+      "expected_output": "Skill detects main-integration strategy from layout (main+staging), persists strategy + branches into the git_strategy block of .agents/project.yaml (in place, never a separate file) if git_strategy.strategy is null, groups the 4 files into atomic conventional commits with scope UPEX-277 without asking for approval of the commit set, ends each message with the Worktree and Session trailers, and pushes the feature branch. The push is not a protected-branch push, so no question is asked, and the pre-push hook runs its static subset. The evidence gate runs only when git_strategy.policy.direct_push_to_protected is evidence, and it verifies an evidence commit only on a push to a protected branch. A PR against staging is the next step the skill takes when asked, not a prompt it waits on. No AI attribution. No git add -A.",
       "should_trigger": true,
       "files": []
     },
     {
       "id": 2,
       "prompt": "abrime un PR para esta branch contra staging, label feature, ya está todo pusheado",
-      "expected_output": "Skill detects branch already pushed, renders inline PR body. For test/* branches it uses references/pr-test-automation.md as the structure; otherwise references/pr-templating.md. Picks staging as base (matches main-integration strategy), proposes feature + ready-for-review labels, runs gh pr create --body-file with tempfile, returns PR URL. Does not auto-merge.",
+      "expected_output": "Skill detects the branch is already pushed and builds the PR body (references/pr-test-automation.md for test/* branches, otherwise references/pr-templating.md) with the evidence block from bun run edd render --pr (the local record under policy evidence, a fresh verification of the head otherwise); the CI verifier's PR comment is the copy a reader sees. It never hand-writes the record. Base is staging (matches main-integration). It sets labels picked from gh label list (feature, never invented) and the assignee before review, without asking. It runs gh pr create --body-file with a tempfile, then bun run git:policy verify --merge staging; on exit 0 it runs gh pr merge --auto --merge, on failure it stops and tells the person. It arms the bundled watcher (pr-watch.sh start then wake), labels the terminal tab \"PR#<n> <previous title>\", and ends the turn. No question about labels, reviewers or the PR body. Reviewer is requested only under merge_mode human-approves.",
       "should_trigger": true,
       "files": []
     },
     {
       "id": 3,
       "prompt": "git status shows 'both modified' on tests/components/api/UsersApi.ts and 'deleted by them' on tests/components/api/LegacyUsersApi.ts after I tried to merge staging into my feature branch. Help me fix this.",
-      "expected_output": "Skill identifies a content conflict + a rename/delete conflict, follows the merge-conflict playbook from references/conflict-resolution.md (diagnose first, present options ranked by safety, never silently force/abort), guides resolution per file, verifies clean state with git status before exiting.",
+      "expected_output": "Skill identifies a content conflict + a rename/delete conflict, follows the merge-conflict playbook from references/conflict-resolution.md (diagnose first, then resolve the non-destructive conflicts itself: content merge where both intents are clear, a rename/delete decision from the two commits' intent), verifies a clean state with git status, and reports what it did. It asks the person only if the two sides disagree on product behaviour or if resolving would discard someone's work. It never forces and never resets --hard.",
       "should_trigger": true,
       "files": []
     },
@@ -46,7 +46,7 @@
     {
       "id": 7,
       "prompt": "the push got rejected with '! [rejected] test/UPEX-200 -> test/UPEX-200 (fetch first)'. what now?",
-      "expected_output": "Skill recognises push-rejected diagnostic, follows the push-rejected playbook (fetch + diff to show what's missing both ways, present pull-merge vs pull-rebase vs force-push-with-lease ranked by safety), warns that force-push is destructive and only acceptable on unshared branches with explicit opt-in, never executes force silently.",
+      "expected_output": "Skill recognises push-rejected diagnostic, follows the push-rejected playbook (fetch + diff to show what is missing both ways), picks pull-merge, or pull-rebase when the branch is the agent's own and unshared, resolves any conflict itself, and pushes under the push policy and the evidence gate. Force-push (even --force-with-lease) is a human gate: it is asked with the options and never executed silently.",
       "should_trigger": true,
       "files": []
     },
@@ -60,21 +60,21 @@
     {
       "id": 9,
       "prompt": "Brand new automation repo, just me writing Playwright specs. Run our git strategy setup — I'll only ever push to main, keep it dead simple.",
-      "expected_output": "Strategy Setup (3.6) runs. Resolves solo-main (single contributor, only main, simplicity). Creates NO integration branch (materialization table: solo-main = main only). Asks NONE of Q1/Q2/Q3 (single-branch strategy gates them all out) but DOES ask Q4 (protection policy, universal) with solo-main defaults. Writes a MINIMAL git_strategy block in .agents/project.yaml (in place, preserving the rest of the file): git_strategy.strategy:solo-main, branches.integration null, branches.ephemeral_pattern null, protected:[main], all decisions.* n/a, policy.direct_push_to_protected:allowed + policy.admin_bypass:false + policy.require_pr_reviews:0, description. NEVER a separate git-strategy.yaml file. No prose runbook rendered into AGENTS.md. No --force, no AI attribution.",
+      "expected_output": "Strategy Setup (3.6) runs. Resolves solo-main (single contributor, only main, simplicity). Creates NO integration branch (materialization table: solo-main = main only). Asks NONE of Q1/Q2/Q3 (single-branch strategy gates them all out) but DOES ask Q4 (protection policy, universal) with solo-main defaults. Writes a MINIMAL git_strategy block in .agents/project.yaml (in place, preserving the rest of the file): git_strategy.strategy:solo-main, branches.integration null, branches.ephemeral_pattern null, protected:[main], all decisions.* n/a, policy.direct_push_to_protected:evidence + policy.admin_bypass:false + policy.require_pr_reviews:0, description. NEVER a separate git-strategy.yaml file. No prose runbook rendered into AGENTS.md. No --force, no AI attribution.",
       "should_trigger": true,
       "files": []
     },
     {
       "id": 10,
       "prompt": "Set up our git strategy. Repo has main + staging already; staging is behind main. Use fast-forward promotion, merge commits for features, hotfix off prod with same-day back-merge.",
-      "expected_output": "Strategy Setup runs. Resolves main-integration (main + staging). Materializes: staging already exists so it is NOT recreated; ancestry check (git log main..staging empty) shows main is ahead and staging is a pure ancestor, so ff-syncs staging up to main via 'git push origin origin/main:refs/heads/staging' — NEVER --force; confirms before the protected-branch push. Writes the git_strategy block in .agents/project.yaml (in place, preserving the rest of the file; never a separate git-strategy.yaml) with strategy:main-integration, branches.production main + branches.integration staging, protected:[main,staging], decisions.promote_method ff-only + decisions.feature_merge merge-commit + decisions.hotfix_policy branch-off-prod-backmerge, policy.direct_push_to_protected forbidden + policy.admin_bypass false + policy.require_pr_reviews 1 (Q4 defaults), and a description capturing the main-is-ancestor-of-staging invariant. No prose runbook rendered into AGENTS.md. No AI attribution.",
+      "expected_output": "Strategy Setup runs. Resolves main-integration (main + staging). Materializes: staging already exists so it is NOT recreated; ancestry check (git log main..staging empty) shows main is ahead and staging is a pure ancestor, so ff-syncs staging up to main via 'git push origin origin/main:refs/heads/staging' — NEVER --force. The sync push follows git_strategy.policy.direct_push_to_protected like any other push, with no extra confirmation of its own, and the branch work inside the accepted questionnaire needs no second OK. Writes the git_strategy block in .agents/project.yaml (in place, preserving the rest of the file; never a separate git-strategy.yaml) with strategy:main-integration, branches.production main + branches.integration staging, protected:[main,staging], decisions.promote_method ff-only + decisions.feature_merge merge-commit + decisions.hotfix_policy branch-off-prod-backmerge, policy.direct_push_to_protected forbidden + policy.merge_mode auto + policy.admin_bypass false + policy.require_pr_reviews 0 (Q4 defaults), and a description capturing the main-is-ancestor-of-staging invariant. No prose runbook rendered into AGENTS.md. No AI attribution.",
       "should_trigger": true,
       "files": []
     },
     {
       "id": 11,
       "prompt": "We use gitflow here — develop plus release branches. Configure the git strategy.",
-      "expected_output": "Strategy Setup runs. Resolves gitflow (develop present). Ensures develop exists (off main if missing); does NOT create release/* or hotfix/* at setup. Sets work-branch base to develop. Writes the git_strategy block in .agents/project.yaml (in place; never a separate git-strategy.yaml) with strategy:gitflow, branches.production main + branches.integration develop, protected:[main,develop], decisions.promote_method merge-commit (release/* -> main is inherently a merge commit, NOT normalized to ff-only) + decisions.feature_merge merge-commit + decisions.hotfix_policy branch-off-prod-backmerge, policy.direct_push_to_protected forbidden + policy.admin_bypass false + policy.require_pr_reviews 1 (Q4), and a description capturing the develop/main back-merge discipline (NOT 'production is ancestor of integration'). The release/hotfix command shapes stay in the catalogue, not the block. No --force, no AI attribution.",
+      "expected_output": "Strategy Setup runs. Resolves gitflow (develop present). Ensures develop exists (off main if missing); does NOT create release/* or hotfix/* at setup. Sets work-branch base to develop. Writes the git_strategy block in .agents/project.yaml (in place; never a separate git-strategy.yaml) with strategy:gitflow, branches.production main + branches.integration develop, protected:[main,develop], decisions.promote_method merge-commit (release/* -> main is inherently a merge commit, NOT normalized to ff-only) + decisions.feature_merge merge-commit + decisions.hotfix_policy branch-off-prod-backmerge, policy.direct_push_to_protected forbidden + policy.merge_mode auto + policy.admin_bypass false + policy.require_pr_reviews 0 (Q4), and a description capturing the develop/main back-merge discipline (NOT 'production is ancestor of integration'). The release/hotfix command shapes stay in the catalogue, not the block. No --force, no AI attribution.",
       "should_trigger": true,
       "files": []
     },
@@ -95,28 +95,56 @@
     {
       "id": 14,
       "prompt": "configura el flujo de git para este repo de automatización nuevo",
-      "expected_output": "Strategy Setup runs (Spanish trigger 'configura el flujo de git'). Conversation mirrors Spanish; artifacts (the git_strategy block fields + description in .agents/project.yaml) stay English. Step 1 repo state -> Step 2 detection -> if undetermined, present the 7 strategies and ask for one slug (detect-then-questionnaire), then run the applicable Q1/Q2/Q3 gated on the resolved strategy plus the universal Q4 (protection policy). Persists in place to the git_strategy block (never a separate git-strategy.yaml). Proposes branch creation (never auto-executes), never --force, no AI attribution.",
+      "expected_output": "Strategy Setup runs (Spanish trigger 'configura el flujo de git'). Conversation mirrors Spanish; artifacts (the git_strategy block fields + description in .agents/project.yaml) stay English. Step 1 repo state -> Step 2 detection -> if undetermined, present the 8 strategies and ask for one slug (detect-then-questionnaire), then run the applicable Q1/Q2/Q3 gated on the resolved strategy plus the universal Q4 (protection policy). Persists in place to the git_strategy block (never a separate git-strategy.yaml). Once the questionnaire is accepted it creates the branches the answers imply without a second OK and reports each one; the strategy itself stays asked. Never --force, no AI attribution.",
       "should_trigger": true,
       "files": []
     },
     {
       "id": 15,
       "prompt": "We run github-flow, everything goes through PRs to main. But push directly to main for me real quick, I'm in a hurry.",
-      "expected_output": "Skill reads git_strategy.policy.direct_push_to_protected from the git_strategy block in .agents/project.yaml. For github-flow the default is 'forbidden', so the skill REFUSES the direct push to the protected branch main and redirects to the PR flow (3.4) — propose a work branch + gh pr create. Because git_strategy.policy.admin_bypass is false, it does NOT offer an admin bypass regardless of role. No --force, no --no-verify, no AI attribution. (Had policy been allowed it would push after the normal confirm; had it been confirm it would always ask first.)",
+      "expected_output": "Skill reads git_strategy.policy.direct_push_to_protected from the git_strategy block in .agents/project.yaml. For github-flow the default is 'forbidden', so the skill REFUSES the direct push to the protected branch main without asking anything and routes the change through the PR flow (3.4): a work branch, gh pr create, the evidence block, verify --merge and gh pr merge --auto --merge. Because git_strategy.policy.admin_bypass is false, it does NOT offer an admin bypass regardless of role. No --force, no --no-verify, no AI attribution. (Had policy been evidence it would push when the pre-push gate passes; allowed, push without a gate; confirm, ask before every push because the team chose it.)",
       "should_trigger": true,
       "files": []
     },
     {
       "id": 16,
       "prompt": "commiteá estos cambios y subilos a la rama",
-      "expected_output": "Skill reads repo state, proposes atomic conventional commits with explicit paths and the forensic trailers, and pushes per the recorded push policy.",
+      "expected_output": "Skill reads repo state, makes atomic conventional commits with explicit paths and the forensic trailers without asking to approve the commit set, and pushes per the recorded push policy (under evidence the pre-push gate decides, with no question). It asks for no issue key: the key comes from the branch name, then the arguments, and with none the commits carry no key and the report says so.",
       "should_trigger": true,
       "files": []
     },
     {
       "id": 17,
       "prompt": "me rechazó el push, qué hago",
-      "expected_output": "Skill diagnoses the rejection (non-fast-forward, hook or protection), classifies it, and offers options ranked by safety without a force flag.",
+      "expected_output": "Skill diagnoses the rejection (non-fast-forward, hook or protection), classifies it, picks the safest fix that works (fetch and merge, or rebase for the agent's own unshared commits), pushes again under the push policy and the evidence gate, and reports. It uses no force flag and never asks for approval of the routine fix.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 18,
+      "prompt": "commit and push my changes",
+      "expected_output": "Under solo-main with git_strategy.policy.direct_push_to_protected evidence, the skill commits without asking (atomic conventional commits, explicit paths, Worktree and Session trailers) and pushes to main. The pre-push hook runs bun run edd gate itself. On a pass the push lands with no question. On a failed gate there is no push and no question: the agent fixes forward and retries. No --no-verify, no AI attribution.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 19,
+      "prompt": "open a PR for this branch",
+      "expected_output": "Skill builds the PR body with the evidence block from bun run edd render --pr (the local record under policy evidence, a fresh verification of the head otherwise); the CI verifier's PR comment is the copy a reader sees. It never hand-writes the record. It creates the PR, sets labels from gh label list and the assignee before review without asking, runs bun run git:policy verify --merge <base> and, on exit 0, gh pr merge --auto --merge. It arms the watcher (bash .agents/skills/edd/scripts/pr-watch.sh start pr-delivery <repo>-pr-<n> ... then wake as a background call), renames the terminal tab to \"PR#<n> <previous title>\" and ends the turn. It does not stop for approval of the body, labels or reviewers, and it does not wait in the turn for the merge.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 20,
+      "prompt": "force push my branch",
+      "expected_output": "Force push is a human gate. Skill does not run git push --force or --force-with-lease silently. It asks the person with the options (a merge or rebase that avoids force, or an explicit yes for --force-with-lease on an unshared branch) and says why. It never force-pushes main or a shared branch.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 21,
+      "prompt": "merge it now",
+      "expected_output": "On a base where bun run git:policy verify --merge <base> exits non-zero (the base requires no edd/evidence check), the skill does NOT run gh pr merge --auto, because auto-merge would merge at once, red or not. On a protected base it stops and tells the person what is missing (human gate). On a base with no ruleset it waits for edd/evidence to pass through the watcher and then runs gh pr merge --<method>. It never merges a red PR.",
       "should_trigger": true,
       "files": []
     }

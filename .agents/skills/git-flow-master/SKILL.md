@@ -11,7 +11,7 @@ metadata:
 
 # Git Flow Master: Branches, Commits, Pushes, PRs and Conflicts
 
-This skill is the single entry point for everything on the version-control layer: creating branches, writing commits, pushing safely, opening pull requests, resolving conflicts, and planning chained or stacked PRs when a change outgrows the review budget.
+This skill is the single entry point for everything on the version-control layer: creating branches, writing commits, pushing safely, opening pull requests, resolving conflicts, and planning chained or stacked PRs when a change outgrows the review budget. It runs the operations; the `edd` doctrine skill (`.agents/skills/edd/SKILL.md`) decides when a change may land, so load it before the first push, PR or merge.
 
 It does not assume one branching model. The project may run on `main` only, on `main + staging`, on a multi-branch enterprise layout, or on a well-known flow (trunk-based, GitFlow, GitHub Flow, GitLab Flow). The skill detects which one is active and adapts every command to it. Detection is sticky: once resolved, the strategy is recorded in the `git_strategy:` block of `.agents/project.yaml`, so later invocations skip the question.
 
@@ -22,36 +22,33 @@ It does not assume one branching model. The project may run on `main` only, on `
 - Read the repo state (status, branches, diff, log, fetch, upstream, remotes) at the start of every invocation and report it before acting. A wrong guess about state is the most common git mistake.
 - Resolve the branching strategy from the `git_strategy:` block in `.agents/project.yaml` first, then layout heuristics, then by asking; never pick one silently. Persist the resolution back into that block, not into a separate file and not as policy prose in `AGENTS.md`. The yaml snippets in `references/` (per-strategy field rules, policy examples) are illustrations: a claim about THIS repo's strategy, branches or policy cites `.agents/project.yaml` (or `git:policy verify` output) read in the same turn.
 - When `git_strategy.meta.strategy_source` is `chosen`, the strategy is confirmed, whatever `project.project_name` holds, and there is no offer. Otherwise, when `git_strategy.strategy` is set but `project.project_name` is null, or `meta.strategy_source` is `inherited` (or absent) on a named project, the strategy came from the template and nobody chose it. Treat it as unconfirmed and offer Strategy Setup once per session. Never auto-run it, and on a "no" proceed under the inherited strategy.
-- Consult `git_strategy.policy.direct_push_to_protected` before any direct push to a protected branch. `allowed` is standing authorization (asking anyway collapses it into `confirm`), `confirm` asks every time, `forbidden` refuses and routes through a PR. A missing or null block behaves as `confirm`.
+- Before any direct push to a protected branch, read `git_strategy.policy.direct_push_to_protected` in `.agents/project.yaml`. `evidence` pushes without asking when the pre-push gate passes; a failed gate means no push and no question, so fix forward and retry. `allowed` is a standing authorization to push without asking and without a gate (asking anyway collapses it into `confirm`). `confirm` asks before every push, because the team chose it. `forbidden` never direct-pushes and routes through a PR. A missing or null value reads as `evidence`. For a PR, `git_strategy.policy.merge_mode` decides: `auto` (missing or null reads as this) and `human-approves` enable auto-merge at PR open, `manual` stops after opening.
 - Never amend, rebase or otherwise rewrite a pushed commit (Critical Rule #6, an invariant: no authorization relaxes it). Fix forward with a new commit.
-- Never force-push, `--force-with-lease` or `--no-verify` unless the user explicitly authorizes it AND the branch is unshared.
+- Force push, `--force-with-lease` and `--no-verify` are a human gate: ask the user, and never use one on a shared branch.
 - Never run a repo-wide discard (`git restore .`, `git checkout -- .`, `git reset --hard`, untargeted `git stash`, `git clean -f`): concurrent sessions may share this working tree. Discard only explicit paths this session modified, and when ownership is unclear, stop and ask.
 - Never `git add -A` or `git add .`. List explicit paths, so a secret or another session's work cannot ride along.
 - One commit has one responsibility, in conventional format (`{type}({ISSUE-KEY}): {description}`). Commit messages, branch names and PR bodies are English and carry no AI attribution.
 - Close every commit message, in every strategy, with the two forensic trailers `Worktree: <name|primary>` then `Session: <label>`, copied from the `AGENT IDENTITY:` line in session context (`unknown` when a value cannot be resolved). They record which tree and session produced the commit; they are forensics, not attribution, and a harness-branded trailer (`Claude-Session:`, an AI `Co-Authored-By:`) stays forbidden.
 - When the pre-push or CI documentation-contract gate names a region (ADR-0016), update every page it lists in the same push. Add `Docs-Checked: <label> <reason>` above the forensic trailers only if those pages still hold, and always with the reason.
 - When a pre-commit hook rejects a commit, stop, fix the underlying issue, and create a NEW commit. `--amend` would rewrite the previous, unrelated commit.
-- Propose every branch name, commit set and PR body, and wait for an explicit OK before executing.
-- Stop at PR creation: merging is the user's next step, not an automatic one. If the `gh` transport is missing or unauthenticated, surface the blocker instead of implying a PR was opened.
+- Deliver on evidence per the `edd` doctrine (load `.agents/skills/edd/SKILL.md`): branches, commits, pushes and PRs run with no per-step OK. The only stops are the closed list in `.agents/skills/edd/references/human-gates.md`, plus the push ask under `confirm`, the Strategy Setup offer and the strategy question (a strategy change, gate 5), and the admin-bypass re-confirm (gate 3). Everything else is the agent's call, made and reported.
+- After `gh pr create`, run `bun run git:policy verify --merge <base>`, then `gh pr merge <n> --auto --<method>` under `merge_mode` `auto` or `human-approves`; under `manual`, stop after opening and a person merges (3.4). If the `gh` transport is missing or unauthenticated, surface the blocker instead of implying a PR was opened.
+- Never `gh pr merge --auto` unless `bun run git:policy verify --merge <base>` passes.
+- Never write or edit an evidence record or an evidence commit by hand; run `bun run edd attest`.
+- The author session is never the agentic tester at depth `standard` or deeper.
+- After opening a PR, arm the bundled watcher, label the tab with the PR and end the turn; on each wake, act and re-arm until the PR merges (`references/pr-loop.md`, `.agents/skills/edd/references/waiting.md`).
 - To reconcile declared policy against the host, run the policy-verify tool once at the first push / PR / merge intent and never hand-query protection endpoints. A `404` on the classic protection endpoint does not mean unprotected, and a push that succeeded may have been a documented bypass, not permission. Report drift; never auto-correct it.
 - When a planned change exceeds ~400 changed lines, run the chained-PR decision (single-pr / stacked-to-main / feature-branch-chain / size-exception) before coding, and re-run it if the real diff outgrows the estimate rather than silently up-budgeting. Return it with its trace, not a bare label: `Chain strategy: <leaf>`, each tree question answered with the reason drawn from THIS change (`Q1=No (…) · Q2=… · Q3=…`, `n/a` past the leaf), `Decided by: /git-flow-master`. Answers that do not lead to the stated leaf, or a trace that only restates the conclusion, count as no decision; a re-run replaces the trace.
 - When a promotion PR into the production branch merges, hand off the post-promotion `merged` pass as `/test-documentation post-promotion` ("Promotion landed on `<production>`: run `/test-documentation post-promotion`"). When the project ships a `sanity.yml` workflow, also suggest dispatching it for the newly merged spec (`gh workflow run sanity.yml --ref <production> -f environment=staging -f test_type=e2e -f test_file=<spec path>`) so that pass's CI check does not wait on the next scheduled run; it is an option, never a step this skill runs. The TMS is not touched from this skill. Canon: `agentic-qa-core/references/discovery-driven-doctrine.md` §6.
-- When a conflict fires, diagnose and classify it first, present options ranked by safety, and prefer a safe abort over a guess. A destructive option is never picked silently.
+- When a conflict fires, diagnose and classify it first, infer the intent from the reflog and the branch and report it, then resolve a non-destructive one yourself (a content merge where both intents are clear, or abort and retry). Ask only when the two sides disagree on product behaviour (human gate 1). A destructive option (force push, `reset --hard`, a `git rebase --skip` that drops commits, discarding someone's work) stays a stop, the same class as human gate 2.
 
-**Read full SKILL.md when**: running Strategy Setup, resolving a specific conflict type, picking a base branch or branch prefix for an unfamiliar strategy, or setting up an isolated worktree.
+**Read full SKILL.md when**: opening or merging a PR, running Strategy Setup, resolving a specific conflict type, picking a base branch or branch prefix for an unfamiliar strategy, or setting up an isolated worktree.
 
 ---
 
 ## When to use
 
-Any git-shaped request, with or without the literal skill name:
-
-- "start work on UPEX-123": branch creation
-- "commit and push", "push to main": commit and push flow
-- "open a PR against staging": PR creation
-- "I have conflicts on pull", "the push was rejected": conflict diagnosis and recovery
-- "this PR is going to be huge": chained-PR planning
-- "which git strategy do we use here": strategy detection and persistence
+Any git-shaped request, with or without the literal skill name: "start work on UPEX-123" (branch), "commit and push" (commit and push), "open a PR against staging" (PR), "the push was rejected" (conflict recovery), "this PR is going to be huge" (chained-PR planning), "which git strategy do we use here" (strategy detection and persistence).
 
 Testing a ticket, authoring test cases, writing automated tests or running regression suites belong to `/sprint-testing`, `/test-documentation`, `/test-automation` and `/regression-testing`. Hand those back.
 
@@ -63,11 +60,11 @@ Every invocation maps to one operation or a sequence of them. The request picks 
 
 | Op           | Trigger phrases (examples)                              | Skill behaviour                                                                                                    |
 | ------------ | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| **Branch**   | "create branch", "new feature branch", "start UPEX-123" | Resolve strategy, propose name with prefix + issue key, wait for OK, checkout                                      |
-| **Commit**   | "commit this", "commit and push", "make atomic commits" | Group by responsibility, propose conventional commits, wait for OK, execute one by one                             |
-| **Push**     | "push", "push to main", "push my changes"               | Diagnose upstream, confirm if pushing to a protected branch per policy, no `--force` without explicit user opt-in  |
-| **PR**       | "create PR", "open a PR", "gh pr create"                | Pick base branch from strategy, render body inline, ask labels/reviewers, call `gh pr create`                      |
-| **Conflict** | "fix conflict", "rebase failed", "push rejected"        | Diagnose first (see `references/conflict-resolution.md`), present options, guide resolution, verify clean state    |
+| **Branch**   | "create branch", "new feature branch", "start UPEX-123" | Resolve strategy, derive the issue key (branch name, then `$ARGUMENTS`; none means no key), cut from `origin/<base>` without switching (`references/session-safety.md`) |
+| **Commit**   | "commit this", "commit and push", "make atomic commits" | Group by responsibility, commit one by one in conventional format, report each sha and subject                     |
+| **Push**     | "push", "push to main", "push my changes"               | Diagnose upstream, apply the policy gate (`evidence` / `allowed` / `confirm` / `forbidden`, 3.3); a force flag is a human gate |
+| **PR**       | "create PR", "open a PR", "gh pr create"                | `gh` account guard, base from strategy, body with the evidence block (`bun run edd render --pr`; the CI verifier's comment is the reader's copy), metadata before review, `verify --merge`, auto-merge, arm the watcher |
+| **Conflict** | "fix conflict", "rebase failed", "push rejected"        | Diagnose first (`references/conflict-resolution.md`), resolve a non-destructive conflict yourself, ask before a destructive option, verify clean state |
 | **Strategy Setup** | "set up our git strategy", "bootstrap branching", "materialize the flow" | Resolve strategy, run the decision questionnaire (Q1-Q4), conditionally create or ff-sync long-lived branches (never force), write the `git_strategy:` block in `.agents/project.yaml`. Questions already answered by non-`n/a` `git_strategy.decisions.*` fields are skipped. See `references/strategy-setup.md`. |
 
 When the operation is ambiguous (the user only says "git-flow-master" or "let's do the git stuff"), report the repo state (Step 1) and ask what they need.
@@ -89,15 +86,7 @@ git status -sb
 git remote -v
 ```
 
-Summarise to the user:
-
-- Current branch.
-- Dirty or clean working tree (staged, unstaged, untracked counts).
-- Unpushed and unpulled commits (ahead and behind upstream).
-- Upstream status (none, up to date, diverged).
-- Remote name(s). Most repos have `origin`; some have a fork plus upstream.
-
-This summary is cheap, prevents most mistakes, and feeds every later decision.
+Summarise to the user the current branch, a dirty or clean working tree (staged, unstaged and untracked counts), commits ahead and behind upstream, the upstream status (none, up to date, diverged) and the remote names (most repos have `origin`; some have a fork plus upstream).
 
 ---
 
@@ -215,7 +204,8 @@ Issue key extraction, in order:
 
 1. Current branch name regex: `(?:feat|feature|fix|test|docs|refactor|chore)/([A-Z]+-\d+)-`.
 2. `$ARGUMENTS` for `[A-Z]+-\d+`.
-3. Ask the user once ("Is there an issue key for this work?") and accept "no".
+
+With neither source, the branch and its commits go without a key, and the report says so.
 
 Branch name format: read `git_strategy.branch_prefixes` in `.agents/project.yaml` (`naming_with_key` / `naming_without_key` / `precedence`). The patterns below are the shipped defaults, used as written when the block is absent.
 
@@ -231,7 +221,7 @@ Source branch by strategy:
 - `gitflow`: `feature/*` off `develop`; `hotfix/*` off `main`; `release/*` off `develop`.
 - `sdet`: `test/{KEY}-*` ticket branches and Plus Branches (`docs/*` / `chore/*` / `fix/*`) branch off the ephemeral integration trunk `test/<module>-suite`; the trunk itself is cut from `main` on demand when a suite begins. A ticket never stacks on the previous ticket branch. See `references/sdet-integration-trunk.md`.
 
-Propose the name and wait for OK before `git checkout -b`.
+Cut the branch with `git fetch origin --prune`, then `git switch -c <name> origin/<base>`. Never check out the base first: in a shared checkout that changes files under other sessions (`references/session-safety.md`).
 
 ### 3.2 Commits
 
@@ -276,7 +266,7 @@ Session: <label>
 - `Docs-Checked: <label> <reason>` is the one trailer that may sit above them (ADR-0016). Add it only when the change touched a `LINT.IfChange(<label>)` region, the pages its `LINT.ThenChange(...)` names were not updated, and they still describe the behaviour correctly; the reason says why. A bare label does not count. The pre-push and CI documentation-contract gate block the push without it or the page edits. On an already-pushed range the ack is an empty commit carrying the line, never an amend.
 - They are forensics, not attribution: a bisect or incident review uses them to find the right transcript, and no tool, vendor or model is named. Critical Rule #3 is untouched: no `Claude-Session:`, no AI `Co-Authored-By:`, no "Generated with …" line, no other harness-branded key.
 
-Present all proposed commits as one block and wait for OK, modify or reject before executing.
+Execute the commits one by one and report them (sha and subject).
 
 ### 3.3 Push
 
@@ -296,19 +286,22 @@ Protected branches per strategy (the branches the policy gate below guards, unio
 - `enterprise`: `main`, integration, and any `release/*`.
 - `sdet`: `main` (only the final suite PR lands, reviewed with green CI). The integration trunk is protected by convention, but its ticket and Plus PRs are self-merged by the maintainer with no ruleset friction.
 
-Policy gate (consult `git_strategy.policy.direct_push_to_protected` before any direct push to a protected branch):
+A push to a branch that is not protected needs no ask under any value; the pre-push hook still runs its static subset. Before a push that lands the change, when its depth (computed from the paths it touches, `.agents/skills/edd/references/contract.md`) is `light` or deeper, a tester runs the agentic checks and then `bun run edd attest` creates the evidence commit on HEAD. At `standard` or deeper the tester is never the author session: a subagent or another session, under its own label such as `<author label>/tester`. Sequence and attest mechanics: `.agents/skills/edd/references/flows.md` and `.agents/skills/edd/references/record-and-signature.md`.
+
+Policy gate (read `git_strategy.policy.direct_push_to_protected` before any direct push to a protected branch):
 
 | `git_strategy.policy.direct_push_to_protected` | Behaviour |
 | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `allowed`                                      | Standing authorization: push without a per-push confirm. The recorded value is the authorization (stamped by Strategy Setup with the user); asking anyway collapses `allowed` into `confirm` and empties the third state. |
-| `confirm` (default)                            | Always ask. Wait for explicit yes.                                                                         |
-| `forbidden`                                    | Refuse the direct push and redirect to the PR flow (3.4): propose a work branch and `gh pr create`.       |
+| `evidence` (default: a missing or null value or block reads as this) | Push without asking. The pre-push hook runs `bun run edd gate`, which re-runs the `pre-push` static checks and verifies the evidence commit when depth needs one. On fail there is no push and no question: fix forward, re-attest if the diff changed, retry. Never `--no-verify`. |
+| `allowed`                                      | Standing authorization: push without asking and without a gate. The recorded value is the authorization (stamped by Strategy Setup with the user); asking anyway collapses `allowed` into `confirm`. |
+| `confirm`                                      | The team chose to be asked: ask before every push and wait for an explicit yes.                            |
+| `forbidden`                                    | Never direct-push. Route the change through the PR flow (3.4) without asking.                              |
 
-For `confirm`, ask: _"You are about to push directly to the protected branch `{branch}` in a `{strategy}` flow. Confirm?"_ and wait for an explicit yes. A missing or null `git_strategy` block (fresh scaffold, project never onboarded) behaves as `confirm`: the safe default is to ask, never to assume standing authorization.
+For `confirm`, ask: _"You are about to push directly to the protected branch `{branch}` in a `{strategy}` flow. Confirm?"_ and wait for an explicit yes.
 
-Admin bypass (only when contemplating skipping PR or protection for an urgent change): the skill may offer a bypass only when `git_strategy.policy.admin_bypass: true`, and it re-confirms at runtime both that the operator actually holds admin rights on the repo (ask: the skill cannot know the GitHub role, and `admin_bypass` is a team policy intent, not a capability check) and the irreversible action itself. With `git_strategy.policy.admin_bypass: false`, never offer a bypass regardless of the operator's role.
+Admin bypass (only when contemplating skipping PR or protection for an urgent change): a bypass beyond the standing one the project declared is human gate #3. The skill may offer one only when `git_strategy.policy.admin_bypass: true`, and it re-confirms at runtime both that the operator actually holds admin rights on the repo (ask: the skill cannot know the GitHub role, and `admin_bypass` is a team policy intent, not a capability check) and the irreversible action itself. With `git_strategy.policy.admin_bypass: false`, never offer a bypass regardless of the operator's role.
 
-Never pass `--force`, `--force-with-lease`, `--no-verify` or any history-rewriting flag unless the user explicitly requests it AND the branch is unshared; record the request in the conversation. Force-pushing a shared branch destroys teammates' history, and `--no-verify` skips hooks that catch the bug you did not notice (Critical Reminder #6 in `AGENTS.md`).
+`--force`, `--force-with-lease`, `--no-verify` and any history-rewriting flag are human gate #2: ask, use one only on an unshared branch after an explicit yes, and record the request in the conversation. Force-pushing a shared branch destroys teammates' history, and `--no-verify` skips the hooks that run the evidence gate (Critical Reminder #6 in `AGENTS.md`).
 
 ### 3.4 Pull request
 
@@ -322,31 +315,43 @@ The base branch picks itself from the strategy:
 | `gitflow`                                 | `feature/*` → `develop`; `hotfix/*` → `main`; `release/*` → `main` (and back-merge to `develop`) |
 | `sdet`                                    | `test/{KEY}-*` ticket branches + Plus Branches → the integration trunk `test/<module>-suite`; the single final suite PR → `main` (after the sync gate). See `references/sdet-integration-trunk.md`. |
 
-The user can override with `--base X` in arguments. If they do, surface it in the confirmation: _"PR will target `{base}` instead of the strategy default `{default}`."_
+The user can override with `--base X` in arguments. The PR report then says so: _"PR targets `{base}` instead of the strategy default `{default}`."_
 
 Title format: `{type}({ISSUE-KEY}): {description}`, under 70 characters. Without a key: `{type}: {description}`.
 
 Body: render it inline (there is no template file to read) with the structure in `references/pr-templating.md`. Substitute the placeholders the skill can fill (`<<ISSUE_KEY>>`, `<<SUMMARY>>`, `<<CHANGES>>`, `<<TEST_PLAN>>`, `<<RISK>>`). Leave any unfilled placeholder visible so the author can edit it before posting, and do not silently drop sections. `test/*` branches in this repo use the project-local template tuned for KATA test-automation PRs, `references/pr-test-automation.md`; every other branch uses the generic structure in `references/pr-templating.md`.
 
-Fill `<<RISK>>` with the merge danger. Say whether the merge is a one-way door (destructive or hard to reverse: migrations, deleted data, published contracts) or a two-way door (cheap to roll back), then the blast radius in a word or two (consumers, other modules, layout, rollback cost). Back the "works" claim in `<<EVIDENCE>>` with the heaviest proof available: a before and after screenshot for visual changes, the exact test that failed and now passes for logic, console output last.
+Fill `<<RISK>>` with the merge danger. Say whether the merge is a one-way door (destructive or hard to reverse: migrations, deleted data, published contracts) or a two-way door (cheap to roll back), then the blast radius in a word or two (consumers, other modules, layout, rollback cost). Fill `<<EDD_RECORD>>`: paste the output of `bun run edd render --pr` as printed (it carries its own `## Evidence` heading): under policy `evidence` it prints the local record the pre-push gate wrote, under any other policy a fresh verification of the head. The CI verifier's PR comment is the copy a reader sees, and it keeps that copy current. Never hand-write it (`references/pr-templating.md`). Fill `<<READY_BLOCK>>` with the checklist from `references/pr-loop.md`. Back the "works" claim in `<<EVIDENCE>>` with the heaviest proof available: a before and after screenshot for visual changes, the exact test that failed and now passes for logic, console output last.
 
-Write the rendered body to a tempfile (e.g. `$(mktemp)`) and pass it with `gh pr create --body-file` to avoid escaping problems.
+Write the rendered body to a tempfile (e.g. `$(mktemp)`) and pass it with `gh pr create --body-file` to avoid escaping problems. Before the first `gh` call, run the `gh` account guard (`references/session-safety.md`).
 
-Reviewers, labels and draft: see `references/pr-templating.md`. Verify labels with `gh label list` when unsure; never hardcode labels the repo may not have.
+Set the metadata before review, without asking (`references/pr-loop.md`). Labels come from `gh label list`, never invented, because `--add-label` silently drops a missing one. The assignee is the owner of the work (the `gh` user). A reviewer is requested only under `human-approves`, from CODEOWNERS; when nobody can be resolved, the ready block says so. A draft never merges, so run `gh pr ready <n>` before the merge step.
 
-Final command shape:
+Final command shape (`--reviewer` only under `human-approves`), then the merge step and the watcher:
 
 ```bash
 gh pr create \
   --title "{title}" \
   --body-file {tmpfile} \
   --base {base} \
-  [--reviewer {users}] \
+  --assignee {owner} \
   [--label {labels}] \
+  [--reviewer {users}] \
   [--draft]
+
+bun run git:policy verify --merge {base}
+gh pr merge {number} --auto {merge-flag}
+bash .agents/skills/edd/scripts/pr-watch.sh start pr-delivery {repo}-pr-{number} REPO={owner/name} PR={number}
+bash .agents/skills/edd/scripts/pr-watch.sh wake {repo}-pr-{number}
 ```
 
-Stop at PR creation. Merging is the user's explicit next step, and nothing auto-merges. Surface: _"Review the PR. Once approved, merge via the GitHub UI or run `gh pr merge {number} {merge-flag}`."_ with the flag chosen by the rule below. One carve-out: when a supervised worker's dispatch or brief names the merge as a step, that instruction is the explicit next step and the worker merges. The rule exists so an agent never merges on its own judgement; a dispatch that says "open the PR and merge it" is the owner's judgement, delivered through the channel the fleet uses for every other instruction. Say in the report that the merge was pre-authorized and by which line of the brief.
+Merge on evidence, by `git_strategy.policy.merge_mode` (`.agents/skills/edd/references/flows.md`, Flow 2):
+
+- `auto` (missing or null reads as this) and `human-approves`: run `bun run git:policy verify --merge <base>`, and only on exit 0 run `gh pr merge <n> --auto <merge-flag>`. GitHub merges when the required checks, `edd/evidence` among them, pass; under `human-approves` it also waits for a person's approval. A protected base that fails `verify --merge` is a human gate: stop and tell the person, because on a base that requires no check auto-merge merges at once, red or not.
+- A base with no ruleset (a stacked PR on another feature branch, an unprotected trunk): no `--auto`. Wait through the watcher for the `edd/evidence` check from the "EDD Evidence" workflow to pass (`CHECK EDD Evidence/edd/evidence success on <head>`), then run `gh pr merge <n> <merge-flag>`. The check catches mistakes and drift, not a deliberately forged check (`.agents/skills/edd/SKILL.md` "What the evidence proves").
+- `manual`: stop after opening the PR; a person merges (human gate). The watcher still runs.
+
+Then arm the watcher, run `wake` as a background call, label the terminal tab `PR#<n> <previous title>` (a label that fails is a warning), post the PR announcement from the template in `references/pr-loop.md` through `notify.provider` (`none` posts nothing), and end the turn. On each wake, act per `.agents/skills/edd/references/waiting.md` and re-arm. On `WATCH ENDED ... MERGED`, close out: `git fetch`, `git merge-base --is-ancestor <merge-commit> origin/<base>`, restore the tab title. Close-out never switches the local branch, because the checkout may be shared; it deletes the merged local branch with `git branch -d` only when no worktree has it checked out. The review-bot loop (only when `evidence.review.bot` is set) and the ready block are in `references/pr-loop.md`.
 
 Which merge flag (one rule, `sdet` first). `sdet` (the integration trunk) is the Dojo standard for test-automation suites, so its rule comes first and is never relaxed:
 
@@ -354,9 +359,9 @@ Which merge flag (one rule, `sdet` first). `sdet` (the integration trunk) is the
 | --- | --- | --- |
 | Ticket or Plus Branch → the trunk `test/<module>-suite` | `--merge` (a merge commit, the `--no-ff` equivalent) | Never. It flattens the per-ticket history the suite exists to keep (`references/sdet-integration-trunk.md`). |
 | Final `trunk → main` | `--merge` | Only when the host allows no other method; the chain then survives on the pushed trunk and the PR body says so. Do not add `--delete-branch` here: the trunk is deleted after CI is green on `main`. |
-| Any other strategy | the flag that matches `git_strategy.decisions.feature_merge`: `merge-commit` → `--merge`, `squash` → `--squash`, `rebase-merge` → `--rebase` | Fine for a short-lived branch whose intermediate commits carry no meaning (the default when `feature_merge` is `n/a` or the block is missing). Use `--merge` when per-commit history matters. |
+| Any other strategy | `--merge` unless `git_strategy.decisions.feature_merge` declares another: `merge-commit` → `--merge`, `squash` → `--squash`, `rebase-merge` → `--rebase`. `n/a` or missing means `--merge`. | Only when `feature_merge` declares it. A squash folds the evidence commit into a message body and loses its signature. |
 
-Optional pre-PR adversarial gate: when the diff exceeds the 400-line review budget or touches shared scaffolding (KATA base classes, fixtures, OpenAPI schemas), offer `/judgment-day`: _"Diff is large / touches shared scaffolding. Want to run `/judgment-day` before opening the PR?"_. Two blind judges review the diff in parallel and it approves only when both agree. See `.agents/skills/judgment-day/SKILL.md`. It is never invoked automatically; the user opts in.
+Pre-PR adversarial gate: when the diff exceeds the 400-line review budget or touches shared scaffolding (KATA base classes, fixtures, OpenAPI schemas), run `/judgment-day` before opening the PR and put its verdict in the PR body. Two blind judges review the diff in parallel, and it approves only when both agree (`.agents/skills/judgment-day/SKILL.md`). Running it is the agent's call.
 
 When stacking PRs, name the dependency chain in each PR body so reviewers know which to read first.
 
@@ -364,22 +369,13 @@ When stacking PRs, name the dependency chain in each PR body so reviewers know w
 
 Diagnose before resolving. The user is rarely in a hurry, and a wrong fix here costs hours.
 
-Run `git status` and `git diff --check`, inspect `.git/MERGE_HEAD` / `REBASE_HEAD` to classify the situation, then follow the matching playbook in `references/conflict-resolution.md`:
-
-- Merge conflict (content)
-- Merge conflict (rename / delete)
-- Rebase conflict
-- Push rejected (diverged)
-- Detached HEAD
-- Stash apply conflict
-- Unrelated histories
-- Pre-commit hook rejected the commit
+Run `git status` and `git diff --check`, inspect `.git/MERGE_HEAD` / `REBASE_HEAD` to classify the situation (content or rename/delete merge conflict, rebase conflict, push rejected, detached HEAD, stash apply conflict, unrelated histories, pre-commit hook rejection), then follow the matching playbook in `references/conflict-resolution.md`.
 
 Every playbook has the same shape:
 
 1. Explain what happened (root cause, in the user's language).
-2. Present options ranked by safety. A destructive option (force push, hard reset, `--abort` of an unfinished merge with uncommitted work) is never picked silently.
-3. Guide the resolution step by step.
+2. Infer the intent from the reflog and the branch (`git reflog -n 20`, the branch name, the commits on each side) and report it. Resolve a non-destructive conflict yourself: a content merge where both intents are clear, or abort and retry. Ask only when the two sides disagree on product behaviour (human gate 1). A destructive option stays a stop: force push, `reset --hard`, a `git rebase --skip` that drops commits, discarding someone's work, `--abort` of an unfinished merge with uncommitted work. These destroy committed or uncommitted work, the same class as human gate 2.
+3. Apply the resolution step by step, or walk the user through the option they picked.
 4. Verify (`git status`, `git log --oneline -3`).
 5. Teach prevention in one short note.
 
@@ -410,7 +406,7 @@ Decision questionnaire (defaults first; each gated on the resolved strategy):
 | Q1 | Promotion method, integration → production                 | strategies with an integration branch (`main-integration`, `gitlab-flow`, `enterprise`; `gitflow` = `develop → main`) | **Fast-forward only** / Merge commit (`--no-ff`) / Squash                                                                                | release runbook + whether branches stay byte-identical |
 | Q2 | Merge method, work-branch → integration (or → trunk)       | all multi-branch strategies                                                                 | **Merge commit (`--no-ff`)** / Squash / Rebase + merge                                                                                   | how integration history accrues                       |
 | Q3 | Hotfix policy                                              | strategies with a production branch distinct from where work lands                          | **Branch off production → PR to production → back-merge to integration same day** / Always via integration / No policy                  | hotfix runbook + invariant maintenance                |
-| Q4 | Protected-branch bypass policy                             | **ALL strategies**                                                                          | `direct_push_to_protected`: forbidden / confirm / allowed (default per strategy: solo-main=`allowed`, multi-branch=`forbidden`, sdet=`confirm`) · `admin_bypass`: may a repo admin bypass PR/protection for urgent changes? (default `false`) · `require_pr_reviews`: min approvals (default `null` / strategy-appropriate) | how strictly protected branches are guarded (Push op 3.3), sets `git_strategy.policy.*` |
+| Q4 | Protected-branch bypass policy                             | **ALL strategies**                                                                          | `direct_push_to_protected`: forbidden / confirm / allowed / evidence (default: `solo-main`=`evidence`, every PR strategy=`forbidden`) · `merge_mode`: **auto** / human-approves / manual · `admin_bypass`: may a repo admin bypass PR/protection for urgent changes? (default `false`) · `require_pr_reviews`: min approvals (default `0` on `solo-main`, where no PR is required; strategy-appropriate elsewhere; under `auto`, `git:policy` derives 0 whatever it says) | how strictly protected branches are guarded (Push op 3.3), sets `git_strategy.policy.*` |
 
 Q1 to Q3 defaults are what the `main-integration` worked example chose. They are defaults, not hardcoded, and the user can override any of them. Single-branch strategies (`solo-main`, `github-flow`, `trunk-based`) answer none of Q1 to Q3, because they have no integration branch and no distinct production branch. Q4 applies to every strategy (a solo `main` is still protected) and writes `git_strategy.policy.*`; per-strategy Q4 defaults are in `references/branching-strategies.md` under "git_strategy field rules (per strategy)".
 
@@ -426,7 +422,8 @@ git_strategy:
     feature_merge: merge-commit|squash|rebase-merge|n/a
     hotfix_policy: branch-off-prod-backmerge|via-integration|none|n/a
   policy:                                          # Q4: applies to ALL strategies
-    direct_push_to_protected: forbidden|confirm|allowed
+    direct_push_to_protected: forbidden|confirm|allowed|evidence
+    merge_mode: auto|human-approves|manual
     admin_bypass: true|false                       # team POLICY intent, not enforcement
     require_pr_reviews: null|0|N
 ```
@@ -434,11 +431,9 @@ git_strategy:
 Setup limits:
 
 - Never `--force` (nor `--force-with-lease`) during a setup sync. Sync only on a true fast-forward; if the integration/production pair has diverged both ways, stop and hand to conflict resolution (3.5).
-- Confirm before any push to a protected branch. A setup ff-sync push is still one.
-- Propose branch creation and wait for OK before `git checkout -b` / `git branch`: show which branch, off what, and why.
+- A setup ff-sync push to a protected branch follows the push policy (3.3) like any other push.
+- The accepted questionnaire is the decision: create the branches its answers imply with no second OK, and report each branch created, off what and why.
 - No AI attribution in any commit the setup makes (Critical Rule #3).
-
-Pointers: `references/strategy-setup.md` has the questionnaire detail (Q1 to Q4), the per-strategy materialization table, sync mechanics, persist sequence and report format. `references/branching-strategies.md` ("git_strategy field rules (per strategy)") has the values written into the block.
 
 ---
 
@@ -449,8 +444,8 @@ When a planned change estimates above 400 changed lines (additions plus deletion
 Three options:
 
 1. `stacked-to-main`: 2 to 4 small PRs, each branched off the strategy's default base. PRs depend on earlier merges and the base always works between merges. Best for linearly decomposable work.
-2. `feature-branch-chain`: one long-lived integration branch; child PRs merge into it; one final PR merges it to the strategy's default base. Best for changes with shared scaffolding (new types, new schemas) that would break partial merges.
-3. `size-exception`: for mechanical diffs (mass renames, formatter sweeps, generated code, vendor updates). It needs an explicit user override and a `Why size-exception:` line in the PR body.
+2. `feature-branch-chain`: one long-lived integration branch; child PRs merge into it; one final PR merges it to the strategy's default base. Before opening the final PR, run `bun run edd attest --depth <highest depth of the children>` on the branch tip: a fresh attest, with the children's evidence commits left in the range (`.agents/skills/edd/references/flows.md` Flow 3). Best for changes with shared scaffolding (new types, new schemas) that would break partial merges.
+3. `size-exception`: for mechanical diffs (mass renames, formatter sweeps, generated code, vendor updates). The agent picks it and records why with a `Why size-exception:` line in the PR body.
 
 Walk the chained-PR decision tree inline (`references/branching-strategies.md` § Chained-PR decision tree). It picks one of `single-pr`, `stacked-to-main`, `feature-branch-chain`, `size-exception`, and this skill then executes the resulting branch plan. That plan is the contract for execution: if the real diff outgrows the estimate, re-invoke the decision rather than silently up-budgeting.
 
@@ -482,15 +477,15 @@ Walk the chained-PR decision tree inline (`references/branching-strategies.md` �
 
 ## Autonomous runs
 
-Gates in this skill: the OK before a branch, commit set or PR body; the confirm on a push to a protected branch under `confirm`; the Strategy Setup offer; the strategy question when detection fails; the conflict options; the admin-bypass re-confirm; the `/judgment-day` offer; a `size-exception` override. `agentic-qa-core/references/decision-protocol.md` says which of them reach a person.
+A worker, a routine or a cloud session delivers exactly as an attended session does, because the gate is the decision (`.agents/skills/edd/SKILL.md`, "With nobody at the keyboard"). The only stops are the closed list in `.agents/skills/edd/references/human-gates.md`, plus the push ask under `confirm`, the Strategy Setup offer and the strategy question (a strategy change, gate 5), and the admin-bypass re-confirm (gate 3). `agentic-qa-core/references/decision-protocol.md` says which of them reach a person.
 
-| Case | Who holds the gate |
+| Case | Who holds those gates |
 | --- | --- |
-| A person is present | Unchanged: ask and wait. |
-| A supervised worker | The conductor or launcher. A dispatch that names a branch, commit set, push or merge is the OK for exactly what it names (3.4 has the merge carve-out). |
-| A routine with nobody | The delegating brief, when it covers the decision. Without one, do the local reversible work (read state, branch, commits) and stop before any outward or irreversible action: push, PR creation, merge, a force flag, a bypass. Report what is ready. |
+| A person is present | The person: ask those items and wait. |
+| A supervised worker | The conductor or launcher: each item goes to it as a question with options, and only that change waits. |
+| A routine with nobody | The delegating brief, when it covers the item. Otherwise report the item and leave that change undelivered. |
 
-An absent person never turns `confirm` into `allowed`, and never authorizes a bypass or a force flag.
+Other work continues in every case. An absent person never turns `confirm` into `allowed`, and never authorizes a bypass or a force flag.
 
 ---
 
@@ -503,12 +498,12 @@ Compact Rules above carry the detail. These are the numbered rules other files c
 1c. `strategy: solo-main` is the shipped default, not evidence of a decision. `meta.strategy_source` tells them apart: `inherited` means nobody chose. On a repo whose `project.project_name` is set and whose `strategy_source` is still `inherited`, offer Strategy Setup and say what the default costs (no integration branch, no promotion path, no review gate). Strategy Setup stamps `chosen`; nothing else may.
 2. One commit, one responsibility (3.2).
 3. No AI attribution in commits or PR bodies (Critical Reminder #3 in `AGENTS.md`). The two forensic trailers of 3.2 (`Worktree:` / `Session:`) always close a commit message: they name a working tree and a session, never a tool, so they are not attribution and not optional.
-4. Confirm before pushing to any protected branch. Strategy-driven; see 3.3 (Critical Reminder #5 in `AGENTS.md`).
+4. Resolve `git_strategy.policy.direct_push_to_protected` before any push to a protected branch (3.3, Critical Rule #5 in `AGENTS.md`): `evidence` and `allowed` push without asking, `confirm` asks, `forbidden` routes through a PR.
 5. Never rewrite pushed history (Critical Rule #6, an invariant). Never force-push or `--no-verify` unless the user explicitly authorises it AND the branch is unshared.
 6. Explicit paths only: no `git add -A` or `git add .`.
-7. Show proposed commits, branches and PR body and wait for OK. The user can accept, modify or reject any item.
+7. No per-step OK: branches, commits, pushes and PRs run without approval; only the human-gates list (`.agents/skills/edd/references/human-gates.md`) is asked. Report what was done.
 8. `gh` is the PR transport. If it is missing or unauthenticated (`gh auth status` fails), stop and surface the blocker; do not pretend a PR was opened.
-9. PRs stop at creation, with the one carve-out in 3.4: a supervised worker whose dispatch or brief names the merge is executing the owner's instruction, not its own judgement.
+9. PRs merge on evidence: `verify --merge`, then auto-merge under `auto` and `human-approves`; under `manual` the PR stops at creation and a person merges. The author watches its own PR until it merges (3.4).
 10. Strategy is sticky: persist it in the `git_strategy:` block of `.agents/project.yaml` and re-read it instead of asking again.
 11. Language: artifacts (commits, branches, PR bodies, AGENTS.md sections) are English. Mirror the user's language only in conversation.
 12. No global discards (Critical Rule #15 in `AGENTS.md`): a global discard destroys another session's uncommitted work with no recovery when sessions share a tree. Discard only explicit paths this session modified; if ownership is unclear, stop and ask. True isolation is in `references/worktrees.md`.
@@ -534,9 +529,10 @@ Gotchas: a fresh worktree contains only the tracked files of its base, so untrac
 - [ ] The operation followed the runbook for that strategy.
 - [ ] Each commit is atomic, conventional, free of AI attribution, and ends with the two forensic trailers (values from the `AGENT IDENTITY:` line, or `unknown`).
 - [ ] No `git add -A`, `--force`, `--no-verify` or global discard ran unless explicitly authorised; any discard targeted explicit session-owned paths.
-- [ ] PR (if created): title under 70 characters, body with Summary / Changes / Test Plan / Traceability / Evidence / Merge danger, base branch matches the strategy, URL returned, no merge attempted.
+- [ ] Evidence (when depth asked for it): created by `bun run edd attest`, with a tester other than the author at `standard` or deeper.
+- [ ] PR (if created): title under 70 characters, body with Summary / Changes / Test Plan / Traceability / Evidence / Merge danger and the evidence block, metadata set, base branch matches the strategy, auto-merge enabled only after `verify --merge` passed (or stopped under `manual`), watcher armed and tab labelled, URL returned.
 - [ ] Conflicts (if any) are resolved and verified (`git status` clean, `git log` sensible).
-- [ ] If Strategy Setup ran: branches were proposed and not auto-created, ff-syncs were true fast-forwards only (a diverged pair went to conflict resolution), and the `git_strategy:` block in `.agents/project.yaml` was written in place with the fields that apply (strategy / branches / decisions / policy / protected / branch_prefixes / description / meta), preserving the rest of the file.
+- [ ] If Strategy Setup ran: each branch created was reported (off what, why), ff-syncs were true fast-forwards only (a diverged pair went to conflict resolution), and the `git_strategy:` block in `.agents/project.yaml` was written in place with the fields that apply (strategy / branches / decisions / policy / protected / branch_prefixes / description / meta), preserving the rest of the file.
 
 ---
 
@@ -547,10 +543,10 @@ Gotchas: a fresh worktree contains only the tracked files of its base, so untrac
 | `references/branching-strategies.md` | Full catalogue of the 8 strategies, detection signals, trade-offs, chained-PR decision tree, and per-strategy `git_strategy` field rules (the block in `.agents/project.yaml`). Read when resolving strategy or planning a chain.      |
 | `references/strategy-setup.md`       | Strategy Setup (3.6) mechanics: decision questionnaire detail, per-strategy materialization table, ff-sync mechanics (never force), persist sequence, report format. Read when running or re-running Strategy Setup. |
 | `references/sdet-integration-trunk.md` | `sdet` strategy runbook: per-ticket loop, ephemeral integration trunk, local double-env gate, Sanity CI + CI-fallback clause, Plus Branches, sync gate, final PR, TC lifecycle. Read when running an `sdet` test-automation suite. |
-| `references/conventional-commits.md` | Full type vocabulary, scope rules, breaking-change syntax, mixed-changes precedence. Read when proposing commits.                                      |
+| `references/conventional-commits.md` | Full type vocabulary, scope rules, breaking-change syntax, mixed-changes precedence. Read when writing commits.                                        |
 | `references/pr-templating.md`        | PR body template, placeholder rules, label / reviewer / draft conventions, multi-strategy base-branch table. Read when opening a PR.                   |
+| `references/pr-loop.md`              | Review-bot loop, PR metadata, the ready block, watcher arm and close-out, the PR announcement template. Read when a PR is open. |
+| `references/session-safety.md`       | The four shared-checkout hazards, cutting a branch from origin without switching, the `gh` account guard. Read before touching the index in a shared checkout or the first `gh` call. |
 | `references/conflict-resolution.md`  | Per-conflict-type playbooks (merge / rebase / push-rejected / detached-HEAD / stash / unrelated histories / hook rejection). Read when Step 3.5 fires. |
 | `references/worktrees.md`            | Git worktrees for isolated or parallel work: manual git, Claude Code `EnterWorktree`/`ExitWorktree`, orchestrated worktrees, the untracked-files gotcha, gitignored-file provisioning, multi-session safety, the orphan audit before removal, cleanup, decision guide. Read when isolating work or running parallel sessions. |
 | `references/observer.md`             | Merge Line, the read-only PR view of the Sprint Board: the observer rule (never acts on GitHub), lanes, order, approval and tracker parity, the collector (`cli/sprint-board/merge-collect.ts`), its state and gotchas. Read when reading, operating or changing Merge Line. |
-
-Read references on demand rather than all upfront. Each file is self-contained.
