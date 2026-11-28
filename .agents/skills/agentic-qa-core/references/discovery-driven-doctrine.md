@@ -216,14 +216,17 @@ A `NOT RUN` case does not wait. It climbs this ladder, in this order:
    the stage's signature.
 3. **Developers** provide what the follow-up names. Its resolution reopens the case, which then runs and is
    observed.
-4. **The owner**, only when QA is unsure whether the deferral is acceptable.
+4. **The owner**, when QA is unsure whether the deferral is acceptable, or when a block is not external and
+   leaves QA nothing to try: the owner names who owes it (rerun the preflight) or rules it out of scope
+   (dropped).
 
 The ladder prevents false coverage (PASSED on indirect evidence) and `BLOCKED` limbo (a case that waits
 with nobody assigned to unblock it).
 
 ### 5.4 Reporting with deferrals
 
-- A Story is reportable when no case is `BLOCKED`. An open `BLOCKED` keeps it at `in_test`.
+- An open `BLOCKED` gates the sign-off only: the Story stays at `in_test` until no case is `BLOCKED`. A
+  confirmed `FAILED` is reported at once, with the `BLOCKED` cases listed beside it.
 - `qa_sign_off` is allowed when every case is `PASSED` or `DEFERRED (execution)` with its record, and none
   is `FAILED` (a FAIL recalibrated to GO-with-debt per `sprint-testing/references/reporting-templates.md`
   §5.0 counts as not FAILED). The QA comment lists every deferral. The person who signs the transition sees

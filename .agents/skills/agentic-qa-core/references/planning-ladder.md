@@ -58,6 +58,8 @@ components          ->  PRODUCT module     (what part of the product it touches)
 | STR | Test Execution | QA Test Artifacts | `relates to` Sprint · `testPlan` → STP and → RTP (dual membership) |
 | ATR | Test Execution | QA Test Artifacts | `is tested by` Story · `testPlan` → ATP |
 | RTR | Test Execution | QA Test Artifacts | `testPlan` → RTP · optional `relates to` a Release issue (release-candidate runs) |
+| Later-run Execution (ReTest) | Test Execution | QA Test Artifacts | linked to the Story as its ATR is |
+| Shift-right test plan | task-level type, never Test Plan | QA Test Artifacts | `relates to` each Story it lists |
 | ATS | Test Set | QA Test Artifacts | `tests` the **User Story**: **this link is what fills the coverage panel** |
 | TS (feature-level) | Test Set | QA Test Artifacts | groups Tests by feature/module (optional) |
 | Precondition | Precondition | QA Test Artifacts | `relates to` the Tests it sets up |
@@ -112,6 +114,8 @@ Optional roll-up links for coverage aggregation: ATP `is part of` FTP `is part o
 | Artifact | Jira type | Title pattern | Example | Notes |
 |---|---|---|---|---|
 | **ATS** (per-Story) | Test Set | `ATS: {STORY-KEY}: {story title}` | `ATS: PROJ-123: Apply discount at checkout` | **mandatory, 1 per Story** (even with a single TC). Parent: QA Test Artifacts. **Components inherited from the Story (mandatory)**. Its `tests` link to the Story fills the coverage panel; Plan/Exec test lists derive from its membership |
+| **Later-run Execution** | Test Execution | `ReTest: {STORY-KEY}: {summary}` | `ReTest: PROJ-123: Card payment after the account arrived` | one per later run of shift-right deferred cases (`sprint-testing/references/shift-right-deferral.md` §6); a bug's fix verification keeps `ReTest: {BUG-KEY}: {summary}` |
+| **Shift-right test plan** | task-level type | `Shift-Right Test Plan: {sprint}` (no ladder acronym) | `Shift-Right Test Plan: Sprint#30` | 1 per sprint (no sprint: per release or month), only when a Story was signed off with deferrals (`shift-right-deferral.md` §5) |
 | **TS** (feature-level) | Test Set | `TS: {EPIC-KEY\|module}: Validate {feature/module}` | `TS: PROJ-42: Validate Checkout` | groups TCs by feature/module for smoke / regression / feature grouping; **optional**; components optional (may cross modules) |
 
 > **ATS membership, one rule in both modalities**: `TC ∈ ATS` is always a `TC→ATS` issue link (`test` slug), plus the `ATS→Story` link. In **jira-xray** modality the Xray-internal membership (GraphQL: `addTestsToTestSet` / `getTestSet`) is written in addition, never instead (`traceability-linking.md` §9). An instance without the Test Set work type has no ATS. The fallback is direct `TC→Story` links, which the cascade resolves as its last step.

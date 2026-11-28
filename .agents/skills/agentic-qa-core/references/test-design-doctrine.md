@@ -184,9 +184,9 @@ action or background job writes it.
 Required case: at least one case produces that state through the real path (the user action,
 the lifecycle step, the scheduled job that sets it in production) and then asserts the derived
 value. Seeded cases stay; they are fast and they cover the variants. When no real path exists
-in the target environment, the case is `BLOCKED — unreachable precondition` with what it would
-take while recreation is still being tried, and `DEFERRED (execution)` once QA defers it, per
-the section below. The gap itself may be the report worth filing.
+in the target environment, the case is `NOT RUN`, with what it would take, until the unblock preflight gives
+its verdict: `BLOCKED — unreachable precondition`, or `DEFERRED (execution)` when the cause is external and
+QA defers it, per the section below. The gap itself may be the report worth filing.
 
 ### Unreachable preconditions: the empty state on a shared, long-lived account
 
@@ -208,13 +208,16 @@ Three legitimate outcomes, in order of preference:
    radius on a shared environment, and never empty data another session is using
    (`sprint-testing/references/fleet-conductor.md` §8 claims, when several sessions run).
 3. **Declared unobservable, with a product decision attached.** When neither 1 nor 2 is
-   available, the case is kept: it is `BLOCKED — unreachable precondition: <state>` while
-   recreation is still being tried, and becomes `DEFERRED (execution) <date> by QA decision:
-   <reason>; follow-up <KEY>` once QA defers it. The plan and the results carry that line, with
+   available, the case is kept: it is `NOT RUN` while recreation is still being tried, until the preflight
+   gives its verdict (`BLOCKED — unreachable precondition: <state>`, or the deferral). It becomes `DEFERRED (execution) <date> by QA decision:
+   <reason>; follow-up <KEY>` only when the unblock preflight
+   (`sprint-testing/references/preflight-gate.md`) finds the cause external, with the person who owes
+   what it would take named; otherwise it stays `BLOCKED`. The plan and the results carry that line, with
    what it would take (a fixture account, a seed hook, a reset endpoint). That is a product or
    test-environment decision to raise, not a QA omission to hide, and per the `Improvement`
-   bridge it may itself be the report worth filing. In-sprint, this outcome is steps 2-4 of the
-   blocking ladder in `discovery-driven-doctrine.md` §5 (QA deferral with a follow-up task).
+   bridge it may itself be the report worth filing. In-sprint, this outcome is the blocking ladder in
+   `discovery-driven-doctrine.md` §5, preflight first, then QA deferral with a follow-up task; a Story
+   moves on it only with the owner's OK (`sprint-testing/references/shift-right-deferral.md`).
 
 Substituting a similar-looking state for the empty one ("only two orders" is not "none") gives
 a false result, and so does marking such a case PASSED on a partial observation.
@@ -294,8 +297,9 @@ N/A) to each line is not done.
 [ ] RISK Cases prioritized; any scope-driven drop logged explicitly?
 [ ] OBS  Every case's precondition reachable in the target environment? Empty /
          first-time / zero-quota states either have a fixture identity or are
-         `BLOCKED — unreachable precondition` while being recreated, then
-         `DEFERRED (execution)` with what it would take?
+         `NOT RUN` while being recreated, then `BLOCKED — unreachable precondition` or, per the preflight,
+         `DEFERRED (execution)` (external cause per the unblock preflight,
+         `sprint-testing/references/preflight-gate.md`) with what it would take?
          (or N/A: no case needs a state the environment cannot produce)
 [ ] SEED A derived value read from seeded state → at least one case produces that
          state through the real product path and asserts the value?
