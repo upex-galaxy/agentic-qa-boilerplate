@@ -44,26 +44,28 @@ export function findEvidenceCommit(cwd: string, base: string, head: string): str
   return range.find(c => isEvidenceCommit(cwd, c)) ?? null;
 }
 
-export function authorSessions(cwd: string, base: string, head: string): string[] {
+export interface Authors { sessions: string[], unlabeled: string[] }
+
+export function authorSessions(cwd: string, base: string, head: string): Authors {
   const s = new Set<string>();
+  const unlabeled: string[] = [];
   for (const c of rangeCommits(cwd, base, head)) {
     if (isEvidenceCommit(cwd, c)) { continue; }
-    for (const v of trailerValues(cwd, c, 'Session')) {
-      if (v && v !== 'unknown') { s.add(v); }
-    }
+    const known = trailerValues(cwd, c, 'Session').filter(v => v && v !== 'unknown');
+    if (known.length === 0) { unlabeled.push(c); }
+    for (const v of known) { s.add(v); }
   }
-  return [...s];
+  return { sessions: [...s], unlabeled };
 }
 
 export function sameSession(verdictBy: string, session: string): boolean {
-  const a = verdictBy.trim().toLowerCase();
-  const b = session.trim().toLowerCase();
-  return a === b || (b.length >= 4 && a.includes(b));
+  return verdictBy.trim().toLowerCase() === session.trim().toLowerCase();
 }
 
-export function testerProblems(checks: AttestedCheck[], sessions: string[], depth: Depth): string[] {
-  if (depthRank(depth) < depthRank('standard')) { return []; }
-  return checks.flatMap(c => sessions.filter(s => sameSession(c.verdict_by, s)).map(s => `${c.id}/${c.env}: verdict_by "${c.verdict_by}" is the author session ${s}; at depth ${depth} the tester must be another session`));
+export function testerProblems(checks: AttestedCheck[], authors: Authors, depth: Depth): string[] {
+  if (depthRank(depth) < depthRank('standard') || checks.length === 0) { return []; }
+  const out = authors.unlabeled.map(c => `code commit ${c.slice(0, 12)} has no Session trailer: at depth ${depth} the tester must be provably another session`);
+  return [...out, ...checks.flatMap(c => authors.sessions.filter(s => sameSession(c.verdict_by, s)).map(s => `${c.id}/${c.env}: verdict_by "${c.verdict_by}" is the author session ${s}; at depth ${depth} the tester must be another session`))];
 }
 
 export function coverageProblems(required: AgenticCheck[], checks: AttestedCheck[], depth: Depth): string[] {

@@ -60,7 +60,7 @@ export function readRecord(primary: string, sha: string): EvidenceRecord | null 
 }
 
 function cell(s: string): string {
-  return s.replace(/[\r\n]+/g, ' ').replace(/\|/g, '\\|').replace(/</g, '&lt;').slice(0, 200);
+  return s.replace(/[\r\n]+/g, ' ').replace(/[\\`*_[\]()!@#|<>~]/g, ch => `&#${ch.charCodeAt(0)};`).slice(0, 200);
 }
 
 export function renderMarkdown(rec: EvidenceRecord): string {
@@ -69,7 +69,9 @@ export function renderMarkdown(rec: EvidenceRecord): string {
     RENDER_MARKER,
     '## Evidence',
     '',
-    `**Result: ${rec.result.toUpperCase()}** for ${short(rec.subject.sha)} (${rec.push.where}, ${rec.push.flow}), depth \`${rec.contract.depth}\`, contract \`${rec.contract.digest.slice(0, 19)}\` read from \`${cell(rec.contract.read_from)}\`.`,
+    `**Result: ${rec.result.toUpperCase()}** for ${short(rec.subject.sha)} (${rec.push.where}, ${rec.push.flow}), depth \`${rec.contract.depth}\`, contract \`${rec.contract.digest.slice(0, 19)}\` read from ${cell(rec.contract.read_from)}.`,
+    '',
+    'What this proves: the declared checks ran and the agentic evidence is bound to this exact diff and signed by an allowed key. It catches mistakes and drift; it does not stop an agent that deliberately forges a check or its artifacts.',
     '',
     `Touches gate files: ${rec.touches_gate.touched ? `yes (${cell([...rec.touches_gate.paths, ...rec.touches_gate.keys.map(k => `key ${k}`)].join(', '))})` : 'no'}. Informational only: it changes no verdict.`,
     '',
@@ -77,23 +79,23 @@ export function renderMarkdown(rec: EvidenceRecord): string {
   if (rec.static.length > 0) {
     lines.push('| Static check | Command | Exit | Time |', '|---|---|---|---|');
     for (const s of rec.static) {
-      lines.push(`| \`${cell(s.id)}\` | \`${cell(s.cmd)}\` | ${s.skipped ? `skipped: ${cell(s.skipped)}` : String(s.exit)} | ${s.skipped ? '-' : `${(s.ms / 1000).toFixed(1)} s`} |`);
+      lines.push(`| ${cell(s.id)} | ${cell(s.cmd)} | ${s.skipped ? `skipped: ${cell(s.skipped)}` : String(s.exit)} | ${s.skipped ? '-' : `${(s.ms / 1000).toFixed(1)} s`} |`);
     }
     lines.push('');
   }
   if (rec.agentic.required.length > 0 || rec.agentic.evidence_commit) {
-    lines.push(`Agentic evidence: commit ${short(rec.agentic.evidence_commit)}, signature \`${rec.agentic.signature}\`${rec.agentic.signer ? ` (\`${cell(rec.agentic.signer)}\`)` : ''}.`, '');
-    if (rec.agentic.checks.length > 0) {
+    lines.push(`Agentic evidence: commit ${short(rec.agentic.evidence_commit)}, signature \`${rec.agentic.signature}\`${rec.agentic.signer ? ` (${cell(rec.agentic.signer)})` : ''}.`, '');
+    if (rec.agentic.checks.length > 0 && rec.agentic.signature === 'valid') {
       lines.push('| Agentic check | Env | Verdict | By | Artifacts |', '|---|---|---|---|---|');
       for (const c of rec.agentic.checks) {
-        lines.push(`| \`${cell(c.id)}\` | ${cell(c.env)} | ${cell(c.verdict)} | ${cell(c.verdict_by)} | ${c.artifacts.length} |`);
+        lines.push(`| ${cell(c.id)} | ${cell(c.env)} | ${cell(c.verdict)} | ${cell(c.verdict_by)} | ${c.artifacts.length} |`);
       }
       lines.push('');
     }
   }
   if (rec.ready) {
     const r = rec.ready;
-    lines.push(`Ready: threads open ${r.threads_open ?? 'unknown'}, bot review ${r.bot_review}, assignee ${r.assignee ? 'yes' : 'no'}, tracker link ${r.tracker_link ? 'yes' : 'no'}, title ${r.title_ok ? 'ok' : 'not conventional or too long'}.`, '');
+    lines.push(`Ready: threads open ${r.threads_open ?? 'unknown'}, bot review ${r.bot_review}, assignee ${r.assignee ? 'yes' : 'no'}, tracker link ${r.tracker_link ? 'yes' : 'no'}, title ${r.title_ok ? 'ok' : 'not conventional or too long'}. Threads and the bot review are a snapshot of this run, informational only; the ruleset enforces thread resolution.`, '');
   }
   if (rec.problems.length > 0) {
     lines.push('Problems:', '', ...rec.problems.map(p => `- ${cell(p)}`), '');
@@ -103,6 +105,16 @@ export function renderMarkdown(rec: EvidenceRecord): string {
 
 export interface PruneResult { deleted: string[], kept: string[] }
 
+function newestMtime(dir: string): number {
+  let t = statSync(dir).mtimeMs;
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name);
+    const st = statSync(p);
+    t = Math.max(t, st.isDirectory() ? newestMtime(p) : st.mtimeMs);
+  }
+  return t;
+}
+
 export function pruneArtifacts(primary: string, days: number, now: number, dryRun: boolean): PruneResult {
   const root = join(evidenceDir(primary), 'artifacts');
   const out: PruneResult = { deleted: [], kept: [] };
@@ -111,9 +123,7 @@ export function pruneArtifacts(primary: string, days: number, now: number, dryRu
   for (const name of readdirSync(root).sort()) {
     const dir = join(root, name);
     if (!statSync(dir).isDirectory()) { continue; }
-    const rec = readRecord(primary, name);
-    const written = rec ? Date.parse(rec.written_at) : Number.NaN;
-    const last = Math.max(statSync(dir).mtimeMs, Number.isNaN(written) ? 0 : written);
+    const last = newestMtime(dir);
     if (last < cutoff) {
       if (!dryRun) { rmSync(dir, { recursive: true, force: true }); }
       out.deleted.push(name);

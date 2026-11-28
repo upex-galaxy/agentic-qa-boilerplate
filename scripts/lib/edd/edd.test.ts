@@ -254,6 +254,35 @@ describe('verifyAgentic', () => {
     expect(verifyAgentic({ cwd: l.r.dir, base: l.base, head: lh, loaded: loadContract(refReader(l.r.dir, l.base), l.base), allowedSigners: null, signatureOf: VALID }).ok).toBe(true);
   });
 
+  test('at standard a code commit without a Session trailer cannot prove the tester differs', () => {
+    const { r, base, digest } = setup();
+    r.commit('test: x', { 'tests/x.spec.ts': '1\n' });
+    const head = attestCommit(r, base, { depth: 'standard', checks: [pass('screens', 'local'), pass('specs', 'staging')], digest });
+    const v = verifyAgentic({ cwd: r.dir, base, head, loaded: loadContract(refReader(r.dir, base), base), allowedSigners: null, signatureOf: VALID });
+    expect(v.problems.join(' ')).toContain('has no Session trailer');
+  });
+
+  test('a tester label that contains the author label is another session', () => {
+    const { r, base, digest } = setup();
+    r.commit('test: x\n\nSession: author-7', { 'tests/x.spec.ts': '1\n' });
+    const head = attestCommit(r, base, { depth: 'standard', checks: [pass('screens', 'local', 'author-7/tester'), pass('specs', 'staging', 'author-7/tester')], digest });
+    expect(verifyAgentic({ cwd: r.dir, base, head, loaded: loadContract(refReader(r.dir, base), base), allowedSigners: null, signatureOf: VALID }).ok).toBe(true);
+  });
+
+  test('a whitespace-only change after attest voids the evidence (patch-id --verbatim)', () => {
+    const { r, base, digest } = setup();
+    r.commit('feat: x', { 'app/a.py': 'if ok:\n    go()\n' });
+    attestCommit(r, base, { depth: 'light', checks: [pass('screens', 'local')], digest });
+    const head = r.commit('style: dedent', { 'app/a.py': 'if ok:\n  pass\ngo()\n'.replace('  pass\n', '    pass\n') });
+    const v = verifyAgentic({ cwd: r.dir, base, head, loaded: loadContract(refReader(r.dir, base), base), allowedSigners: null, signatureOf: VALID });
+    expect(v.problems.join(' ')).toContain('patch id');
+    const ws = setup();
+    ws.r.commit('feat: x', { 'app/b.py': 'a = 1\n' });
+    attestCommit(ws.r, ws.base, { depth: 'light', checks: [pass('screens', 'local')], digest: ws.digest });
+    const wsHead = ws.r.commit('style: spaces', { 'app/b.py': 'a  =  1\n' });
+    expect(verifyAgentic({ cwd: ws.r.dir, base: ws.base, head: wsHead, loaded: loadContract(refReader(ws.r.dir, ws.base), ws.base), allowedSigners: null, signatureOf: VALID }).ok).toBe(false);
+  });
+
   test('depth deep needs a pass on every env of the check', () => {
     const { r, base, digest } = setup();
     r.commit('test: x', { 'app/a.ts': '1\n' });
@@ -368,6 +397,7 @@ describe('record', () => {
     writeRecord(r.dir, rec('old', '2020-01-01T00:00:00.000Z'));
     mkdirSync(join(ev, 'artifacts', 'old'), { recursive: true });
     writeFileSync(join(ev, 'artifacts', 'old', 'trace.zip'), 'z');
+    utimesSync(join(ev, 'artifacts', 'old', 'trace.zip'), 1, 1);
     utimesSync(join(ev, 'artifacts', 'old'), 1, 1);
     mkdirSync(join(ev, 'artifacts', 'new'), { recursive: true });
     const dry = pruneArtifacts(r.dir, 30, Date.now(), true);
@@ -384,6 +414,7 @@ describe('record', () => {
     const md = renderMarkdown(rec('abc'));
     expect(md).toContain('## Evidence');
     expect(md).toContain('Touches gate files: yes (.husky/pre-push). Informational only');
-    expect(md).toContain('a \\| b');
+    expect(md).toContain('a &#124; b');
+    expect(md).toContain('it does not stop an agent that deliberately forges a check');
   });
 });

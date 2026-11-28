@@ -4,8 +4,16 @@ export const EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
 
 export interface GitResult { code: number, out: string, err: string }
 
+const GIT_LOCATION_VARS = ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_PREFIX'];
+
+export function cleanEnv(env: Record<string, string | undefined> = process.env): Record<string, string | undefined> {
+  const out = { ...env };
+  for (const k of GIT_LOCATION_VARS) { delete out[k]; }
+  return out;
+}
+
 export function git(cwd: string, args: string[], input?: string): GitResult {
-  const p = Bun.spawnSync(['git', ...args], { cwd, stdin: input === undefined ? 'ignore' : Buffer.from(input), stdout: 'pipe', stderr: 'pipe' });
+  const p = Bun.spawnSync(['git', ...args], { cwd, stdin: input === undefined ? 'ignore' : Buffer.from(input), stdout: 'pipe', stderr: 'pipe', env: cleanEnv() });
   return { code: p.exitCode ?? 1, out: p.stdout.toString(), err: p.stderr.toString() };
 }
 

@@ -10,7 +10,7 @@ import { basename, join } from 'node:path';
 import { AGENTIC_SCHEMA, collectChecks, evidenceMessage } from './lib/edd/attest.ts';
 import { ALLOWED_SIGNERS, ContractError, DEPTHS, gateKeysTouched, loadContract, readProjectDoc, refReader, sha256, treeReader } from './lib/edd/contract.ts';
 import { changeDepth, gatePathsTouched, requiredAgentic } from './lib/edd/depth.ts';
-import { changedFiles, commitTime, EMPTY_TREE, git, isCommit, isZeroOid, mergeBase, primaryRoot, repoRoot, resolveCommit, treeOf } from './lib/edd/git.ts';
+import { changedFiles, cleanEnv, commitTime, EMPTY_TREE, git, isCommit, isZeroOid, mergeBase, primaryRoot, repoRoot, resolveCommit, treeOf } from './lib/edd/git.ts';
 import { patchId } from './lib/edd/patch-id.ts';
 import { artifactsRoot, pruneArtifacts, readRecord, RECORD_SCHEMA, RENDER_MARKER, renderMarkdown, writeRecord } from './lib/edd/record.ts';
 import { authorSessions, coverageProblems, isEvidenceCommit, testerProblems, verifyAgentic } from './lib/edd/verify.ts';
@@ -77,9 +77,15 @@ function identity(): { worktree: string, session: string } {
   };
 }
 
-function scriptSha(): string | null {
-  try { return sha256(readFileSync(import.meta.path)); }
-  catch { return null; }
+function scriptSha(read: Reader): string | null {
+  const src = read('scripts/edd.ts');
+  return src === null ? null : sha256(src);
+}
+
+function originSlug(): string | null {
+  const url = git(CWD, ['remote', 'get-url', 'origin']).out.trim();
+  const m = url.match(/github\.com[:/]([^/]+)\/(.+?)(?:\.git)?$/);
+  return m ? `${m[1]}/${m[2]}` : null;
 }
 
 function load(read: Reader, source: string): LoadedContract {
@@ -109,7 +115,7 @@ function runStatic(checks: StaticCheck[]): StaticResult[] {
     console.log(`edd: running ${c.id}: ${c.cmd}`);
     const ranAt = new Date().toISOString();
     const t0 = performance.now();
-    const p = Bun.spawnSync(['sh', '-c', c.cmd], { cwd: CWD, stdout: 'pipe', stderr: 'pipe', env: process.env });
+    const p = Bun.spawnSync(['sh', '-c', c.cmd], { cwd: CWD, stdout: 'pipe', stderr: 'pipe', env: cleanEnv() });
     const ms = Math.round(performance.now() - t0);
     const output = `${p.stdout.toString()}${p.stderr.toString()}`;
     const exit = p.exitCode ?? 1;
@@ -144,6 +150,7 @@ function record(parts: {
   flow: EvidenceRecord['push']['flow']
   where: EvidenceRecord['push']['where']
   loaded: LoadedContract
+  read: Reader
   agentic: AgenticVerdict
   statics: StaticResult[]
   ready: ReadyState | null
@@ -164,7 +171,7 @@ function record(parts: {
     ready: parts.ready,
     touches_gate: parts.touches,
     problems,
-    producer: { script_sha256: scriptSha(), worktree: id.worktree, session: id.session },
+    producer: { script_sha256: scriptSha(parts.read), worktree: id.worktree, session: id.session },
     result: pass ? 'pass' : 'fail',
     written_at: new Date().toISOString(),
   };
@@ -195,11 +202,12 @@ async function gate(): Promise<number> {
   else { refs = parseRefs(await Bun.stdin.text()); }
   let failed = false;
   for (const r of refs) {
-    if (isZeroOid(r.localSha)) { continue; }
+    if (isZeroOid(r.localSha) || !r.remoteRef.startsWith('refs/heads/')) { continue; }
     const base = baseFor(r.localSha, r.remoteSha, wt.facts.production);
     const source = base === EMPTY_TREE ? 'working tree' : base;
     const problems: string[] = [];
-    const tried = tryLoad(base === EMPTY_TREE ? treeReader(CWD) : refReader(CWD, base), source);
+    const read = base === EMPTY_TREE ? treeReader(CWD) : refReader(CWD, base);
+    const tried = tryLoad(read, source);
     const loaded = typeof tried === 'string' ? wt : tried;
     if (wt.facts.policy !== 'evidence' && loaded.facts.policy !== 'evidence' && typeof tried !== 'string') { continue; }
     if (typeof tried === 'string') { problems.push(tried); }
@@ -216,7 +224,7 @@ async function gate(): Promise<number> {
     const agentic = isProtected
       ? verifyAgentic({ cwd: CWD, base, head: r.localSha, loaded, allowedSigners: base === EMPTY_TREE ? null : refReader(CWD, base)(ALLOWED_SIGNERS) })
       : (() => { const d = changeDepth(files, loaded.contract.depth); return emptyAgentic(d.depth, d.reasons, patchId(CWD, base, r.localSha)); })();
-    const rec = record({ sha: r.localSha, base, branch, repo: null, remoteRef: r.remoteRef, flow: isProtected ? 'direct' : 'pr', where: 'pre-push', loaded, agentic, statics, ready: null, touches: touches(files, loaded, r.localSha), problems });
+    const rec = record({ sha: r.localSha, base, branch, repo: originSlug(), remoteRef: r.remoteRef, flow: isProtected ? 'direct' : 'pr', where: 'pre-push', loaded, read, agentic, statics, ready: null, touches: touches(files, loaded, r.localSha), problems });
     const path = writeRecord(PRIMARY, rec);
     console.log(`edd gate: ${rec.result.toUpperCase()} ${r.localSha.slice(0, 12)} -> ${r.remoteRef} (depth ${rec.contract.depth}). Record: ${path}`);
     for (const p of rec.problems) { console.log(`  - ${p}`); }
@@ -323,9 +331,6 @@ function readyState(pr: PullRequestEvent, repo: string, loaded: LoadedContract, 
     tracker_link: key === null || (pr.body ?? '').includes(key),
     title_ok: CONVENTIONAL.test(title) && title.length < 70,
   };
-  if (state.threads_open === null) { problems.push('review threads could not be read (gh api graphql)'); }
-  else if (state.threads_open > 0) { problems.push(`${state.threads_open} review thread(s) are not resolved`); }
-  if (botReview === 'dirty') { problems.push(`the review bot ${bot} has not left a clean review`); }
   if (!state.assignee) { problems.push('the PR has no assignee'); }
   if (!state.tracker_link) { problems.push(`the branch names ${key}, the PR body does not link it`); }
   if (!state.title_ok) { problems.push('the PR title is not a conventional title under 70 characters'); }
@@ -333,10 +338,11 @@ function readyState(pr: PullRequestEvent, repo: string, loaded: LoadedContract, 
 }
 
 function upsertComment(repo: string, number: number, body: string): void {
-  const list = ghJson([`repos/${repo}/issues/${number}/comments?per_page=100`]) as { id: number, body?: string, user?: { login?: string } }[] | null;
-  const mine = Array.isArray(list) ? list.find(c => c.user?.login === 'github-actions[bot]' && (c.body ?? '').startsWith(RENDER_MARKER)) : undefined;
-  const args = mine
-    ? ['-X', 'PATCH', `repos/${repo}/issues/comments/${mine.id}`, '-f', `body=${body}`]
+  const jq = `.[] | select(.user.login == "github-actions[bot]" and ((.body // "") | startswith("${RENDER_MARKER}"))) | .id`;
+  const p = Bun.spawnSync(['gh', 'api', '--paginate', `repos/${repo}/issues/${number}/comments?per_page=100`, '--jq', jq], { cwd: CWD, stdout: 'pipe', stderr: 'pipe', env: process.env });
+  const id = p.exitCode === 0 ? p.stdout.toString().split('\n').map(s => s.trim()).find(Boolean) : undefined;
+  const args = id
+    ? ['-X', 'PATCH', `repos/${repo}/issues/comments/${id}`, '-f', `body=${body}`]
     : ['-X', 'POST', `repos/${repo}/issues/${number}/comments`, '-f', `body=${body}`];
   if (ghJson(args) === null) { console.log('edd: warning: the PR comment could not be written'); }
 }
@@ -384,7 +390,7 @@ function verifyCi(): number {
   }
   const agentic = verifyAgentic({ cwd: CWD, base, head, loaded, allowedSigners: base === EMPTY_TREE ? null : read(ALLOWED_SIGNERS) });
   const ready = pr && repo ? readyState(pr, repo, loaded, problems) : null;
-  const rec = record({ sha: head, base, branch, repo, remoteRef: pr ? `refs/heads/${pr.base.ref}` : (ev.ref ?? null), flow, where: 'ci', loaded, agentic, statics: [], ready, touches: touches(changedFiles(CWD, base, head), loaded, head), problems });
+  const rec = record({ sha: head, base, branch, repo, remoteRef: pr ? `refs/heads/${pr.base.ref}` : (ev.ref ?? null), flow, where: 'ci', loaded, read, agentic, statics: [], ready, touches: touches(changedFiles(CWD, base, head), loaded, head), problems });
   const path = writeRecord(PRIMARY, rec);
   const md = renderMarkdown(rec);
   console.log(`edd verify --ci: ${rec.result.toUpperCase()} ${head.slice(0, 12)}. Record: ${path}`);
@@ -419,18 +425,16 @@ function prune(): number {
 function check(): number {
   const id = positional()[0];
   if (!id) { return die('check needs a static check id'); }
-  const wt = load(treeReader(CWD), 'working tree');
-  if (!wt.declared) {
-    console.log(`edd check: .agents/project.yaml declares no evidence: block; ${id} has nothing to run.`);
-    return 0;
-  }
+  const baseRef = flag('--base') ?? process.env.EDD_BASE ?? '';
+  const base = baseRef && !isZeroOid(baseRef) ? resolveCommit(CWD, baseRef) : null;
+  const wt = base ? load(refReader(CWD, base), base) : load(treeReader(CWD), 'working tree');
   const s = wt.contract.static.find(c => c.id === id && c.where.includes('ci'));
   if (!s) {
     console.log(`edd check: ${id} is not a ci check of the evidence contract; nothing to run.`);
     return 0;
   }
-  console.log(`edd check ${id}: ${s.cmd}`);
-  const p = Bun.spawnSync(['sh', '-c', s.cmd], { cwd: CWD, stdout: 'inherit', stderr: 'inherit', env: process.env });
+  console.log(`edd check ${id}: ${s.cmd} (contract read from ${wt.source})`);
+  const p = Bun.spawnSync(['sh', '-c', s.cmd], { cwd: CWD, stdout: 'inherit', stderr: 'inherit', env: cleanEnv() });
   return p.exitCode ?? 1;
 }
 

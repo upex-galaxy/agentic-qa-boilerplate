@@ -212,7 +212,7 @@ export function loadContract(read: Reader, source: string): LoadedContract {
     agentic: byId([...fragAgentic, agenticList(ev.agentic, 'evidence.agentic')]),
     depth: {
       default: depthOf(depthBlock.default ?? (declared ? 'standard' : 'none'), 'evidence.depth.default'),
-      rules: [...ruleList(depthBlock.rules, 'evidence.depth.rules'), ...fragRules],
+      rules: declared ? [...ruleList(depthBlock.rules, 'evidence.depth.rules'), ...fragRules] : [{ paths: DEFAULT_GATE_PATHS, depth: 'standard' }, ...fragRules],
     },
     human: {
       paths: human.paths === undefined ? DEFAULT_GATE_PATHS : strings(human.paths, 'evidence.human.paths'),

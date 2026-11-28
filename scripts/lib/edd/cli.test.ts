@@ -72,6 +72,23 @@ describe('edd gate', () => {
     expect(rec.touches_gate).toEqual({ touched: true, paths: [], keys: ['evidence'] });
   });
 
+  test('tags and other non-branch refs are not gated', () => {
+    const { r } = fixture('evidence');
+    const res = run(r.dir, ['gate'], `refs/tags/v1 ${'a'.repeat(40)} refs/tags/v1 ${'0'.repeat(40)}\n`);
+    expect(res.code).toBe(0);
+    expect(records(r.dir)).toEqual([]);
+  });
+
+  test('a GIT_DIR inherited from the hook does not reach the checks', () => {
+    const { r } = fixture('evidence');
+    r.commit('chore: probe', { '.agents/project.yaml': projectYaml(contract('test -z "$GIT_DIR"')) });
+    const probeBase = r.git('rev-parse', 'HEAD');
+    r.git('update-ref', 'refs/remotes/origin/main', probeBase);
+    const head = r.commit('feat: x', { 'app/a.ts': '1\n' });
+    const p = Bun.spawnSync(['bun', EDD, 'gate'], { cwd: r.dir, stdin: Buffer.from(`refs/heads/main ${head} refs/heads/main ${probeBase}\n`), stdout: 'pipe', stderr: 'pipe', env: { ...process.env, GIT_DIR: join(r.dir, '.git') } });
+    expect(p.exitCode).toBe(0);
+  });
+
   test('a push of a commit that is not checked out fails closed', () => {
     const { r, base } = fixture('evidence');
     const head = r.commit('feat: x', { 'ok.txt': '1\n' });
@@ -104,8 +121,9 @@ describe('edd check, render, prune', () => {
     const { r } = fixture('allowed');
     expect(run(r.dir, ['check', 'never']).code).toBe(3);
     expect(run(r.dir, ['check', 'format'])).toMatchObject({ code: 0 });
-    r.commit('chore: drop block', { '.agents/project.yaml': projectYaml('') });
-    expect(run(r.dir, ['check', 'never']).out).toContain('declares no evidence: block');
+    r.commit('chore: drop block', { '.agents/project.yaml': projectYaml(''), 'package.json': JSON.stringify({ scripts: { 'lint:check': 'exit 4' } }) });
+    expect(run(r.dir, ['check', 'lint']).code).toBe(4);
+    expect(run(r.dir, ['check', 'never']).out).toContain('not a ci check');
   });
 
   test('render prints the record of a pushed commit', () => {
@@ -156,6 +174,20 @@ describe('framework_gate_evidence (.husky/framework-gates.sh)', () => {
     expect(block).toEqual({ code: 0, called: 'refs/heads/main a refs/heads/main b\n', after: 'refs/heads/main a refs/heads/main b\n' });
     const flow = hook(r, projectYaml('', 'evidence').replace('  policy:\n    direct_push_to_protected: evidence', '  policy: { direct_push_to_protected: \'evidence\' }'));
     expect(flow.called).toBe('refs/heads/main a refs/heads/main b\n');
+  });
+
+  test('deleting scripts/edd.ts does not switch the gate off while the remote has it', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const sha = r.commit('chore: base', { '.agents/project.yaml': projectYaml('', 'evidence'), 'scripts/edd.ts': 'x\n' });
+    r.git('update-ref', 'refs/remotes/origin/main', sha);
+    r.write('.agents/project.yaml', projectYaml('', 'evidence'));
+    const script = join(r.dir, '..', 'hook2.sh');
+    writeFileSync(script, `. '${GATES}'\nframework_gate_evidence\n`);
+    r.git('rm', '-q', 'scripts/edd.ts');
+    const p = Bun.spawnSync(['sh', script], { cwd: r.dir, stdin: Buffer.from('x\n'), stdout: 'pipe', stderr: 'pipe' });
+    expect(p.exitCode).toBe(1);
+    expect(p.stdout.toString()).toContain('cannot be skipped by deleting it');
   });
 
   test('the remote copy of the policy turns it on even when the working tree says allowed', () => {
