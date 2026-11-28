@@ -250,6 +250,18 @@ bun run setup:doctor          # human-readable summary
 bun run setup:doctor --json   # machine-readable, parse with jq / agent
 ```
 
+Its **skill drift** section (`skill_drift` in `--json`) covers every skill in `PROJECT_LEVEL_SKILLS` and `USER_LEVEL_SKILLS`. It is report only: it never changes the verdict or the exit code.
+
+| State | Meaning |
+|---|---|
+| `dev-link` | A development link: its target, the checkout's branch and unpushed commit count |
+| `matches` | The commit recorded at install is the source's current HEAD |
+| `source-moved` | The source repo moved since install, not necessarily this skill's folder |
+| `modified` | A project copy edited since install (project copies only) |
+| `not-installed` | Declared, with no installed copy |
+| `unknown` | It cannot be decided, with the reason (no recorded commit, source unreachable, another source, unreadable lock) |
+| `no-source` | A user-level skill no list declares and the lock does not record |
+
 Exit code: `0` when everything is green, `1` when any pending action remains. JSON shape:
 
 ```json
@@ -433,6 +445,31 @@ Run `INSTALL_SKIP_COMMUNITY=1 bun setup` to skip the community step entirely. Re
 
 If a skill fails to install (e.g., upstream repo restructured), the failure is recorded as `failed` in the state file and surfaced in the closing report, but the installer continues — community skills are best-effort, not blocking.
 
+### Development links are never overwritten
+
+`skills add` and `skills update` replace a development link with a copy, and write into a local checkout when a whole skills directory links into it. So before either one, the guard looks for an entry named after the skill in these folders, below your home directory for a user-level skill and below the project root for a project one:
+
+| Folders checked | Level |
+|---|---|
+| `.agents/skills/` (the skills CLI's store) and `.claude/skills/` | both |
+| every `<hidden folder>/skills/` and `<hidden folder>/<folder>/skills/`, such as `.windsurf/skills/` or `.codeium/windsurf/skills/` | both |
+| `skills/`, `data/skills/`, `agent/skills/`, `agent/subagents/<name>/skills/` | project |
+| `.config/kimchi/harness/skills/` | user |
+| `$CLAUDE_CONFIG_DIR/skills/` (the Claude Code folder when that variable is set), `$XDG_CONFIG_HOME/<folder>/skills/`, `%APPDATA%\reasonix\skills`, and `skills/` under `$VIBE_HOME`, `$HERMES_HOME`, `$AUTOHAND_HOME`, `$GROK_HOME` or `$REASONIX_HOME` | user |
+
+The skill is skipped when one of those entries is:
+
+- a symlink leading out of the store, or
+- inside a skills directory that a symlink (the directory itself or a parent) sends somewhere other than `.agents/skills/` or the Claude Code folder. Links above your home directory or the project root do not count.
+
+These do not count:
+
+- an entry outside the store that resolves to the store entry of the same name (the CLI's own fan-out links, a directory aliased to the store): the store entry is judged instead;
+- `.agents/skills/` linked to `.claude/skills/`, or the reverse, with real folders inside;
+- a linked skills directory that does not hold the skill yet: it is **not flagged**.
+
+A package declared without a skill name is judged on every entry of those folders. `bun setup` names each skipped skill and its link paths, and records it as `skipped`, never as `declined` or `failed`; the updater prints the skill names only and records no state. The guard is `devLinkedDestinations` in `cli/lib/user-skills-update.ts`. To get the published copy back, remove the link and run `bun setup --sync-skills`.
+
 Keeping them current is `bun sync`'s job, not `setup`'s: its last step runs `bunx skills update` for these same two lists (see **Community skills update** under [What the updater guarantees](#what-the-updater-guarantees)).
 
 ---
@@ -505,7 +542,7 @@ Behaviour by area; the release history behind it is recorded in `.context/ADR/AD
 - **Never a destructive default.** `take upstream` is suggested only where the project lacks the content entirely. A row naming project-only servers, keys, headings or edits suggests `merge`; an `opencode.jsonc` holding project servers reads "only here: ... declare them in `.mcp.json` and `.codex/config.toml`, or remove them", still blocking, never "take upstream". Every `merge` on a watched file says what to port and what to keep (`port upstream additions only: <keys>; keep project-only key(s): <keys>`; `keep project` when only the project has extra keys; `take upstream` only when upstream added keys and nothing else differs).
 - **`--dry-run` previews with the new updater.** When upstream carries a newer `cli/`, the preview does not write it: the fetched updater runs from the upstream clone against the project (same flags, same cwd) and shows its migration plan, component preview and parity table. Nothing is written and the prompt is not saved. Without a terminal on stdin and no `--auto` / `--interactive`, the run assumes `--auto` and prints one notice instead of hanging.
 - **Post-sync gates.** After the apply, the project's own copies of the gate scripts `GATE_SCRIPTS` in `cli/update-boilerplate.ts` names run (each under a timeout; a gate that does not finish is skipped with a note; a script that does not exist is skipped; `--no-gates` disables them). A failure becomes a "Verificación" row with the exit code, the first error lines and which of the failing files this run applied, plus a `Gates:` line in the closing box. Informational only: never an abort, never blocking under `--strict`.
-- **Community skills update.** As its last step, the updater refreshes the community skills `cli/install.ts` declares: `bunx skills update <names> -g -y` for `USER_LEVEL_SKILLS` and `bunx skills update <names> -p -y` for `PROJECT_LEVEL_SKILLS`. It passes only the names that `bunx skills ls --json` reports as installed and tracked from the same source, so a skill you declined, a same-named skill from another source and the rest of your global skills stay as they are. A skill installed as a symlink that leads out of the skills CLI's store (a development link into a skills repo) is skipped, because `skills update` would replace the link with a copy. Each project skill is copied to `.backups/skills-update-<timestamp>/` before its update: the update replaces the folder, and these skills are gitignored. The skills CLI exits 0 even when a fetch fails, so the updater reads its output and turns a failure into a warning; the run's exit code never depends on this step, `--strict` included. `--dry-run` prints the command it would run. Opt out with `--no-skills-update`, or with `UPEX_SKIP_SKILLS_UPDATE=1` on the first run after upgrading from an updater that does not know the flag yet (an older updater stops on an unknown flag). Project skills installed before the skills CLI wrote `skills-lock.json` are untracked: the run lists them and `bun setup --sync-skills` reinstalls them. Logic and the measured CLI behaviour: `cli/lib/user-skills-update.ts`.
+- **Community skills update.** As its last step, the updater refreshes the community skills `cli/install.ts` declares: `bunx skills update <names> -g -y` for `USER_LEVEL_SKILLS` and `bunx skills update <names> -p -y` for `PROJECT_LEVEL_SKILLS`. It passes only the names that `bunx skills ls --json` reports as installed and tracked from the same source, so a skill you declined, a same-named skill from another source and the rest of your global skills stay as they are. A development link into a skills repo is skipped, because `skills update` would replace the link with a copy (see [Development links are never overwritten](#development-links-are-never-overwritten)). Each project skill is copied to `.backups/skills-update-<timestamp>/` before its update: the update replaces the folder, and these skills are gitignored. The skills CLI exits 0 even when a fetch fails, so the updater reads its output and turns a failure into a warning; the run's exit code never depends on this step, `--strict` included. `--dry-run` prints the command it would run. Opt out with `--no-skills-update`, or with `UPEX_SKIP_SKILLS_UPDATE=1` on the first run after upgrading from an updater that does not know the flag yet (an older updater stops on an unknown flag). Project skills installed before the skills CLI wrote `skills-lock.json` are untracked: the run lists them and `bun setup --sync-skills` reinstalls them. Logic and the measured CLI behaviour: `cli/lib/user-skills-update.ts`.
 - **`package.json` rows and overwritten edits.** Every key kept at the project's value while upstream differs is one `package.json` row, with both values in the saved file. A synced file the project had edited (3-way against the lock cursor) and the run overwrote gets a `merge` row naming its `.backups/` copy and the hunk count.
 - **Re-run safety.** The run records what it wrote in `.template/last-apply.json` (gitignored, sha256 per path). The next dirty-tree guard exempts a recorded path whose hash still matches, so `bun sync --auto` twice in a row, without committing in between, proceeds as a no-op. An unrelated dirty synced path, or a synced file edited by hand since, still aborts, naming `Commit sugerido` and the prompt path.
 - **Converging rows for project-customized synced files.** `.husky/pre-commit`, `.husky/pre-push` and `.husky/commit-msg` are on the protected watchlist (project gates live there): delivered once when missing, never overwritten, one drift row per upstream change with the hunks as evidence. The rest of `.husky/` (the `_/` helpers) keeps syncing.
