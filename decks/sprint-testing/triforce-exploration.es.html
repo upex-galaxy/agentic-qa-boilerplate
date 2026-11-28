@@ -1050,10 +1050,10 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="steps s3 mt-m">
     <div class="step"><div class="num">1</div><h4>Fixture / TTL corto</h4><p>La mejor. Si el env expone un TTL configurable, ponlo en segundos y prueba el borde 14:59/15:01 real. Ejercita el código de expiry verdadero.</p></div>
     <div class="step"><div class="num">2</div><h4>Clock-mock</h4><p>Si el stack permite inyectar/congelar el tiempo, avanza el reloj y asegura la expiración — siempre que el mock maneje la lógica real, no una rama de test.</p></div>
-    <div class="step"><div class="num">3</div><h4>Defer manual escrito</h4><p>Último recurso. Documenta el borde que no pudiste ejercitar, por qué, y el follow-up concreto (ej. "añadir <span class="mono">MAGIC_LINK_TTL</span> override").</p></div>
+    <div class="step"><div class="num">3</div><h4>Defer manual escrito</h4><p>Último recurso, vía el <b>preflight de desbloqueo</b>: solo con causa externa. Anota el borde, quién debe qué y el follow-up (ej. "añadir <span class="mono">MAGIC_LINK_TTL</span> override").</p></div>
   </div>
-  <div class="callout warn mt-m"><h4>Nunca un <span class="mono">BLOCKED</span> a secas</h4><p>Marca <span class="mono">BLOCKED — needs time fixture</span> con la opción elegida (1/2/3) y una línea de razón. Un BLOCKED sin camino de decisión pierde cobertura en silencio.</p></div>
-  <div class="notes">La escalera TTL de 3 opciones por prioridad: fixture > clock-mock > defer escrito. Nunca un BLOCKED desnudo — siempre "BLOCKED — needs time fixture" + opción + razón.</div>
+  <div class="callout warn mt-m"><h4>Nunca un <span class="mono">BLOCKED</span> a secas</h4><p>Mientras pruebas la opción 1 o 2, marca <span class="mono">BLOCKED — needs time fixture</span> con la opción y una línea de razón. Sin causa externa, la opción 3 sigue en BLOCKED. Un BLOCKED sin camino de decisión pierde cobertura en silencio.</p></div>
+  <div class="notes">La escalera TTL de 3 opciones por prioridad: fixture > clock-mock > defer escrito. El defer escrito pasa por sprint-testing/references/preflight-gate.md y solo vale con causa externa. Nunca un BLOCKED desnudo — siempre "BLOCKED — needs time fixture" + opción + razón.</div>
 </section>
 
 <!-- 30. OBSERVATION RULE + EVIDENCE -->
@@ -1063,7 +1063,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
   <div class="grid g2 mt-s">
     <div class="card card-accent">
       <h4>Propagación de estado</h4>
-      <p class="dim">Un TC es <b>PASSED o FAILED</b> solo si se observó en el entorno que nombra su precondición. Un test unitario, un CI verde, leer el código u otro entorno lo dejan en <b>NOT RUN</b>, nunca en FAILED. Un NOT RUN sube la escalera: recrear en el entorno de pruebas, QA difiere con su autoridad y deja una tarea de seguimiento, después desarrolladores, y el dueño solo si hay duda.</p>
+      <p class="dim">Un TC es <b>PASSED o FAILED</b> solo si se observó en el entorno que nombra su precondición. Un test unitario, un CI verde, leer el código u otro entorno lo dejan en <b>NOT RUN</b>, nunca en FAILED. Un NOT RUN sube la escalera. El <b>preflight de desbloqueo</b> descarta lo que está fuera de alcance e intenta desbloquear el caso; QA difiere solo ante una <b>causa externa</b>, con seguimiento. La Story avanza entonces con un comentario de aviso, el <b>OK propio del dueño</b>, un label y un shift-right test plan; el caso corre cuando llega su precondición.</p>
     </div>
     <div class="card card-accent">
       <h4>Disciplina de evidencia</h4>
@@ -1075,7 +1075,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
     </div>
   </div>
   <div class="callout mt-m"><h4>El log es el handoff a Reporting</h4><p>El bloque Execution de <span class="mono">test-session-memory.md</span> (smoke + tablas UI/API/DB + Findings) es lo que Reporting consume: los Findings alimentan los bugs, los pass/fail alimentan el ATR.</p></div>
-  <div class="notes">Pasa solo si se observó: PASSED o FAILED exigen observar el caso en el entorno de su precondición; lo demás es NOT RUN con su razón (BLOCKED mientras la escalera sigue abierta, DEFERRED (execution) cuando QA lo difirió con tarea). Esa razón no es el veredicto Deferred del ROI. Evidencia en el estado de fallo, nombrada y gitignored. El memory de Execution es el input de Reporting (Findings→bugs, pass/fail→ATR).</div>
+  <div class="notes">Pasa solo si se observó: PASSED o FAILED exigen observar el caso en el entorno de su precondición; lo demás es NOT RUN con su razón (BLOCKED mientras la escalera sigue abierta, DEFERRED (execution) cuando el preflight halló una causa externa y QA lo difirió con tarea; shift-right-deferral.md tiene el aviso, el OK, el label y el plan). Esa razón no es el veredicto Deferred del ROI. Evidencia en el estado de fallo, nombrada y gitignored. El memory de Execution es el input de Reporting (Findings→bugs, pass/fail→ATR).</div>
 </section>
 
 <!-- 31. QUIZ 3 -->
@@ -1099,7 +1099,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
         <div class="opt"><span class="mk">B</span><span><span class="mono">BLOCKED</span> a secas — no se pudo correr</span></div>
         <div class="opt" data-correct="1"><span class="mk">C</span><span><span class="mono">NOT RUN</span> con razón <span class="mono">BLOCKED — needs time fixture</span> + la opción elegida, y sube la escalera</span></div>
       </div>
-      <div class="qexp"><b>NOT RUN con su razón.</b> No se observó, así que no puede ser PASSED ni FAILED. Nunca un NOT RUN o un BLOCKED desnudo: documenta el borde, por qué no se pudo, y el camino. La opción 3 (defer escrito) es la deferral de QA de la escalera: <span class="mono">DEFERRED (execution)</span> con su tarea de seguimiento. Así la cobertura no se pierde en silencio y viaja a Reporting.</div>
+      <div class="qexp"><b>NOT RUN con su razón.</b> No se observó, así que no puede ser PASSED ni FAILED. Nunca un NOT RUN o un BLOCKED desnudo: documenta el borde, por qué no se pudo, y el camino. La opción 3 (defer escrito) pasa a <span class="mono">DEFERRED (execution)</span> con su tarea de seguimiento solo si el preflight halla una causa externa; si no, el caso sigue en BLOCKED. Así la cobertura no se pierde en silencio y viaja a Reporting.</div>
     </div>
   </div>
   <div class="notes">Las dos reglas de disciplina: cosmético = no-bloqueante (sigue), y nunca BLOCKED/NOT RUN desnudo (siempre con razón + camino por la escalera).</div>
