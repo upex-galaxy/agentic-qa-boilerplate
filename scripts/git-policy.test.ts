@@ -40,6 +40,7 @@ import {
   actionsApprovalFinding,
   actionsSettingsPatch,
   approvedFromReviews,
+  baseStrategy,
   assessBypass,
   buildRules,
   classifyAccepted,
@@ -54,6 +55,7 @@ import {
   evidenceWorkflowWarning,
   expectedApprovals,
   headChecksVerdict,
+  hostRequiresApproval,
   MANAGED_RULE_TYPES,
   MERGE_MODES,
   mergeDecision,
@@ -1095,7 +1097,8 @@ describe('the Actions event policy that lets evidence.yml run on pull_request_ta
 describe('mergeDecision: which merge verify --merge allows', () => {
   const green = { green: [EDD_CHECK, 'lint'], notGreen: [] };
   const open = { ok: false, reason: 'edd/evidence is not a required status check on the base' };
-  const base = { base: 'main', sha: 'a'.repeat(40), guard: open, mode: 'auto', verdict: green, approved: false };
+  const base = { base: 'main', sha: 'a'.repeat(40), guard: open, mode: 'auto', verdict: green, approved: false, hostApproves: false };
+  const required = { ok: true, reason: 'required' };
 
   test('the host enforces: --auto, pinned to the head it read', () => {
     expect(mergeDecision({ ...base, guard: { ok: true, reason: 'required' } })).toMatchObject({ code: 0, message: expect.stringContaining(`--auto --match-head-commit ${'a'.repeat(40)}`) });
@@ -1124,9 +1127,37 @@ describe('mergeDecision: which merge verify --merge allows', () => {
   });
 
   test('approval: the latest review of each person counts, and a change request blocks', () => {
-    expect(approvedFromReviews([{ user: { login: 'ana' }, state: 'APPROVED' }])).toBe(true);
-    expect(approvedFromReviews([{ user: { login: 'ana' }, state: 'APPROVED' }, { user: { login: 'bob' }, state: 'CHANGES_REQUESTED' }])).toBe(false);
-    expect(approvedFromReviews([{ user: { login: 'ana' }, state: 'CHANGES_REQUESTED' }, { user: { login: 'ana' }, state: 'APPROVED' }, { user: { login: 'ana' }, state: 'COMMENTED' }])).toBe(true);
-    expect(approvedFromReviews(null)).toBe(false);
+    const sha = 'a'.repeat(40);
+    expect(approvedFromReviews([{ user: { login: 'ana' }, state: 'APPROVED', commit_id: sha }], sha)).toBe(true);
+    expect(approvedFromReviews([{ user: { login: 'ana' }, state: 'APPROVED', commit_id: sha }, { user: { login: 'bob' }, state: 'CHANGES_REQUESTED', commit_id: sha }], sha)).toBe(false);
+    expect(approvedFromReviews([{ user: { login: 'ana' }, state: 'CHANGES_REQUESTED', commit_id: sha }, { user: { login: 'ana' }, state: 'APPROVED', commit_id: sha }, { user: { login: 'ana' }, state: 'COMMENTED', commit_id: sha }], sha)).toBe(true);
+    expect(approvedFromReviews(null, sha)).toBe(false);
+  });
+
+  test('approval: only an approval of the head commit being merged counts', () => {
+    const sha = 'a'.repeat(40);
+    expect(approvedFromReviews([{ user: { login: 'ana' }, state: 'APPROVED', commit_id: 'c'.repeat(40) }], sha)).toBe(false);
+    expect(approvedFromReviews([{ user: { login: 'ana' }, state: 'APPROVED', commit_id: 'c'.repeat(40) }, { user: { login: 'bob' }, state: 'APPROVED', commit_id: sha }], sha)).toBe(true);
+  });
+
+  test('manual never lets the agent merge, even where the host requires edd/evidence', () => {
+    expect(mergeDecision({ ...base, guard: required, mode: 'manual' }).code).toBe(1);
+  });
+
+  test('human-approves on a guarded base needs the host to require a last-push approval, or a read approval of the head', () => {
+    expect(mergeDecision({ ...base, guard: required, mode: 'human-approves' }).code).toBe(1);
+    expect(mergeDecision({ ...base, guard: required, mode: 'human-approves', hostApproves: true }).code).toBe(0);
+    expect(mergeDecision({ ...base, guard: required, mode: 'human-approves', approved: true }).code).toBe(0);
+    expect(hostRequiresApproval([{ type: 'pull_request', parameters: { required_approving_review_count: 1, require_last_push_approval: true } }])).toBe(true);
+    expect(hostRequiresApproval([{ type: 'pull_request', parameters: { required_approving_review_count: 1, require_last_push_approval: false } }])).toBe(false);
+    expect(hostRequiresApproval([{ type: 'pull_request', parameters: { required_approving_review_count: 0, require_last_push_approval: true } }])).toBe(false);
+    expect(hostRequiresApproval(null)).toBe(false);
+  });
+
+  test('the merge mode is read from the base copy of project.yaml', () => {
+    expect(baseStrategy(null)).toBeNull();
+    expect(baseStrategy('git_strategy: [')).toBeNull();
+    expect(mergeMode(baseStrategy('project:\n  project_name: x\n')!)).toBe('auto');
+    expect(mergeMode(baseStrategy('git_strategy:\n  strategy: solo-main\n  policy:\n    merge_mode: manual\n')!)).toBe('manual');
   });
 });

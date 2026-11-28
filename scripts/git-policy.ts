@@ -22,7 +22,10 @@
  *            enforces, `gh pr merge --auto` is safe), or else when every
  *            contract check is green on <sha> (default HEAD), so the agent
  *            merges without --auto; exit 1 otherwise, including an
- *            unreadable host or no GitHub origin.
+ *            unreadable host or no GitHub origin. merge_mode comes from
+ *            origin/<base>: `manual` always exits 1, and `human-approves`
+ *            also needs a host rule that requires an approval of the last
+ *            push, or a person's approval of <sha> itself.
  *            Exit 1 on UNACCEPTED drift; 0 in parity, when every drift is listed
  *            in `policy.accepted_divergences`, when the host is unreachable or
  *            there is no GitHub origin (warned, not verified — absence of data
@@ -1528,14 +1531,31 @@ export function headChecksVerdict(contexts: string[], checkRunsBody: unknown): {
   return { green, notGreen };
 }
 
-export function approvedFromReviews(reviews: unknown): boolean {
+export function approvedFromReviews(reviews: unknown, sha: string): boolean {
   if (!Array.isArray(reviews)) { return false; }
-  const latest = new Map<string, string>();
-  for (const r of reviews as { user?: { login?: unknown }, state?: unknown }[]) {
-    if (typeof r?.user?.login === 'string' && typeof r.state === 'string' && r.state !== 'COMMENTED') { latest.set(r.user.login, r.state); }
+  const latest = new Map<string, { state: string, commit: unknown }>();
+  for (const r of reviews as { user?: { login?: unknown }, state?: unknown, commit_id?: unknown }[]) {
+    if (typeof r?.user?.login === 'string' && typeof r.state === 'string' && r.state !== 'COMMENTED') { latest.set(r.user.login, { state: r.state, commit: r.commit_id }); }
   }
-  const states = [...latest.values()];
-  return states.includes('APPROVED') && !states.includes('CHANGES_REQUESTED');
+  const last = [...latest.values()];
+  return last.some(r => r.state === 'APPROVED' && r.commit === sha) && !last.some(r => r.state === 'CHANGES_REQUESTED');
+}
+
+export function hostRequiresApproval(rules: unknown): boolean {
+  return Array.isArray(rules) && (rules as Rule[]).some((r) => {
+    const p = r?.type === 'pull_request' ? r.parameters as { required_approving_review_count?: unknown, require_last_push_approval?: unknown } | undefined : undefined;
+    return typeof p?.required_approving_review_count === 'number' && p.required_approving_review_count >= 1 && p.require_last_push_approval === true;
+  });
+}
+
+export function baseStrategy(projectYaml: string | null): GitStrategy | null {
+  if (projectYaml === null) { return null; }
+  let doc: unknown;
+  try { doc = parseYaml(projectYaml); }
+  catch { return null; }
+  const gs = (doc as { git_strategy?: unknown } | null)?.git_strategy;
+  if (gs === undefined || gs === null) { return INHERITED_EVIDENCE_STRATEGY; }
+  return typeof gs === 'object' && !Array.isArray(gs) ? gs as GitStrategy : null;
 }
 
 export interface MergeInputs {
@@ -1545,15 +1565,19 @@ export interface MergeInputs {
   mode: string
   verdict: { green: string[], notGreen: string[] } | null
   approved: boolean
+  hostApproves: boolean
 }
 
 export function mergeDecision(i: MergeInputs): { code: 0 | 1, message: string } {
   const at = i.sha.slice(0, 12);
+  if (i.mode === 'manual') {
+    return { code: 1, message: `${i.base}: merge_mode is manual at the base, so a person merges; the agent stops after opening the pull request.` };
+  }
+  if (i.guard.ok && i.mode === 'human-approves' && !i.hostApproves && !i.approved) {
+    return { code: 1, message: `${i.base}: ${i.guard.reason}, but merge_mode is human-approves and the host does not require an approval of the last push, so the agent merges only after a person approved ${at}; no approval of ${at} is read.` };
+  }
   if (i.guard.ok) {
     return { code: 0, message: `${i.base}: ${i.guard.reason}. The host enforces the checks: gh pr merge --auto --match-head-commit ${i.sha} is safe.` };
-  }
-  if (i.mode === 'manual') {
-    return { code: 1, message: `${i.base}: merge_mode is manual, so a person merges; the agent stops after opening the pull request.` };
   }
   if (i.verdict === null) {
     return { code: 1, message: `${i.base}: ${i.guard.reason}, and the check runs on ${at} or the base contract could not be read, so nothing shows the checks are green. Do not merge.` };
@@ -1562,7 +1586,7 @@ export function mergeDecision(i: MergeInputs): { code: 0 | 1, message: string } 
     return { code: 1, message: `${i.base}: ${i.guard.reason}, and on ${at} these contract checks are not green: ${i.verdict.notGreen.join(', ')}. Wait for them or fix them, then run this again; do not merge.` };
   }
   if (i.mode === 'human-approves' && !i.approved) {
-    return { code: 1, message: `${i.base}: merge_mode is human-approves and nothing on the host requires the approval, so the agent merges only after a person approved this pull request; no approval is read for ${at}.` };
+    return { code: 1, message: `${i.base}: merge_mode is human-approves and nothing on the host requires the approval, so the agent merges only after a person approved this pull request; no approval of ${at} is read.` };
   }
   return { code: 0, message: `${i.base}: ${i.guard.reason}. Every contract check is green on ${at} (${i.verdict.green.join(', ')}), so the agent merges now with gh pr merge --match-head-commit ${i.sha} and no --auto. Nobody on the host enforces these checks: the agent does.` };
 }
@@ -1581,17 +1605,22 @@ function verifyMerge(base: string, head: string | null): number {
     log.err(url === null ? 'No \`origin\` remote: no host to prove the merge guard against.' : `origin is not a GitHub remote (${url}): no host to prove the merge guard against.`);
     return 1;
   }
-  const doc = existsSync(PROJECT_YAML) ? parseYaml(readFileSync(PROJECT_YAML, 'utf8')) : null;
-  const gs = strategyForVerify(doc).gs ?? readStrategy();
+  const shown = Bun.spawnSync(['git', 'show', `origin/${base}:.agents/project.yaml`], { cwd: REPO_ROOT, stdout: 'pipe', stderr: 'pipe' });
+  const gs = baseStrategy(shown.exitCode === 0 ? shown.stdout.toString() : null);
+  if (gs === null) {
+    log.err(`${base}: .agents/project.yaml cannot be read from origin/${base}, so its merge_mode is unknown. Fetch origin/${base} and run this again; do not merge.`);
+    return 1;
+  }
   const sha = head ?? Bun.spawnSync(['git', 'rev-parse', 'HEAD'], { cwd: REPO_ROOT, stdout: 'pipe' }).stdout.toString().trim();
-  const guard = mergeGuard(gh(`repos/${slug}/rules/branches/${base}`));
+  const rules = gh(`repos/${slug}/rules/branches/${base}`);
+  const guard = mergeGuard(rules);
   const contract = guard.ok ? null : evidenceAt(`origin/${base}`);
   const runs = guard.ok || contract === null ? null : gh(`repos/${slug}/commits/${sha}/check-runs?per_page=100`);
   const verdict = runs === null ? null : headChecksVerdict(requiredCheckContexts(contract), runs);
-  const prs = !guard.ok && mergeMode(gs) === 'human-approves' ? gh(`repos/${slug}/commits/${sha}/pulls`) as { number?: unknown }[] | null : null;
-  const pr = Array.isArray(prs) ? prs.find(p => typeof p?.number === 'number') : undefined;
-  const approved = pr ? approvedFromReviews(gh(`repos/${slug}/pulls/${pr.number as number}/reviews?per_page=100`)) : false;
-  const d = mergeDecision({ base, sha, guard, mode: mergeMode(gs), verdict, approved });
+  const prs = mergeMode(gs) === 'human-approves' ? gh(`repos/${slug}/commits/${sha}/pulls`) as { number?: unknown, base?: { ref?: unknown } }[] | null : null;
+  const pr = Array.isArray(prs) ? prs.find(p => typeof p?.number === 'number' && p.base?.ref === base) : undefined;
+  const approved = pr ? approvedFromReviews(gh(`repos/${slug}/pulls/${pr.number as number}/reviews?per_page=100`), sha) : false;
+  const d = mergeDecision({ base, sha, guard, mode: mergeMode(gs), verdict, approved, hostApproves: hostRequiresApproval(rules) });
   if (d.code === 0) { log.ok(d.message); }
   else { log.err(d.message); }
   return d.code;
