@@ -10,7 +10,7 @@ import { basename, join } from 'node:path';
 import { AGENTIC_SCHEMA, collectChecks, evidenceMessage } from './lib/edd/attest.ts';
 import { ALLOWED_SIGNERS, ContractError, DEPTHS, loadContract, refReader, sha256, treeReader } from './lib/edd/contract.ts';
 import { gatePathsTouched, requiredAgentic } from './lib/edd/depth.ts';
-import { changedFiles, cleanEnv, commitTime, EMPTY_TREE, git, isCommit, isZeroOid, mergeBase, primaryRoot, repoRoot, resolveCommit, treeOf } from './lib/edd/git.ts';
+import { changedFiles, cleanEnv, commitTime, EMPTY_TREE, git, isCommit, isZeroOid, mergeBase, parentsOf, primaryRoot, repoRoot, resolveCommit, treeOf } from './lib/edd/git.ts';
 import { DiffTooLarge, patchId } from './lib/edd/patch-id.ts';
 import { artifactsRoot, pruneArtifacts, readRecord, RECORD_SCHEMA, RENDER_MARKER, renderMarkdown, scrubLine, writeRecord } from './lib/edd/record.ts';
 import { seedAllowedSigners } from './lib/edd/signers.ts';
@@ -401,7 +401,10 @@ function verifyCi(): number {
     branch = ev.ref.startsWith('refs/heads/') ? ev.ref.slice('refs/heads/'.length) : null;
     const before = ev.before ?? '';
     const prod = ev.repository?.default_branch ?? 'main';
-    base = !isZeroOid(before) && isCommit(CWD, before) ? before : ((resolveCommit(CWD, `refs/remotes/origin/${prod}`) && mergeBase(CWD, head, `refs/remotes/origin/${prod}`)) ?? EMPTY_TREE);
+    const absent = before === '' || isZeroOid(before);
+    base = !absent && isCommit(CWD, before) ? before : ((resolveCommit(CWD, `refs/remotes/origin/${prod}`) && mergeBase(CWD, head, `refs/remotes/origin/${prod}`)) ?? EMPTY_TREE);
+    if (!absent && !isCommit(CWD, before)) { problems.push(`the previous tip ${before.slice(0, 12)} of ${ev.ref} is not in the checkout: a force push was seen, so the pushed range cannot be verified; verification refused`); }
+    if (problems.length > 0 || base === head) { base = isCommit(CWD, head) ? (parentsOf(CWD, head)[0] ?? EMPTY_TREE) : EMPTY_TREE; }
     flow = 'direct';
   }
   else { return die(`verify --ci handles pull_request_target and push, not ${eventName || 'no event'}`); }

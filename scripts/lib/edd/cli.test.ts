@@ -38,9 +38,9 @@ function run(cwd: string, args: string[], stdin = ''): { code: number, out: stri
   return { code: p.exitCode ?? 1, out: `${p.stdout.toString()}${p.stderr.toString()}` };
 }
 
-function ciPush(r: Repo, before: string, after: string): { code: number, out: string } {
+function ciPush(r: Repo, before: string, after: string, ref = 'refs/heads/main'): { code: number, out: string } {
   const path = join(r.dir, '..', 'push-event.json');
-  writeFileSync(path, JSON.stringify({ before, after, ref: 'refs/heads/main', repository: { full_name: 'o/r', default_branch: 'main' } }));
+  writeFileSync(path, JSON.stringify({ before, after, ref, repository: { full_name: 'o/r', default_branch: 'main' } }));
   const p = Bun.spawnSync(['bun', EDD, 'verify', '--ci'], { cwd: r.dir, stdout: 'pipe', stderr: 'pipe', env: { ...process.env, GITHUB_EVENT_NAME: 'push', GITHUB_EVENT_PATH: path, GITHUB_STEP_SUMMARY: '', GH_TOKEN: '' } });
   return { code: p.exitCode ?? 1, out: `${p.stdout.toString()}${p.stderr.toString()}` };
 }
@@ -303,6 +303,40 @@ describe('gate keys and branch contracts', () => {
     expect(res.code).toBe(1);
     const rec = JSON.parse(readFileSync(join(r.dir, '.session', 'evidence', `${head}.json`), 'utf8'));
     expect(rec.contract.read_from).toBe(base);
+  });
+});
+
+describe('verify --ci on a push', () => {
+  const gated = `evidence:
+  static:
+    - { id: lint, cmd: 'true', where: [pre-push, ci] }
+  agentic:
+    - { id: screens, kind: screenshots, envs: [local], min_depth: standard }
+  depth:
+    default: none
+    rules:
+      - { paths: ['gate/**'], depth: standard }
+`;
+
+  test('a force push to a protected branch is refused; one to a feature branch is not verified', () => {
+    const { r } = fixture('evidence');
+    const head = r.commit('feat: x', { 'app/a.ts': '1\n' });
+    r.git('update-ref', 'refs/remotes/origin/main', head);
+    const res = ciPush(r, 'd'.repeat(40), head);
+    expect(res.code).toBe(1);
+    expect(res.out).toContain('a force push was seen');
+    expect(ciPush(r, 'd'.repeat(40), head, 'refs/heads/feat').code).toBe(0);
+  });
+
+  test('an empty range is verified against the first parent of the pushed tip', () => {
+    const r = makeRepo();
+    repos.push(r);
+    r.commit('chore: base', { '.agents/project.yaml': projectYaml(gated) });
+    const head = r.commit('feat: gate', { 'gate/x.ts': '1\n' });
+    r.git('update-ref', 'refs/remotes/origin/main', head);
+    const res = ciPush(r, '0'.repeat(40), head);
+    expect(res.code).toBe(1);
+    expect(res.out).toContain('requires agentic evidence');
   });
 });
 
