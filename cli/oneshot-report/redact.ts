@@ -8,6 +8,7 @@ export const HIDDEN = '[redacted: this text hid a secret behind an encoding]';
 
 const MIN_VALUE = 8;
 const NOT_SECRET_ENV = /^(?:OLD)?PWD$|SESSION_ID$|_(?:SOCK|PATH|FILE|DIR)$/;
+const EXTRA_SECRET_ENV = /(?:^|_)(?:JWT|OTP|PIN|PASSCODE|PASSPHRASE|MFA)(?:_|$)/;
 
 export interface LeakRule {
   name: string
@@ -69,9 +70,10 @@ function maskListItems(_match: string, [head, items]: string[]): string {
 }
 
 const SECRET_WORD_LIST = String.raw`password|passwd|secret|api[_-]?key|api[_-]?token|token|private[_-]?key|access[_-]?key|session[_-]?id|credentials?`;
-const SECRET_NAME = `(?:${SECRET_WORD_LIST}|session[_-]?key)`;
-// "pass" and "auth" count only as a whole word or a suffix: "passed", "passRate" and "author" name no secret.
-const KEY_FORMS = String.raw`[\w-]{0,40}${SECRET_NAME}[\w-]{0,40}|(?:[\w-]{0,40}[_-])?pwd|(?:\w[\w-]{0,40}[_-])?(?:pass|auth)`;
+const COMPOUND_NAMES = String.raw`passcode|passphrase|recovery[_-]?code|mfa[_-]?code|csrf|contrase(?:n|ñ)a|(?:user|admin|old|new|db|login|root)[_-]?(?:pass|pwd)`;
+// "pass", "auth" and the short names count only as a whole word or a suffix: "passed", "passRate" and "author" name no secret.
+const SHORT_NAMES = 'pass|auth|otp|pin|jwt|sid|pw|clave';
+const KEY_FORMS = String.raw`[\w-]{0,40}(?:${SECRET_WORD_LIST}|session[_-]?key|${COMPOUND_NAMES})[\w-]{0,40}|(?:[\w-]{0,40}[_-])?pwd|(?:\w[\w-]{0,40}[_-])?(?:${SHORT_NAMES})`;
 const ASSIGNMENT_KEY = `(?:${KEY_FORMS})`;
 const LIST_KEY = `(?:${KEY_FORMS}|(?:proxy-)?authorization)`;
 const PAIR_NAME = String.raw`(?:(?:proxy-)?authorization|(?:set-)?cookie|[\w.-]{0,40}(?:${SECRET_WORD_LIST}|session)[\w.-]{0,40}|(?:\w[\w.-]{0,40}[_.-])?(?:auth|pass|pwd)(?:[_.-][\w.-]{0,40})?)`;
@@ -280,9 +282,12 @@ export function secretVariants(values: readonly string[]): string[] {
   const out = new Set<string>();
   for (const value of values) {
     if (value.length < MIN_VALUE) { continue; }
-    const base64 = Buffer.from(value, 'utf8').toString('base64').replace(/=+$/, '');
+    const bytes = Buffer.from(value, 'utf8');
+    const base64 = bytes.toString('base64').replace(/=+$/, '');
+    const twice = Buffer.from(bytes.toString('base64'), 'utf8').toString('base64').replace(/=+$/, '');
+    const hex = bytes.toString('hex');
     const encoded = encodeURIComponent(value.toWellFormed());
-    for (const variant of [value, JSON.stringify(value).slice(1, -1), htmlEscape(value), encoded, encoded.replace(/%20/g, '+'), base64, Buffer.from(value, 'utf8').toString('base64url')]) {
+    for (const variant of [value, JSON.stringify(value).slice(1, -1), htmlEscape(value), encoded, encoded.replace(/%20/g, '+'), base64, bytes.toString('base64url'), twice, hex, hex.toUpperCase()]) {
       out.add(variant);
     }
   }
@@ -358,7 +363,7 @@ function readAuthValues(root: string): string[] {
 
 export function collectSecretValues(root: string, env: Record<string, string | undefined>): string[] {
   const fromEnv = Object.entries(env)
-    .filter(([name]) => !NOT_SECRET_ENV.test(name) && isSecretKey(name))
+    .filter(([name]) => !NOT_SECRET_ENV.test(name) && (isSecretKey(name) || EXTRA_SECRET_ENV.test(name)))
     .map(([, value]) => value ?? '');
   const all = [...readSecretValues(root), ...readAuthValues(root), ...fromEnv];
   return [...new Set(all.filter(value => value.length >= MIN_VALUE && !HIDDEN.includes(value)))];
@@ -368,6 +373,28 @@ export function holdsValue(bytes: Buffer, variants: readonly string[]): boolean 
   return variants.some(v => bytes.includes(Buffer.from(v, 'utf8')) || bytes.includes(Buffer.from(v, 'utf16le')));
 }
 
+const BYTE_RULES: ReadonlySet<string> = new Set(['jwt', 'token-prefix', 'private-key']);
+
+export function holdsToken(bytes: Buffer): boolean {
+  return [...patternLeaks(bytes.toString('latin1')).keys()].some(rule => BYTE_RULES.has(rule));
+}
+
+const PNG_SIGNATURE = 8;
+const PNG_TEXT_CHUNKS: ReadonlySet<string> = new Set(['tEXt', 'zTXt', 'iTXt']);
+
+export function stripPngText(bytes: Buffer): Buffer {
+  if (bytes.subarray(1, 4).toString('latin1') !== 'PNG') { return bytes; }
+  const kept = [bytes.subarray(0, PNG_SIGNATURE)];
+  let at = PNG_SIGNATURE;
+  while (at + 8 <= bytes.length) {
+    const end = Math.min(bytes.length, at + 12 + bytes.readUInt32BE(at));
+    if (!PNG_TEXT_CHUNKS.has(bytes.subarray(at + 4, at + 8).toString('latin1'))) { kept.push(bytes.subarray(at, end)); }
+    at = end;
+  }
+  kept.push(bytes.subarray(at));
+  return Buffer.concat(kept);
+}
+
 const SECRET_HINT = /password|passwd|passcode|secret|token|pwd|(?<![a-z])pass(?![a-z])/i;
 const CAMEL_CASE_PASS_HINT = /Pass(?![a-z])/;
 const ARG = String.raw`(?:"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*')`;
@@ -375,11 +402,39 @@ const SELECTOR_AND_VALUE = new RegExp(String.raw`(\b(?:fill|type|pressSequential
 const VALUE_ONLY = new RegExp(String.raw`(\b(?:fill|type|pressSequentially)\(\s*)${ARG}(?=\s*(?:\)|,\s*\{))`, 'g');
 const STEP_TITLE = new RegExp(String.raw`(\b(?:Fill|Type|Press sequentially) +)${ARG}`, 'g');
 
+// A real Playwright step title is only `Fill "<value>"`: nothing in it says whether the field was a password.
+const TYPED_TITLE = /^([ \t]*(?:Fill|Type|Insert|Press sequentially) )"[^\n]*?"(?=[ \t]+(?:locator\(|getBy\w+\(|internal:)|[ \t]*$)/gm;
+const TYPED_CALL = /^([ \t]*-[ \t]+(?:fill|type|pressSequentially|insertText)\()[^\n]*\)/gm;
+const PASSWORD_INPUT = /<input[ \t][^<>\n]{0,500}type=\\?["']password\\?["'][^<>\n]{0,500}>/gi;
+const VALUE_ATTRIBUTE = /(\bvalue=\\?["'])(?!\[redacted\])[^"'\\\n]+/gi;
+const SNAPSHOT_FIELD = /^([ \t]*)-[ \t]+'?(?:textbox|searchbox|spinbutton|combobox)\b/;
+const SNAPSHOT_VALUE = /^((?:[^"\n]|"[^"\n]*")*?:[ \t]+)(?!\[redacted\])\S.*$/;
+const SNAPSHOT_CHILD = /^([ \t]*-[ \t]+(?:text|\/placeholder):[ \t]*)(?!\[redacted\])\S.*$/;
+
+// A page snapshot prints what each field holds, whatever its label says.
+function maskSnapshotFields(text: string): string {
+  let indent = -1;
+  return text.split('\n').map((line) => {
+    const field = SNAPSHOT_FIELD.exec(line);
+    if (field) {
+      indent = field[1].length;
+      return line.replace(SNAPSHOT_VALUE, `$1${MARKER}`);
+    }
+    if (indent >= 0 && line.search(/\S/) > indent) { return line.replace(SNAPSHOT_CHILD, `$1${MARKER}`); }
+    indent = -1;
+    return line;
+  }).join('\n');
+}
+
 // Playwright prints the typed value in step titles and call logs, where no key name sits beside it.
 function maskTypedValues(text: string): string {
-  if (!SECRET_HINT.test(text) && !CAMEL_CASE_PASS_HINT.test(text)) { return text; }
   const masked = `$1"${MARKER}"`;
-  return text.replace(SELECTOR_AND_VALUE, masked).replace(VALUE_ONLY, masked).replace(STEP_TITLE, masked);
+  const always = maskSnapshotFields(text)
+    .replace(TYPED_TITLE, masked)
+    .replace(TYPED_CALL, `$1"${MARKER}")`)
+    .replace(PASSWORD_INPUT, input => input.replace(VALUE_ATTRIBUTE, `$1${MARKER}`));
+  if (!SECRET_HINT.test(always) && !CAMEL_CASE_PASS_HINT.test(always)) { return always; }
+  return always.replace(SELECTOR_AND_VALUE, masked).replace(VALUE_ONLY, masked).replace(STEP_TITLE, masked);
 }
 
 const ANSI = new RegExp(`${String.fromCharCode(27)}\\[[0-9;?]*[a-z]`, 'gi');
@@ -403,7 +458,11 @@ function pageViews(text: string): string[] {
 
 export function createRedactor(values: readonly string[]): Redactor {
   const variants = secretVariants(values);
-  const leaks = (text: string): boolean => [...new Set([...textViews(text), ...pageViews(text)])]
+  const split = (text: string): boolean => {
+    const joined = text.replace(/<[^<>]{0,200}>|\s+/g, '');
+    return variants.some(v => joined.includes(v));
+  };
+  const leaks = (text: string): boolean => split(text) || [...new Set([...textViews(text), ...pageViews(text)])]
     .some(view => variants.some(v => view.includes(v)) || patternLeaks(view).size > 0);
 
   return {
@@ -413,6 +472,6 @@ export function createRedactor(values: readonly string[]): Redactor {
       const out = applyRules(maskTypedValues(known));
       return leaks(out) ? HIDDEN : out;
     },
-    holdsSecret: bytes => holdsValue(bytes, variants),
+    holdsSecret: bytes => holdsValue(bytes, variants) || holdsToken(bytes),
   };
 }

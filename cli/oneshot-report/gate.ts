@@ -1,4 +1,4 @@
-import { decodedViews, holdsValue, patternLeaks, secretVariants, textViews } from './redact.ts';
+import { decodedViews, holdsToken, holdsValue, patternLeaks, secretVariants, textViews } from './redact.ts';
 
 export interface LeakFinding {
   rule: string
@@ -29,6 +29,9 @@ export function inspectHtml(html: string, values: readonly string[], rendererTex
     }
     for (const [rule, count] of perText) { found.set(rule, (found.get(rule) ?? 0) + count); }
   }
+
+  const binary = payloads.filter(bytes => asText(bytes) === null && holdsToken(bytes)).length;
+  if (binary > 0) { found.set('token-in-media', binary); }
 
   const views = texts.flatMap(textViews);
   // A value that is also a word of the renderer's own source cannot be told apart from the template.

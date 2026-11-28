@@ -3,7 +3,7 @@ import type { Redactor } from './redact.ts';
 import { readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { basename, extname, join, sep } from 'node:path';
 
-import { HIDDEN, isSecretName, MARKER } from './redact.ts';
+import { HIDDEN, isSecretName, MARKER, stripPngText } from './redact.ts';
 
 export type TestStatus = 'passed' | 'failed' | 'broken' | 'skipped' | 'known-defect' | 'unknown';
 
@@ -362,7 +362,7 @@ function readAttachment(dir: string, raw: RawNode, allowVideo: boolean, redactor
   if (media !== undefined && hasMagic(data, media)) {
     const readable = decodeUtf8(data);
     if (redactor.holdsSecret(data) || (readable !== null && redactor.text(readable) !== readable)) { return holdsSecret(); }
-    return { name, type: media, kind: ext in VIDEO_MIME ? 'video' : 'image', bytes, body: data.toString('base64') };
+    return { name, type: media, kind: ext in VIDEO_MIME ? 'video' : 'image', bytes, body: stripPngText(data).toString('base64') };
   }
 
   const text = decodeUtf8(data);

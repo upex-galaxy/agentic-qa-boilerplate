@@ -8,7 +8,7 @@ import { afterAll, describe, expect, test } from 'bun:test';
 import { inspectHtml } from './gate.ts';
 import { parseArgs, run } from './index.ts';
 import { buildModel, knownDefectKey } from './model.ts';
-import { collectSecretValues, createRedactor, MARKER, patternLeaks } from './redact.ts';
+import { collectSecretValues, createRedactor, MARKER, patternLeaks, stripPngText } from './redact.ts';
 import { renderHtml } from './render.ts';
 
 const TEMP: string[] = [];
@@ -720,5 +720,61 @@ describe('review regressions', () => {
     writeResult(dir, 0, { name: 'skipped one', status: 'skipped', message: 'No seed record available' });
 
     expect(renderHtml(fullModel(dir))).toContain('row.querySelector(\'.flat-name\') || (target && target.querySelector(\'.leaf-name\'))');
+  });
+});
+
+describe('shapes real results carry', () => {
+  const opaque = join_('Opq', 'FieldValue', 'k81');
+  const redactor = createRedactor([]);
+
+  test.each([
+    ['bare fill title', `Fill "${opaque}"`],
+    ['bare fill title holding a quote', `Fill "ab"${opaque}"`],
+    ['fill title with a hint and a quote', `Fill "ab"${opaque}" locator('#field')`],
+    ['type title', `Type "${opaque}"`],
+    ['insert title', `Insert "${opaque}"`],
+    ['call log without a hint', `TimeoutError: locator.fill: Timeout\nCall log:\n  - waiting for locator('#a')\n    - fill("${opaque}")\n`],
+    ['snapshot textbox under any label', `- textbox "Clave de acceso": ${opaque}`],
+    ['snapshot textbox with no label', `  - textbox [ref=e2]: ${opaque}`],
+    ['snapshot child text', `- textbox "Campo":\n  - /placeholder: x\n  - text: ${opaque}`],
+    ['password input markup', `locator resolved to <input type="password" value="${opaque}"/>`],
+    ['userPass key', `{ "userPass": "${opaque}" }`],
+    ['otp key', `otp: ${opaque}`],
+    ['recoveryCode key', `recoveryCode=${opaque}`],
+    ['contrasena key', `contrasena: ${opaque}`],
+  ])('%s', (_name, input) => {
+    const out = redactor.text(input);
+    expect(out).not.toContain(opaque);
+    expect(patternLeaks(out).size).toBe(0);
+  });
+
+  test('a held value is found as hex, double base64, or split across lines and tags', () => {
+    const value = join_('held', 'OnlyValue', '5521');
+    const held = createRedactor([value]);
+    const twice = Buffer.from(Buffer.from(value).toString('base64')).toString('base64');
+    for (const input of [Buffer.from(value).toString('hex'), twice, `${value.slice(0, 7)}\n${value.slice(7)}`, `<text>${value.slice(0, 7)}</text><text>${value.slice(7)}</text>`]) {
+      const out = held.text(`seen ${input} here`);
+      expect(out).not.toContain(value.slice(7));
+      expect(out).not.toContain(input);
+    }
+  });
+
+  test('a token in media bytes drops the file and PNG text chunks are stripped', () => {
+    const chunk = (type: string, body: string): Buffer => {
+      const head = Buffer.alloc(4);
+      head.writeUInt32BE(Buffer.byteLength(body));
+      return Buffer.concat([head, Buffer.from(type), Buffer.from(body), Buffer.alloc(4)]);
+    };
+    const png = Buffer.concat([PNG.subarray(0, 8), chunk('IHDR', 'x'), chunk('tEXt', opaque), chunk('IEND', '')]);
+    expect(stripPngText(png).toString('latin1')).not.toContain(opaque);
+    expect(stripPngText(png).toString('latin1')).toContain('IEND');
+    expect(redactor.holdsSecret(Buffer.concat([png, Buffer.from(FAKE.token)]))).toBe(true);
+    const page = `<img src="data:image/png;base64,${Buffer.concat([PNG, Buffer.from(`\0${FAKE.token}`)]).toString('base64')}" />`;
+    expect(inspectHtml(page, []).map(f => f.rule)).toContain('token-in-media');
+  });
+
+  test('one-time codes in the environment are collected', () => {
+    const values = collectSecretValues(tempDir(), { STAGING_USER_JWT: 'jwt-value-123456', STAGING_OTP: 'otp-value-123456', HOME: '/tmp/home-dir' });
+    expect(values.toSorted()).toEqual(['jwt-value-123456', 'otp-value-123456']);
   });
 });
