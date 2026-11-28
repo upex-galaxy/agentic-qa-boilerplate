@@ -335,6 +335,12 @@ framework_gates_pre_commit() {
 #                                and exits 0 (absence of data is not drift), and divergences
 #                                listed in git_strategy.policy.accepted_divergences report
 #                                as ACCEPTED, not drift. Only UNACCEPTED drift blocks a push.
+#   - edd gate                   the evidence gate (EDD), FIRST in the chain so a failing check
+#                                still leaves its record under .session/evidence/. Inert (no bun
+#                                process) unless git_strategy.policy.direct_push_to_protected is
+#                                `evidence`; called by path, guarded by `-f` (framework_gate_evidence).
+#   - shared:check               the files shared with the dev boilerplate still match their
+#                                hashes, where scripts/shared-files.json and the key exist.
 #   - varlock load               the developer's own .env against the committed env schema
 #                                (.env.schema + .env.core.schema). WARN-ONLY in this phase: it
 #                                describes the developer's machine, like vars:env:check's drift
@@ -354,7 +360,8 @@ framework_gates_pre_push() {
   _fg_resolve_scope
   if [ "$_fg_mode" = staged ]; then _fg_push_range; fi
   # `git:policy verify` reads the host, not the range: it always runs.
-  _fg_gate format:check "$_FG_FORMAT" bun run format:check \
+  framework_gate_evidence \
+    && _fg_gate format:check "$_FG_FORMAT" bun run format:check \
     && _fg_gate lint:check "$_FG_LINT" bun run lint:check \
     && _fg_gate vars:env:check "$_FG_ENV" _fg_vars_env_check \
     && _fg_gate skills:registry:check '^\.agents/skills/' bun run skills:registry:check \
@@ -363,6 +370,7 @@ framework_gates_pre_push() {
     && _fg_gate docs:check "$(_fg_deleted_or "$_FG_DOCS")" framework_gate_docs_check \
     && framework_gate_doc_contracts --push \
     && bun run git:policy verify \
+    && framework_gate_shared_check \
     && _fg_gate varlock "$_FG_ENV" framework_gate_varlock_warn \
     && _fg_report_skipped "file in the push range"
 }
@@ -396,6 +404,48 @@ framework_gate_docs_check() {
 framework_gate_doc_contracts() {
   if [ -f scripts/lint-doc-contracts.ts ]; then
     bun scripts/lint-doc-contracts.ts "$1" || return 1
+  fi
+  return 0
+}
+
+# `direct_push_to_protected` inside the `git_strategy:` block, block or flow style.
+_fg_policy_value() {
+  [ -f .agents/project.yaml ] || return 0
+  awk '
+    { sub(/\r$/, "") }
+    /^[^[:space:]#]/ { ings = ($0 ~ /^git_strategy:[[:space:]]*(#.*)?$/); next }
+    ings && !/^[[:space:]]*#/ && /direct_push_to_protected:[[:space:]]*["\047]?evidence["\047]?([[:space:],}#]|$)/ { print "evidence"; exit }
+  ' .agents/project.yaml
+}
+
+# The evidence gate (spec WP-D): `scripts/edd.ts gate` re-runs the contract's
+# pre-push checks, verifies the evidence commit a protected ref needs and
+# writes the record. Inert unless the policy is `evidence`, so every other
+# policy pushes exactly as before. The refs on stdin are read here and handed
+# back as stdin, so the gates after this one still see them.
+framework_gate_evidence() {
+  [ -f scripts/edd.ts ] || return 0
+  [ "$(_fg_policy_value 2>/dev/null)" = evidence ] || return 0
+  if [ -t 0 ]; then
+    bun scripts/edd.ts gate
+    return
+  fi
+  _fg_edd_refs=
+  while IFS= read -r _fg_line || [ -n "$_fg_line" ]; do
+    [ -n "$_fg_line" ] && _fg_edd_refs="${_fg_edd_refs:+$_fg_edd_refs
+}$_fg_line"
+  done
+  exec 0<<_FG_EDD_EOF
+$_fg_edd_refs
+_FG_EDD_EOF
+  printf '%s\n' "$_fg_edd_refs" | bun scripts/edd.ts gate
+}
+
+# `shared:check` on every push where the manifest and the key exist (inert
+# outside the boilerplate's own checkout, see scripts/shared-check.ts).
+framework_gate_shared_check() {
+  if [ -f scripts/shared-files.json ] && grep -q '"shared:check"' package.json 2>/dev/null; then
+    bun run shared:check || return 1
   fi
   return 0
 }
