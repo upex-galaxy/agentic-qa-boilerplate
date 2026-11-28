@@ -330,11 +330,11 @@ describe('generateSchema, against the real .agents/project.yaml', () => {
   });
 
   // The two safety reversals. A template that hands a brand-new project
-  // standing push authorization, under a `strategy_source: inherited` that
-  // says nobody chose anything, contradicts Critical Rule #5.
-  test.skipIf(!MAINTAINER_CHECKOUT)('ships confirm, not this repo\'s allowed, for direct_push_to_protected', () => {
+  // standing push authorization with no gate, under a `strategy_source:
+  // inherited` that says nobody chose anything, contradicts Critical Rule #5.
+  test.skipIf(!MAINTAINER_CHECKOUT)('ships evidence, not this repo\'s allowed, for direct_push_to_protected', () => {
     const walk = yamlLeafWalk(generateSchema(source, committedSchema()).schema)!;
-    expect(walk.entries.get('git_strategy.policy.direct_push_to_protected')).toBe('confirm');
+    expect(walk.entries.get('git_strategy.policy.direct_push_to_protected')).toBe('evidence');
     expect(walk.entries.get('git_strategy.policy.admin_bypass')).toBe(false);
     expect(walk.entries.get('git_strategy.meta.strategy_source')).toBe('inherited');
     expect(walk.entries.get('git_strategy.meta.policy_source')).toBe('declared');
@@ -546,7 +546,7 @@ describe('the maintainer copy and the template route', () => {
     // not `chosen`, project_name null -> OFFER Strategy Setup.
     expect(walk.entries.get('git_strategy.strategy')).not.toBeNull();
     expect(walk.entries.get('git_strategy.meta.strategy_source')).toBe('inherited');
-    expect(walk.entries.get('git_strategy.policy.direct_push_to_protected')).toBe('confirm');
+    expect(walk.entries.get('git_strategy.policy.direct_push_to_protected')).toBe('evidence');
     expect(reseeded.startsWith(CONSUMER_YAML_HEADER)).toBe(true);
   });
 
@@ -829,8 +829,8 @@ describe('insertion', () => {
     const plan = planInsertions(old, schema, ['git_strategy.policy.direct_push_to_protected']);
     const { text, error } = applyInsertions(old, plan);
     expect(error).toBeNull();
-    expect(text).toContain('\n    direct_push_to_protected: confirm\n');
-    expect(yamlLeafWalk(text)!.entries.get('git_strategy.policy.direct_push_to_protected')).toBe('confirm');
+    expect(text).toContain('\n    direct_push_to_protected: evidence\n');
+    expect(yamlLeafWalk(text)!.entries.get('git_strategy.policy.direct_push_to_protected')).toBe('evidence');
   });
 
   // The diff reports the leaf (`testing.browser.pair_mode`); its parent
