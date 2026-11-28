@@ -315,6 +315,15 @@ describe('assessPreflight: what can stop an apply before any write', () => {
     expect(pre.blockers.join(' ')).toContain('never reported on main: types');
   });
 
+  test('edd/evidence seen only on a PR head clears the guard; seen nowhere asks for the first pull request', () => {
+    const tip = { check_runs: [{ name: 'lint', app: { id: 15368, slug: 'github-actions' } }] };
+    const onPr = { check_runs: [{ name: 'edd/evidence', app: { id: 15368, slug: 'github-actions' } }] };
+    expect(assessPreflight(AUTO_FORBIDDEN(), ['edd/evidence', 'lint'], hostState({ checkRuns: tip, prCheckRuns: onPr })).blockers).toEqual([]);
+    const first = assessPreflight(AUTO_FORBIDDEN(), ['edd/evidence', 'lint'], hostState({ checkRuns: tip, prCheckRuns: { check_runs: [] } }));
+    expect(first.blockers.join(' ')).toContain('the first one has to be a pull request into main');
+    expect(first.integrationId).toBe(15368);
+  });
+
   test('no Actions run at all blocks: no integration_id to pin the check to', () => {
     const pre = assessPreflight(AUTO_FORBIDDEN(), ['edd/evidence'], hostState({ checkRuns: { check_runs: [] } }));
     expect(pre.integrationId).toBeNull();

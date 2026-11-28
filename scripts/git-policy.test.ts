@@ -59,6 +59,8 @@ import {
   mergeModeDeclared,
   migrationFor,
   missingCheckRuns,
+  missingRequiredChecks,
+  prHeadCheckRuns,
   protectedBranches,
   pullRequestModeParams,
   repoSettingsPatch,
@@ -973,5 +975,38 @@ describe('rulesetBody: one payload for apply and the hand-off', () => {
     expect(rulesetBody(strategy({ admin_bypass: true }), ['main'], [], true)).not.toHaveProperty('bypass_actors');
     expect(rulesetBody(strategy({ admin_bypass: true }), ['main'], [], false).bypass_actors).toEqual([{ actor_type: 'OrganizationAdmin', bypass_mode: 'always' }]);
     expect(rulesetBody(strategy({ admin_bypass: false }), ['main', 'staging'], [], false)).toMatchObject({ bypass_actors: [], conditions: { ref_name: { include: ['refs/heads/main', 'refs/heads/staging'] } } });
+  });
+});
+
+describe('the edd/evidence guard reads pull request heads, never the production tip alone', () => {
+  const ACTIONS = { app: { id: 15368, slug: 'github-actions' } };
+  const tip = { check_runs: [{ name: 'lint', ...ACTIONS }, { name: 'edd/evidence (push)', ...ACTIONS }] };
+  const onPr = { check_runs: [{ name: EDD_CHECK, ...ACTIONS }] };
+
+  test('edd/evidence reported on a PR head is enough, the static ids still need the tip', () => {
+    expect(missingRequiredChecks([EDD_CHECK, 'lint'], tip, onPr)).toEqual({ tip: [], pr: [] });
+    expect(missingRequiredChecks([EDD_CHECK, 'lint', 'types'], tip, onPr)).toEqual({ tip: ['types'], pr: [] });
+  });
+
+  test('no PR has reported it yet: the first pull request is what is missing', () => {
+    expect(missingRequiredChecks([EDD_CHECK, 'lint'], tip, { check_runs: [] })).toEqual({ tip: [], pr: [EDD_CHECK] });
+    expect(missingRequiredChecks([EDD_CHECK, 'lint'], tip, null)).toEqual({ tip: [], pr: [EDD_CHECK] });
+  });
+
+  test('prHeadCheckRuns walks the latest PRs into the base until one head carries the check', () => {
+    const calls: string[] = [];
+    const read = (path: string): unknown => {
+      calls.push(path);
+      if (path.startsWith('repos/o/r/pulls')) { return [{ head: { sha: 'a1' } }, { head: { sha: 'b2' } }]; }
+      return path.includes('/commits/b2/') ? onPr : { check_runs: [] };
+    };
+    expect(prHeadCheckRuns(read, 'o/r', 'main')).toBe(onPr);
+    expect(calls[0]).toContain('pulls?state=all&base=main');
+    expect(calls.some(c => c.includes('check_name=edd%2Fevidence'))).toBe(true);
+  });
+
+  test('prHeadCheckRuns returns an empty reading with no PR, and null when the list cannot be read', () => {
+    expect(prHeadCheckRuns(() => [], 'o/r', 'main')).toEqual({ check_runs: [] });
+    expect(prHeadCheckRuns(() => null, 'o/r', 'main')).toBeNull();
   });
 });

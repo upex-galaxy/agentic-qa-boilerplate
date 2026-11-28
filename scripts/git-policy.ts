@@ -456,6 +456,29 @@ export function missingCheckRuns(contexts: string[], checkRunsBody: unknown): st
   return [...new Set(contexts)].filter(c => !names.has(c));
 }
 
+export function prHeadCheckRuns(read: (path: string) => unknown | null, slug: string, production: string): unknown | null {
+  const pulls = read(`repos/${slug}/pulls?state=all&base=${production}&sort=created&direction=desc&per_page=10`);
+  if (!Array.isArray(pulls)) { return null; }
+  for (const pr of pulls as { head?: { sha?: unknown } }[]) {
+    const sha = pr?.head?.sha;
+    if (typeof sha !== 'string') { continue; }
+    const runs = read(`repos/${slug}/commits/${sha}/check-runs?check_name=${encodeURIComponent(EDD_CHECK)}&per_page=100`);
+    if (missingCheckRuns([EDD_CHECK], runs).length === 0) { return runs; }
+  }
+  return { check_runs: [] };
+}
+
+export function missingRequiredChecks(contexts: string[], tipCheckRuns: unknown, prCheckRuns: unknown): { tip: string[], pr: string[] } {
+  const wanted = [...new Set(contexts)];
+  const tip = missingCheckRuns(wanted.filter(c => c !== EDD_CHECK), tipCheckRuns);
+  const eddSeen = missingCheckRuns([EDD_CHECK], tipCheckRuns).length === 0 || missingCheckRuns([EDD_CHECK], prCheckRuns).length === 0;
+  return { tip, pr: wanted.includes(EDD_CHECK) && !eddSeen ? [EDD_CHECK] : [] };
+}
+
+export function firstPullRequestNeeded(production: string): string {
+  return `${EDD_CHECK} has not reported on any of the latest pull requests into ${production}. It runs only on pull requests (pull_request_target), never on ${production} itself, so the first one has to be a pull request into ${production} opened after .github/workflows/evidence.yml is on ${production} (a draft is enough, it is never merged for this); its run reports ${EDD_CHECK} on the PR head. Then re-run.`;
+}
+
 export function mergeGuard(rules: unknown): { ok: boolean, reason: string } {
   if (!Array.isArray(rules)) {
     return { ok: false, reason: 'the base branch rules could not be read, so nothing proves a required check guards the merge' };
@@ -1276,12 +1299,17 @@ function apply(gs: GitStrategy, slug: string, write: boolean, allowLoosening: bo
     const checkRuns = gh(`repos/${slug}/commits/${ref}/check-runs?per_page=100`);
     integrationId = resolveIntegrationId(checkRuns);
     if (integrationId === null) {
-      log.err(`No GitHub Actions check run exists yet on ${ref} to read the GitHub Actions app id (integration_id) from. Run the ${EDD_CHECK} workflow once, then re-run apply.`);
+      log.err(`No GitHub Actions check run exists yet on ${ref} to read the GitHub Actions app id (integration_id) from. Run any GitHub Actions workflow on ${ref} once, then re-run apply.`);
       return 1;
     }
-    const missing = missingCheckRuns(contexts, checkRuns);
-    if (missing.length > 0) {
-      log.err(`No check run on ${ref} has the name of these required contexts: ${missing.join(', ')}. A required check that never reports blocks every merge. Run the CI jobs with those names on ${ref} (or fix the ids in evidence.static), then re-run apply.`);
+    const needPr = contexts.includes(EDD_CHECK) && missingCheckRuns([EDD_CHECK], checkRuns).length > 0;
+    const missing = missingRequiredChecks(contexts, checkRuns, needPr ? prHeadCheckRuns(p => gh(p), slug, ref) : null);
+    if (missing.tip.length > 0) {
+      log.err(`No check run on ${ref} has the name of these required contexts: ${missing.tip.join(', ')}. A required check that never reports blocks every merge. Run the CI jobs with those names on ${ref} (or fix the ids in evidence.static), then re-run apply.`);
+      return 1;
+    }
+    if (missing.pr.length > 0) {
+      log.err(firstPullRequestNeeded(ref));
       return 1;
     }
   }

@@ -15,11 +15,14 @@ import {
   directPushOpen,
   EDD_CHECK,
   effectiveForApply,
+  firstPullRequestNeeded,
   lineDiff,
   MERGE_MODES,
   mergeMethodWidening,
   mergesOnChecks,
   missingCheckRuns,
+  missingRequiredChecks,
+  prHeadCheckRuns,
   protectedBranches,
   repoSettingsPatch,
   requiredCheckContexts,
@@ -305,6 +308,7 @@ export interface HostState {
   login: string | null
   scopes: string[] | null
   checkRuns: unknown | null
+  prCheckRuns?: unknown | null
   actions: ActionsWorkflowPermissions | null
   orgActionsReadable: boolean | null
   rulesetId: number | null
@@ -347,9 +351,12 @@ export function assessPreflight(gs: GitStrategy, contexts: string[], host: HostS
     if (integrationId === null) {
       blockers.push(`no GitHub Actions check run exists on ${prod} yet, so the GitHub Actions app id (integration_id) cannot be read; run the ${EDD_CHECK} workflow once on ${prod}`);
     }
-    const missing = missingCheckRuns(contexts, host.checkRuns);
-    if (missing.length > 0) {
-      blockers.push(`these required checks have never reported on ${prod}: ${missing.join(', ')}; a required check that never reports blocks every merge, so run those CI jobs on ${prod} first`);
+    const missing = missingRequiredChecks(contexts, host.checkRuns, host.prCheckRuns ?? null);
+    if (missing.tip.length > 0) {
+      blockers.push(`these required checks have never reported on ${prod}: ${missing.tip.join(', ')}; a required check that never reports blocks every merge, so run those CI jobs on ${prod} first`);
+    }
+    if (missing.pr.length > 0) {
+      blockers.push(firstPullRequestNeeded(prod));
     }
     if (host.repo.owner?.type === 'User' && directPushOpen(gs.policy?.direct_push_to_protected ?? 'evidence')) {
       blockers.push('a user-owned repository has no ruleset bypass list, so a required check on a branch that takes direct pushes would refuse every direct push; move the repository to an organization, or choose forbidden or manual');
@@ -508,11 +515,14 @@ export function readHostState(gs: GitStrategy, slug: string, deps: Pick<SetupDep
   }
   const prod = gs.branches?.production ?? 'main';
   const org = repo?.owner?.type === 'Organization' ? repo.owner.login : null;
+  const checkRuns = statusChecksManaged(gs) ? deps.gh(`repos/${slug}/commits/${prod}/check-runs?per_page=100`) : null;
+  const eddOnTip = missingCheckRuns([EDD_CHECK], checkRuns).length === 0;
   return {
     repo,
     login: typeof login === 'string' ? login : null,
     scopes: deps.scopes(),
-    checkRuns: statusChecksManaged(gs) ? deps.gh(`repos/${slug}/commits/${prod}/check-runs?per_page=100`) : null,
+    checkRuns,
+    prCheckRuns: statusChecksManaged(gs) && !eddOnTip ? prHeadCheckRuns(deps.gh, slug, prod) : null,
     actions: deps.gh(`repos/${slug}/actions/permissions/workflow`) as ActionsWorkflowPermissions | null,
     orgActionsReadable: org ? deps.gh(`orgs/${org}/actions/permissions/workflow`) !== null : null,
     rulesetId,
