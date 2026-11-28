@@ -36,7 +36,7 @@ Evaluate ACs for clarity, testability and completeness. Raise questions only whe
 
 ## 5. Push to protected = resolve `git_strategy.policy.direct_push_to_protected`
 
-The decision lives in `.agents/project.yaml`; the protected list is `git_strategy.protected`. `forbidden` means never direct-push, route through a PR. `confirm` means ask the user explicitly before every push. `allowed` is a standing authorization: push without asking. When the `git_strategy` block is missing or null (a fresh scaffold), behave as `confirm`, the safe default. Do not hardcode the answer here: the variable is the decision.
+The decision lives in `.agents/project.yaml`; the protected list is `git_strategy.protected`. `forbidden` means never direct-push, route through a PR. `confirm` means ask the user explicitly before every push. `allowed` is a standing authorization: push without asking. `evidence` means push without asking only when the pre-push evidence gate (`bun run edd gate`) passes; on a fail there is no push and no question: fix forward and retry. When the value or the `git_strategy` block is missing or null, behave as `evidence`. A pull request into a protected branch follows `git_strategy.policy.merge_mode`: `auto` (the default), `human-approves` or `manual`. Under `auto` and `human-approves` the agent enables auto-merge at PR open, and only after `bun run git:policy verify --merge <base>` passes; GitHub merges once the required checks pass, after a person's approval under `human-approves`. Under `manual` the agent stops at PR creation and a person merges. The doctrine is `/edd` and the operations are `/git-flow-master`. Do not hardcode the answer here: the variable is the decision.
 
 ## 6. Git history (invariants: no `git_strategy` value relaxes them)
 
@@ -44,7 +44,7 @@ Never rewrite pushed history (rebase or amend on pushed commits). Never force-pu
 
 ## 7. Quality verification
 
-After code changes, verify in order: tests, types, lint. Do not skip a step.
+After code changes, verify in order: tests, types, lint. Do not skip a step. The evidence gate is where verification is enforced: `bun run edd gate` re-runs the contract's pre-push checks before a push under policy `evidence`, and the CI verifier re-checks every PR (the `edd/evidence` check) and every push to a protected branch. A green local run is not a delivery: the gate's verdict is.
 
 ## 8. File operations
 

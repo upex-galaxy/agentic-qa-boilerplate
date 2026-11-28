@@ -16,7 +16,7 @@ Git and PR work loads `/git-flow-master` by meaning; its details are in `.agents
 
 | Branch | Status | Role |
 |---|---|---|
-| `main` | Always | Production and default branch, and the only branch in `git_strategy.protected`. In a `solo-main` flow work lands by direct push when `git_strategy.policy.direct_push_to_protected` is `allowed` (Critical Rule #5); a PR from a semantic branch stays optional, for when a review gate is wanted. |
+| `main` | Always | Production and default branch, and the only branch in `git_strategy.protected`. In a `solo-main` flow work lands by direct push when `git_strategy.policy.direct_push_to_protected` is `allowed` or `evidence` (Critical Rule #5; `evidence` adds the pre-push evidence gate); a PR from a semantic branch stays optional, for when a review gate is wanted. |
 | `staging` | Optional | Only if the team adopts a main-integration flow: the integration branch for AI commits and pre-release validation. It does not exist on `origin` by default, so do not assume it. |
 
 **Commit rules.**
@@ -26,7 +26,8 @@ Git and PR work loads `/git-flow-master` by meaning; its details are in `.agents
 - No AI attribution in commits (Rule #3).
 - Every commit, under every strategy, ends with the two forensic trailers `Worktree: <name|primary>` then `Session: <label>`, taken from the `AGENT IDENTITY:` context line the hook injects (§4.5), or `unknown` when nothing resolves. They record provenance, not attribution (Rule #3), so never use `Claude-Session:` or any harness-branded key. The label rule and per-harness resolution are in `/git-flow-master`.
 - `Docs-Checked: <label> <reason>` (ADR-0016) goes above the two trailers, only when a change touched a `LINT.IfChange(<label>)` region and the pages it names still hold. It is the escape the pre-push and CI documentation-contract gate accepts and the drift sweep counts every use, so add it only with a real reason. binding: `/git-flow-master`
-- The push policy is Critical Rule #5: resolve `git_strategy.policy.direct_push_to_protected`.
+- The push policy is Critical Rule #5: resolve `git_strategy.policy.direct_push_to_protected` for a direct push and `git_strategy.policy.merge_mode` for a PR into a protected branch.
+- Delivery runs on evidence: branches, commits, pushes and PRs need no per-step approval, and the gate's verdict decides whether a change lands. `edd` is the doctrine, `/git-flow-master` runs the operations, and the closed list of what still asks a person is `.agents/skills/edd/references/human-gates.md`. binding: `/git-flow-master`
 - Test-automation PRs use `.agents/skills/git-flow-master/references/pr-test-automation.md`, which `/git-flow-master` loads on `test/*` branches. Title format: `{type}({ISSUE-KEY}): {description}`.
 
 ---
