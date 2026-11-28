@@ -117,6 +117,7 @@ import { missingClisFor, skipJiraPhase } from './lib/tracker-gating.ts';
 import * as tui from './lib/tui.ts';
 import { startInstallerUi } from './lib/ui/installer-run.ts';
 import { pickLang } from './lib/ui/strings.ts';
+import { devLinkedDestinations } from './lib/user-skills-update.ts';
 import { runVariablesFlow } from './lib/variables-flow.ts';
 import { criticalVars, nonCriticalVars, valueSourceOf, VAR_MANIFEST, varsFor } from './lib/variables-manifest.ts';
 import { runSetupPreflight } from './preflight.ts';
@@ -431,6 +432,19 @@ export function buildCommunitySkillArgs(
 }
 
 export const PROJECT_SKILL_DESTINATION = '.agents/skills';
+
+export async function addCommunitySkill(
+  item: CommunitySkill,
+  level: 'project' | 'global',
+  agents: AgentId[],
+  run: (args: string[]) => Promise<StreamResult>,
+  base: string,
+  env: Record<string, string | undefined> = process.env,
+): Promise<{ devLinks: string[], result: StreamResult | null }> {
+  const devLinks = devLinkedDestinations(item.skill, level, base, env);
+  if (devLinks.length > 0) { return { devLinks, result: null }; }
+  return { devLinks, result: await run(buildCommunitySkillArgs(item, level, agents)) };
+}
 
 /**
  * Community skills installed at PROJECT level (`bunx skills add`).
@@ -1349,6 +1363,28 @@ async function askUserLevelSkills(state: InstallState, forceKeys: Set<string>, a
   return offered.filter(item => set.has(describeSkill(item)));
 }
 
+export function skipDevLinkedSkill(
+  state: { skills: Record<string, InstallStatus> },
+  stateKey: string,
+  slug: string,
+  devLinks: string[],
+  out: { warn: (message: string) => void },
+): void {
+  state.skills[stateKey] = 'skipped';
+  out.warn(tr(
+    `${slug}: omitida, es un enlace de desarrollo y \`skills add\` lo reemplazaría: ${devLinks.join(', ')}`,
+    `${slug}: skipped, it is a development link and \`skills add\` would replace it: ${devLinks.join(', ')}`,
+  ));
+}
+
+export function communityStepSummary(installed: number, linked: number, total: number, where: string): { status: 'ok' | 'warn', note: string } {
+  const kept = linked > 0 ? tr(` · ${linked} omitida(s) por enlace de desarrollo`, ` · ${linked} skipped, development link`) : '';
+  return {
+    status: installed + linked === total ? 'ok' : 'warn',
+    note: `${tr(`${installed} de ${total} en ${where}`, `${installed} of ${total} in ${where}`)}${kept}`,
+  };
+}
+
 async function runCommunityStep(
   agents: AgentId[],
   state: InstallState,
@@ -1391,6 +1427,7 @@ async function runCommunityStep(
   }
   const out = stepOut(step);
   let ok = 0;
+  let linked = 0;
   for (const item of toInstall) {
     const slug = describeSkill(item);
     const stateKey = `community:${level}:${slug}`;
@@ -1398,10 +1435,15 @@ async function runCommunityStep(
     // Claude discovers that same tree through the generated `.claude/skills`
     // alias. Global skills remain harness-specific, so only that level receives
     // one `--agent` argument per selected agent.
-    const args = buildCommunitySkillArgs(item, level, agents);
-    out.dim(`bunx skills add ${slug}${level === 'global' ? ' -g' : ''}`);
-    const r = await runStreamed('bunx', args, { timeoutMs: 180_000 });
-    if (r.code === 0) {
+    const { devLinks, result: r } = await addCommunitySkill(item, level, agents, async (args) => {
+      out.dim(`bunx skills add ${slug}${level === 'global' ? ' -g' : ''}`);
+      return runStreamed('bunx', args, { timeoutMs: 180_000 });
+    }, level === 'project' ? REPO_ROOT : homedir());
+    if (r === null) {
+      linked += 1;
+      skipDevLinkedSkill(state, stateKey, slug, devLinks, out);
+    }
+    else if (r.code === 0) {
       ok += 1;
       state.skills[stateKey] = 'installed';
       // Only PROJECT level: these are gitignored, re-fetched on every install
@@ -1422,7 +1464,8 @@ async function runCommunityStep(
   }
   markStepDone(state, key);
   const where = level === 'project' ? '<code>.agents/skills/</code>' : tr('tu usuario', 'your user');
-  step.end(ok === toInstall.length ? 'ok' : 'warn', tr(`${ok} de ${toInstall.length} en ${where}`, `${ok} of ${toInstall.length} in ${where}`));
+  const summary = communityStepSummary(ok, linked, toInstall.length, where);
+  step.end(summary.status, summary.note);
 }
 
 // ============================================================================

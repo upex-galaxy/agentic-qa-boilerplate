@@ -8,8 +8,10 @@ import { afterEach, describe, expect, test } from 'bun:test';
 
 import { communitySkillStatus, diagnoseAgentCompatibility } from './doctor.ts';
 import {
+  addCommunitySkill,
   agentsWithFilesHere,
   buildCommunitySkillArgs,
+  communityStepSummary,
   detectAgents,
   discoverRequiredEnvVars,
   ENGRAM_PI_MANUAL,
@@ -26,6 +28,7 @@ import {
   PROJECT_SKILL_DESTINATION,
   remoteHeadRef,
   repairRepositoryCompatibility,
+  skipDevLinkedSkill,
   USER_LEVEL_SKILLS,
 } from './install.ts';
 import { declaredMcpIds } from './lib/agent-compatibility-contracts.ts';
@@ -171,6 +174,42 @@ describe('installer Codex lifecycle', () => {
         'codex',
         '--yes',
       ]);
+  });
+
+  test('a symlinked skill is not passed to `skills add`', async () => {
+    const home = temporaryRoot();
+    const checkout = temporaryRoot();
+    mkdirSync(join(home, '.agents/skills'), { recursive: true });
+    symlinkSync(checkout, join(home, '.agents/skills/linked'), 'dir');
+    const calls: string[][] = [];
+    const run = async (args: string[]) => {
+      calls.push(args);
+      return { code: 0, stdout: '', stderr: '', timedOut: false };
+    };
+
+    const skipped = await addCommunitySkill({ package: 'owner/repo', skill: 'linked' }, 'global', ['codex'], run, home, {});
+    expect(skipped).toEqual({ devLinks: [join(home, '.agents/skills/linked')], result: null });
+    expect(calls).toEqual([]);
+
+    await addCommunitySkill({ package: 'owner/repo', skill: 'plain' }, 'global', ['codex'], run, home, {});
+    expect(calls).toEqual([['skills', 'add', 'owner/repo', '--skill', 'plain', '--global', '--agent', 'codex', '--yes']]);
+  });
+
+  test('a skipped development link is named, recorded as skipped and counted', () => {
+    const state: Parameters<typeof skipDevLinkedSkill>[0] = { skills: {} };
+    const warnings: string[] = [];
+    const link = '/home/u/.codeium/windsurf/skills/linked';
+
+    skipDevLinkedSkill(state, 'community:global:owner/repo@linked', 'owner/repo@linked', [link], { warn: message => warnings.push(message) });
+    expect(state.skills).toEqual({ 'community:global:owner/repo@linked': 'skipped' });
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatch(/^owner\/repo@linked: .*(development link|enlace de desarrollo).*`skills add`/);
+    expect(warnings[0]).toEndWith(link);
+
+    expect(communityStepSummary(2, 1, 3, 'your user').status).toBe('ok');
+    expect(communityStepSummary(2, 1, 3, 'your user').note).toMatch(/^2 (of|de) 3 .* 1 (skipped, development link|omitida\(s\) por enlace de desarrollo)$/);
+    expect(communityStepSummary(1, 1, 3, 'your user').status).toBe('warn');
+    expect(communityStepSummary(3, 0, 3, 'your user').note).toEndWith('your user');
   });
 
   test('the Pi Engram line is owed to every run with a Pi agent, a mixed one included', () => {
