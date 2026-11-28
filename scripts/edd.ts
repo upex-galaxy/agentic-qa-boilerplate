@@ -193,9 +193,13 @@ function parseRefs(text: string): PushLine[] {
   return text.split('\n').map(l => l.trim().split(/\s+/)).filter(p => p.length >= 4).map(([localRef, localSha, remoteRef, remoteSha]) => ({ localRef, localSha, remoteRef, remoteSha }));
 }
 
+function productionTip(production: string): string | null {
+  return resolveCommit(CWD, 'refs/remotes/origin/HEAD') ?? resolveCommit(CWD, `refs/remotes/origin/${production}`);
+}
+
 function baseFor(head: string, remoteSha: string, production: string): string {
   if (!isZeroOid(remoteSha) && isCommit(CWD, remoteSha)) { return remoteSha; }
-  const prod = resolveCommit(CWD, `refs/remotes/origin/${production}`);
+  const prod = productionTip(production);
   return (prod && mergeBase(CWD, head, prod)) ?? EMPTY_TREE;
 }
 
@@ -219,7 +223,7 @@ async function gate(): Promise<number> {
     let read = base === EMPTY_TREE ? treeReader(CWD) : refReader(CWD, base);
     let tried = tryLoad(read, source);
     const branch = r.remoteRef.startsWith('refs/heads/') ? r.remoteRef.slice('refs/heads/'.length) : null;
-    const prodTip = resolveCommit(CWD, `refs/remotes/origin/${wt.facts.production}`);
+    const prodTip = productionTip(wt.facts.production);
     if (branch !== null && !(typeof tried === 'string' ? wt : tried).facts.protected.includes(branch) && prodTip && prodTip !== base) {
       source = prodTip;
       read = refReader(CWD, prodTip);

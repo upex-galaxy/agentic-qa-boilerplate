@@ -279,6 +279,18 @@ describe('gate keys and branch contracts', () => {
     expect(rec.touches_gate.keys).toEqual(['evidence (resolved contract)']);
   });
 
+  test('a new branch finds the production tip through origin/HEAD, not through the production its own tree names', () => {
+    const { r, base } = fixture('evidence');
+    r.git('symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main');
+    r.git('checkout', '-q', '-b', 'feat');
+    r.commit('chore: rename production', { '.agents/project.yaml': projectYaml(contract('true')).replace('production: main', 'production: trunk') });
+    const head = r.commit('feat: x', { 'app/a.ts': '1\n' });
+    const res = run(r.dir, ['gate'], `refs/heads/feat ${head} refs/heads/feat ${'0'.repeat(40)}\n`);
+    expect(res.code).toBe(1);
+    const rec = JSON.parse(readFileSync(join(r.dir, '.session', 'evidence', `${head}.json`), 'utf8'));
+    expect(rec.contract.read_from).toBe(base);
+  });
+
   test('a branch push reads the contract from origin/<production>, not from the branch it updates', () => {
     const r = makeRepo();
     repos.push(r);
