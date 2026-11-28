@@ -739,11 +739,16 @@ export function buildRules(
 
   // An accepted divergence on direct_push_to_protected means "the host's side of
   // this field is intended". Deriving our own pull_request rule (or omitting it)
-  // would overwrite exactly what was accepted — carry the host's rule forward as-is.
+  // would overwrite exactly what was accepted — carry the host's rule forward as-is,
+  // except the approvals, which a declared auto or human-approves merge_mode owns.
   const acceptedDirectPush = acceptedFields(gs).some(f => f.endsWith('.direct_push_to_protected'));
   if (acceptedDirectPush) {
     const hostPr = current.find(r => r.type === 'pull_request');
-    if (hostPr) { rules.push(hostPr); }
+    if (hostPr) {
+      rules.push(mergeModeDeclared(gs) && mergesOnChecks(gs)
+        ? { ...hostPr, parameters: { ...(hostPr.parameters ?? {}), ...pullRequestModeParams(gs) } }
+        : hostPr);
+    }
   }
   else if (!directPushOpen(directPushPolicy(gs))) {
     const currentPr = current.find(r => r.type === 'pull_request');
@@ -937,8 +942,6 @@ function verify(gs: GitStrategy, slug: string, stamp: boolean): number {
   const modeParams = pullRequestModeParams(gs);
   const reviewsFollowMode = mergeModeDeclared(gs) && onChecks;
   const contexts = requiredCheckContexts(readEvidence());
-  // An accepted direct-push divergence carries the host pull_request rule verbatim, so apply never changes its approvals.
-  const hostPrAccepted = acceptedFields(gs).some(f => f.endsWith('.direct_push_to_protected'));
   const pushModeFinding = (field: string, declared: string[], enforced: string[], unknown: string[]): void => {
     if (declared.length > 0) {
       findings.push({ severity: 'drift', field, declared: declared.join(', '), enforced: enforced.join(', ') });
@@ -1040,7 +1043,7 @@ function verify(gs: GitStrategy, slug: string, stamp: boolean): number {
         modeEnforced.push('allow_auto_merge false');
       }
     }
-    if (pr && onChecks && !hostPrAccepted) {
+    if (pr && onChecks) {
       const gotApprovals = p.required_approving_review_count ?? 0;
       if (gotApprovals !== modeParams.required_approving_review_count) {
         modeDeclared.push(`approvals ${modeParams.required_approving_review_count}`);

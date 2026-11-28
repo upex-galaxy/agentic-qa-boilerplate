@@ -177,6 +177,19 @@ describe('buildRules: apply never bulldozes an accepted divergence', () => {
     expect(rules.some(r => r.type === 'pull_request')).toBe(false);
   });
 
+  test('under a declared auto merge_mode the carried rule takes the mode approvals (a loosening of the host)', () => {
+    const gs = strategy({ accepted_divergences: [ACCEPTED_DIRECT_PUSH], merge_mode: 'auto' });
+    const pr = buildRules(gs, false, [HOST_PR_RULE]).find(r => r.type === 'pull_request');
+    expect(pr?.parameters).toMatchObject({ ...HOST_PR_RULE.parameters, required_approving_review_count: 0, require_last_push_approval: false });
+    expect(detectLoosening([HOST_PR_RULE], [pr!], 'o/r', 'main').join(' ')).toContain('approval');
+  });
+
+  test('under a declared human-approves merge_mode the carried rule requires the last-push approval', () => {
+    const gs = strategy({ accepted_divergences: [ACCEPTED_DIRECT_PUSH], merge_mode: 'human-approves', require_pr_reviews: 2 });
+    const pr = buildRules(gs, false, [HOST_PR_RULE]).find(r => r.type === 'pull_request');
+    expect(pr?.parameters).toMatchObject({ required_approving_review_count: 2, require_last_push_approval: true });
+  });
+
   test('accepted with no host rule derives none either', () => {
     const gs = strategy({ accepted_divergences: [ACCEPTED_DIRECT_PUSH] });
     expect(buildRules(gs, false, []).some(r => r.type === 'pull_request')).toBe(false);
