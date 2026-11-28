@@ -113,17 +113,21 @@ export default defineConfig({
     // ============================================
     // Auth Setup Projects - Run after global-setup
     // ============================================
+    // `trace: 'off'` wherever a credential is typed: a trace holds it, and the published report
+    // carries the trace. A spec that types one declares `test.use({ trace: 'off' })` itself.
     {
       name: 'ui-setup',
       testMatch: /ui-auth\.setup\.ts/,
       testDir: './tests/setup',
       dependencies: ['global-setup'],
+      use: { trace: 'off' },
     },
     {
       name: 'api-setup',
       testMatch: /api-auth\.setup\.ts/,
       testDir: './tests/setup',
       dependencies: ['global-setup'],
+      use: { trace: 'off' },
     },
 
     // ============================================

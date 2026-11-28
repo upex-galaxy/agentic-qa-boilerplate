@@ -4,6 +4,7 @@ import type { TestContextOptions } from '@TestContext';
 import { expect } from '@playwright/test';
 import { TestContext } from '@TestContext';
 import { attachRequestResponseToAllure } from '@utils/allure';
+import { env } from '@variables';
 
 export interface InterceptedData<TRequest = unknown, TResponse = unknown> {
   url: string
@@ -54,6 +55,7 @@ export class UiBase extends TestContext {
 
   // fill() writes the value into its step title and error log, which reach the published report; evaluate() writes neither.
   async fillSecret(field: Locator, value: string): Promise<void> {
+    await this.refuseTracedCredential();
     await expect(field).toBeVisible();
     await expect(field).toBeEditable();
     await field.evaluate((element, secret) => {
@@ -67,6 +69,26 @@ export class UiBase extends TestContext {
       element.dispatchEvent(new Event('input', { bubbles: true }));
       element.dispatchEvent(new Event('change', { bubbles: true }));
     }, value);
+  }
+
+  // A trace holds the typed value and travels inside the published report. start() fails only while one records.
+  private async refuseTracedCredential(): Promise<void> {
+    const { tracing } = this.page.context();
+    try {
+      await tracing.start();
+    }
+    catch (error) {
+      if (!String(error).includes('already started')) {
+        throw error;
+      }
+      const message = 'fillSecret() types a credential while a trace records. Add test.use({ trace: \'off\' }) at the top of this spec file.';
+      if (env.isCI) {
+        throw new Error(message);
+      }
+      console.warn(`⚠️ ${message} CI refuses this run.`);
+      return;
+    }
+    await tracing.stop();
   }
 
   async interceptResponse<TRequest = unknown, TResponse = unknown>(

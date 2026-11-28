@@ -1,5 +1,8 @@
 import { config, expect, test } from '@TestFixture';
 
+// This spec sends credentials, and a trace would carry them into the published report.
+test.use({ trace: 'off' });
+
 test.describe('UPEX-100: User Session API', { tag: ['@critical'] }, () => {
   test('UPEX-100: should get current user with valid token', async ({ api }) => {
     const [response, userData] = await api.auth.getCurrentUser();

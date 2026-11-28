@@ -6,13 +6,14 @@ import { chromium } from '@playwright/test';
 import { knownDefectKey } from '@utils/testOutcomes';
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 
-interface ResultStep { name: string, steps?: ResultStep[] }
+interface ResultStep { name: string, steps?: ResultStep[], attachments?: { name: string }[] }
 interface Result {
   name: string
   status: string
   statusDetails?: { message?: string }
   labels: { name: string, value: string }[]
   steps: ResultStep[]
+  attachments?: { name: string }[]
 }
 
 const ROOT = resolve(import.meta.dir, '../..');
@@ -29,6 +30,7 @@ const PAGE_SECRETS = {
   login: joined('login', 'Passphrase', 'value'),
   disabled: joined('disabled', 'Field', 'value'),
 };
+const SNAPSHOT_SECRET = joined('snapshot', 'Held', 'nowhere', '42');
 const BODY_SECRETS = {
   password: joined('body', 'pass', 'value'),
   access: joined('opaque', 'access', 'value'),
@@ -121,6 +123,8 @@ const pageSpec = (components: string): string => `
 import { expect, test } from '@playwright/test';
 import { LoginPage } from '${components}/ui/LoginPage.ts';
 
+test.use({ trace: 'off' });
+
 const html = \`<input data-testid="login-email-input"><input data-testid="login-password-input" type="password">
 <button data-testid="login-submit-button" onclick="document.querySelector('[data-testid=login-error]').hidden = false">Go</button>
 <p data-testid="login-error" hidden>Wrong credentials</p><input id="off" type="password" disabled>
@@ -138,6 +142,27 @@ test('secret fill failing', async ({ page }) => {
   await page.setContent('<input id="off" type="password" disabled>');
   await new LoginPage({ page }).fillSecret(page.locator('#off'), ${lit(PAGE_SECRETS.disabled)});
 });
+
+test('failing login', async ({ page }) => {
+  await page.route('http://app.test/login', route => route.fulfill({ contentType: 'text/html', body: html.replace('onclick', 'data-never') }));
+  await page.goto('http://app.test/login');
+  await new LoginPage({ page }).loginWithInvalidCredentials({ email: 'i@j.test', password: ${lit(SNAPSHOT_SECRET)} });
+});
+`;
+
+const tracedSpec = (components: string): string => `
+import { test } from '@playwright/test';
+import { LoginPage } from '${components}/ui/LoginPage.ts';
+
+test('ordinary failure', async ({ page }) => {
+  await page.setContent('<p>totals</p>');
+  throw new Error('totals differ');
+});
+
+test('credential typed while traced', async ({ page }) => {
+  await page.setContent('<input id="a" type="password">');
+  await new LoginPage({ page }).fillSecret(page.locator('#a'), 'unused');
+});
 `;
 
 let dir = '';
@@ -146,6 +171,8 @@ let written: string[] = [];
 
 const names = (steps: ResultStep[]): string[] => steps.flatMap(s => [s.name, ...names(s.steps ?? [])]);
 const byName = (name: string): Result => results.find(r => r.name === name) as Result;
+const attached = (node: ResultStep | Result): string[] => [...(node.attachments ?? []).map(a => a.name), ...(node.steps ?? []).flatMap(attached)];
+const resultsText = (): string => readdirSync(join(dir, 'results')).map(f => readFileSync(join(dir, 'results', f), 'utf8')).join('\n');
 const keyOf = (result: Result): string | null => {
   const tags: OutcomeInput['tags'] = result.labels.filter(l => l.name === 'tag').map(l => `@${l.value}`);
   return knownDefectKey({ annotations: [], tags });
@@ -159,9 +186,10 @@ describe('what the decorators and knownDefect() write into the Allure results', 
     writeFileSync(join(dir, 'fake.spec.ts'), spec(`${tests}/utils`));
     if (BROWSER) {
       writeFileSync(join(dir, 'page.spec.ts'), pageSpec(`${tests}/components`));
+      writeFileSync(join(dir, 'traced.spec.ts'), tracedSpec(`${tests}/components`));
     }
-    writeFileSync(join(dir, 'playwright.config.ts'), 'export default { testDir: \'.\', testMatch: \'*.spec.ts\', workers: 1, use: { actionTimeout: 5000 }, expect: { timeout: 1000 }, reporter: [[\'allure-playwright\', { resultsDir: \'results\', detail: true }]] };\n');
-    const run = Bun.spawn(['bunx', '--bun', 'playwright', 'test', '-c', 'playwright.config.ts'], { cwd: dir, stdout: 'pipe', stderr: 'pipe' });
+    writeFileSync(join(dir, 'playwright.config.ts'), 'export default { testDir: \'.\', testMatch: \'*.spec.ts\', workers: 1, use: { actionTimeout: 5000, trace: \'retain-on-failure\' }, expect: { timeout: 1000 }, reporter: [[\'allure-playwright\', { resultsDir: \'results\', detail: true }]] };\n');
+    const run = Bun.spawn(['bunx', '--bun', 'playwright', 'test', '-c', 'playwright.config.ts'], { cwd: dir, env: { ...process.env, CI: 'true' }, stdout: 'pipe', stderr: 'pipe' });
     const output = await new Response(run.stdout).text() + await new Response(run.stderr).text();
     await run.exited;
     const out = join(dir, 'results');
@@ -230,5 +258,27 @@ describe('what the decorators and knownDefect() write into the Allure results', 
     expect(titles).toContain('ATC [PROJ-112]: loginWithInvalidCredentials({ email: "i@j.test", password: "***" })');
     expect(titles).toContain('Fill "i@j.test"');
     expect(titles).toContain('Evaluate');
+  });
+
+  test.skipIf(!BROWSER)('a failing login leaves no trace, an ordinary failing test keeps its own', () => {
+    expect(byName('failing login').status).toBe('failed');
+    expect(attached(byName('failing login'))).not.toContain('trace');
+    expect(attached(byName('ordinary failure'))).toContain('trace');
+  });
+
+  test.skipIf(!BROWSER)('fillSecret() refuses to type while a trace records', () => {
+    const refused = byName('credential typed while traced');
+    expect(refused.status).not.toBe('passed');
+    expect(refused.statusDetails?.message).toContain('Add test.use({ trace: \'off\' })');
+  });
+
+  test.skipIf(!BROWSER)('report:scrub removes a password the page snapshot kept, from every text attachment', async () => {
+    expect(resultsText()).toContain(SNAPSHOT_SECRET);
+    const scrub = Bun.spawn(['bun', '--no-env-file', join(ROOT, 'cli/oneshot-report/scrub.ts'), '--results', join(dir, 'results')], { cwd: dir, env: { PATH: process.env.PATH ?? '' }, stdout: 'pipe' });
+    expect(await scrub.exited).toBe(0);
+    const attachments = readdirSync(join(dir, 'results')).filter(f => /-attachment\.(?:md|txt|json)$/.test(f));
+    const after = attachments.map(f => readFileSync(join(dir, 'results', f), 'utf8')).join('\n');
+    expect(after).not.toContain(SNAPSHOT_SECRET);
+    expect(after).toContain('# Error details');
   });
 });

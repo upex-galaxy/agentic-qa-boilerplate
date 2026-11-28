@@ -2,6 +2,9 @@
 
 import { expect, test } from '@TestFixture';
 
+// This spec types a credential, and a trace would carry it into the published report.
+test.use({ trace: 'off' });
+
 test.describe('PROJ-200: Example Feature', () => {
   test('PROJ-200: should complete example flow successfully', { tag: ['@critical'] }, async ({ ui }) => {
     const testData = ui.data.createCredentials();
