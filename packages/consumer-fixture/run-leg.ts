@@ -65,7 +65,7 @@ export const LEGS: Record<string, Leg> = {
 };
 
 /** The gates a consumer runs (its `repo:check` minus format and `git:policy`, which need a host session). */
-export const CONSUMER_GATES = ['types:check', 'lint:check', 'skills:check', 'instructions:check', 'docs:check', 'vars:check', 'board:check', 'shared:check', 'kata:manifest:check', 'agents:compat:check'];
+export const CONSUMER_GATES = ['types:check', 'lint:check', 'skills:check', 'instructions:check', 'docs:check', 'vars:check', 'board:check', 'shared:check', 'installer:manifest:check', 'kata:manifest:check', 'agents:compat:check', 'skills:test'];
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(name);
