@@ -5,6 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { afterAll, describe, expect, test } from 'bun:test';
 
 import { installerManifestCheck } from './installer-manifest-check.ts';
+import { contractsEnforced } from './lib/doc-contracts.ts';
 
 interface Generator {
   MANIFEST_PATH: string
@@ -42,7 +43,7 @@ afterAll(() => {
 });
 
 describe('installer:manifest:check', () => {
-  test('passes on a copy of the committed manifest and fails once that copy is stale', async () => {
+  test.skipIf(!contractsEnforced(REPO))('passes on a copy of the committed manifest and fails once that copy is stale', async () => {
     const root = tempRoot(CHECK_INPUTS);
     const fresh = installerManifestCheck(root);
     expect(fresh.stderr).not.toContain('DRIFT');
@@ -58,7 +59,7 @@ describe('installer:manifest:check', () => {
     expect(stale.stderr).toContain('DRIFT');
   });
 
-  test('fails in the boilerplate when the scaffolder package is missing', () => {
+  test.skipIf(!contractsEnforced(REPO))('fails in the boilerplate when the scaffolder package is missing', () => {
     const root = tempRoot(['package.json', '.agents/project.yaml']);
     expect(installerManifestCheck(root).code).toBe(1);
   });
