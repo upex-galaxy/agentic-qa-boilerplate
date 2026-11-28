@@ -44,7 +44,7 @@ Never rewrite pushed history (rebase or amend on pushed commits). Never force-pu
 
 ## 7. Quality verification
 
-After code changes, verify in order: tests, types, lint. Do not skip a step. The evidence gate is where verification is enforced: `bun run edd gate` re-runs the contract's pre-push checks before a push under policy `evidence`, and the CI verifier re-checks every PR (the `edd/evidence` check) and every push to a protected branch. A green local run is not a delivery: the gate's verdict is.
+After code changes, verify in order: tests, types, lint. Do not skip a step. The evidence gate is where verification is enforced: `bun run edd gate` re-runs the contract's pre-push checks before a push under policy `evidence`, and CI re-checks every PR (the `edd/evidence` check) and, when the base policy is `evidence`, every push to a protected branch (`edd/evidence (push)`, which detects after the push and blocks nothing). A green local run is not a delivery: the gate's verdict is.
 
 ## 8. File operations
 
