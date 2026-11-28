@@ -590,6 +590,21 @@ describe('framework_gate_evidence (.husky/framework-gates.sh)', () => {
     expect(p.stdout.toString()).toContain('present on refs/remotes/origin/trunk');
   });
 
+  test('a git_strategy line inside a block scalar steers neither the policy nor the production branch', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const prose = (yaml: string): string => yaml.replace('git_strategy:\n', 'git_strategy:\n  description: >\n    direct_push_to_protected: allowed\n    production: nowhere\n');
+    expect(hook(r, prose(projectYaml('', 'evidence'))).called).toBe('refs/heads/main a refs/heads/main b\n');
+    const yaml = prose(projectYaml('', 'evidence').replace('production: main', 'production: trunk'));
+    const sha = r.commit('chore: base', { '.agents/project.yaml': yaml, 'scripts/edd.ts': 'x\n' });
+    r.git('update-ref', 'refs/remotes/origin/trunk', sha);
+    const script = join(r.dir, '..', 'prose.sh');
+    writeFileSync(script, `. '${GATES}'\nframework_gate_evidence\n`);
+    r.git('rm', '-q', 'scripts/edd.ts');
+    const p = Bun.spawnSync(['sh', script], { cwd: r.dir, stdin: Buffer.from('x\n'), stdout: 'pipe', stderr: 'pipe' });
+    expect(p.stdout.toString()).toContain('present on refs/remotes/origin/trunk');
+  });
+
   test('the remote copy of the policy turns it on even when the working tree says allowed', () => {
     const r = makeRepo();
     repos.push(r);

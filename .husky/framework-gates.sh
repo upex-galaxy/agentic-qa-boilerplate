@@ -408,31 +408,47 @@ framework_gate_doc_contracts() {
   return 0
 }
 
-# Prints the effective `direct_push_to_protected` of the project.yaml on stdin:
-# `forbidden`, `confirm` or `allowed` when the `git_strategy:` block says so
-# (block or flow style), and `evidence` for anything else, a missing key, a
-# null value or a missing block included (Critical Rule #5, scripts/git-policy.ts).
-_fg_policy_value() {
-  awk '
+# Prints `git_strategy.<sub>.<key>` of the project.yaml on stdin, block or flow
+# style. A key is read only at the indent of the block's own children, so a line
+# inside a block scalar (a `description: >` paragraph) can never be taken for it.
+_fg_strategy_value() {
+  awk -v want_sub="$1" -v want_key="$2" '
+    function token(s) { sub(/^[[:space:]]*/, "", s); match(s, /^[^,}#[:space:]]*/); s = substr(s, 1, RLENGTH); gsub(/["\047]/, "", s); return s }
     { sub(/\r$/, "") }
-    /^[^[:space:]#]/ { ings = ($0 ~ /^git_strategy:[[:space:]]*(#.*)?$/); next }
-    ings && !/^[[:space:]]*#/ && match($0, /direct_push_to_protected:[[:space:]]*[^,}#[:space:]]*/) {
-      v = substr($0, RSTART, RLENGTH); sub(/direct_push_to_protected:[[:space:]]*/, "", v); gsub(/["\047]/, "", v)
-      found = 1; exit
+    /^[[:space:]]*(#.*)?$/ { next }
+    { match($0, /^[[:space:]]*/); ind = RLENGTH; line = substr($0, ind + 1) }
+    ind == 0 { ings = (line ~ /^git_strategy:[[:space:]]*(#.*)?$/); gi = -1; insub = 0; next }
+    !ings { next }
+    gi < 0 { gi = ind }
+    ind == gi {
+      insub = 0; si = -1
+      if (index(line, want_sub ":") != 1) { next }
+      rest = substr(line, length(want_sub) + 2)
+      if (rest ~ /^[[:space:]]*(#.*)?$/) { insub = 1; next }
+      if (rest ~ /^[[:space:]]*\{/ && match(rest, "[{,[:space:]]" want_key ":")) { v = token(substr(rest, RSTART + RLENGTH)); found = 1; exit }
+      next
     }
-    END { if (found && (v == "forbidden" || v == "confirm" || v == "allowed")) print v; else print "evidence" }
+    insub && si < 0 { si = ind }
+    insub && ind == si && index(line, want_key ":") == 1 { v = token(substr(line, length(want_key) + 2)); found = 1; exit }
+    END { if (found) print v }
   '
 }
 
+# Prints the effective `direct_push_to_protected` of the project.yaml on stdin:
+# `forbidden`, `confirm` or `allowed` when `git_strategy.policy` says so, and
+# `evidence` for anything else, a missing key, a null value or a missing block
+# included (Critical Rule #5, scripts/git-policy.ts).
+_fg_policy_value() {
+  _fg_pv=$(_fg_strategy_value policy direct_push_to_protected)
+  case "$_fg_pv" in
+    forbidden|confirm|allowed) printf '%s\n' "$_fg_pv" ;;
+    *) printf 'evidence\n' ;;
+  esac
+}
+
 _fg_remote_refs() {
-  _fg_prod=$(awk '
-    { sub(/\r$/, "") }
-    /^[^[:space:]#]/ { ings = ($0 ~ /^git_strategy:[[:space:]]*(#.*)?$/); next }
-    ings && !/^[[:space:]]*#/ && match($0, /production:[[:space:]]*[^,}#[:space:]]+/) {
-      v = substr($0, RSTART, RLENGTH); sub(/production:[[:space:]]*/, "", v); gsub(/["\047]/, "", v)
-      if (v != "null") print v; exit
-    }
-  ' .agents/project.yaml 2>/dev/null)
+  _fg_prod=$(_fg_strategy_value branches production < .agents/project.yaml 2>/dev/null)
+  [ "$_fg_prod" = null ] && _fg_prod=''
   printf '%s\n' refs/remotes/origin/HEAD refs/remotes/origin/main refs/remotes/origin/master
   case "$_fg_prod" in
     ''|main|master) ;;
