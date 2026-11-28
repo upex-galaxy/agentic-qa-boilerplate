@@ -1,0 +1,47 @@
+{
+  "skill_name": "edd",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "The change is committed and the pre-push gate passed. Push it to main, the policy is evidence.",
+      "expected_output": "Loads edd, pushes without asking because direct_push_to_protected is evidence and the gate passed; reads the record path the hook prints; waits for CI on the pushed commit.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I opened PR #42. Keep an eye on it until it merges and tell me if CI fails.",
+      "expected_output": "Arms the bundled watcher with preset pr-delivery for PR 42, re-arms wake after each event, acts on CHECK failures, and stops on the WATCH ENDED event, then confirms the merge commit is on the base.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Can the agent approve and merge its own PR here, or does a person have to?",
+      "expected_output": "Answers from merge_mode in .agents/project.yaml: auto merges on required checks, human-approves needs a person, manual leaves the merge to a person; cites the closed human-gates list.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "What does the signed evidence commit actually prove about my agentic tests?",
+      "expected_output": "Explains both halves from record-and-signature.md: origin and binding to the diff are proven, the truth of the agentic run is not, and names the mitigations.",
+      "should_trigger": true,
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Resolve this merge conflict in package.json for me.",
+      "expected_output": "Does not need edd: a plain conflict resolution belongs to the git skill.",
+      "should_trigger": false,
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "Write an E2E test for the login page.",
+      "expected_output": "Does not load edd; test writing belongs to the test-writing skill.",
+      "should_trigger": false,
+      "files": []
+    }
+  ]
+}

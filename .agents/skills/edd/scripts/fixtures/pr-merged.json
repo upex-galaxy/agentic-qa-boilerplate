@@ -1,0 +1,27 @@
+{
+  "state": "MERGED",
+  "reviewDecision": "APPROVED",
+  "mergeStateStatus": "UNKNOWN",
+  "autoMergeRequest": null,
+  "headRefOid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "mergeCommit": {
+    "oid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "statusCheckRollup": [
+    {
+      "__typename": "CheckRun",
+      "name": "unit",
+      "workflowName": "CI",
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS"
+    },
+    {
+      "__typename": "CheckRun",
+      "name": "edd/evidence",
+      "workflowName": "EDD",
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS"
+    }
+  ],
+  "reviews": []
+}

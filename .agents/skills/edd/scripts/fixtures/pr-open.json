@@ -1,0 +1,27 @@
+{
+  "state": "OPEN",
+  "reviewDecision": "REVIEW_REQUIRED",
+  "mergeStateStatus": "BLOCKED",
+  "autoMergeRequest": {
+    "mergeMethod": "MERGE"
+  },
+  "headRefOid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "mergeCommit": null,
+  "statusCheckRollup": [
+    {
+      "__typename": "CheckRun",
+      "name": "unit",
+      "workflowName": "CI",
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS"
+    },
+    {
+      "__typename": "CheckRun",
+      "name": "edd/evidence",
+      "workflowName": "EDD",
+      "status": "IN_PROGRESS",
+      "conclusion": null
+    }
+  ],
+  "reviews": []
+}
