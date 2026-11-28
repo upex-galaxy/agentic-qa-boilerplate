@@ -199,7 +199,9 @@ The conductor enriches a worker's card before the owner sees it. A card missing 
 A scheduled model pass every few minutes re-reads the whole session context, and almost every pass
 finds nothing. The sentinel moves the detection into code: `bun run board sentinel`
 (`cli/sprint-board/README.md` §Sentinel) costs no tokens while quiet and ends, waking the conductor,
-only when there is something to do.
+only when there is something to do. Most changes are found on its tick inside working hours; an owner
+answer (Needs-you or inbox) wakes it within seconds, at any hour (`cli/sprint-board/README.md`
+§Sentinel).
 
 The conductor arms it at the start of its session and again after every wake, as a background task
 of the harness:
@@ -221,7 +223,7 @@ The wake's first line `SENTINEL WAKE <reason>`, then one JSON line with the deta
 
 | Reason | Means | Conductor |
 |---|---|---|
-| `change (arrivals, untracked, owner-answer, worker-need)` | something new against the baseline: a NEW or returning ticket in test, an UNTRACKED sprint ticket in test, a new owner answer (Needs-you or inbox), a worker's unanswered Needs-you | one pass, then re-arm |
+| `change (arrivals, untracked, owner-answer, worker-need)` | something new against the baseline: a NEW or returning ticket in test, an UNTRACKED sprint ticket in test, a new owner answer (Needs-you or inbox), a worker's unanswered Needs-you. With `owner-answer` it can arrive outside working hours | one pass, then re-arm. Act on the owner answer and `resolve` its need or reply in its thread (`say --reply`): a sentinel started without a saved baseline wakes again for one left open |
 | `recheck-sweep` | the recheck interval passed while a RECHECK or held ticket exists; its blocker (a deploy) may be gone | one pass (the deploy check on each RECHECK), then re-arm |
 | `sync-stale` | `source.json` older than the stale limit in working hours: the board server's sync stalled | read `.session/sprint-board/board-server.log`, run the pass with `arrivals --sync` (it syncs itself), tell the owner in one line if the server keeps failing; re-arm |
 | `board-down` | two starts of the board server in a row did not listen | report it to the owner with the log path; run the pass anyway (`arrivals --sync` needs no server); re-arm |
@@ -229,8 +231,10 @@ The wake's first line `SENTINEL WAKE <reason>`, then one JSON line with the deta
 
 Without waking anyone, it starts the board server at the start of working hours
 when nothing listens on the port (detached, log in `.session/sprint-board/board-server.log`) and stops
-only that process at `--stop-at` on working days (no board process overnight or on weekends). It
-appends one `watch.pass` per quiet cycle, so the "Last watch pass" chip on the page stays green while
+only that process at `--stop-at` on working days (no board process overnight or on weekends). When a
+wake ended it before that stop, the re-arm with the same `--baseline` file stops the board as soon as it
+starts, as long as it is still the same working day; so re-arm the same day, or stop the server yourself.
+It appends one `watch.pass` per quiet cycle, so the "Last watch pass" chip on the page stays green while
 it lives and turns red when it dies.
 
 It reads and writes nothing in the tracker (it reads the `source.json` the server syncs every

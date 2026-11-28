@@ -42,6 +42,7 @@ export interface Signature {
   workerNeeds: SigNeed[]
 }
 
+const isOwnerAnswer = (e: BoardEvent) => e.by === 'owner' && (e.kind === 'need.answer' || e.kind === 'msg');
 const byId = <T extends { id: string }>(a: T, b: T) => a.id.localeCompare(b.id, undefined, { numeric: true });
 const str = (v: unknown) => (typeof v === 'string' && v ? v : undefined);
 /** Whoever records a need for the owner and is not the owner, the conductor or Claude's inbox. */
@@ -92,7 +93,7 @@ export function activeHolds(events: BoardEvent[]): string[] {
 export function signatureOf(events: BoardEvent[], tracker: TrackerSnapshot | null | undefined): Signature {
   const r = arrivals(events, tracker);
   const untracked = untrackedInTest(tracker?.discover?.untracked ?? [], boardTicketIds(events, tracker));
-  const owner = events.filter(e => e.by === 'owner' && (e.kind === 'need.answer' || e.kind === 'msg')).at(-1);
+  const owner = events.filter(isOwnerAnswer).at(-1);
   return {
     arrivals: r.list.map(a => ({ id: a.id, kind: a.state === 'new' ? 'NEW' as const : 'RECHECK' as const, title: a.title })).sort(byId),
     untracked: untracked.map(u => ({ id: u.id, qa: u.qa, title: u.title })).sort(byId),
@@ -128,6 +129,30 @@ export function additions(base: Signature, now: Signature): Additions | null {
   if (owner) { parts.push('owner-answer'); }
   if (needs.length) { parts.push('worker-need'); }
   return parts.length ? { parts, arrivals: arr, untracked: unt, ownerAnswer: owner, workerNeeds: needs } : null;
+}
+
+export const IMMEDIATE_PARTS: readonly Additions['parts'][number][] = ['owner-answer'];
+
+function hasPendingOwnerAnswer(events: BoardEvent[]): boolean {
+  const rootOf = new Map<string, string>();
+  const msgId = (e: BoardEvent) => str(e.data?.id) ?? e.id;
+  for (const e of events.filter(x => x.kind === 'msg')) {
+    rootOf.set(msgId(e), rootOf.get(str(e.data?.replyTo) ?? '') ?? msgId(e));
+  }
+  return events.some((answer, at) => {
+    if (!isOwnerAnswer(answer)) { return false; }
+    const later = events.slice(at + 1);
+    if (answer.kind === 'need.answer') {
+      const need = str(answer.data?.id);
+      return !later.some(e => e.kind === 'need.close' && e.ticket === answer.ticket && (!need || !str(e.data?.id) || e.data?.id === need));
+    }
+    return !later.some(e => e.kind === 'msg' && e.data?.from === 'claude' && rootOf.get(msgId(e)) === rootOf.get(msgId(answer)));
+  });
+}
+
+// With no saved baseline, an owner answer nobody has acted on is work, not history: leaving the newest one out makes it wake.
+export function freshBaseline(events: BoardEvent[], sig: Signature): Signature {
+  return hasPendingOwnerAnswer(events) ? { ...sig, ownerAnswer: null } : sig;
 }
 
 // ---------------------------------------------------------------------------
@@ -206,11 +231,13 @@ export function inHours(d: Date, cfg: SentinelConfig): boolean {
 /**
  * Stop the server once per working day, on the first tick inside [stopAt, stopAt + every).
  * The window, not "any time after", so a sentinel armed at 20:00 never kills a board the
- * owner started by hand after hours.
+ * owner started by hand after hours. The one catch-up past the window: a re-arm whose saved
+ * baseline shows today's watch was running before the stop time.
  */
-export function shouldStop(d: Date, cfg: SentinelConfig, stoppedOn: string | undefined): boolean {
+export function shouldStop(d: Date, cfg: SentinelConfig, stoppedOn: string | undefined, resumedOn?: string): boolean {
   const m = minuteOfDay(d);
-  return isWorkDay(d, cfg) && m >= cfg.stopAt && m < cfg.stopAt + cfg.everyMin && stoppedOn !== dayKey(d);
+  const today = dayKey(d);
+  return isWorkDay(d, cfg) && m >= cfg.stopAt && (m < cfg.stopAt + cfg.everyMin || resumedOn === today) && stoppedOn !== today;
 }
 
 /** Milliseconds to the next grid tick, or to today's stop-at when that comes first. */
@@ -255,6 +282,10 @@ export interface SentinelState {
   startFailures: number
   stoppedOn?: string
   serverStartedAt?: number
+  // The last working day a cycle ran before the stop time.
+  watchedOn?: string
+  // `watchedOn` as the saved baseline had it: only a re-arm may stop the board past the window.
+  resumedOn?: string
 }
 
 export interface SentinelDeps {
@@ -278,11 +309,13 @@ export const MAX_FAILURES = 3;
 export const MAX_START_FAILURES = 2;
 
 const wake = (reason: WakeReason, details: Record<string, unknown>): Wake => ({ reason, details });
+const NEVER_SYNCED = 'source.json is missing: this board has never synced, so there is nothing to compare';
 
 export async function cycle(cfg: SentinelConfig, deps: SentinelDeps, st: SentinelState): Promise<Wake | null> {
   const now = deps.now();
+  if (isWorkDay(now, cfg) && minuteOfDay(now) < cfg.stopAt) { st.watchedOn = dayKey(now); }
   try {
-    if (shouldStop(now, cfg, st.stoppedOn)) {
+    if (shouldStop(now, cfg, st.stoppedOn, st.resumedOn)) {
       const pids = await deps.listening();
       st.stoppedOn = dayKey(now);
       st.serverStartedAt = undefined;
@@ -300,10 +333,10 @@ export async function cycle(cfg: SentinelConfig, deps: SentinelDeps, st: Sentine
     else { st.startFailures = 0; }
 
     const { events, tracker } = deps.read();
-    if (!tracker) { throw new Error('source.json is missing: this board has never synced, so there is nothing to compare'); }
+    if (!tracker) { throw new Error(NEVER_SYNCED); }
 
     const sig = signatureOf(events, tracker);
-    if (!st.baseline) { st.baseline = sig; st.failures = 0; return null; }
+    if (!st.baseline) { st.baseline = freshBaseline(events, sig); st.failures = 0; return null; }
 
     const stale = syncStale(tracker.syncedAt, now, cfg, st.serverStartedAt);
     if (stale.stale && st.staleReported !== tracker.syncedAt) {
@@ -336,6 +369,72 @@ export async function cycle(cfg: SentinelConfig, deps: SentinelDeps, st: Sentine
   }
 }
 
+// No hours gate. Without an immediate part the baseline stays, so the next tick still reports the additions.
+export function quickCheck(st: SentinelState, { events, tracker }: ReturnType<SentinelDeps['read']>, now: Date): Wake | null {
+  // Thrown, not null: the wait must not count a board it could not compare as checked.
+  if (!tracker) { throw new Error(NEVER_SYNCED); }
+  const sig = signatureOf(events, tracker);
+  st.baseline ??= freshBaseline(events, sig);
+  const added = additions(st.baseline, sig);
+  if (!added?.parts.some(p => IMMEDIATE_PARTS.includes(p))) { return null; }
+  st.baseline = sig;
+  st.sweptAt = now.getTime();
+  return wake('change', { ...added });
+}
+
+export const POLL_MS = 2_000;
+// One action can append several events; the check waits for the burst to land.
+export const SETTLE_MS = 1_500;
+
+export interface WaitDeps {
+  statKey: () => string
+  sleep: (ms: number) => Promise<void>
+  now: () => number
+  check: () => Wake | null
+  log: (line: string) => void
+}
+
+export async function waitForTick(deps: WaitDeps, until: number, seen: string): Promise<{ wake: Wake | null, seen: string }> {
+  let checked = seen;
+  let failure = '';
+  while (deps.now() < until) {
+    await deps.sleep(Math.max(0, Math.min(POLL_MS, until - deps.now())));
+    if (deps.statKey() === checked) { continue; }
+    await deps.sleep(SETTLE_MS);
+    // Sampled before the read: a write that lands during the check changes the key again.
+    const key = deps.statKey();
+    try {
+      const found = deps.check();
+      checked = key;
+      failure = '';
+      if (found) { return { wake: found, seen: checked }; }
+    }
+    catch (err) {
+      const message = (err as Error).message ?? String(err);
+      if (message !== failure) { deps.log(`quick check failed, retrying: ${message}`); }
+      failure = message;
+    }
+  }
+  return { wake: null, seen: checked };
+}
+
+export async function watchUntilWake(cfg: SentinelConfig, deps: WaitDeps & { tick: () => Promise<Wake | null> }): Promise<Wake> {
+  // '' is no file's key, so the first wait checks at once. Later keys carry over, never resampled after a cycle: off hours a cycle reads nothing.
+  let seen = '';
+  for (;;) {
+    const ticked = await deps.tick();
+    if (ticked) { return ticked; }
+    const until = deps.now() + msToNextTick(new Date(deps.now()), cfg);
+    if (cfg.dryRun) {
+      await deps.sleep(until - deps.now());
+      continue;
+    }
+    const waited = await waitForTick(deps, until, seen);
+    if (waited.wake) { return waited.wake; }
+    seen = waited.seen;
+  }
+}
+
 /** The two lines a wake prints: the reason line the harness notification shows, then JSON. */
 export function wakeLines(w: Wake, ctx: { at: Date, slug: string, rearm: string }): [string, string] {
   const parts = Array.isArray(w.details.parts) ? ` (${(w.details.parts as string[]).join(', ')})` : '';
@@ -346,8 +445,8 @@ export function wakeLines(w: Wake, ctx: { at: Date, slug: string, rearm: string 
 // Baseline persistence
 // ---------------------------------------------------------------------------
 
-/** `stoppedOn` and `serverStartedAt` ride along so a re-armed sentinel neither stops the board twice in one stop window nor loses the morning grace. */
-export interface BaselineFile { v: 1, savedAt: string, slug: string, signature: Signature, sweptAt: string, staleReported?: string, stoppedOn?: string, serverStartedAt?: string }
+/** `stoppedOn`, `watchedOn` and `serverStartedAt` ride along so a re-armed sentinel neither stops the board twice in one day, misses a stop it owes, nor loses the morning grace. */
+export interface BaselineFile { v: 1, savedAt: string, slug: string, signature: Signature, sweptAt: string, staleReported?: string, stoppedOn?: string, watchedOn?: string, serverStartedAt?: string }
 
 export function toBaselineFile(st: SentinelState, slug: string, at: Date): BaselineFile | null {
   if (!st.baseline) { return null; }
@@ -359,12 +458,13 @@ export function toBaselineFile(st: SentinelState, slug: string, at: Date): Basel
     sweptAt: new Date(st.sweptAt).toISOString(),
     staleReported: st.staleReported,
     stoppedOn: st.stoppedOn,
+    watchedOn: st.watchedOn,
     serverStartedAt: st.serverStartedAt === undefined ? undefined : new Date(st.serverStartedAt).toISOString(),
   };
 }
 
 /** A baseline written for another board is refused, never silently reused (fail loudly). */
-export function fromBaselineFile(raw: string, slug: string, path: string): Pick<SentinelState, 'baseline' | 'sweptAt' | 'staleReported' | 'stoppedOn' | 'serverStartedAt'> {
+export function fromBaselineFile(raw: string, slug: string, path: string): Pick<SentinelState, 'baseline' | 'sweptAt' | 'staleReported' | 'stoppedOn' | 'watchedOn' | 'resumedOn' | 'serverStartedAt'> {
   const f = JSON.parse(raw) as Partial<BaselineFile>;
   if (f.v !== 1 || !f.signature || !Array.isArray(f.signature.arrivals)) { throw new Error(`${path} is not a sentinel baseline (v1)`); }
   if (f.slug !== slug) { throw new Error(`${path} is the baseline of ${f.slug}, not ${slug}; pass a baseline under this board's folder`); }
@@ -375,6 +475,8 @@ export function fromBaselineFile(raw: string, slug: string, path: string): Pick<
     sweptAt: Number.isFinite(swept) ? swept : Date.now(),
     staleReported: f.staleReported,
     stoppedOn: f.stoppedOn,
+    watchedOn: f.watchedOn,
+    resumedOn: f.watchedOn,
     serverStartedAt: Number.isFinite(started) ? started : undefined,
   };
 }

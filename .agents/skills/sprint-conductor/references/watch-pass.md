@@ -20,8 +20,8 @@ costs nothing, and the ticket shows up on the next one. After §6, re-arm the se
 ## 1. Guard and the first pass of the day
 
 - The CURRENT board must be `<slug>` (`bun run board sprints`). If it is not, say so once and stop.
-- On a scheduled pass (the fallback), outside working hours: do nothing, say nothing. The sentinel does
-  not wake then.
+- On a scheduled pass (the fallback), outside working hours: do nothing, say nothing.
+- A sentinel wake runs its pass whatever the hour: an owner answer wakes it at any time.
 - First pass of the day: check what died overnight and report it in one line instead of restarting it
   on your own: the board page answers, the orchestration runtime is reachable, the mailbox read returns
   `ok`, and `bun run board status` shows a recent "Last watch pass" and no unexpected
@@ -120,7 +120,8 @@ Nothing NEW or RECHECK: go straight to §5.
 
 1. Owner answers on the board: `bun run board inbox` plus the bounded `listen --since <last pass>`
    replay (`sprint-board.md` §3). Act on anything newer than the last pass, relay it to its worker
-   (mailbox reply plus a terminal pointer; the worker echoes the decision back), then `resolve`. Measured
+   (mailbox reply plus a terminal pointer; the worker echoes the decision back), then close it: `resolve`
+   for a Needs-you answer, `say --reply <msg-id>` for an inbox message. Measured
    on the source board: four owner answers sat unread 15 to 60 minutes before this read became part of
    every pass.
 2. The Run mailbox: the runtime pushes a notice when messages wait; read and ack them per

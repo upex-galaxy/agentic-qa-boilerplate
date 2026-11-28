@@ -1,27 +1,29 @@
 import type { SentinelConfig, SentinelDeps, SentinelState } from './sentinel.ts';
 /**
- * The real-world side of `board sentinel`: files, the port probe, the detached board server,
- * the loop and the exit. The decisions live in sentinel.ts (pure, tested there).
+ * The real-world side of `board sentinel`: files, the port probe, the detached board server
+ * and the exit. The decisions and the loop live in sentinel.ts (injected deps, tested there).
  */
 import { spawn } from 'node:child_process';
-import { closeSync, existsSync, mkdirSync, openSync, readFileSync } from 'node:fs';
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import {
   additions,
   cycle,
+  freshBaseline,
   fromBaselineFile,
   inHours,
-  msToNextTick,
   parseClock,
   parseDays,
   parseHours,
+  quickCheck,
   SENTINEL_DEFAULTS,
   signatureOf,
   syncStale,
   toBaselineFile,
   wakeLines,
+  watchUntilWake,
 } from './sentinel.ts';
-import { appendEvent, BOARD_DIR, readEvents, readSprint, readTracker, REPO_ROOT, writeAtomic } from './store.ts';
+import { appendEvent, BOARD_DIR, readEvents, readSprint, readTracker, REPO_ROOT, sprintDir, writeAtomic } from './store.ts';
 import { markWatcherExit, registerWatcher } from './watchers.ts';
 
 export interface SentinelFlags {
@@ -83,6 +85,15 @@ function boardServerPids(pids: number[]): number[] {
 
 const SERVER_LOG = join(BOARD_DIR, 'board-server.log');
 const START_WAIT_MS = 30_000;
+
+// Polled, not fs.watch: FSEvents reports real paths, which miss a log reached through a symlink.
+function statKey(path: string): string {
+  try {
+    const s = statSync(path);
+    return `${s.size}:${s.mtimeMs}`;
+  }
+  catch { return '-'; }
+}
 
 export async function runSentinel(slug: string, f: SentinelFlags): Promise<void> {
   const cfg = configFrom(f);
@@ -162,7 +173,7 @@ export async function runSentinel(slug: string, f: SentinelFlags): Promise<void>
   else {
     try {
       const { events, tracker } = read();
-      if (tracker) { st.baseline = signatureOf(events, tracker); }
+      if (tracker) { st.baseline = freshBaseline(events, signatureOf(events, tracker)); }
     }
     catch (err) { log(`no baseline yet, the first readable cycle sets it: ${(err as Error).message}`); }
   }
@@ -180,19 +191,26 @@ export async function runSentinel(slug: string, f: SentinelFlags): Promise<void>
   persist();
   if (!cfg.dryRun) { registerWatcher(slug, { name: 'sentinel', pid: process.pid, match: 'sentinel' }); }
 
-  for (;;) {
-    const w = await cycle(cfg, deps, st);
-    persist();
-    if (w) {
-      if (!cfg.dryRun) {
-        // The wake below must reach the conductor even when the exit mark cannot be written.
-        try { markWatcherExit(slug, 'sentinel', process.pid); }
-        catch (err) { log(`could not record the clean exit: ${(err as Error).message}`); }
-      }
-      // Written and flushed before exiting: this text IS the wake the harness hands the conductor.
-      await Bun.write(Bun.stdout, `${wakeLines(w, { at: new Date(), slug, rearm }).join('\n')}\n`);
-      process.exit(0);
-    }
-    await Bun.sleep(msToNextTick(new Date(), cfg));
+  const eventsFile = join(sprintDir(slug), 'events.ndjson');
+  const w = await watchUntilWake(cfg, {
+    async tick() {
+      const ticked = await cycle(cfg, deps, st);
+      persist();
+      return ticked;
+    },
+    statKey: () => statKey(eventsFile),
+    sleep: async ms => Bun.sleep(ms),
+    now: () => Date.now(),
+    check: () => quickCheck(st, read(), new Date()),
+    log,
+  });
+  persist();
+  if (!cfg.dryRun) {
+    // The wake below must reach the conductor even when the exit mark cannot be written.
+    try { markWatcherExit(slug, 'sentinel', process.pid); }
+    catch (err) { log(`could not record the clean exit: ${(err as Error).message}`); }
   }
+  // Written and flushed before exiting: this text IS the wake the harness hands the conductor.
+  await Bun.write(Bun.stdout, `${wakeLines(w, { at: new Date(), slug, rearm }).join('\n')}\n`);
+  process.exit(0);
 }

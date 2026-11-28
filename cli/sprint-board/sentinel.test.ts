@@ -3,7 +3,7 @@
  * no network, no real server, no real tracker.
  */
 import type { BoardEvent, TrackerSnapshot } from './model.ts';
-import type { SentinelConfig, SentinelDeps, SentinelState, Signature } from './sentinel.ts';
+import type { SentinelConfig, SentinelDeps, SentinelState, Signature, WaitDeps } from './sentinel.ts';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -13,7 +13,9 @@ import {
   activeHolds,
   additions,
   cycle,
+  freshBaseline,
   fromBaselineFile,
+  IMMEDIATE_PARTS,
   inHours,
   MAX_FAILURES,
   msToNextTick,
@@ -21,12 +23,17 @@ import {
   parseClock,
   parseDays,
   parseHours,
+  POLL_MS,
+  quickCheck,
   SENTINEL_DEFAULTS,
+  SETTLE_MS,
   shouldStop,
   signatureOf as signatureRaw,
   syncStale,
   toBaselineFile,
+  waitForTick,
   wakeLines,
+  watchUntilWake,
 } from './sentinel.ts';
 import { bucketed } from './test-fixtures.ts';
 
@@ -313,6 +320,324 @@ describe('cycle', () => {
   });
 });
 
+function waiting(o: { start?: Date, events?: BoardEvent[] } = {}) {
+  const { w, deps } = world({ events: o.events });
+  w.now = o.start ?? sat(11, 0);
+  const t0 = w.now.getTime();
+  const st = fresh(signatureOf(w.events, w.tracker), w.now);
+  const writes: { at: number, run: () => void }[] = [];
+  const seen = { sleeps: [] as number[], keys: 0, checks: [] as number[], ticks: [] as number[] };
+  const elapsed = () => w.now.getTime() - t0;
+  const loop: WaitDeps & { tick: () => ReturnType<typeof cycle> } = {
+    tick: async () => { seen.ticks.push(elapsed()); return cycle(cfg, deps, st); },
+    statKey: () => { seen.keys++; return String(w.events.length); },
+    sleep: async (ms) => {
+      seen.sleeps.push(ms);
+      const to = w.now.getTime() + ms;
+      for (const x of writes.splice(0).sort((a, b) => a.at - b.at)) {
+        if (t0 + x.at <= to) { x.run(); }
+        else { writes.push(x); }
+      }
+      w.now = new Date(to);
+    },
+    now: () => w.now.getTime(),
+    check: () => {
+      seen.checks.push(elapsed());
+      return quickCheck(st, deps.read(), w.now);
+    },
+    log: deps.log,
+  };
+  const append = (e: BoardEvent) => { w.events = [...w.events, e]; };
+  const at = (ms: number, run: () => void) => { writes.push({ at: ms, run }); };
+  return { w, deps, st, loop, seen, elapsed, append, at, until: (ms: number) => t0 + ms };
+}
+const ownerAnswer = (text = 'a, go') => ev('need.answer', 'DEMO-2', { id: 'need-a', text }, 'owner');
+const workerNeed = () => ev('need.open', 'DEMO-3', { id: 'need-w', question: 'defer TC-2?' }, 'worker');
+
+describe('fast wake', () => {
+  test('an owner answer wakes before the tick, out of hours, without a cycle having read it', async () => {
+    const x = waiting();
+    x.at(30_000, () => x.append(ownerAnswer()));
+    const wake = await watchUntilWake(cfg, x.loop);
+    expect(wake.reason).toBe('change');
+    expect(wake.details.parts).toEqual(['owner-answer']);
+    expect(wake.details.ownerAnswer).toMatchObject({ ticket: 'DEMO-2', text: 'a, go' });
+    expect(x.elapsed()).toBeLessThanOrEqual(30_000 + POLL_MS + SETTLE_MS);
+    expect(x.seen.ticks).toEqual([0]);
+    expect(x.w.started).toBe(0);
+  });
+
+  test('quickCheck wakes only on an immediate part, then carries every addition, takes the baseline and resets the sweep clock', () => {
+    expect(IMMEDIATE_PARTS).toEqual(['owner-answer']);
+    const st = fresh(signatureOf([], tracker({})), mon(8, 0));
+    const events = [workerNeed(), ownerAnswer()];
+    const c = tracker({ 'DEMO-5': 'Ready for QA' });
+    const wake = quickCheck(st, { events, tracker: c }, mon(10, 4))!;
+    expect(wake.details.parts).toEqual(['arrivals', 'owner-answer', 'worker-need']);
+    expect(st.baseline).toEqual(signatureOf(events, c));
+    expect(st.sweptAt).toBe(mon(10, 4).getTime());
+    expect(wakeLines(wake, { at: mon(10, 4), slug: 'sprint-1', rearm: 'x' })[0]).toBe('SENTINEL WAKE change (arrivals, owner-answer, worker-need)');
+  });
+
+  test('a worker event does not wake and leaves the baseline, so the tick still reports it', async () => {
+    const x = waiting({ start: mon(10, 0) });
+    const before = x.st.baseline;
+    x.at(30_000, () => x.append(workerNeed()));
+    expect(await waitForTick(x.loop, x.until(60_000), '0')).toEqual({ wake: null, seen: '1' });
+    expect(x.seen.checks).toHaveLength(1);
+    expect(x.st.baseline).toBe(before);
+    expect(x.st.sweptAt).toBe(mon(10, 0).getTime());
+    expect((await cycle(cfg, x.deps, x.st))?.details.parts).toEqual(['worker-need']);
+  });
+
+  test('a null baseline adopts the cold one: nothing pending, no wake', () => {
+    const st = fresh(null);
+    const handled = [ownerAnswer(), ev('need.close', 'DEMO-2', { id: 'need-a' }, 'conductor')];
+    expect(quickCheck(st, { events: handled, tracker: tracker({ 'DEMO-5': 'Ready for QA' }) }, mon(10))).toBeNull();
+    expect(st.baseline?.arrivals.map(a => a.id)).toEqual(['DEMO-5']);
+  });
+
+  test('a null baseline off hours still wakes for a pending answer, without waiting for working hours', async () => {
+    const x = waiting();
+    x.st.baseline = null;
+    x.append(ownerAnswer());
+    const wake = await watchUntilWake(cfg, x.loop);
+    expect(wake.details.parts).toEqual(['owner-answer']);
+    expect(x.elapsed()).toBe(POLL_MS + SETTLE_MS);
+  });
+
+  test('a board with no tracker yet is not counted as checked: the answer wakes once the sync lands', async () => {
+    const x = waiting();
+    const synced = x.w.tracker;
+    x.st.baseline = null;
+    x.w.tracker = null;
+    x.append(ownerAnswer());
+    expect(await waitForTick(x.loop, x.until(10_000), '0')).toEqual({ wake: null, seen: '0' });
+    x.at(15_000, () => { x.w.tracker = synced; });
+    expect((await waitForTick(x.loop, x.until(60_000), '0')).wake?.details.parts).toEqual(['owner-answer']);
+    expect(x.elapsed()).toBeLessThan(60_000);
+  });
+
+  test('the same answer wakes once, across a re-arm from the baseline file', async () => {
+    const x = waiting();
+    x.at(4_000, () => x.append(ownerAnswer()));
+    expect((await waitForTick(x.loop, x.until(60_000), '0')).wake?.reason).toBe('change');
+    expect(quickCheck(x.st, x.deps.read(), x.w.now)).toBeNull();
+    const restored = fromBaselineFile(JSON.stringify(toBaselineFile(x.st, 'sprint-1', x.w.now)), 'sprint-1', 'b.json');
+    expect(quickCheck({ ...fresh(null), ...restored }, x.deps.read(), x.w.now)).toBeNull();
+    expect((await waitForTick(x.loop, x.until(120_000), '')).wake).toBeNull();
+  });
+
+  test('an answer written while no sentinel ran wakes at the first wait, not at the next tick', async () => {
+    const x = waiting();
+    x.append(ownerAnswer());
+    await watchUntilWake(cfg, x.loop);
+    expect(x.elapsed()).toBe(POLL_MS + SETTLE_MS);
+  });
+
+  test('a write that lands during a cycle, after its read, is caught before the next tick', async () => {
+    const x = waiting({ start: mon(10, 0) });
+    const heartbeat = x.deps.heartbeat;
+    x.deps.heartbeat = (note, counts) => {
+      heartbeat(note, counts);
+      if (x.seen.ticks.length === 2) { x.append(ownerAnswer()); }
+    };
+    const wake = await watchUntilWake(cfg, x.loop);
+    expect(wake.details.parts).toEqual(['owner-answer']);
+    expect(x.seen.ticks).toEqual([0, 10 * 60_000]);
+    expect(x.elapsed()).toBe(10 * 60_000 + POLL_MS + SETTLE_MS);
+  });
+
+  test('out of hours, a write that lands between the last poll and the next cycle is still caught', async () => {
+    const x = waiting();
+    const tick = x.loop.tick;
+    x.loop.tick = async () => {
+      if (x.seen.ticks.length === 1) { x.append(ownerAnswer()); }
+      return tick();
+    };
+    await watchUntilWake(cfg, x.loop);
+    expect(x.elapsed()).toBe(10 * 60_000 + POLL_MS + SETTLE_MS);
+  });
+
+  test('a burst of appends settles into one check; a write during that check is checked again', async () => {
+    const x = waiting();
+    x.at(1_000, () => x.append(workerNeed()));
+    x.at(2_500, () => x.append(workerNeed()));
+    x.at(3_000, () => x.append(workerNeed()));
+    expect((await waitForTick(x.loop, x.until(20_000), '0')).seen).toBe('3');
+    expect(x.seen.checks).toEqual([POLL_MS + SETTLE_MS]);
+    const check = x.loop.check;
+    x.loop.check = () => {
+      const found = check();
+      if (x.seen.checks.length === 2) { x.append(ownerAnswer()); }
+      return found;
+    };
+    x.at(21_000, () => x.append(workerNeed()));
+    expect((await waitForTick(x.loop, x.until(40_000), '3')).wake?.details.parts).toEqual(['owner-answer', 'worker-need']);
+    expect(x.seen.checks).toHaveLength(3);
+  });
+
+  test('an unchanged log is never read, and the wait ends on the tick', async () => {
+    const x = waiting();
+    expect(await waitForTick(x.loop, x.until(5_000), '0')).toEqual({ wake: null, seen: '0' });
+    expect(x.seen.checks).toEqual([]);
+    expect(x.seen.sleeps).toEqual([POLL_MS, POLL_MS, 1_000]);
+  });
+
+  test('a read error is logged once and retried, and the loop survives it', async () => {
+    const x = waiting();
+    x.w.readError = 'EACCES events.ndjson';
+    x.at(1_000, () => x.append(ownerAnswer()));
+    x.at(15_000, () => { x.w.readError = undefined; });
+    const wake = await watchUntilWake(cfg, x.loop);
+    expect(wake.details.parts).toEqual(['owner-answer']);
+    expect(x.seen.checks.length).toBeGreaterThan(2);
+    expect(x.w.logs).toEqual(['quick check failed, retrying: EACCES events.ndjson']);
+    expect(x.elapsed()).toBeLessThan(10 * 60_000);
+  });
+
+  test('a check that fails until the tick hands the unread key back to the next wait', async () => {
+    const x = waiting();
+    x.w.readError = 'EACCES events.ndjson';
+    x.at(1_000, () => x.append(ownerAnswer()));
+    expect(await waitForTick(x.loop, x.until(10_000), '0')).toEqual({ wake: null, seen: '0' });
+  });
+
+  test('--dry-run does not enter the wait loop: it sleeps to the tick and never looks at the log', async () => {
+    const x = waiting({ events: [ownerAnswer()] });
+    const tick = x.loop.tick;
+    x.loop.tick = async () => (x.seen.ticks.length ? { reason: 'change', details: {} } : tick());
+    await watchUntilWake({ ...cfg, dryRun: true }, x.loop);
+    expect(x.seen.sleeps).toEqual([10 * 60_000]);
+    expect(x.seen.keys).toBe(0);
+    expect(x.seen.checks).toEqual([]);
+  });
+});
+
+describe('cold baseline', () => {
+  const need = () => ev('need.open', 'DEMO-2', { id: 'need-a', question: 'q?' }, 'worker');
+  const cold = (events: BoardEvent[]) => freshBaseline(events, signatureOf(events, tracker({})));
+
+  test('an owner answer on a still open need is left out, so it wakes; a resolved one is history', () => {
+    const open = [need(), ownerAnswer()];
+    expect(cold(open).ownerAnswer).toBeNull();
+    expect(additions(cold(open), signatureOf(open, tracker({})))!.parts).toEqual(['owner-answer']);
+    const closed = [...open, ev('need.close', 'DEMO-2', { id: 'need-a' }, 'conductor')];
+    expect(cold(closed).ownerAnswer).not.toBeNull();
+    expect(cold([...open, ev('need.close', 'DEMO-2', { id: 'need-other' }, 'conductor')]).ownerAnswer).toBeNull();
+  });
+
+  test('an inbox message is left out until Claude replies in its thread', () => {
+    const msg = (id: string, from: string, replyTo?: string) => ev('msg', undefined, { id, from, text: id, replyTo }, from);
+    const asked = [msg('m1', 'claude'), msg('m2', 'owner', 'm1')];
+    expect(cold(asked).ownerAnswer).toBeNull();
+    expect(cold([...asked, msg('m3', 'claude')]).ownerAnswer).toBeNull();
+    expect(cold([...asked, msg('m3', 'claude', 'm2')]).ownerAnswer).not.toBeNull();
+  });
+
+  test('an older answer still pending wakes a cold start even when the newest was acted on, and only once', async () => {
+    const older = ownerAnswer('older');
+    const newest = ev('need.answer', 'DEMO-4', { id: 'need-b', text: 'newest' }, 'owner');
+    const events = [older, newest, ev('need.close', 'DEMO-4', { id: 'need-b' }, 'conductor')];
+    const st = fresh(null);
+    const read = { events, tracker: tracker({}) };
+    expect(quickCheck(st, read, mon(10))?.details.parts).toEqual(['owner-answer']);
+    expect(quickCheck(st, read, mon(10, 1))).toBeNull();
+    expect(cold([...events, ev('need.close', 'DEMO-2', { id: 'need-a' }, 'conductor')]).ownerAnswer).not.toBeNull();
+  });
+
+  test('the first readable cycle leaves a pending answer for the next one', async () => {
+    const { deps } = world({ events: [need(), ownerAnswer()] });
+    const st = fresh(null);
+    expect(await cycle(cfg, deps, st)).toBeNull();
+    expect((await cycle(cfg, deps, st))?.details.parts).toEqual(['owner-answer']);
+  });
+});
+
+describe('the owed board stop', () => {
+  const rearm = (st: SentinelState, at: Date): SentinelState => ({ ...fresh(null, at), ...fromBaselineFile(JSON.stringify(toBaselineFile(st, 'sprint-1', at)), 'sprint-1', 'b.json') });
+
+  test('a fast wake before the stop time, re-armed after the window, stops the board once', async () => {
+    const x = waiting({ start: mon(18, 0) });
+    expect(await cycle(cfg, x.deps, x.st)).toBeNull();
+    x.at(60_000, () => x.append(ownerAnswer()));
+    expect((await waitForTick(x.loop, x.until(7 * 60_000), '0')).wake?.reason).toBe('change');
+    const next = rearm(x.st, x.w.now);
+    x.w.now = mon(18, 30);
+    expect(await cycle(cfg, x.deps, next)).toBeNull();
+    expect(x.w.stopped).toEqual([4242]);
+    x.w.listening = true;
+    x.w.now = mon(18, 40);
+    expect(await cycle(cfg, x.deps, next)).toBeNull();
+    x.w.now = mon(19, 0);
+    expect(await cycle(cfg, x.deps, rearm(next, x.w.now))).toBeNull();
+    expect(x.w.stopped).toEqual([4242]);
+  });
+
+  test('a fast wake that settles past the stop time still leaves the stop owed', async () => {
+    const x = waiting({ start: mon(18, 0) });
+    expect(await cycle(cfg, x.deps, x.st)).toBeNull();
+    x.at(7 * 60_000 - 100, () => x.append(ownerAnswer()));
+    expect((await waitForTick(x.loop, x.until(7 * 60_000), '0')).wake?.reason).toBe('change');
+    expect(x.w.now.getTime()).toBeGreaterThan(mon(18, 7).getTime());
+    const next = rearm(x.st, x.w.now);
+    x.w.now = mon(18, 30);
+    await cycle(cfg, x.deps, next);
+    expect(x.w.stopped).toEqual([4242]);
+  });
+
+  test('a tick wake before the stop time, re-armed after the window, stops the board', async () => {
+    const { w, deps } = world();
+    const st = fresh(signatureOf(w.events, w.tracker));
+    w.now = mon(17, 50);
+    w.tracker = tracker({ 'DEMO-5': 'Ready for QA' }, { syncedAt: mon(17, 45).toISOString() });
+    expect((await cycle(cfg, deps, st))?.reason).toBe('change');
+    const next = rearm(st, w.now);
+    w.now = mon(21, 0);
+    await cycle(cfg, deps, next);
+    expect(w.stopped).toEqual([4242]);
+  });
+
+  test('a stop that failed after the window is still owed to the next re-arm', async () => {
+    const { w, deps } = world();
+    const st = fresh(signatureOf(w.events, w.tracker));
+    w.now = mon(17, 50);
+    await cycle(cfg, deps, st);
+    const failing = rearm(st, w.now);
+    w.now = mon(18, 30);
+    await cycle(cfg, { ...deps, listening: async () => { throw new Error('lsof failed'); } }, failing);
+    expect(w.stopped).toEqual([]);
+    w.now = mon(18, 40);
+    await cycle(cfg, deps, rearm(failing, w.now));
+    expect(w.stopped).toEqual([4242]);
+  });
+
+  test('no stop past the window without a baseline from before the stop time that same working day', async () => {
+    const { w, deps } = world();
+    const base = () => fresh(signatureOf(w.events, w.tracker));
+    w.now = mon(20, 0);
+    const cold = base();
+    await cycle(cfg, deps, cold);
+    await cycle(cfg, deps, rearm(cold, w.now));
+    const yesterday = base();
+    w.now = new Date(2026, 9, 18, 12, 0);
+    await cycle({ ...cfg, days: [0, 1, 2, 3, 4, 5] }, deps, yesterday);
+    w.now = mon(20, 0);
+    await cycle(cfg, deps, rearm(yesterday, w.now));
+    const running = base();
+    w.now = mon(17, 0);
+    await cycle(cfg, deps, running);
+    w.now = mon(20, 0);
+    await cycle(cfg, deps, running);
+    const weekend = base();
+    w.now = sat(12, 0);
+    await cycle(cfg, deps, weekend);
+    w.now = sat(20, 0);
+    await cycle(cfg, deps, rearm(weekend, w.now));
+    expect(w.stopped).toEqual([]);
+  });
+});
+
 describe('baseline file', () => {
   test('round-trips, and a restart after a wake does not wake again for the same item', async () => {
     const { w, deps } = world();
@@ -364,6 +689,49 @@ describe('the CLI', () => {
     const r = Bun.spawnSync(['bun', CLI, ...args], { env: { ...process.env, SPRINT_BOARD_DIR: dir, SPRINT_BOARD_PROJECT_YAML: DEMO_CONFIG } });
     return { code: r.exitCode ?? 1, out: r.stdout.toString(), err: r.stderr.toString() };
   };
+
+  test('a real fast wake saves the baseline before it exits, so a re-arm does not repeat it', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'sprint-board-sentinel-'));
+    let proc: ReturnType<typeof Bun.spawn> | undefined;
+    try {
+      expect(runCli(dir, 'new', '--sprint', '1').code).toBe(0);
+      writeFileSync(join(dir, 'sprints', 'sprint-1', 'source.json'), JSON.stringify(tracker({})));
+      const baseline = join(dir, 'baseline.json');
+      writeFileSync(baseline, JSON.stringify(toBaselineFile(fresh(signatureOf([], tracker({}))), 'sprint-1', mon(10, 0))));
+      const answer = ev('msg', undefined, { id: 'msg-o', from: 'owner', text: 'yes' }, 'owner');
+      const log = join(dir, 'sprints', 'sprint-1', 'events.ndjson');
+      writeFileSync(log, `${readFileSync(log, 'utf8')}${JSON.stringify(answer)}\n`);
+      // Not a working day, so the real sentinel never touches a board server.
+      const offDay = String((new Date().getDay() + 3) % 7);
+      const child = Bun.spawn([process.execPath, CLI, 'sentinel', '--baseline', baseline, '--days', offDay], { env: { ...process.env, SPRINT_BOARD_DIR: dir, SPRINT_BOARD_PROJECT_YAML: DEMO_CONFIG }, stdout: 'pipe', stderr: 'pipe' });
+      proc = child;
+      expect(await child.exited).toBe(0);
+      expect(await new Response(child.stdout).text()).toStartWith('SENTINEL WAKE change (owner-answer)');
+      expect(JSON.parse(readFileSync(baseline, 'utf8')).signature.ownerAnswer.event).toBe(answer.id);
+    }
+    finally {
+      proc?.kill();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 20_000);
+
+  test('--once does not enter the wait loop: an answer past the baseline is reported, not waited on', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'sprint-board-sentinel-'));
+    try {
+      expect(runCli(dir, 'new', '--sprint', '1').code).toBe(0);
+      writeFileSync(join(dir, 'sprints', 'sprint-1', 'source.json'), JSON.stringify(tracker({})));
+      const baseline = join(dir, 'baseline.json');
+      writeFileSync(baseline, JSON.stringify(toBaselineFile(fresh(signatureOf([], tracker({}))), 'sprint-1', mon(10, 0))));
+      expect(runCli(dir, 'say', 'Ship it?', '--ask').code).toBe(0);
+      const log = join(dir, 'sprints', 'sprint-1', 'events.ndjson');
+      writeFileSync(log, `${readFileSync(log, 'utf8')}${JSON.stringify(ev('msg', undefined, { id: 'msg-o', from: 'owner', text: 'yes' }, 'owner'))}\n`);
+      const r = runCli(dir, 'sentinel', '--once', '--port', '59999', '--baseline', baseline);
+      expect(r.code).toBe(0);
+      expect(r.out).not.toContain('SENTINEL WAKE');
+      expect(JSON.parse(r.out).wouldWake).toBe('change (owner-answer)');
+    }
+    finally { rmSync(dir, { recursive: true, force: true }); }
+  });
 
   test('--once prints the signature read-only, and bad flags stop the command', () => {
     const dir = mkdtempSync(join(tmpdir(), 'sprint-board-sentinel-'));

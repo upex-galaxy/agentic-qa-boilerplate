@@ -119,7 +119,8 @@ $B sentinel [--baseline <file>] [--every 10] [--hours 9-18] [--days 1-5] [--stop
            [--recheck-every 120] [--stale-after 30] [--port 4477] [--once] [--dry-run]
                                             long-running, run as a background task: silent while nothing changes,
                                             exits 0 printing "SENTINEL WAKE <reason>" and one JSON line when the
-                                            conductor must act; also starts and stops the board server (see Sentinel)
+                                            conductor must act (an owner answer within seconds, the rest on the
+                                            tick); also starts and stops the board server (see Sentinel)
 $B arrivals [--sync] [--lock-wait <s>] [--json]   tickets that reached the test environment (bucket in_test) and
                                             still need a conductor decision, plus UNTRACKED sprint tickets in test that
                                             are not on the board
@@ -393,7 +394,7 @@ own hold; a ticket that turns NEW again does wake. A quiet cycle appends one `wa
 
 | Wake line | When | JSON details |
 |---|---|---|
-| `SENTINEL WAKE change (<parts>)` | an addition; parts: `arrivals`, `untracked`, `owner-answer`, `worker-need` | `parts`, `arrivals`, `untracked`, `ownerAnswer`, `workerNeeds` (only the new items) |
+| `SENTINEL WAKE change (<parts>)` | an addition, on the tick or between ticks (see Fast wake); parts: `arrivals`, `untracked`, `owner-answer`, `worker-need` | `parts`, `arrivals`, `untracked`, `ownerAnswer`, `workerNeeds` (only the new items) |
 | `SENTINEL WAKE recheck-sweep` | `--recheck-every` minutes since the last wake while a RECHECK or held ticket exists (its blocker may be gone) | `recheck`, `held`, `minutesSinceLastWake` |
 | `SENTINEL WAKE sync-stale` | `source.json` older than `--stale-after` minutes in hours, counted from the latest of its sync, the start of hours and a server start; once per stale `syncedAt` | `syncedAt`, `ageMin`, `staleAfterMin`, `boardPids` |
 | `SENTINEL WAKE board-down` | two server starts in a row did not listen within 30 s | `port`, `attempts`, `log` |
@@ -401,10 +402,24 @@ own hold; a ticket that turns NEW again does wake. A quiet cycle appends one `wa
 
 Every JSON line also carries `reason`, `at`, `slug` and `rearm` (the command to start it again).
 
-**Baseline.** Without `--baseline` it compares against what it saw at start. With
+**Fast wake.** Between ticks it looks at the size and modification time of `events.ndjson` every few
+seconds (a poll, no `fs.watch`, and no read while the file is unchanged). When the file changed it lets
+the burst of appends settle, reads the board and wakes if the additions include an immediate part
+(`IMMEDIATE_PARTS` in `sentinel.ts`, today `owner-answer`), at any hour and on any day. The wake carries
+every addition and takes the new baseline. Any other change leaves the baseline alone, so the next tick
+in hours still reports it. It also looks once as soon as it starts waiting, which catches an owner answer
+written while no sentinel was running. With no baseline yet (the start could not read the board) it takes
+the start-up one described below and checks against that. A failed read, or a board with no
+`source.json` yet, is logged to stderr and retried; it does not count toward `sentinel-error`.
+
+**Baseline.** Without `--baseline` it compares against what it saw at start. A start with no saved
+signature leaves out the newest owner answer while any owner answer is still pending (its need is not
+resolved, or Claude has not replied in its inbox thread), so the sentinel wakes once, at once, instead of
+taking it as history; the pass then reads every pending answer. With
 `--baseline <file>` (convention: `.session/sprint-board/sprints/<slug>/sentinel-baseline.json`) it
-saves the signature, the sweep clock, the last stale `syncedAt`, the day it last stopped the board and
-when it last started it there after every change, and a
+saves the signature, the sweep clock, the last stale `syncedAt`, the day it last stopped the board, the
+last working day it was watching before `--stop-at` and when it last started the board there after every
+change, and a
 restart loads it, so a re-arm after a wake does not wake again for the same item, and anything that
 arrived while the conductor was busy still wakes it. A file of another board is refused.
 
@@ -412,11 +427,15 @@ arrived while the conductor was busy still wakes it. A file of another board is 
 detached (output to `.session/sprint-board/board-server.log`) and carries on without
 waking. On a working day, on the first tick in `[--stop-at, --stop-at + --every)`, it stops only the
 board server listening on the port (a listener whose command line is not `cli/sprint-board/index.ts
-serve` is logged and left running), then sleeps through the night without waking. `--stop-at` inside
-`--hours` is refused. `--dry-run` prints those two actions to stderr instead and writes no
-`watch.pass`; the baseline file is still written.
+serve` is logged and left running), then stays quiet through the night unless a fast wake fires.
+A wake can end it before that tick, so a re-arm whose `--baseline` shows it was watching earlier the same
+working day, before `--stop-at`, with that day's stop not done, stops the board at its first cycle even
+past the window. A sentinel started without such a baseline stops nothing outside the window, no day is
+stopped twice, and a re-arm on a later day does not make up the stop.
+`--stop-at` inside `--hours` is refused. `--dry-run` prints those two actions to stderr instead and writes
+no `watch.pass`; the baseline file is still written, and it only evaluates on the tick (no fast wake).
 
-**`--once`** evaluates once, read-only (no lifecycle, no heartbeat, no baseline write), and prints
+**`--once`** evaluates once, read-only (no lifecycle, no heartbeat, no baseline write, no waiting), and prints
 the signature as JSON, plus `wouldWake` and `additions` when `--baseline` names an existing file.
 
 It does not poll the orchestration mailbox (the orchestrator already pushes new messages to the
@@ -539,7 +558,7 @@ listed without an expectation.
 ## Files
 
 `model.ts` pure fold, lanes, metrics, share and report allowlists, Slack table ·
-`sentinel.ts` the sentinel's pure decisions · `sentinel-run.ts` its loop, port probe and server lifecycle ·
+`sentinel.ts` the sentinel's decisions and loop, on injected deps · `sentinel-run.ts` its port probe, server lifecycle and exit ·
 `watchers.ts` registered background processes and their pid check ·
 `store.ts` files and the event log · `sources.ts` Live Progress + evidence + the automated outcomes file ·
 `sync.ts` the tracker read through `cli/lib/sprint-source/` · `server.ts` local server + SSE ·
