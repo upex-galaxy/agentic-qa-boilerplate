@@ -18,7 +18,7 @@ Use this reference when iterating over several issues in a sprint. It covers the
 If a parameter is missing, ask the user before proceeding. Before starting, verify:
 
 1. `.session/sprint-testing/sprint-<N>/plan.md` exists and is readable. If not, build it (§Part 1).
-2. Its `## Phase breakdown` queue contains at least one row with a recognizable status (`PENDING`, `PASSED`, `FAILED`, `BLOCKED`, `DEFERRED`, `SKIPPED`).
+2. Its `## Phase breakdown` queue contains at least one row with a recognizable status (`PENDING`, `PASSED`, `FAILED`, `BLOCKED`, `DEFERRED`, `SKIPPED`, `WAITING FOR OWNER OK`).
 3. If `continue-from` was provided, the issue key exists in the queue. If not, list the queued issues and ask.
 
 ---
@@ -48,8 +48,9 @@ Several gates below wait for a person. What reaches a person at all is decided b
 | Missing `sprint`, unknown `continue-from` key | The launch brief names both; if not, report to the conductor | Build nothing, report the gap |
 | Story Explanation, per-issue and round summary OK | No checkpoint in a worker; the conductor holds the round | Stop after the reversible output and report |
 | Blocking BUG_FOUND, tool failure | Escalate to the conductor and stop the pass | Stop the pass, record the finding in memory, report |
+| Precondition request (Briefing 2 step 5c) | Post it on its own Story; an unknown name goes to the conductor | Post only when the brief covers Jira writes; otherwise note `not requested` and report |
 | Recalibration gate (Briefing 4 step 5) | The conductor confirms with the user | No recalibration and no transition; report |
-| Deferral OK (Briefing 4 step 2-bis, a Story with any `DEFERRED (execution)` case) | Ask through the conductor, which asks the owner and relays their words quoted with the pointer, never answering itself; until then no ATR completion, pass comment or transition | Only a brief quoting the owner's OK for those case ids; otherwise the same three stay undone, the Story stays in test; report |
+| Deferral OK (Briefing 4 step 2-bis, a Story with any `DEFERRED (execution)` case) | Ask through the conductor, which asks the owner and relays their words quoted with the pointer, never answering itself; until then waiting for owner OK | Only a brief quoting the owner's OK for those case ids; otherwise waiting for owner OK; report |
 | Unmapped slug (Briefing 2 step 5b, Briefing 4 step 3b), artifact owned by someone else (Briefing 2 step 5a) | Ask through the conductor | Report it (`unmapped_slugs` with `asked: false`, then `bun run jira:sync-workflows`) and leave the artifact as it is |
 
 ---
@@ -163,7 +164,8 @@ Sprint-wide mode. One nested sub-scope per issue at `.session/sprint-testing/spr
 | 1 | 1 | {KEY} — {title} | Sequential | `.session/sprint-testing/sprint-{N}/{KEY}/` | {priority} | {qa_lead or unassigned} | PENDING |
 
 {Status lives in "Exit condition": PENDING while queued, then PASSED / FAILED / BLOCKED /
- DEFERRED / SKIPPED once Stage 3 closed the issue. These are issue-level queue states, not case
+ DEFERRED / SKIPPED once Stage 3 closed the issue, or WAITING FOR OWNER OK (shift-right-deferral.md
+ §3). These are issue-level queue states, not case
  outcomes (`agentic-qa-core/references/discovery-driven-doctrine.md` §5), and never the ROI verdict. The orchestrator scans for the
  lowest-numbered PENDING to pick the next issue.}
 
@@ -176,7 +178,7 @@ Sprint-wide mode. One nested sub-scope per issue at `.session/sprint-testing/spr
 - Work types declared coverable but absent from this instance: {names} — skipped, not blocking.
 
 ## Verification checklist
-- [ ] Every Wave-1 row reached a terminal status (not PENDING)
+- [ ] Every Wave-1 row reached a terminal status (not PENDING), or reads WAITING FOR OWNER OK and is listed
 - [ ] Every closed issue has an ATP, an ATR carrying the Test Environment, and a QA comment
 - [ ] Every closed issue appended one `progress.md` entry AND one STP comment
 - [ ] STP description reflects the final queue; STP transitioned to its terminal state
@@ -281,7 +283,7 @@ CONDUCTOR                                   WORKERS (one per issue of the round)
     |     append ONE sprint progress.md entry + ONE STP comment   (STEP 4, unchanged)
     |     move the queue row off PENDING · archive the sub-scope
     |     release/close that worker IN THE ACT
-    |-> Round drained -> present the round summary + dashboard, WAIT for user OK
+    |-> Round drained -> present the round summary + dashboard (rows waiting for owner OK listed), WAIT for user OK
     |-> Next round; wave advances only when its rounds are exhausted
 ```
 
@@ -423,6 +425,7 @@ Exact instructions:
        - STP (sprint altitude, once the sprint scope is set): `{{jira.transition.test_plan.designed}}` -> `{{jira.status.test_plan.ready}}`.
        - ATS stays `{{jira.status.test_set.designing}}` (it stays open through Stage 3 as the hand-off marker to Stage 4); ATR stays `{{jira.status.test_execution.active}}` (the run has not happened yet). Both are deliberate: state them, do not "fix" them.
        On an unmapped slug run the fallback in `agentic-qa-core/references/artifact-lifecycle.md` §4 (list the live transitions, ask ONE AskUserQuestion, fire the live id, recommend `bun run jira:sync-workflows`). Never skip silently.
+  5c. Request every precondition another person owes, per acceptance-test-planning.md §"Request the preconditions other people owe": one comment on the Story naming the cases, the person and the date needed, read back, then noted under each case.
   6. Materialize the local cache per modality (a read-only cache, never hand-written), then read it back to confirm:
        - Modality jira-native: `bun run jira:sync-issues get <TICKET_KEY> --include-comments` -> <PBI_FOLDER>/acceptance-test-plan.md
        - Modality jira-xray: `bun run jira:sync-issues get <ATP_KEY>` -> .context/PBI/test-plans/ATP-<ATP_KEY>-<slug>.md (the Test Plan issue; its description holds the ATP body)
@@ -444,12 +447,14 @@ Report format:
     "risk_level": "LOW|MEDIUM|HIGH",
     "veto_outcome": "proceed | skip | require | escalate",
     "ac_gaps": [...],
+    "precondition_requests": [{ "cases": [...], "what": "...", "from": "<person>", "needed_by": "<date>", "record": "<comment link> | not requested: <why>" }],
     "open_questions": [...],
     "checklist": "X/Y"
   }
 
 Rules:
   - Do not execute any test; Stage 2 owns execution.
+  - A case that needs a precondition another person owes is requested in this stage (step 5c); a routine whose brief does not cover Jira writes posts nothing and reports it as not requested.
   - TC timing depends on the modality (SKILL.md §"TC creation timing"). Modality jira-native: outlines only, no `Test` work items (Stage 4 / test-documentation owns those). Modality jira-xray: create the sprint Test issues and the ATS in the Set-first order (promoting persistent regression tests still belongs to Stage 4).
   - Never create the ATR without its Test Environment (`active_env`): an environment-less Execution fails the Stage-1 DoD gate.
   - Never leave a created artifact in its `create` status or without an assignee (artifact-lifecycle.md §1 + §2); close the stage with the light stage verifier (§5).
@@ -513,6 +518,7 @@ Rules:
   - Do not file the bug in the issue tracker yet. Stage 3 handles filing per the bug-report template in reporting-templates.md.
   - Mark PASSED or FAILED only on observation in the environment the case's precondition names; otherwise the case is NOT RUN through the blocking ladder (`agentic-qa-core/references/discovery-driven-doctrine.md` §5), never FAILED.
   - Before writing a case BLOCKED or DEFERRED (execution), run the unblock preflight and put its record under the case in test-session-memory.md.
+  - A precondition nobody requested and nothing shows as due is posted on the Story with a needed-by date (the date this Story's execution must finish); the case stays BLOCKED until that date passes. Not posted means it stays BLOCKED.
   - Do not modify production data. For write-side checks use staging entities flagged in the ATP.
   - Critical Rule #1 (credentials by NAME, never by value): use each credential through its variable name; never open .env, print or hardcode a value.
   - Identity: every role signs in through the app's own login only (UI form -> `.auth/<env>-<role>.json`, or `bun run api:login --role <role>`). Never obtain a session through a service-role / admin key, an admin user-management API, a server-generated magic link or reset token, a locally signed JWT or a database session row. Seeding test DATA through API / DB stays allowed. An auth story runs end to end through a real inbox (`/resend-cli`). A check that seems to need a shortcut is a blocker to report, not a step to take (`agentic-qa-core/references/browser-sessions.md` §4).
@@ -520,6 +526,8 @@ Rules:
 ```
 
 ### Briefing 4 — Stage 3 Reporting subagent
+
+Before this dispatch, rerun the preflight on every case `BLOCKED` on a late precondition request whose needed-by date has passed (`preflight-gate.md` §3).
 
 ```
 Goal: Fill the ATR, post the QA comment, transition the issue, and file bug reports for <TICKET_KEY>.
@@ -531,6 +539,7 @@ Context docs:
   - <PBI_FOLDER>/context.md (ticket summary)
   - <<REPO_ROOT>>/.agents/skills/sprint-testing/references/reporting-templates.md
   - <<REPO_ROOT>>/.agents/skills/sprint-testing/references/shift-right-deferral.md (only when a Story case is DEFERRED (execution))
+  - <<REPO_ROOT>>/.agents/skills/sprint-testing/references/preflight-gate.md (only when a case is BLOCKED or DEFERRED (execution))
   - <<REPO_ROOT>>/.agents/jira-fields.json (custom field IDs for ATR/ATP, Modality jira-native only)
 
 Skills to load: /acli (issue updates + comments + transitions + bug creation); in Modality jira-xray also /xray-cli (only when ATR is an Xray Test Execution and Test Run statuses must be updated).
@@ -540,8 +549,8 @@ Exact instructions:
   2. Author the ATR body from the template in reporting-templates.md §"ATR Test Report body". Do not hand-write a local file: it is materialized from the sync in step 3a.
   2-bis. Deferral branch, run before step 3 when a Story has any case `DEFERRED (execution)` and no confirmed FAIL (settle a recalibration, step 5, first). Per shift-right-deferral.md:
         a. Post the notice comment on <TICKET_KEY> (reporting-templates.md §3.6) and read it back; reuse one already posted for the same case ids. A routine whose brief does not cover it posts nothing.
-        b. Look for the owner's OK: the owner's own comment or message, given after the notice and covering the listed case ids, taken from your briefing or your launcher's relay quoted with its pointer, or read on the Story. You never write or grant it.
-        c. OK pending, or a no: update the ATR body and run statuses but do NOT complete it, do NOT post the pass result comment (step 4), do NOT transition (step 5). The Story stays in `{{jira.status.story.in_test}}`. Emit `transition_skipped: "deferral_ok_pending"` and report the pending cases.
+        b. Look for the owner's OK (the owner signs the transition: whoever launched the session, or whom the brief names): their comment, message, or answer to a question listing the case ids, given after the notice and covering them, taken from your briefing, your launcher's relay quoted with its pointer, or the Story. A comment an agent session posted never counts, even from the owner's account. You never write or grant it.
+        c. OK pending, or a no: the Story is waiting for owner OK (shift-right-deferral.md §3). Update the ATR body (result `WAITING FOR OWNER OK`) and run statuses but do NOT complete it, SKIP step 3b (ATP and ATS stay as they are), do NOT post the pass result comment (step 4), do NOT transition (step 5). The Story stays in `{{jira.status.story.in_test}}`. On the Sprint Board: `needs-you` with the case ids, `verdict` BLOCKED and `hold --reason other --on` the owner, never PASSED. Emit `transition_skipped: "deferral_ok_pending"` and report the pending cases.
         d. OK present: apply the `qa.deferral.label` label, read it back, cite the OK (who, when, where) in the ATR body, set result `PASSED WITH DEFERRALS` and continue with step 3. After `qa_sign_off`, write the shift-right plan rows (shift-right-deferral.md §5); a fleet worker sends them to the conductor instead.
   3. Update the ATR in TMS:
        - Modality jira-xray: [TMS_TOOL] Update Test Execution / Run statuses, then transition the Execution: `[ISSUE_TRACKER_TOOL] Transition: {{jira.transition.test_execution.complete}}` (`active` -> `close`). "Mark complete" is the transition: an ATR left at `{{jira.status.test_execution.active}}` reads as a run still in progress.
@@ -559,7 +568,7 @@ Exact instructions:
        - A Story with any `DEFERRED (execution)` case takes the PASSED transition (a recalibrated one included) only after step 2-bis d: notice posted, the owner's OK cited in the ATR, label read back.
        - Story PASSED: `{{jira.transition.story.qa_sign_off}}` (`in_test` -> `qa_approved`).
        - Bug PASSED: `{{jira.transition.bug.retest_passed}}` (`ready_for_qa` -> `closed`).
-       - Story FAILED, recalibration gate first. When the failing TC is security/auth/framework-default class, run the §5.0 recalibration gate (`reporting-templates.md`) before transitioning: state the mitigation hypothesis, cite one verification fact, and surface it to the user. If the finding is recalibrated to a non-defect (hypothesis confirmed, fact cited, user OK), treat it as GO-with-debt: set `result = "PASSED WITH ISSUES"`, take the Story PASSED transition (`qa_sign_off`, `in_test` -> `qa_approved`), do not fire `defect_reported`, and record the gate outcome in the ATR (file a low-priority follow-up if it is genuine pre-prod debt and not a blocker). Only when the defect is confirmed real, continue to the formal-vs-non-strict branch below.
+       - Story FAILED, recalibration gate first. When the failing TC is security/auth/framework-default class, run the §5.0 recalibration gate (`reporting-templates.md`) before transitioning: state the mitigation hypothesis, cite one verification fact, and surface it to the user. If the finding is recalibrated to a non-defect (hypothesis confirmed, fact cited, user OK), treat it as GO-with-debt: set `result = "PASSED WITH ISSUES"` (with any deferral the result is `PASSED WITH DEFERRALS` and the recalibration goes in Observations), take the Story PASSED transition (`qa_sign_off`, `in_test` -> `qa_approved`), do not fire `defect_reported`, and record the gate outcome in the ATR (file a low-priority follow-up if it is genuine pre-prod debt and not a blocker). Only when the defect is confirmed real, continue to the formal-vs-non-strict branch below.
        - Story FAILED (confirmed defect): the formal-vs-non-strict branch is driven by `{{FORMAL_BLOCKED_GATE}}` from `.agents/project.yaml`:
            - If `qa.formal_blocked_gate == true` AND `{{jira.status.story.blocked}}` resolves AND `{{jira.transition.story.defect_reported}}` is available from the current status, execute `defect_reported` (`in_test` -> `blocked`). The bug filed in step 6 belongs to the dev who picks it up via `{{jira.transition.story.fix_defect}}` (`blocked` -> `in_progress`).
            - Otherwise (the flag is false, or the substrate lacks `blocked` / `defect_reported`), use the non-strict fallback: leave the story in `{{jira.status.story.in_test}}` with the linked bug and emit `transition_skipped: "non_strict_failed_left_in_test"`. The dev fixes the underlying bug, and QA re-tests once it is redeployed.
@@ -576,13 +585,13 @@ Exact instructions:
        f. Parent the issue to the **QA Defect Management** process epic (`qa.qa_epics.defect_epic`, found-or-created; never the Story and never a product/dev epic), and keep the source-Story link for traceability (the Story `causes` the issue via `{{jira.link_types.problem_incident.name}}`, per reporting-templates.md §1.13). Three axes: parent = QA epic, link = Story, components = product module (Part 4).
      Create-time customfields and native `components` go via acli `workitem create --from-json`; customfield/component edits on an existing issue go via REST `PUT`. The mechanics are in doctrine Part 6 + `/acli`.
   7. Update <SESSION_DIR>/test-session-memory.md sections: TMS Artifacts (final IDs), Stage Results > Reporting, Checklist > Reporting.
-  8. Run the light stage verifier (`agentic-qa-core/references/artifact-lifecycle.md` §5). Stage-specific lines (with a deferral OK pending, the expected state is ATR `active` and Story `in_test`, stated): ATR at `{{jira.status.test_execution.close}}` · ATS at `{{jira.status.test_set.designing}}` (hand-off to Stage 4) · ATP at `{{jira.status.test_plan.completed}}` · Story at `{{jira.status.story.qa_approved}}` or `{{jira.status.story.blocked}}` · every filed issue parented to **QA Defect Management** with components + `{{jira.qa_assignee}}` set · every unmapped slug asked, never silently skipped.
+  8. Run the light stage verifier (`agentic-qa-core/references/artifact-lifecycle.md` §5). Stage-specific lines (waiting for owner OK, the expected state is ATR `active`, ATP unchanged, ATS `designing` and Story `in_test`, stated): ATR at `{{jira.status.test_execution.close}}` · ATS at `{{jira.status.test_set.designing}}` (hand-off to Stage 4) · ATP at `{{jira.status.test_plan.completed}}` · Story at `{{jira.status.story.qa_approved}}` or `{{jira.status.story.blocked}}` · every filed issue parented to **QA Defect Management** with components + `{{jira.qa_assignee}}` set · every unmapped slug asked, never silently skipped.
 
 Report format:
   {
     "atr_path": "<PBI_FOLDER>/acceptance-test-results.md (jira-native) | .context/PBI/test-executions/ATR-<ATR_KEY>-<slug>.md (jira-xray)",
     "atr_id": "<TMS issue key | story-field>",
-    "result": "PASSED | FAILED | PASSED WITH ISSUES | PASSED WITH DEFERRALS",
+    "result": "PASSED | FAILED | PASSED WITH ISSUES | PASSED WITH DEFERRALS | WAITING FOR OWNER OK",
     "tc_summary": { "total": <int>, "passed": <int>, "failed": <int>, "deferred": <int>, "pass_rate": "<percent>" },
     "recalibration": { "applied": true|false, "hypothesis": "...", "verification_fact": "...", "outcome": "confirmed_defect | go_with_debt", "user_confirmed": true|false },
     "qa_comment_id": "<comment id or 'posted' | n/a (deferral OK pending)>",
@@ -599,7 +608,8 @@ Report format:
 
 Rules:
   - Do not edit ACs on the parent ticket. Do not close the ticket; only transition it to the QA-defined state.
-  - Report only with no open `BLOCKED`, and list every `DEFERRED (execution)` in the QA comment so the signer sees it.
+  - Sign off only with no open `BLOCKED`. A confirmed FAIL is reported at once, with the `BLOCKED` cases listed and the ATR left `active`. List every `DEFERRED (execution)` in the QA comment so the signer sees it.
+  - Write `DEFERRED (execution)` only for a case whose preflight record (preflight-gate.md) says `DEFER`; an open `BLOCKED` is never turned into a deferral to finish this stage.
   - Close the QA artifacts: an ATR left `active` (outside a pending deferral OK, step 2-bis c) or an ATP left `planning` after this stage is a Reporting DoD failure (artifact-lifecycle.md §1, sprint-testing anti-pattern S18). The ATS stays `designing` on purpose, as the hand-off to Stage 4.
   - Apply the bug summary format from reporting-templates.md §1.2 verbatim, without improvisation.
   - On 4xx/5xx from any [ISSUE_TRACKER_TOOL] / [TMS_TOOL] call: stop, report the partial state, and do not auto-retry the transition.
@@ -779,16 +789,17 @@ The orchestrator creates the file at `<SESSION_DIR>/test-session-memory.md`: `.s
 The orchestrator runs these after Sub-agent 4 finishes.
 
 1. Read the final `test-session-memory.md`.
+1b. A Story signed off with deferrals: write its shift-right plan rows (a fleet worker sends them) and read them back (`shift-right-deferral.md` §5). At one executor, confirm Reporting wrote them. One write of a plan description at a time.
 2. Verify the Checklist (STEP 5 below). Nothing after this point runs until it passes.
 3. Append one entry to the sprint `progress.md` (`.session/sprint-testing/sprint-{N}/progress.md`) in the §7 block shape: `## Phase {n} — {KEY} {title} — {ts}`, `status`, `dispatched_as: Sequential`, `subagent_report` (verdict, TC pass rate, bug keys), `artifacts_touched` (ATP / ATS / ATR / bug keys), `next`, `notes`. The log is append-only, so an earlier entry is never rewritten.
 3b. Mirror the entry as one comment on the sprint STP (`STP: Sprint#{N}: {objective}`, the Test Plan item found or created at Session Start §0.7), with the same content. Comments are append-only on both sides, so several testers can close issues at once without overwriting each other. The STP description mirrors `plan.md` and belongs to the sprint's single planner, so leave it alone here. When the Test Plan work type is absent (no sprint-altitude field fallback), skip this with a note; it does not block.
-3c. Update the queue row in `plan.md` `## Phase breakdown`: change `PENDING` to `PASSED`, `FAILED`, `BLOCKED`, `DEFERRED` or `SKIPPED` in its Exit-condition cell. This is the one in-place edit the plan takes during a sprint. Anything larger (a new issue, a promoted wave, a changed owner) goes under `## Changelog`.
-3d. Archive the issue sub-scope per `agentic-qa-core/references/session-management.md` §8: move `.session/sprint-testing/sprint-{N}/{KEY}/` to `.session/.archive/{YYYY-MM-DD}-sprint-testing-sprint-{N}-{KEY}/`. A FAILED issue stays where it is, because its artifacts are needed to debug it. The sprint pair itself stays until sprint close.
+3c. Update the queue row in `plan.md` `## Phase breakdown`: change `PENDING` to `PASSED`, `FAILED`, `BLOCKED`, `DEFERRED`, `SKIPPED` or `WAITING FOR OWNER OK` in its Exit-condition cell. This is the one in-place edit the plan takes during a sprint. Anything larger (a new issue, a promoted wave, a changed owner) goes under `## Changelog`.
+3d. Archive the issue sub-scope per `agentic-qa-core/references/session-management.md` §8: move `.session/sprint-testing/sprint-{N}/{KEY}/` to `.session/.archive/{YYYY-MM-DD}-sprint-testing-sprint-{N}-{KEY}/`. A FAILED issue stays where it is, because its artifacts are needed to debug it, and so does one waiting for owner OK, which resumes from them. The sprint pair itself stays until sprint close.
 4. Present a per-issue summary:
 
    ```
    ISSUE: {{PROJECT_KEY}}-{XXX} -- {title}
-   TYPE: {type} | PRIORITY: {priority} | RESULT: {PASSED/FAILED}
+   TYPE: {type} | PRIORITY: {priority} | RESULT: {PASSED/FAILED/WAITING FOR OWNER OK}
    ARTIFACTS: ATP-{N}, ATR-{N}, TCs: {list}
    BUGS: {count or none} | AC GAPS: {count or none}
    OBSERVATIONS: {if any}
@@ -808,7 +819,7 @@ Inspect `test-session-memory.md > Checklist`.
 
 1. Count `[x]` and `[ ]` across all stages, filtering by issue type (Feature or Bug).
 2. All applicable items are `[x]`: continue with STEP 4's log, STP and queue updates.
-3. An applicable item is still `[ ]`: check Observations for the reason. A valid reason (for example "N/A — no UI changes") lets you proceed. A missing or unclear reason goes to the user, who answers before you mark the issue done. A worker or a routine reports the open item to its conductor or launcher instead and does not mark the issue done.
+3. An applicable item is still `[ ]`: check Observations for the reason (the items a pending deferral OK holds are a valid one: log the row as waiting for owner OK). A valid reason (for example "N/A — no UI changes") lets you proceed. A missing or unclear reason goes to the user, who answers before you mark the issue done. A worker or a routine reports the open item to its conductor or launcher instead and does not mark the issue done.
 4. Orchestrator-only items:
    - [ ] Story explained and confirmation received
    - [ ] Sprint `progress.md` entry appended + mirrored as one STP comment
@@ -840,10 +851,10 @@ When the user says they are done or wrapping up, present:
 
 | # | Issue | Type | Priority | Title | Result | Board Status | Dev | TCs | AC Gaps | Bugs | Artifacts |
 |---|--------|------|----------|-------|--------|--------------|-----|-----|---------|------|-----------|
-| 1 | {{PROJECT_KEY}}-{X} | {type} | {priority} | {title} | {PASSED/FAILED/SKIPPED} | {board status} | {dev} | {X/Y (rate%)} | {count or None} | {count or None} | ATP-{N}, ATR-{N}, TCs {list} |
+| 1 | {{PROJECT_KEY}}-{X} | {type} | {priority} | {title} | {PASSED/FAILED/SKIPPED/WAITING FOR OWNER OK} | {board status} | {dev} | {X/Y (rate%)} | {count or None} | {count or None} | ATP-{N}, ATR-{N}, TCs {list} |
 ```
 
-Column definitions: Type is the issue's work type, Priority uses the instance's priority names, Result is PASSED, FAILED or SKIPPED plus the reason, Board Status is the current status on `{{ISSUE_TRACKER}}`, Dev is the implementer. TCs is pass/total and the rate (for bugs, "DB verified" or "N/A"). AC Gaps and Bugs say None when clean. Artifacts lists the IDs.
+Column definitions: Type is the issue's work type, Priority uses the instance's priority names, Result is PASSED, FAILED, SKIPPED plus the reason, or WAITING FOR OWNER OK, Board Status is the current status on `{{ISSUE_TRACKER}}`, Dev is the implementer. TCs is pass/total and the rate (for bugs, "DB verified" or "N/A"). AC Gaps and Bugs say None when clean. Artifacts lists the IDs.
 
 After the table:
 
@@ -858,8 +869,8 @@ The table is a chat rendering derived from the sprint `progress.md`. Do not keep
 
 1. Find or create the sprint recap Execution `STR: Sprint#{N}: Regression Testing`, unless `/regression-testing` already created it (whichever skill arrives first creates it and the other completes it). It is a Test Execution with parent QA Test Artifacts, and it always carries the Test Environment from `active_env`. Fill it as the recap of the sprint's results and link it to both plans: `testPlan` to the STP and `testPlan` to the RTP (dual membership). The RTRs that `/regression-testing` recorded during the sprint (one per regression verdict) stay as they are. The STR is the sprint-close run only and does not contain them.
 2. Close the sprint STP (`STP: Sprint#{N}: {objective}`): update its description a last time from `plan.md` (read first) and move it to its terminal state.
-2b. Check the open rows of the shift-right test plan (`shift-right-deferral.md` §5): run §6 for each case whose precondition arrived. Rows still open keep the plan open past sprint close.
-3. Archive the sprint session pair per `agentic-qa-core/references/session-management.md` §8: move `.session/sprint-testing/sprint-{N}/` to `.session/.archive/{YYYY-MM-DD}-sprint-testing-sprint-{N}/`, then call `mem_session_summary` with the archive path. Moving the parent also moves any sub-scope still inside it, so first verify that the queue holds no PENDING and no in-flight issue. If any issue failed, leave the pair in place.
+2b. Check the open rows of every open shift-right test plan, whatever its sprint (`shift-right-deferral.md` §5): run §6 for each case whose precondition arrived. A plan with a row that is neither `PASSED` nor `WITHDRAWN` stays open.
+3. Archive the sprint session pair per `agentic-qa-core/references/session-management.md` §8: move `.session/sprint-testing/sprint-{N}/` to `.session/.archive/{YYYY-MM-DD}-sprint-testing-sprint-{N}/`, then call `mem_session_summary` with the archive path. Moving the parent also moves any sub-scope still inside it, so first verify that the queue holds no PENDING and no in-flight issue. If any issue failed or waits for owner OK, leave the pair in place; the sprint still closes with it listed.
 4. Steps 1 and 2 are skipped with a note when the respective work type is absent (jira-native without the Test Plan or Test Execution work types). That does not block.
 
 Steps 1, 2 and 2b write to Jira, so they are outward actions. A routine with nobody runs them only when its delegating brief covers sprint close; otherwise it stops after the chat summary and reports.

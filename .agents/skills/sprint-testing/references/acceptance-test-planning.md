@@ -489,6 +489,33 @@ Post the full ATP body as a notification comment with mentions for @PO, @Dev, @Q
 
 In Modality jira-native, when `{{jira.acceptance_test_plan}}` is absent the structured `## Acceptance Test Plan (ATP)` fallback comment carries the ATP content, and that is what `test-documentation` mode `repair-traceability` checks later.
 
+### Request the preconditions other people owe
+
+When a case in the ATP needs a precondition another person owes (a developer who must run a sync or a worker by hand, an account or permission only someone else grants), request it now, in Stage 1, on every path that produces an ATP. What QA can find or create itself is not a request (§0.3).
+
+1. Reuse an earlier comment on the Story that already asks for the same thing, and cite its link.
+2. Otherwise post one comment on the Story through `[ISSUE_TRACKER_TOOL]` and read it back:
+
+```
+Precondition Request - {{PROJECT_KEY}}-{number}
+
+Cases: {outline or TC ids}
+Needed: {what, and in which environment}
+From: {name of the person who owes it}
+Needed by: {date execution is planned; a request made during execution: the date this Story's execution must finish}
+Why QA cannot do it: {one line}
+```
+
+3. Note it under each case in `test-session-memory.md` and in the ATP body: `Precondition owed: {what} | from {person} | by {date} | requested {comment link}`.
+
+That comment is the record a later deferral cites (`preflight-gate.md` §3). The comment is a tracker write of the stage, not a team message. Chat or Slack, a wired provider included, goes out only on the owner's order, one staged message per wave (`shift-right-deferral.md` §2), and never replaces the comment. The routine rules of `agentic-qa-core/references/stage-gates.md` apply:
+
+| Who runs | Request |
+|---|---|
+| A person is present | post it; ask who owes it when the sources do not say |
+| A supervised worker | post it on its own Story; an unknown name is an `ask` to the conductor |
+| A routine with nobody | post it only when the delegating brief covers Jira writes; otherwise note `not requested: {why}` under the case and report it |
+
 ### Materialize the local cache (from sync, never hand-written)
 
 After the ATP content is in Jira, materialize the read-only cache for the modality and read it back to confirm:
@@ -584,5 +611,6 @@ Keep Phases 5-8 unchanged and skip Phase 3, since the bug ticket itself is the s
 - [ ] ATP content written to `{{jira.acceptance_test_plan}}` (or the `## Acceptance Test Plan (ATP)` fallback comment)
 - [ ] jira-xray: Set-first order honored (ATP item from the field, ATS with ALL the Story's TCs linked via the `test` slug with components inherited, ATP/ATR lists derived from the ATS)
 - [ ] jira-xray: ATR created WITH the Test Environment (`active_env`), because no environment means no ATR
+- [ ] Every precondition another person owes requested on the Story, with the person and the date, or noted `not requested` and reported (Phase 6)
 - [ ] Synced ATP cache materialized, not hand-written (commands in Phase 6)
 - [ ] Three-edge traceability check passed (Story↔ATS coverage + ATP↔Story + ATR↔Story administrative + lists match)

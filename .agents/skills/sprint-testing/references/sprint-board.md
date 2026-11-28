@@ -59,7 +59,7 @@ command carries `--by worker`:
 
 ```
 Sprint Board: the owner watches http://127.0.0.1:4477, not terminals. Run from <repo>, each with --by worker:
-after each TC `bun run board tc <KEY> <TC> <PASSED|FAILED|NOT RUN|BLOCKED> --by worker` (DEFERRED also needs --reason "QA decision <date>: <why it cannot be recreated>", per agentic-qa-core/references/discovery-driven-doctrine.md §5);
+after each TC `bun run board tc <KEY> <TC> <PASSED|FAILED|NOT RUN|BLOCKED> --by worker` (BLOCKED or DEFERRED only after the unblock preflight, sprint-testing/references/preflight-gate.md; DEFERRED needs an external cause and --reason "QA decision <date>: <why it cannot be recreated>", per agentic-qa-core/references/discovery-driven-doctrine.md §5, and the Story moves on it only with the owner's own OK, shift-right-deferral.md §3);
 on a bug filed `bun run board bug <KEY> <BUG> --title "<title>" --severity <Critical|High|Medium|Low> --evidence-embedded --by worker` (drop --evidence-embedded only if no image went into the Description);
 on an owner question `bun run board needs-you <KEY> "<question>" --blocked "<what cannot run>" --why "<plain-language reason>" --option "a: <action> | cost: <time/risk/who acts>" --option "b: ..." --recommend a --decider "<person>" --by worker` (IN ADDITION to the mailbox question; leave out --decider when unsure who decides);
 for each screenshot that proves a case `bun run board evidence <KEY> <image> --caption "<what it shows>" --tc <TC> --outcome passed|failed|blocked --by worker`;
@@ -118,6 +118,8 @@ the first time, arm `listen` with a starting point:
   a closed ticket or a thanks is not a reason to write. The `good-news` and `fyi` draft kinds exist
   for the record and are not sent unprompted.
 - The conductor does not message a developer on its own initiative, a watch pass included.
+- A precondition request and a deferral notice are Story comments, tracker writes of the stage and not team
+  messages. Chat or Slack, a wired provider included, stays on the owner's order, one staged message per wave.
 - The sprint progress table (the board's "Copy for Slack") is the owner's team status. It is built
   when the owner asks for it and put on the clipboard, and the conductor does not post it.
 - One team-decision message per wave. Every case that genuinely needs a developer or product
@@ -126,9 +128,9 @@ the first time, arm `listen` with a starting point:
   into one message per wave, not one per ticket, staged in `.session/sprint-board/staged/` (§8) until
   the owner sends it. A QA deferral is not one of them: QA takes it on its own once the unblock preflight
   (`preflight-gate.md`) finds the case cannot be recreated in the test environment for an external cause.
-  The Story's move on a deferral still needs the owner's OK (`shift-right-deferral.md` §3). When the answer is to defer, record it on the case with
-  `tc <KEY> <TC> DEFERRED --approval "<who>, <where>"`; a deferral QA took on its own is recorded
-  with `--reason "QA decision <date>: <why>"` instead.
+  The Story's move on a deferral still needs the owner's OK (`shift-right-deferral.md` §3). When the answer is to defer and the case's preflight record says
+  `DEFER`, record it with `tc <KEY> <TC> DEFERRED --approval "<who>, <where>"`; a deferral QA took on its
+  own is recorded with `--reason "QA decision <date>: <why>"` instead. Neither is the Story's deferral OK.
 
 ---
 

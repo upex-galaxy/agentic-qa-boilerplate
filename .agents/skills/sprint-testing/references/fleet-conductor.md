@@ -143,6 +143,7 @@ Run: <run id — ONLY when this worker was launched without a supervised dispatc
 - single-issue mode on <KEY>, no checkpoints, preflight gate + MCP probes NOT skippable
 - run every stage without returning to the prompt until the done-report is sent; stage boundaries are not checkpoints
 - no sprint-altitude writes, no token minting, no bulk sync
+- before writing a case BLOCKED or DEFERRED (execution): run the unblock preflight (`sprint-testing/references/preflight-gate.md`) and keep its record under the case
 - a Story with a deferred case: `ask` the conductor for the owner's OK and send your shift-right plan rows with your report; never write the plan (§10 "Shift-right deferrals")
 - no write to the Epic's `## Module Context (QA)` section: stage what you learned about the module under `## Module Learnings (candidate)` in your test-session-memory.md; the conductor publishes it
 - no heartbeats; report once at the end

@@ -47,9 +47,9 @@ A cause is external only when what is missing is outside QA's reach:
 |---|---|
 | Infrastructure | infrastructure, a job or a worker that QA cannot run or access |
 | Third party | an account, credential or permission on an outside service that QA lacks and cannot create |
-| Owed precondition | a precondition another person owes, requested before execution or already due by the Story, the ATP or the deploy notes (either with a pointer), and not delivered when execution came |
+| Owed precondition | a precondition another person owes, requested before execution (the Stage 1 comment of `acceptance-test-planning.md` §"Request the preconditions other people owe", or another pointer), or already due by the Story, the ATP or the deploy notes (with a pointer), or requested late and past its needed-by date; and not delivered |
 
-With neither a prior request nor a due pointer, request the precondition now and leave the case `BLOCKED`. When the pass ends it counts as owed and not delivered, and the record says it was requested late.
+With neither a prior request nor a due pointer, post the request now (that same comment, read back, under its routine rules), with a needed-by date: the date this Story's execution must finish. The case stays `BLOCKED` until that date passes. Then the session running the Story reruns the preflight before Reporting is dispatched and may `DEFER`, the record saying it was requested late. A request that was not posted leaves the case `BLOCKED`.
 
 Not external: anything QA can still do, QA's own broken setup, and a product behaviour that was observed wrong (that is `FAILED`).
 
@@ -64,7 +64,7 @@ PREFLIGHT {TC id} | {env} | {date}
   Scope:     {AC id} in {synced file} | out of scope: {why}
   Deployed:  yes [{evidence}] | no [{evidence}]
   Tried:     {attempt}: {result} [{evidence}]   (one line per attempt)
-  Requested: {what, from whom, when, pointer} | already due by {pointer} | requested late {when, pointer} | n/a
+  Requested: {what, from whom, when, pointer} | already due by {pointer} | requested late {when, pointer, needed by} | n/a
   External:  {class}: {who owes what} | no
   Verdict:   DROPPED | RUN | DEFER | BLOCKED
 ```
@@ -80,6 +80,8 @@ Steps never reached are written `not reached`. The block goes under the case in 
 | `DEFER` | in scope, step 1 clean, step 2 exhausted, step 3 external with evidence | `sprint-testing/references/shift-right-deferral.md` |
 | `BLOCKED` | everything else: open scope question, change not deployed, something QA can still do, missing evidence | the ladder stays open (`discovery-driven-doctrine.md` §5.3) |
 
+A block that is not external and leaves QA nothing to try goes to the owner (ladder step 4), who names who owes it, and the preflight is rerun, or rules it out of scope (`DROPPED`).
+
 A `DROPPED` case keeps its one ATR line and leaves no run open:
 
 - **Modality jira-xray**: take it out of the Story's ATS (membership and link), and so out of the ATP and ATR lists derived from it. The `Test` issue is not deleted.
@@ -87,4 +89,4 @@ A `DROPPED` case keeps its one ATR line and leaves no run open:
 
 ## Unreachable preconditions
 
-Outcomes 1 and 2 of `test-design-doctrine.md` §"Unreachable preconditions" are step 2 here. Outcome 3 (declared unobservable) reaches `DEFER` only through step 3: whoever must provide what it would take (a fixture account, a seed hook, a reset endpoint, a controllable clock) is named, under Owed precondition or Infrastructure. With nobody to name, the case stays `BLOCKED` and the question of who owes it goes to a person.
+Outcomes 1 and 2 of `test-design-doctrine.md` §"Unreachable preconditions" are step 2 here. Outcome 3 (declared unobservable) reaches `DEFER` only through step 3: whoever must provide what it would take (a fixture account, a seed hook, a reset endpoint, a controllable clock) is named, under Owed precondition or Infrastructure. With nobody to name, the case stays `BLOCKED` and goes to the owner (`discovery-driven-doctrine.md` §5.3 step 4).
