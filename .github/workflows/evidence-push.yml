@@ -1,0 +1,58 @@
+# ============================================
+# EDD - Evidence detection after a direct push (edd/evidence (push))
+# ============================================
+# Purpose: after a direct push to a protected branch whose base contract sets
+# direct_push_to_protected: evidence, re-check the pushed range with
+# `scripts/edd.ts verify --ci` and keep the record (spec 5.2). It detects
+# after the fact and runs the pushed code; the merge gate is evidence.yml.
+# Its job is never named `edd/evidence`: that name belongs to the
+# pull_request_target verifier alone. Like that check, this one catches
+# mistakes and drift, not a deliberate forgery (spec-corrections item 19).
+
+name: EDD Evidence (push)
+run-name: ${{ github.actor }} triggered EDD Evidence (push) on ${{ github.ref_name }}
+
+on:
+  push:
+    branches:
+      - '**'
+
+permissions: {}
+
+concurrency:
+  group: edd-evidence-push-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  PushEvidence:
+    name: edd/evidence (push)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Verify the evidence
+        run: bun scripts/edd.ts verify --ci
+
+      - name: Upload the record
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: edd-evidence-${{ github.run_id }}
+          path: .session/evidence/*.json
+          include-hidden-files: true
+          if-no-files-found: ignore
