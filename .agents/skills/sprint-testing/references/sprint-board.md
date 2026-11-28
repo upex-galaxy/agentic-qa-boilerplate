@@ -71,7 +71,7 @@ for each screenshot that proves a case `bun run board evidence <KEY> <image> --c
 at Stage 3, right after publishing the ticket's evidence page `bun run board evidence-artifact <KEY> <url> --by worker`, and after each bug's page `bun run board evidence-artifact <KEY> <url> --bug <BUG> --by worker` (the `bug` line first); when you cannot publish, say so in the mailbox and the conductor records it;
 on reusable data found (a store, user or combination another ticket could use) `bun run board fixture <KEY> "<data found>" --module <module> --by worker` (the ticket's module);
 at stage changes `bun run board worker <KEY> --stage plan|execute|report|close --by worker`;
-at the end `bun run board verdict <KEY> <PASSED|FAILED|BLOCKED> --note "<one line>" --by worker` (PENDING is rejected: it is the board's own "no verdict yet"; an owner or developer wait is BLOCKED plus `hold --reason no-data|other --on <who>`).
+at the end `bun run board verdict <KEY> <PASSED|FAILED|BLOCKED|"PASSED WITH DEFERRALS"> --note "<one line>" --by worker` (PENDING is rejected: it is the board's own "no verdict yet"; an owner or developer wait is BLOCKED plus `hold --reason no-data|other --on <who>`).
 Never `say`, `ask`, `ask-state`, `answer` or `sweep`: those are the conductor's and the owner's. A board error never stops the run.
 ```
 
@@ -156,7 +156,7 @@ the first time, arm `listen` with a starting point:
   The Story's move on a deferral still needs the owner's OK (`shift-right-deferral.md` §3). When the answer is to defer and the case's preflight record says
   `DEFER`, record it with `tc <KEY> <TC> DEFERRED --approval "<who>, <where>" --by conductor`; a deferral QA took on its
   own is recorded with `--reason "QA decision <date>: <external cause>"` and `--by` instead. Neither is the Story's deferral OK.
-  An OK you observed is recorded with `deferral-ok <KEY> --cases <ids> --pointer "<pointer>" --by conductor|worker`, which only moves the lane: the pointer is still opened at Stage 3 and at round close.
+  An OK you observed is recorded with `unhold <KEY>`, `verdict <KEY> "PASSED WITH DEFERRALS"` and `deferral-ok <KEY> --cases <ids> --pointer "<pointer>"`, each with `--by conductor|worker` (`shift-right-deferral.md` §4 step 3): `deferral-ok` alone leaves a ticket recorded as waiting in Held, and no board record stands in for opening the pointer at Stage 3 and at round close.
 
 ---
 

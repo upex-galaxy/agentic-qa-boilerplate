@@ -794,10 +794,11 @@ describe('deferral-ok', () => {
     for (const pointer of ['approved in chat', 'javascript:alert(1)', 'ftp://example.com/x', 'https://', 'see https://example.com/x']) {
       refusedWith(args(pointer), 'is not accepted', RULE);
     }
-    refusedWith(args('owner OK given in session'), 'carries no timestamp', RULE);
-    refusedWith(args('owner OK given in session, yesterday'), 'carries no timestamp', RULE);
+    refusedWith(args('owner OK given in session'), 'is not the in-session form', RULE);
+    refusedWith(args('owner OK given in session, yesterday'), 'is not the in-session form', RULE);
+    refusedWith(args('owner OK given in session, 2020-01-01 10:00'), 'is earlier than the deferral of TC-1', RULE);
     refusedWith(args('board:need-nope'), 'no question need-nope', RULE);
-    expect(record(...args('owner OK given in session, 2026-10-16 14:32Z')).code).toBe(0);
+    expect(record(...args(`owner OK given in session, ${new Date().toISOString().slice(0, 16).replace('T', ' ')}Z`)).code).toBe(0);
   });
 
   test('--at is neither in the future nor earlier than the deferral', () => {

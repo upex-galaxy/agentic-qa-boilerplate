@@ -208,6 +208,18 @@ describe('deferred cases on the page', () => {
     expect(html).not.toContain('waiting for owner OK');
   });
 
+  test('PASSED WITH DEFERRALS with no DEFERRED case reads passed on neither the lane nor the report', () => {
+    const s = fold({ sprint, now: '2026-10-05T12:00:00Z', tracker: { ...tracker, tickets: { 'DEMO-1': { title: 'Upload lock', status: 'QA Approved', tcs: [{ id: 'TC-1', status: 'PASSED' }] } } }, events: [
+      ev('2026-10-02T01:00:00Z', 'verdict', 'DEMO-1', { verdict: 'PASSED WITH DEFERRALS' }),
+    ] });
+    const ctxFor = (state: typeof s) => ctxOf(state, { filter: '', canWrite: false, img: () => null, sprints: [], archives: [] });
+    expect(viewTickets(ctxFor(s))).toContain('Held, blocked');
+    const report = viewReport(ctxFor(toReportState(s)));
+    expect(report).toContain('0 of 1 tested tickets signed off');
+    expect(report).toContain('Not signed off');
+    expect(report).not.toContain('class="pill PASSED">Signed off');
+  });
+
   test('a Bug says a retest never passes on a deferral instead of waiting for an OK', () => {
     const p = page({ type: 'Bug' });
     for (const html of [card(p.t, p.c), drawer(p.t, p.c), viewNow(p.c)]) {

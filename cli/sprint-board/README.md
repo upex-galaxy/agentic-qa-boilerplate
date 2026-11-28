@@ -229,26 +229,30 @@ built), or "Not fully tested" when that key is absent or null.
 **The record.** `deferral-ok` appends a `deferral.ok` event: the cases, the pointer, who recorded it and
 when. It means "an owner OK was observed by that writer", never that the owner spoke. It is display
 state for the lane only: it **never stands in for opening the pointer** at Stage 3 and at round close
-(`shift-right-deferral.md` section 3). The drawer shows the pointer and the recorder; the share and report
-copies carry neither.
+(`shift-right-deferral.md` section 3). On a ticket recorded as waiting (section 3 there) the record alone
+does not move it: section 4 there lists what else is recorded. The drawer shows the pointer and the
+recorder; the share and report copies carry neither.
 
 | Accepted `--pointer` | What the CLI checks |
 |---|---|
-| an `http(s)` URL: the Story comment read back from the tracker (preferred when it exists) | the shape of the URL, nothing behind it |
-| `board:<need-id>` | a question on that ticket, still on the board, answered by `owner` on the page, after the cases were deferred |
-| `owner OK given in session, <YYYY-MM-DD HH:MM>` | the opening words and a date with a time |
+| an `http(s)` URL: the Story comment read back from the tracker (preferred when it exists) | the ticket id as a whole token in its path, query or fragment, and the host of the ticket's tracker link when the board knows one; nothing behind the URL |
+| `board:<need-id>` | a question on that ticket, still on the board, answered by `owner` on the page, after the cases were deferred; every cited case needs a deferral time the board recorded (`tc ... DEFERRED`), so a case DEFERRED only in the tracker is refused |
+| `owner OK given in session, <YYYY-MM-DD HH:MM>` | exactly that text and nothing else (seconds, `Z` or an offset optional, no offset reads as local time): a real date and time, not in the future and, to the minute, not before a deferral the board recorded for a cited case |
 
 Anything else is refused, and so are a case that is not DEFERRED on that ticket, an `--at` in the future
-or earlier than the deferral, and any `--by` but `conductor` or `worker`.
+or earlier than a deferral the board recorded, and any `--by` but `conductor` or `worker`.
 
-**When a record stops covering a case.** Any later `tc` record of that case, a repeated DEFERRED included,
-drops it. So does a `sync` that sees the case leave DEFERRED in the tracker, or move to another status
-after the OK (a `deferral.lapse` event). A case deferred after the OK needs its own.
+**When a record stops covering a case.** A `tc` record of that case dated after it, a repeated DEFERRED
+included, drops it. The date is the event time (`--at`, else the moment of writing), not the order of
+writing, so a record backdated to before the OK leaves it in place. So does a `sync` that sees the case
+leave DEFERRED in the tracker, or move to another status after the OK (a `deferral.lapse` event). A case
+deferred after the OK needs its own.
 
 **Limits.** The board records the citation: it cannot prove who typed it, does not open the URL, does not
-read what an answer says (a refusal is not an OK), and cannot check the in-session form at all. A board
-answer proves it did not come through the CLI, not who typed it. A tracker change made and undone between
-two syncs is not seen.
+read what an answer says (a refusal is not an OK), and cannot check that an in-session OK was given, only
+the text and the time of the pointer. A case DEFERRED only in the tracker has no deferral time on the
+board, so neither an in-session time nor `--at` is compared against it. A board answer proves it did not
+come through the CLI, not who typed it. A tracker change made and undone between two syncs is not seen.
 
 ## Decision cards
 
@@ -395,8 +399,9 @@ Counting rules:
   with no tracker Sprint counts while in scope). A ticket filed under another sprint is named under the
   Tickets table, never counted.
 - **Tested**: a report ticket with at least one TC or a passing or FAILED verdict. **Signed off**: tested,
-  in the `tested` bucket, and not a ticket with a DEFERRED case no OK covers or a Bug with a DEFERRED case
-  (§Deferred cases). The tile and the verdict sentence say how many of the signed off are not fully tested.
+  in the `tested` bucket, and not a ticket with a DEFERRED case no OK covers, a Bug with a DEFERRED case,
+  or a PASSED WITH DEFERRALS verdict with no DEFERRED case on record (§Deferred cases). The tile and the
+  verdict sentence say how many of the signed off are not fully tested.
 - **Not tested** (0 TCs and no verdict): *Never reached the test environment* (bucket `not_ready`,
   `dropped` or not synced) or *Not counted* (it got to `in_test`, `blocked` or `tested` and has nothing
   on record).
@@ -782,8 +787,8 @@ Computed, never written (`laneOf` in `model.ts`, tests in `model.test.ts`):
 | 1 | Needs you | a question the owner has not answered and nobody resolved, a DEFERRED with no recorded reason, or a worker that stopped without a verdict |
 | 2 | Running | the worker is running (a retest outranks old failures) |
 | 3 | Failed | verdict FAILED or any TC FAILED |
-| 4 | Passed | verdict PASSED or PASSED WITH DEFERRALS, or the tracker in the `tested` bucket; with cases on record, every one PASSED or DEFERRED, and every DEFERRED one covered by a recorded owner OK on a ticket that is not a Bug. A PASSED WITH DEFERRALS verdict with no case on record does not pass |
-| tray | Held | waiting on a deploy, data or access, or a TC BLOCKED; a passing verdict with a case still open |
+| 4 | Passed | verdict PASSED or PASSED WITH DEFERRALS, or the tracker in the `tested` bucket; with cases on record, every one PASSED or DEFERRED, and every DEFERRED one covered by a recorded owner OK on a ticket that is not a Bug. A PASSED WITH DEFERRALS verdict with no DEFERRED case on record does not pass |
+| tray | Held | waiting on a deploy, data or access, or a TC BLOCKED; a passing verdict with a case still open; a PASSED WITH DEFERRALS verdict with no DEFERRED case on record |
 | tray | Held, "waiting for owner OK" | every case PASSED or DEFERRED and a DEFERRED one with no recorded OK: a passing verdict or the `tested` bucket would otherwise pass it. A ticket already held (the BLOCKED verdict of `shift-right-deferral.md` section 3) reads the same |
 | tray | Held, "a retest never passes on a deferral" | a Bug with a DEFERRED case, where it would otherwise pass, OK recorded or not; its card says so in whatever lane it is |
 | tray | Up next | not started |

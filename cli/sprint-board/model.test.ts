@@ -1231,8 +1231,69 @@ describe('shift-right deferral: DEFERRED never reads plain Passed without a reco
 
   test('deferralOkRecord returns the ids as the ticket spells them', () => {
     const t = state(base).tickets[0];
-    expect(deferralOkRecord(t, { cases: ['tc-2', 'TC-2'], pointer: ' http://tracker.example/c/1 ', at: NOW })).toEqual({ cases: ['TC-2'], pointer: 'http://tracker.example/c/1' });
-    expect(() => deferralOkRecord(t, { cases: ['TC-1'], pointer: 'https://x.example', at: NOW })).toThrow('shift-right-deferral.md §3');
+    expect(deferralOkRecord(t, { cases: ['tc-2', 'TC-2'], pointer: ` http://tracker.example/${K}/c/1 `, at: NOW })).toEqual({ cases: ['TC-2'], pointer: `http://tracker.example/${K}/c/1` });
+    expect(() => deferralOkRecord(t, { cases: ['TC-1'], pointer: `https://x.example/${K}`, at: NOW })).toThrow('shift-right-deferral.md §3');
+  });
+
+  const cite = (pointer: string, s = state(base)) => () => deferralOkRecord(s.tickets[0], { cases: ['TC-2'], pointer, at: NOW });
+  const SAID = 'owner OK given in session';
+
+  test('PASSED WITH DEFERRALS with no DEFERRED case on record passes nowhere', () => {
+    const executed = [tc(1, 'TC-1', 'PASSED'), verdict(2, 'PASSED WITH DEFERRALS')];
+    const bare = [verdict(2, 'PASSED WITH DEFERRALS')];
+    for (const [events, type] of [[executed, 'Story'], [bare, 'Story'], [bare, 'Bug']] as const) {
+      const s = state([...events], { type, status: 'QA Approved' });
+      const m = metrics(s);
+      expect([s.tickets[0].lane, m.byLane.Passed, m.verdicts.done, m.firstPass.of, m.burnup.at(-1)!.done]).toEqual(['Held', 0, 0, 0, 0]);
+      expect(toReportState(s).report!.tickets).toMatchObject({ tested: 1, signedOff: 0, notSignedOff: [K] });
+      expect(slackStatus(s.tickets[0])).toBe('🟡 Standby, blocked');
+    }
+  });
+
+  test('the in-session pointer is the whole text: the words, a comma and a real date and time', () => {
+    for (const at of ['2026-10-02 10:00', '2026-10-02 10:00:59', '2026-10-02 10:00Z', '2026-10-02 07:00-03:00', '2026-10-02 12:00:05+0200']) {
+      expect(cite(`${SAID}, ${at}`)).not.toThrow();
+    }
+    for (const pointer of [
+      `${SAID} was NOT given 2026-10-02 10:00`,
+      `${SAID}, 2026-10-02 10:00 was NOT given`,
+      `${SAID} 2026-10-02 10:00`,
+      `${SAID}, 2026-10-02T10:00`,
+      `${SAID}, 2026-02-30 10:00`,
+      `${SAID}, 2099-99-99 99:99`,
+      `${SAID}, 2026-10-02 24:00`,
+      `${SAID}, 2026-10-02 10:60`,
+      `${SAID}, 2026-10-02 10:00:60`,
+      `${SAID}, 2026-10-02 10:00+99:00`,
+    ]) { expect(cite(pointer)).toThrow('is not the in-session form'); }
+  });
+
+  test('the in-session time is neither in the future nor before the deferral, compared by the minute', () => {
+    const utc = (ms: number) => `${SAID}, ${new Date(ms).toISOString().slice(0, 16).replace('T', ' ')}Z`;
+    expect(cite(utc(Date.now()))).not.toThrow();
+    expect(cite(utc(Date.now() + 3 * 60_000))).toThrow('is in the future');
+    expect(cite(`${SAID}, 2020-01-01 10:00`)).toThrow('is earlier than the deferral of TC-2');
+    expect(cite(`${SAID}, 2026-10-01 09:59Z`)).toThrow('is earlier than the deferral of TC-2');
+    const late = state([ev('2026-10-01T10:00:45Z', 'tc', K, { tc: 'TC-2', status: 'DEFERRED', reason: 'external' })]);
+    expect(cite(`${SAID}, 2026-10-01 10:00Z`, late)).not.toThrow();
+  });
+
+  test('a URL pointer names the ticket as a whole token and, when the board knows the tracker link, sits on its host', () => {
+    const host = 'https://example.atlassian.net';
+    const linked = fold({ sprint, now: NOW, events: base, tracker: tracker({ [K]: { status: 'Ready for QA', link: `${host}/browse/${K}`, tcs: [] } }) });
+    for (const url of [`${host}/browse/${K}?focusedCommentId=10001`, `${host}/jira/board?selectedIssue=${K}`]) { expect(cite(url, linked)).not.toThrow(); }
+    for (const url of [host, `${host}/browse/${K}0`, `${host}/browse/X${K}`, 'https://demo-1.example.com/c/2']) { expect(cite(url)).toThrow(`does not name ${K}`); }
+    for (const url of [`https://evil.example/browse/${K}`, `https://example.atlassian.net@evil.example/browse/${K}`]) {
+      expect(cite(url, linked)).toThrow(`the tracker link of ${K} is on example.atlassian.net`);
+    }
+    expect(cite(`https://other.example/browse/${K}`)).not.toThrow();
+  });
+
+  test('a board answer cannot date a case the board never recorded as DEFERRED', () => {
+    const asked = [ev(day(2), 'need.open', K, { id: 'n1', question: 'defer TC-2?' }), { ...ev(day(3), 'need.answer', K, { id: 'n1', text: 'ok' }), by: 'owner' }];
+    const tracked = state(asked, { tcs: [{ id: 'TC-2', status: 'DEFERRED' }] });
+    expect(cite('board:n1', tracked)).toThrow('first record it with tc DEMO-1 TC-2 DEFERRED');
+    expect(cite('board:n1', state([tc(1, 'TC-2', 'DEFERRED'), ...asked]))).not.toThrow();
   });
 
   test('lapsedDeferrals: a covered case that left DEFERRED in the tracker, or moved after the OK', () => {

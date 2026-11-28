@@ -667,7 +667,7 @@ export const isPassVerdict = (v: Verdict): boolean => v === 'PASSED' || v === 'P
 
 export const deferralMark = (d: Deferral): string => d.label ?? NOT_FULLY_TESTED.en;
 
-export const deferralBlocks = (t: Pick<TicketView, 'deferral'>): boolean => Boolean(t.deferral && (t.deferral.bug || t.deferral.waiting.length));
+export const deferralBlocks = (t: Pick<TicketView, 'deferral' | 'verdict'>): boolean => (t.deferral ? t.deferral.bug || t.deferral.waiting.length > 0 : t.verdict === 'PASSED WITH DEFERRALS');
 
 // Names the deferral only when nothing else is open: a case still NOT RUN holds the ticket under its own reason.
 export function deferralHold(t: Pick<TicketView, 'deferral' | 'tcs'>): keyof typeof DEFERRAL_NOTES | null {
@@ -698,10 +698,33 @@ function deferralOf(tcs: TcView[], type: string | undefined, oks: Map<string, Om
   return { cases, waiting, bug: type === 'Bug', label, oks: records.size ? [...records.values()] : undefined };
 }
 
-const SESSION_OK_AT = /\d{4}-\d{2}-\d{2}[T ,]+\d{1,2}:\d{2}/;
+const SESSION_OK_FORM = new RegExp(`^${SESSION_OK}, (\\d{4})-(\\d{2})-(\\d{2}) (\\d{2}):(\\d{2})(?::(\\d{2}))?(Z|[+-]\\d{2}:?\\d{2})?$`);
 const BOARD_OK_LIMIT = 'A page answer proves it did not come through the CLI, not who typed it; the Story comment URL is preferred when both exist';
 
-export function deferralOkRecord(t: Pick<TicketView, 'id' | 'tcs' | 'needs'>, ok: { cases: string[], pointer: string, at: string }): { cases: string[], pointer: string } {
+const minuteOf = (ms: number): number => Math.floor(ms / 60_000);
+
+// Null for any other text and for a date or time that does not exist; with no offset the time is local.
+function sessionOkMinute(pointer: string): number | null {
+  const m = SESSION_OK_FORM.exec(pointer);
+  if (!m) { return null; }
+  const [year, month, day, hour, minute, second] = m.slice(1, 7).map(x => Number(x ?? 0));
+  const zone = m[7];
+  const utc = new Date(Date.UTC(year, month - 1, day, hour, minute));
+  const real = utc.getUTCFullYear() === year && utc.getUTCMonth() === month - 1 && utc.getUTCDate() === day && hour < 24 && minute < 60 && second < 60;
+  if (!real) { return null; }
+  if (!zone) { return minuteOf(new Date(year, month - 1, day, hour, minute).getTime()); }
+  if (zone === 'Z') { return minuteOf(utc.getTime()); }
+  const hours = Number(zone.slice(1, 3));
+  const minutes = Number(zone.slice(-2));
+  if (hours > 23 || minutes > 59) { return null; }
+  return minuteOf(utc.getTime()) - (zone.startsWith('+') ? 1 : -1) * (hours * 60 + minutes);
+}
+
+// A whole token, so KEY-1 is not found inside KEY-10.
+const namesTicket = (url: URL, id: string): boolean =>
+  new RegExp(`(?<![A-Za-z0-9_-])${id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![A-Za-z0-9_])`, 'i').test(`${url.pathname}${url.search}${url.hash}`);
+
+export function deferralOkRecord(t: Pick<TicketView, 'id' | 'tcs' | 'needs' | 'link'>, ok: { cases: string[], pointer: string, at: string }): { cases: string[], pointer: string } {
   const refuse = (why: string): never => { throw new Error(`${why}. See ${DEFERRAL_OK_RULE}`); };
   const deferred = new Map(t.tcs.filter(x => x.status === 'DEFERRED').map(x => [x.id.toUpperCase(), x]));
   const wanted = [...new Set(ok.cases.map(x => x.toUpperCase()))];
@@ -716,9 +739,18 @@ export function deferralOkRecord(t: Pick<TicketView, 'id' | 'tcs' | 'needs'>, ok
 
   const pointer = ok.pointer.trim();
   const accepted = { cases: cases.map(x => x.id), pointer };
-  if (/^https?:\/\/[^\s/]\S*$/i.test(pointer)) { return accepted; }
+  if (/^https?:\/\/[^\s/]\S*$/i.test(pointer)) {
+    const url = URL.canParse(pointer) ? new URL(pointer) : refuse(`--pointer "${pointer}" is not a URL`);
+    if (!namesTicket(url, t.id)) { refuse(`--pointer ${pointer} does not name ${t.id}: give the URL of the owner's comment on that item, read back from the tracker`); }
+    const host = t.link && URL.canParse(t.link) ? new URL(t.link).host : undefined;
+    if (host && url.host !== host) { refuse(`--pointer ${pointer} is on ${url.host}, but the tracker link of ${t.id} is on ${host}`); }
+    return accepted;
+  }
   if (pointer.startsWith(SESSION_OK)) {
-    if (!SESSION_OK_AT.test(pointer)) { refuse(`--pointer "${pointer}" carries no timestamp: write "${SESSION_OK}, <YYYY-MM-DD HH:MM>"`); }
+    const given = sessionOkMinute(pointer) ?? refuse(`--pointer "${pointer}" is not the in-session form: write exactly "${SESSION_OK}, <YYYY-MM-DD HH:MM>" with a real date and time (seconds, Z or an offset are optional, no offset reads as local time)`);
+    if (given > minuteOf(Date.now())) { refuse(`--pointer "${pointer}" is in the future (no offset reads as local time)`); }
+    const early = cases.find(x => x.source === 'board' && given < minuteOf(Date.parse(x.at ?? '')));
+    if (early) { refuse(`--pointer "${pointer}" is earlier than the deferral of ${early.id} (${early.at}): a case deferred afterwards needs its own OK`); }
     return accepted;
   }
   if (pointer.startsWith('board:')) {
@@ -727,6 +759,8 @@ export function deferralOkRecord(t: Pick<TicketView, 'id' | 'tcs' | 'needs'>, ok
     const need = own.find(n => n.id === id) ?? refuse(`--pointer ${pointer}: no question ${id || '(empty)'} on ${t.id} (${own.length} searched; cite it before it is resolved). ${BOARD_OK_LIMIT}`);
     if (!need.answer) { refuse(`--pointer ${pointer}: ${id} has no answer yet. ${BOARD_OK_LIMIT}`); }
     if (need.answeredBy !== 'owner') { refuse(`--pointer ${pointer}: ${id} was answered by ${need.answeredBy ?? '?'}, not by owner from the page. ${BOARD_OK_LIMIT}`); }
+    const undated = cases.find(x => x.source !== 'board');
+    if (undated) { refuse(`--pointer ${pointer}: the board has no deferral time for ${undated.id}, so the answer cannot be shown to come after it: first record it with tc ${t.id} ${undated.id} DEFERRED --reason "<why>" --at <when it was deferred> --by <writer>`); }
     const after = newerThan(need.answeredAt ?? '');
     if (after) { refuse(`--pointer ${pointer}: ${after.id} was recorded DEFERRED after that answer (${need.answeredAt}): a case deferred afterwards needs its own OK`); }
     return accepted;
@@ -754,13 +788,10 @@ export function laneOf(t: Omit<TicketView, 'lane' | 'laneSince' | 'atRisk' | 'dr
   if (t.needs.some(awaitsOwner)) { return 'Needs you'; }
   if (t.worker.state === 'running') { return 'Running'; }
   if (t.verdict === 'FAILED' || c.FAILED > 0) { return 'Failed'; }
-  // A PASSED verdict with a case still NOT RUN or BLOCKED, or a deferral nothing covers, is not Passed: it is Held.
+  // A passing verdict with a case still NOT RUN or BLOCKED, or that `deferralBlocks`, is not Passed: it is Held.
   const settled = c.PASSED + c.DEFERRED === c.total;
   const passed = deferralBlocks(t) ? 'Held' : 'Passed';
-  if (isPassVerdict(t.verdict)) {
-    if (c.total === 0) { return t.verdict === 'PASSED' ? 'Passed' : 'Held'; }
-    return settled ? passed : 'Held';
-  }
+  if (isPassVerdict(t.verdict)) { return settled ? passed : 'Held'; }
   if (t.hold || t.verdict === 'BLOCKED' || c.BLOCKED > 0) { return 'Held'; }
   // A closed sprint imported without verdict events: the tracker past the gate and every case settled.
   if (isTestedBucket(t.bucket) && (c.total === 0 ? t.type === 'Bug' : settled)) { return passed; }
