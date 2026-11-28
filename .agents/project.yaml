@@ -193,6 +193,20 @@ evidence:
   depth:
     default: none
     rules:
+      - {
+          paths:
+            [
+              '.github/workflows/**',
+              '.husky/**',
+              'scripts/edd.ts',
+              'scripts/lib/edd/**',
+              'scripts/git-policy.ts',
+              '.agents/edd/**',
+              'CODEOWNERS',
+              '.agents/skills/*/evidence.yaml',
+            ],
+          depth: standard,
+        }
       - { paths: ['**/*.md', 'docs/**', '.agents/instructions/**'], depth: none }
       - { paths: ['.agents/skills/**'], depth: none }
       - { paths: ['cli/sprint-board/app/**', 'cli/evidence-page/**'], depth: light }

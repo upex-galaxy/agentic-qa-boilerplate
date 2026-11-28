@@ -330,7 +330,7 @@ updater:
 # Evidence contract (EDD): what must be proven before a push or merge. Read by `bun run edd`
 # (scripts/edd.ts). `bun run git:policy` reads only the static[].id entries with `where` including
 # `ci`, as required check contexts beside `edd/evidence`. Not the same as board.evidence, which
-# lists hosts an evidence link may point at. Changing this block is a gate-key edit and needs a human.
+# lists hosts an evidence link may point at. Changing this block is a gate-key edit: the record marks it (touches_gate), nothing stops on it.
 evidence:
   # Skills whose `.agents/skills/<skill>/evidence.yaml` fragment adds checks. Fragments merge in this
   # order, then this block's own lists; duplicates by `id` resolve to this block.
@@ -352,11 +352,25 @@ evidence:
       envs: [local]
       min_depth: light
   # Proportional depth. Order: none < light < standard < deep. The agent may raise depth for a run,
-  # never lower it; lowering means editing this block, which needs a human.
+  # never lower it; lowering means editing this block, a gate-key edit the record marks.
   depth:
     default: none # depth for a file no rule matches
     # Each rule: {paths: [glob], depth}. A file takes the first matching rule; the change takes the highest depth over its files.
     rules:
+      - {
+          paths:
+            [
+              '.github/workflows/**',
+              '.husky/**',
+              'scripts/edd.ts',
+              'scripts/lib/edd/**',
+              'scripts/git-policy.ts',
+              '.agents/edd/**',
+              'CODEOWNERS',
+              '.agents/skills/*/evidence.yaml',
+            ],
+          depth: standard,
+        }
       - { paths: ['**/*.md', 'docs/**', '.agents/instructions/**'], depth: none }
       - { paths: ['.agents/skills/**'], depth: none }
       - { paths: ['cli/sprint-board/app/**', 'cli/evidence-page/**'], depth: light }
@@ -364,7 +378,7 @@ evidence:
       - { paths: ['tests/components/**', 'tests/fixtures/**', 'playwright.config.ts'], depth: deep }
   # What always needs a person.
   human:
-    paths: # gate paths: a change touching any of them needs a human
+    paths: # gate paths: the record and the PR block mark a change touching any of them (touches_gate); no verdict depends on it, and a depth rule gives them standard
       - '.github/workflows/**'
       - '.husky/**'
       - 'scripts/edd.ts'
