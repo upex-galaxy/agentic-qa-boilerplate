@@ -435,8 +435,16 @@ _fg_evidence_on() {
 # policy pushes exactly as before. The refs on stdin are read here and handed
 # back as stdin, so the gates after this one still see them.
 framework_gate_evidence() {
-  [ -f scripts/edd.ts ] || return 0
   _fg_evidence_on || return 0
+  if [ ! -f scripts/edd.ts ]; then
+    for _fg_ref in refs/remotes/origin/HEAD refs/remotes/origin/main refs/remotes/origin/master; do
+      if git cat-file -e "$_fg_ref:scripts/edd.ts" 2>/dev/null; then
+        echo "❌ The evidence policy is on and scripts/edd.ts is missing here but present on $_fg_ref: restore it, the gate cannot be skipped by deleting it."
+        return 1
+      fi
+    done
+    return 0
+  fi
   if [ -t 0 ]; then
     bun scripts/edd.ts gate
     return
