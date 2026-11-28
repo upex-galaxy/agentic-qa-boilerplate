@@ -201,6 +201,23 @@ describe('gate keys and branch contracts', () => {
   });
 });
 
+describe('verify --ci ready line', () => {
+  test('no assignee, a bad title and an unlinked key stay in the Ready line and fail nothing', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml('evidence:\n  depth:\n    default: none\n') });
+    r.git('checkout', '-q', '-b', 'feat/BK-12-x');
+    const head = r.commit('feat: x', { 'app/a.ts': '1\n' });
+    const event = join(r.dir, '..', 'event.json');
+    writeFileSync(event, JSON.stringify({ pull_request: { number: 1, title: 'Tighten spacing', body: '', assignees: [], base: { sha: base, ref: 'main' }, head: { sha: head, ref: 'feat/BK-12-x' } }, repository: { full_name: 'o/r' } }));
+    const p = Bun.spawnSync(['bun', EDD, 'verify', '--ci'], { cwd: r.dir, stdout: 'pipe', stderr: 'pipe', env: { ...process.env, GITHUB_EVENT_NAME: 'pull_request_target', GITHUB_EVENT_PATH: event, GITHUB_SHA: base, GH_TOKEN: '', GH_HOST: 'github.invalid', GITHUB_STEP_SUMMARY: '' } });
+    expect(p.exitCode).toBe(0);
+    const rec = JSON.parse(readFileSync(join(r.dir, '.session', 'evidence', `${head}.json`), 'utf8'));
+    expect(rec.ready).toMatchObject({ assignee: false, tracker_link: false, title_ok: false });
+    expect(rec.problems).toEqual([]);
+  });
+});
+
 describe('verify --ci output', () => {
   test('PR-controlled strings never reach stdout as workflow commands', () => {
     const r = makeRepo();

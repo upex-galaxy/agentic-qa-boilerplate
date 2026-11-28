@@ -99,7 +99,7 @@ export function renderMarkdown(rec: EvidenceRecord): string {
   }
   if (rec.ready) {
     const r = rec.ready;
-    lines.push(`Ready: threads open ${r.threads_open ?? 'unknown'}, bot review ${r.bot_review}, assignee ${r.assignee ? 'yes' : 'no'}, tracker link ${r.tracker_link ? 'yes' : 'no'}, title ${r.title_ok ? 'ok' : 'not conventional or too long'}. Threads and the bot review are a snapshot of this run, informational only; the ruleset enforces thread resolution.`, '');
+    lines.push(`Ready: threads open ${r.threads_open ?? 'unknown'}, bot review ${r.bot_review}, assignee ${r.assignee ? 'yes' : 'no'}, tracker link ${r.tracker_link ? 'yes' : 'no'}, title ${r.title_ok ? 'ok' : 'not conventional or too long'}. A snapshot of this run, informational only: it changes no verdict, and the ruleset enforces thread resolution.`, '');
   }
   if (rec.problems.length > 0) {
     lines.push('Problems:', '', ...rec.problems.map(p => `- ${cell(p)}`), '');

@@ -332,7 +332,7 @@ interface PullRequestEvent {
 
 const THREADS_QUERY = 'query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100){nodes{isResolved comments(first:1){nodes{author{login}}}}}}}}';
 
-function readyState(pr: PullRequestEvent, repo: string, loaded: LoadedContract, problems: string[]): ReadyState {
+function readyState(pr: PullRequestEvent, repo: string, loaded: LoadedContract): ReadyState {
   const [owner, name] = repo.split('/');
   const res = ghJson(['graphql', '-f', `query=${THREADS_QUERY}`, '-F', `owner=${owner}`, '-F', `name=${name}`, '-F', `number=${pr.number}`]) as { data?: { repository?: { pullRequest?: { reviewThreads?: { nodes?: { isResolved: boolean, comments?: { nodes?: { author?: { login?: string } }[] } }[] } } } } } | null;
   const threads = res?.data?.repository?.pullRequest?.reviewThreads?.nodes ?? null;
@@ -354,9 +354,6 @@ function readyState(pr: PullRequestEvent, repo: string, loaded: LoadedContract, 
     tracker_link: key === null || (pr.body ?? '').includes(key),
     title_ok: CONVENTIONAL.test(title) && title.length < 70,
   };
-  if (!state.assignee) { problems.push('the PR has no assignee'); }
-  if (!state.tracker_link) { problems.push(`the branch names ${key}, the PR body does not link it`); }
-  if (!state.title_ok) { problems.push('the PR title is not a conventional title under 70 characters'); }
   return state;
 }
 
@@ -415,7 +412,7 @@ function verifyCi(): number {
     return 0;
   }
   const agentic = verifyAgentic({ cwd: CWD, base, head, loaded, allowedSigners: !pr && base === EMPTY_TREE ? null : read(ALLOWED_SIGNERS) });
-  const ready = pr && repo ? readyState(pr, repo, loaded, problems) : null;
+  const ready = pr && repo ? readyState(pr, repo, loaded) : null;
   const rec = record({ sha: head, base, branch, repo, remoteRef: pr ? `refs/heads/${pr.base.ref}` : (ev.ref ?? null), flow, where: 'ci', loaded, read, agentic, statics: [], ready, touches: touches(changedFiles(CWD, base, head), loaded, head), problems });
   const path = writeRecord(PRIMARY, rec);
   const md = renderMarkdown(rec);
