@@ -11,8 +11,8 @@ import { AGENTIC_SCHEMA, collectChecks, evidenceMessage } from './lib/edd/attest
 import { ALLOWED_SIGNERS, ContractError, DEPTHS, gateKeysTouched, loadContract, readProjectDoc, refReader, sha256, treeReader } from './lib/edd/contract.ts';
 import { changeDepth, gatePathsTouched, requiredAgentic } from './lib/edd/depth.ts';
 import { changedFiles, cleanEnv, commitTime, EMPTY_TREE, git, isCommit, isZeroOid, mergeBase, primaryRoot, repoRoot, resolveCommit, treeOf } from './lib/edd/git.ts';
-import { patchId } from './lib/edd/patch-id.ts';
-import { artifactsRoot, pruneArtifacts, readRecord, RECORD_SCHEMA, RENDER_MARKER, renderMarkdown, writeRecord } from './lib/edd/record.ts';
+import { DiffTooLarge, patchId } from './lib/edd/patch-id.ts';
+import { artifactsRoot, pruneArtifacts, readRecord, RECORD_SCHEMA, RENDER_MARKER, renderMarkdown, scrubLine, writeRecord } from './lib/edd/record.ts';
 import { authorSessions, coverageProblems, isEvidenceCommit, testerProblems, verifyAgentic } from './lib/edd/verify.ts';
 
 const USAGE = `Usage: bun run edd <command>
@@ -62,8 +62,12 @@ function positional(): string[] {
   return out;
 }
 
+function say(line: string): void {
+  console.log(scrubLine(line));
+}
+
 function die(msg: string): never {
-  console.error(`edd: ${msg}`);
+  console.error(scrubLine(`edd: ${msg}`));
   process.exit(1);
 }
 
@@ -115,7 +119,7 @@ function runStatic(checks: StaticCheck[]): StaticResult[] {
       out.push({ id: c.id, cmd: c.cmd, exit: null, ms: 0, output_sha256: null, ran_at: null, skipped: `${failed} failed first` });
       continue;
     }
-    console.log(`edd: running ${c.id}: ${c.cmd}`);
+    say(`edd: running ${c.id}: ${c.cmd}`);
     const ranAt = new Date().toISOString();
     const t0 = performance.now();
     const p = Bun.spawnSync(['sh', '-c', c.cmd], { cwd: CWD, stdout: 'pipe', stderr: 'pipe', env: cleanEnv() });
@@ -226,13 +230,21 @@ async function gate(): Promise<number> {
     const files = changedFiles(CWD, base, r.localSha);
     const agentic = isProtected
       ? verifyAgentic({ cwd: CWD, base, head: r.localSha, loaded, allowedSigners: base === EMPTY_TREE ? null : refReader(CWD, base)(ALLOWED_SIGNERS) })
-      : (() => { const d = changeDepth(files, loaded.contract.depth); return emptyAgentic(d.depth, d.reasons, patchId(CWD, base, r.localSha)); })();
+      : (() => {
+          const d = changeDepth(files, loaded.contract.depth);
+          try { return emptyAgentic(d.depth, d.reasons, patchId(CWD, base, r.localSha)); }
+          catch (e) {
+            if (!(e instanceof DiffTooLarge)) { throw e; }
+            return { ...emptyAgentic(d.depth, d.reasons, 'unknown'), ok: false, problems: [e.message] };
+          }
+        })();
     const rec = record({ sha: r.localSha, base, branch, repo: originSlug(), remoteRef: r.remoteRef, flow: isProtected ? 'direct' : 'pr', where: 'pre-push', loaded, read, agentic, statics, ready: null, touches: touches(files, loaded, r.localSha), problems });
     const path = writeRecord(PRIMARY, rec);
-    console.log(`edd gate: ${rec.result.toUpperCase()} ${r.localSha.slice(0, 12)} -> ${r.remoteRef} (depth ${rec.contract.depth}). Record: ${path}`);
-    for (const p of rec.problems) { console.log(`  - ${p}`); }
-    for (const s of rec.static.filter(x => x.exit !== 0 && !x.skipped)) { console.log(`  - ${s.id} exited ${s.exit}: ${s.cmd}`); }
-    if (rec.touches_gate.touched) { console.log(`  touches gate files (informational): ${[...rec.touches_gate.paths, ...rec.touches_gate.keys].join(', ')}`); }
+    say(`edd gate: ${rec.result.toUpperCase()} ${r.localSha.slice(0, 12)} -> ${r.remoteRef} (depth ${rec.contract.depth}). Record: ${path}`);
+    for (const p of rec.problems) { say(`  - ${p}`); }
+    for (const s of rec.static.filter(x => x.exit !== 0 && !x.skipped)) { say(`  - ${s.id} exited ${s.exit}: ${s.cmd}`); }
+    if (rec.touches_gate.touched) { say(`  touches gate files (informational): ${[...rec.touches_gate.paths, ...rec.touches_gate.keys].join(', ')}`); }
+    if (rec.result === 'fail' && !loaded.declared) { say('  .agents/project.yaml declares no evidence: block, so the gate ran the shipped default (format:check, lint:check, types:check, test:unit or unit where package.json has them). Declare evidence.static (and depth, agentic) to choose the checks.'); }
     if (rec.result === 'fail') { failed = true; }
   }
   return failed ? 1 : 0;
@@ -249,20 +261,22 @@ async function attest(): Promise<number> {
   if (git(CWD, ['status', '--porcelain', '--untracked-files=no']).out.trim()) { return die('tracked files have uncommitted changes: commit them before attesting'); }
   const raise = flag('--depth');
   if (raise !== null && !(DEPTHS as readonly string[]).includes(raise)) { return die(`--depth must be one of ${DEPTHS.join(', ')}`); }
-  const loaded = load(refReader(CWD, base), baseRef);
-  for (const w of loaded.warnings) { console.log(`edd: warning: ${w}`); }
+  const contractRef = `origin/${wt.facts.production}`;
+  const contractSha = resolveCommit(CWD, contractRef) ?? base;
+  const loaded = load(refReader(CWD, contractSha), contractSha === base ? baseRef : contractRef);
+  for (const w of loaded.warnings) { say(`edd: warning: ${w}`); }
   const { depth } = changeDepth(changedFiles(CWD, base, subject), loaded.contract.depth, raise as Depth | null);
   const required = requiredAgentic(loaded.contract.agentic, depth);
   if (required.length === 0) {
-    console.log(`edd attest: depth ${depth} requires no agentic evidence; nothing to attest.`);
+    say(`edd attest: depth ${depth} requires no agentic evidence; nothing to attest.`);
     return 0;
   }
   const root = artifactsRoot(PRIMARY, subject);
   const { checks, problems } = collectChecks({ root, required, depth, subjectTime: commitTime(CWD, subject), environments: loaded.facts.environments, tester: flag('--tester') ?? process.env.EDD_TESTER ?? null });
   problems.push(...coverageProblems(required, checks, depth), ...testerProblems(checks, authorSessions(CWD, base, subject), depth));
   if (problems.length > 0) {
-    console.error(`edd attest: refused for ${subject.slice(0, 12)} at depth ${depth} (artifacts: ${root})`);
-    for (const p of [...new Set(problems)]) { console.error(`  - ${p}`); }
+    say(`edd attest: refused for ${subject.slice(0, 12)} at depth ${depth} (artifacts: ${root})`);
+    for (const p of [...new Set(problems)]) { say(`  - ${p}`); }
     return 1;
   }
   const id = identity();
@@ -272,10 +286,10 @@ async function attest(): Promise<number> {
     const file = join(dir, 'MSG');
     writeFileSync(file, msg);
     const p = Bun.spawnSync(['git', 'commit', '--allow-empty', '-S', '-F', file], { cwd: CWD, stdout: 'inherit', stderr: 'inherit', stdin: 'inherit' });
-    if (p.exitCode !== 0) { console.error('edd attest: git commit failed; nothing was created'); return 1; }
+    if (p.exitCode !== 0) { say('edd attest: git commit failed; nothing was created'); return 1; }
   }
   finally { rmSync(dir, { recursive: true, force: true }); }
-  console.log(`edd attest: evidence commit ${resolveCommit(CWD, 'HEAD')?.slice(0, 12)} attests ${subject.slice(0, 12)} at depth ${depth}.`);
+  say(`edd attest: evidence commit ${resolveCommit(CWD, 'HEAD')?.slice(0, 12)} attests ${subject.slice(0, 12)} at depth ${depth}.`);
   return 0;
 }
 
@@ -287,8 +301,8 @@ function verifyLocal(): number {
   if (!base || !head) { return die('base or head is not a commit'); }
   const read = refReader(CWD, base);
   const v = verifyAgentic({ cwd: CWD, base, head, loaded: load(read, baseRef), allowedSigners: read(ALLOWED_SIGNERS) });
-  console.log(`edd verify: ${v.ok ? 'PASS' : 'FAIL'} depth ${v.depth}, required [${v.required.join(', ')}], evidence ${v.evidenceCommit?.slice(0, 12) ?? 'none'}, signature ${v.signature}`);
-  for (const p of v.problems) { console.log(`  - ${p}`); }
+  say(`edd verify: ${v.ok ? 'PASS' : 'FAIL'} depth ${v.depth}, required [${v.required.join(', ')}], evidence ${v.evidenceCommit?.slice(0, 12) ?? 'none'}, signature ${v.signature}`);
+  for (const p of v.problems) { say(`  - ${p}`); }
   return v.ok ? 0 : 1;
 }
 
@@ -347,7 +361,7 @@ function upsertComment(repo: string, number: number, body: string): void {
   const args = id
     ? ['-X', 'PATCH', `repos/${repo}/issues/comments/${id}`, '-f', `body=${body}`]
     : ['-X', 'POST', `repos/${repo}/issues/${number}/comments`, '-f', `body=${body}`];
-  if (ghJson(args) === null) { console.log('edd: warning: the PR comment could not be written'); }
+  if (ghJson(args) === null) { say('edd: warning: the PR comment could not be written'); }
 }
 
 function verifyCi(): number {
@@ -380,24 +394,27 @@ function verifyCi(): number {
     flow = 'direct';
   }
   else { return die(`verify --ci handles pull_request_target and push, not ${eventName || 'no event'}`); }
-  const read = base === EMPTY_TREE ? refReader(CWD, head) : refReader(CWD, base);
-  const loaded = load(read, base === EMPTY_TREE ? head : base);
+  const trusted = pr ? (resolveCommit(CWD, process.env.GITHUB_SHA ?? 'HEAD') ?? resolveCommit(CWD, 'HEAD')) : null;
+  const source = pr ? trusted : (base === EMPTY_TREE ? head : base);
+  if (!source) { return die('the default branch commit of the checkout cannot be resolved'); }
+  const read = refReader(CWD, source);
+  const loaded = load(read, pr ? `default branch ${source}` : source);
   if (pr && pr.base.ref !== loaded.facts.production) { flow = 'chain'; }
   if (eventName === 'push' && (branch === null || !loaded.facts.protected.includes(branch))) {
-    console.log(`edd verify: ${ev.ref} is not a protected branch in the base contract; nothing to verify.`);
+    say(`edd verify: ${ev.ref} is not a protected branch in the base contract; nothing to verify.`);
     return 0;
   }
   if (eventName === 'push' && loaded.facts.policy !== 'evidence') {
-    console.log(`edd verify: direct_push_to_protected is ${loaded.facts.policy ?? 'unset'} at the base, not evidence; a direct push carries no evidence to verify.`);
+    say(`edd verify: direct_push_to_protected is ${loaded.facts.policy} at the base, not evidence; a direct push carries no evidence to verify.`);
     return 0;
   }
-  const agentic = verifyAgentic({ cwd: CWD, base, head, loaded, allowedSigners: base === EMPTY_TREE ? null : read(ALLOWED_SIGNERS) });
+  const agentic = verifyAgentic({ cwd: CWD, base, head, loaded, allowedSigners: !pr && base === EMPTY_TREE ? null : read(ALLOWED_SIGNERS) });
   const ready = pr && repo ? readyState(pr, repo, loaded, problems) : null;
   const rec = record({ sha: head, base, branch, repo, remoteRef: pr ? `refs/heads/${pr.base.ref}` : (ev.ref ?? null), flow, where: 'ci', loaded, read, agentic, statics: [], ready, touches: touches(changedFiles(CWD, base, head), loaded, head), problems });
   const path = writeRecord(PRIMARY, rec);
   const md = renderMarkdown(rec);
-  console.log(`edd verify --ci: ${rec.result.toUpperCase()} ${head.slice(0, 12)}. Record: ${path}`);
-  for (const p of rec.problems) { console.log(`  - ${p}`); }
+  say(`edd verify --ci: ${rec.result.toUpperCase()} ${head.slice(0, 12)}. Record: ${path}`);
+  for (const p of rec.problems) { say(`  - ${p}`); }
   if (process.env.GITHUB_STEP_SUMMARY) { appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${md}\n`); }
   if (pr && repo && process.env.GH_TOKEN) { upsertComment(repo, pr.number, md); }
   return rec.result === 'pass' ? 0 : 1;
@@ -408,8 +425,21 @@ function render(): number {
   const sha = resolveCommit(CWD, ref);
   if (!sha) { return die(`${ref} is not a commit`); }
   const rec = readRecord(PRIMARY, sha);
-  if (!rec) { return die(`no evidence record for ${sha.slice(0, 12)}: the pre-push gate writes it on push`); }
-  console.log(renderMarkdown(rec));
+  if (rec) {
+    console.log(renderMarkdown(rec));
+    say(`<!-- rendered from the record ${sha.slice(0, 12)}.json -->`);
+    return 0;
+  }
+  const wt = load(treeReader(CWD), 'working tree');
+  const baseRef = flag('--base') ?? `origin/${wt.facts.production}`;
+  const baseTip = resolveCommit(CWD, baseRef);
+  const base = baseTip ? (mergeBase(CWD, sha, baseTip) ?? EMPTY_TREE) : EMPTY_TREE;
+  const read = baseTip ? refReader(CWD, baseTip) : treeReader(CWD);
+  const loaded = load(read, baseTip ? baseRef : 'working tree');
+  const agentic = verifyAgentic({ cwd: CWD, base, head: sha, loaded, allowedSigners: baseTip ? read(ALLOWED_SIGNERS) : null });
+  const fresh = record({ sha, base, branch: null, repo: originSlug(), remoteRef: null, flow: 'pr', where: 'pre-push', loaded, read, agentic, statics: [], ready: null, touches: touches(changedFiles(CWD, base, sha), loaded, sha), problems: [] });
+  console.log(renderMarkdown(fresh));
+  say(`<!-- no record for ${sha.slice(0, 12)}: rendered from a fresh verification of ${baseRef}...${sha.slice(0, 12)}; static checks were not run, the pre-push gate or CI runs them -->`);
   return 0;
 }
 
@@ -420,8 +450,8 @@ function prune(): number {
   if (!Number.isFinite(days) || days < 0) { return die('--days must be a non-negative number'); }
   const dry = has('--dry-run');
   const r = pruneArtifacts(PRIMARY, days, Date.now(), dry);
-  console.log(`edd prune: ${dry ? 'would delete' : 'deleted'} ${r.deleted.length} artifact folder(s) older than ${days} day(s), kept ${r.kept.length}; records are never deleted.`);
-  for (const d of r.deleted) { console.log(`  - ${d}`); }
+  say(`edd prune: ${dry ? 'would delete' : 'deleted'} ${r.deleted.length} artifact folder(s) older than ${days} day(s), kept ${r.kept.length}; records are never deleted.`);
+  for (const d of r.deleted) { say(`  - ${d}`); }
   return 0;
 }
 
@@ -433,10 +463,10 @@ function check(): number {
   const wt = base ? load(refReader(CWD, base), base) : load(treeReader(CWD), 'working tree');
   const s = wt.contract.static.find(c => c.id === id && c.where.includes('ci'));
   if (!s) {
-    console.log(`edd check: ${id} is not a ci check of the evidence contract; nothing to run.`);
+    say(`edd check: ${id} is not a ci check of the evidence contract; nothing to run.`);
     return 0;
   }
-  console.log(`edd check ${id}: ${s.cmd} (contract read from ${wt.source})`);
+  say(`edd check ${id}: ${s.cmd} (contract read from ${wt.source})`);
   const p = Bun.spawnSync(['sh', '-c', s.cmd], { cwd: CWD, stdout: 'inherit', stderr: 'inherit', env: cleanEnv() });
   return p.exitCode ?? 1;
 }

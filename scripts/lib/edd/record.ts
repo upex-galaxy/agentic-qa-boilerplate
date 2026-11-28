@@ -25,6 +25,10 @@ export interface EvidenceRecord {
   written_at: string
 }
 
+export function scrubLine(s: string): string {
+  return s.replace(/[\r\n\u2028\u2029]+/g, ' ').replace(/::/g, ': :').replace(/##\[/g, '## [').replace(/%0[AD]/gi, ' ');
+}
+
 export function evidenceDir(primary: string): string {
   return join(primary, '.session', 'evidence');
 }

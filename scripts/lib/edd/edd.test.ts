@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, utimesSync, writeFile
 import { join } from 'node:path';
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { AGENTIC_SCHEMA, collectChecks, evidenceMessage, parseEvidenceMessage } from './attest.ts';
+import { AGENTIC_SCHEMA, collectChecks, evidenceMessage, parseEvidenceMessage, readEvidenceMessage } from './attest.ts';
 import { contractDigest, ContractError, gateKeysTouched, loadContract, readProjectDoc, refReader, sha256, treeReader } from './contract.ts';
 import { changeDepth, gatePathsTouched, requiredAgentic } from './depth.ts';
 import { makeRepo, projectYaml } from './fixture.ts';
@@ -117,6 +117,14 @@ depth:
     const atBase = loadContract(refReader(r.dir, base), base);
     expect(atBase.digest).toBe(digest);
     expect(loadContract(treeReader(r.dir), 'wt').digest).not.toBe(digest);
+  });
+
+  test('a missing block, key or null value reads as evidence; only forbidden, confirm, allowed turn it off', () => {
+    const facts = (yaml: string): string => loadContract(() => yaml, 'x').facts.policy;
+    expect(facts('project:\n  x: 1\n')).toBe('evidence');
+    expect(facts(projectYaml('', 'null'))).toBe('evidence');
+    expect(facts(projectYaml('', 'typo'))).toBe('evidence');
+    for (const p of ['forbidden', 'confirm', 'allowed']) { expect(facts(projectYaml('', p))).toBe(p); }
   });
 
   test('gateKeysTouched names the gate keys whose value changed', () => {
@@ -316,6 +324,36 @@ describe('verifyAgentic', () => {
     const loaded = loadContract(refReader(r.dir, base), base);
     expect(verifyAgentic({ cwd: r.dir, base, head, loaded, allowedSigners: null, signatureOf: VALID }).ok).toBe(true);
     expect(gatePathsTouched(['.github/workflows/ci.yml'], loaded.contract.human.paths)).toHaveLength(1);
+  });
+});
+
+describe('malformed evidence and caps', () => {
+  test('a non-string verdict_by is a verification failure, never an exception', () => {
+    const { r, base, digest } = setup();
+    r.commit('feat: x', { 'app/a.ts': '1\n' });
+    const subject = r.git('rev-parse', 'HEAD');
+    const line = JSON.stringify({ schema: AGENTIC_SCHEMA, subject, patch_id: patchId(r.dir, base, subject), depth: 'light', contract_digest: digest, checks: [{ id: 'screens', verdict: 'pass', verdict_by: 42, env: 'local', artifacts: [] }] });
+    writeFileSync(join(r.dir, '..', 'MSG'), `test(evidence): attest x light\n\n${line}\n`);
+    r.git('commit', '-q', '--allow-empty', '-F', join(r.dir, '..', 'MSG'));
+    const head = r.git('rev-parse', 'HEAD');
+    const v = verifyAgentic({ cwd: r.dir, base, head, loaded: loadContract(refReader(r.dir, base), base), allowedSigners: null, signatureOf: VALID });
+    expect(v.ok).toBe(false);
+    expect(v.problems.join(' ')).toContain('checks[0].verdict_by is not a string');
+    expect(readEvidenceMessage(`test(evidence): attest x\n\n{"schema":"edd-agentic/1",${'"a":1,'.repeat(20000)}"b":1}`)).toMatchObject({ ok: false });
+  });
+
+  test('a range over the commit cap or a diff over the byte cap fails closed', () => {
+    const { r, base } = setup();
+    r.commit('feat: a', { 'app/a.ts': '1\n' });
+    r.commit('feat: b', { 'app/b.ts': 'x'.repeat(1000) });
+    const head = r.commit('feat: c', { 'app/c.ts': '3\n' });
+    const loaded = loadContract(refReader(r.dir, base), base);
+    const many = verifyAgentic({ cwd: r.dir, base, head, loaded, allowedSigners: null, limits: { commits: 2 } });
+    expect(many).toMatchObject({ ok: false });
+    expect(many.problems[0]).toContain('over the 2-commit cap');
+    const big = verifyAgentic({ cwd: r.dir, base, head, loaded, allowedSigners: null, limits: { diffBytes: 100 } });
+    expect(big.ok).toBe(false);
+    expect(big.problems[0]).toContain('over the 100-byte cap');
   });
 });
 

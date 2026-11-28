@@ -154,13 +154,56 @@ function trailer(msg: string, key: string): string | null {
   return m ? m[1] : null;
 }
 
+export const MAX_MESSAGE_BYTES = 256 * 1024;
+export const MAX_LINE_BYTES = 64 * 1024;
+
+export function looksLikeEvidence(subjectLine: string): boolean {
+  return subjectLine.startsWith(EVIDENCE_SUBJECT_PREFIX);
+}
+
+const str = (v: unknown): v is string => typeof v === 'string';
+
+export function payloadProblem(p: unknown): string | null {
+  if (p === null || typeof p !== 'object' || Array.isArray(p)) { return 'the evidence line is not a JSON object'; }
+  const o = p as Record<string, unknown>;
+  if (o.schema !== AGENTIC_SCHEMA) { return `schema is not ${AGENTIC_SCHEMA}`; }
+  for (const k of ['subject', 'patch_id', 'depth', 'contract_digest']) {
+    if (!str(o[k])) { return `${k} is not a string`; }
+  }
+  if (!Array.isArray(o.checks)) { return 'checks is not a list'; }
+  for (const [i, c] of o.checks.entries()) {
+    if (c === null || typeof c !== 'object' || Array.isArray(c)) { return `checks[${i}] is not an object`; }
+    const e = c as Record<string, unknown>;
+    for (const k of ['id', 'verdict', 'verdict_by', 'env']) {
+      if (!str(e[k])) { return `checks[${i}].${k} is not a string`; }
+    }
+    if (e.claim !== undefined && !str(e.claim)) { return `checks[${i}].claim is not a string`; }
+    if (!Array.isArray(e.artifacts)) { return `checks[${i}].artifacts is not a list`; }
+    for (const [j, a] of e.artifacts.entries()) {
+      const r = a as Record<string, unknown> | null;
+      if (r === null || typeof r !== 'object' || !str(r.path) || !str(r.sha256) || typeof r.bytes !== 'number') { return `checks[${i}].artifacts[${j}] needs string path and sha256 and a number bytes`; }
+    }
+  }
+  return null;
+}
+
+export type EvidenceParse = { ok: true, evidence: ParsedEvidence } | { ok: false, problem: string };
+
+export function readEvidenceMessage(msg: string): EvidenceParse {
+  if (!looksLikeEvidence(msg)) { return { ok: false, problem: 'not an evidence commit' }; }
+  if (Buffer.byteLength(msg) > MAX_MESSAGE_BYTES) { return { ok: false, problem: `the evidence message is over ${MAX_MESSAGE_BYTES} bytes` }; }
+  const line = msg.split('\n').find(l => l.startsWith('{'));
+  if (!line) { return { ok: false, problem: 'the evidence message has no JSON line' }; }
+  if (Buffer.byteLength(line) > MAX_LINE_BYTES) { return { ok: false, problem: `the evidence line is over ${MAX_LINE_BYTES} bytes` }; }
+  let payload: unknown;
+  try { payload = JSON.parse(line); }
+  catch { return { ok: false, problem: 'the evidence line is not valid JSON' }; }
+  const bad = payloadProblem(payload);
+  if (bad !== null) { return { ok: false, problem: `the evidence line is malformed: ${bad}` }; }
+  return { ok: true, evidence: { payload: payload as AgenticPayload, line, subject: trailer(msg, 'Evidence-Subject'), patchId: trailer(msg, 'Evidence-Patch-Id'), digest: trailer(msg, 'Evidence-Digest') } };
+}
+
 export function parseEvidenceMessage(msg: string): ParsedEvidence | null {
-  if (!msg.startsWith(EVIDENCE_SUBJECT_PREFIX)) { return null; }
-  const line = msg.split('\n').find(l => l.startsWith('{') && l.includes(`"schema":"${AGENTIC_SCHEMA}"`));
-  if (!line) { return null; }
-  let payload: AgenticPayload;
-  try { payload = JSON.parse(line) as AgenticPayload; }
-  catch { return null; }
-  if (payload?.schema !== AGENTIC_SCHEMA || !Array.isArray(payload.checks)) { return null; }
-  return { payload, line, subject: trailer(msg, 'Evidence-Subject'), patchId: trailer(msg, 'Evidence-Patch-Id'), digest: trailer(msg, 'Evidence-Digest') };
+  const r = readEvidenceMessage(msg);
+  return r.ok ? r.evidence : null;
 }

@@ -5,11 +5,13 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { parseEvidenceMessage } from './attest.ts';
+import { looksLikeEvidence, readEvidenceMessage } from './attest.ts';
 import { DEPTHS, sha256 } from './contract.ts';
 import { changeDepth, depthRank, requiredAgentic } from './depth.ts';
-import { changedFiles, commitMessage, git, parentsOf, rangeCommits, trailerValues, treeOf } from './git.ts';
-import { patchId } from './patch-id.ts';
+import { changedFiles, commitMessage, git, parentsOf, rangeCount, rangeLog, treeOf } from './git.ts';
+import { DiffTooLarge, MAX_DIFF_BYTES, patchId } from './patch-id.ts';
+
+export const MAX_COMMITS = 2000;
 
 export type Signature = 'valid' | 'invalid' | 'absent';
 
@@ -33,15 +35,15 @@ export interface VerifyInput {
   loaded: LoadedContract
   allowedSigners: string | null
   signatureOf?: (sha: string) => { signature: Signature, signer: string | null }
+  limits?: { commits?: number, diffBytes?: number }
 }
 
 export function isEvidenceCommit(cwd: string, sha: string): boolean {
-  return parseEvidenceMessage(commitMessage(cwd, sha)) !== null;
+  return looksLikeEvidence(commitMessage(cwd, sha));
 }
 
 export function findEvidenceCommit(cwd: string, base: string, head: string): string | null {
-  const range = rangeCommits(cwd, base, head);
-  return range.find(c => isEvidenceCommit(cwd, c)) ?? null;
+  return rangeLog(cwd, base, head).find(c => looksLikeEvidence(c.subject))?.sha ?? null;
 }
 
 export interface Authors { sessions: string[], unlabeled: string[] }
@@ -49,10 +51,10 @@ export interface Authors { sessions: string[], unlabeled: string[] }
 export function authorSessions(cwd: string, base: string, head: string): Authors {
   const s = new Set<string>();
   const unlabeled: string[] = [];
-  for (const c of rangeCommits(cwd, base, head)) {
-    if (isEvidenceCommit(cwd, c)) { continue; }
-    const known = trailerValues(cwd, c, 'Session').filter(v => v && v !== 'unknown');
-    if (known.length === 0) { unlabeled.push(c); }
+  for (const c of rangeLog(cwd, base, head)) {
+    if (looksLikeEvidence(c.subject)) { continue; }
+    const known = c.sessions.filter(v => v && v !== 'unknown');
+    if (known.length === 0) { unlabeled.push(c.sha); }
     for (const v of known) { s.add(v); }
   }
   return { sessions: [...s], unlabeled };
@@ -92,7 +94,7 @@ export function checkSignature(cwd: string, sha: string, allowedSigners: string 
   try {
     const file = join(dir, 'allowed_signers');
     writeFileSync(file, allowedSigners);
-    const r = git(cwd, ['-c', `gpg.ssh.allowedSignersFile=${file}`, 'log', '-1', '--format=%G?%x00%GF', sha]);
+    const r = git(cwd, ['-c', `gpg.ssh.allowedSignersFile=${file}`, '-c', 'gpg.openpgp.program=false', '-c', 'gpg.x509.program=false', 'log', '-1', '--format=%G?%x00%GF', sha]);
     const [status, fp] = r.out.trim().split('\0');
     if (r.code !== 0) { return { signature: 'invalid', signer: null }; }
     if (status === 'N') { return { signature: 'absent', signer: null }; }
@@ -101,12 +103,24 @@ export function checkSignature(cwd: string, sha: string, allowedSigners: string 
   finally { rmSync(dir, { recursive: true, force: true }); }
 }
 
+function refused(problem: string): AgenticVerdict {
+  return { ok: false, required: [], depth: 'none', depthReasons: [], patchId: 'unknown', evidenceCommit: null, signature: 'absent', signer: null, checks: [], problems: [problem] };
+}
+
 export function verifyAgentic(input: VerifyInput): AgenticVerdict {
   const { cwd, base, head, loaded } = input;
+  const maxCommits = input.limits?.commits ?? MAX_COMMITS;
+  const count = rangeCount(cwd, base, head);
+  if (count > maxCommits) { return refused(`the range has ${count} commits, over the ${maxCommits}-commit cap: verification refused, split the change`); }
+  let pid: string;
+  try { pid = patchId(cwd, base, head, input.limits?.diffBytes ?? MAX_DIFF_BYTES); }
+  catch (e) {
+    if (e instanceof DiffTooLarge) { return refused(`${e.message}; verification refused`); }
+    throw e;
+  }
   const files = changedFiles(cwd, base, head);
   const { depth, reasons } = changeDepth(files, loaded.contract.depth);
   const required = requiredAgentic(loaded.contract.agentic, depth);
-  const pid = patchId(cwd, base, head);
   const verdict: AgenticVerdict = { ok: true, required: required.map(r => r.id), depth, depthReasons: reasons, patchId: pid, evidenceCommit: null, signature: 'absent', signer: null, checks: [], problems: [] };
   const evidence = findEvidenceCommit(cwd, base, head);
   if (required.length === 0 && evidence === null) { return verdict; }
@@ -117,8 +131,9 @@ export function verifyAgentic(input: VerifyInput): AgenticVerdict {
     return verdict;
   }
   verdict.evidenceCommit = evidence;
-  const parsed = parseEvidenceMessage(commitMessage(cwd, evidence));
-  if (parsed === null) { problems.push(`${evidence.slice(0, 12)}: evidence message cannot be parsed`); verdict.ok = false; return verdict; }
+  const read = readEvidenceMessage(commitMessage(cwd, evidence));
+  if (!read.ok) { problems.push(`${evidence.slice(0, 12)}: ${read.problem}`); verdict.ok = false; return verdict; }
+  const parsed = read.evidence;
   const { payload } = parsed;
   verdict.checks = payload.checks;
   const parents = parentsOf(cwd, evidence);

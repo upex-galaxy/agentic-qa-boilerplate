@@ -81,8 +81,24 @@ export function diffRange(base: string, head: string): string[] {
 }
 
 export function changedFiles(cwd: string, base: string, head: string): string[] {
-  const out = gitOk(cwd, ['diff', '--name-only', '--no-renames', ...diffRange(base, head)]);
+  const out = gitOk(cwd, ['diff', '--no-textconv', '--no-ext-diff', '--name-only', '--no-renames', ...diffRange(base, head)]);
   return out.split('\n').map(s => s.trim()).filter(Boolean);
+}
+
+export function rangeCount(cwd: string, base: string, head: string): number {
+  const range = base === EMPTY_TREE ? [head] : [head, '--not', base];
+  return Number(gitOk(cwd, ['rev-list', '--count', ...range]));
+}
+
+export interface RangeCommit { sha: string, subject: string, sessions: string[] }
+
+export function rangeLog(cwd: string, base: string, head: string): RangeCommit[] {
+  const range = base === EMPTY_TREE ? [head] : [head, '--not', base];
+  const out = gitOk(cwd, ['log', '--format=%H%x00%s%x00%(trailers:key=Session,valueonly,separator=%x01)%x1e', ...range]);
+  return out.split('\x1E').map(s => s.replace(/^\n+/, '')).filter(Boolean).map((rec) => {
+    const [sha, subject = '', sessions = ''] = rec.split('\0');
+    return { sha: sha.trim(), subject, sessions: sessions.split('\x01').map(v => v.trim()).filter(Boolean) };
+  });
 }
 
 export function rangeCommits(cwd: string, base: string, head: string): string[] {
