@@ -35,7 +35,9 @@ env:
 
 jobs:
   UnitTests:
-    name: bun test + repo gates
+    # Named `unit`: the evidence contract's static check id (evidence.static in
+    # .agents/project.yaml), which a ruleset can require by this name.
+    name: unit
     # A PR from this repository already got the push run on the same commit,
     # and GitHub shows that run on the PR. Only a fork PR (no push run here)
     # needs its own. A manual dispatch always runs.
@@ -107,6 +109,44 @@ jobs:
       - name: Unit Tests
         if: steps.upstream.outputs.enforced == 'true'
         run: bun test
+
+  ContractChecks:
+    # One check per ci id of the evidence contract (evidence.static in
+    # .agents/project.yaml), named by the id so a ruleset can require it. The
+    # command comes from the contract, not from this file. `unit` is the
+    # UnitTests job above.
+    name: ${{ matrix.id }}
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        id: [format, lint, types, repo-gates]
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Contract Check
+        env:
+          CHECK_ID: ${{ matrix.id }}
+        run: |
+          if [ -f scripts/edd.ts ]; then
+            bun scripts/edd.ts check "$CHECK_ID"
+          else
+            echo "scripts/edd.ts is not in this checkout: $CHECK_ID has nothing to run"
+          fi
 
   UpstreamGate:
     name: boilerplate checkout?
