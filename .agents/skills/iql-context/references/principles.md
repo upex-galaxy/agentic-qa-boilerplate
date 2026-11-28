@@ -100,7 +100,7 @@ section (detail in `agentic-contract.md` of this skill):
 | Human in both | Where the repo holds it |
 |---|---|
 | Approval of every ROI verdict | `agentic-qa-core/references/stage-gates.md` (Documentation, "The person signs") |
-| Approval of the merge | `agentic-qa-core/references/stage-gates.md` (Automation, "The person signs") |
+| Approval of the merge, only where `git_strategy.policy.merge_mode` gives it to a person (the approval under `human-approves`, the merge itself under `manual`) | `agentic-qa-core/references/stage-gates.md` (Automation, "The person signs"); `edd/references/human-gates.md` |
 | Explicit agreement before filing each bug | `agentic-qa-core/references/stage-gates.md` (Execution); `agentic-qa-core/references/defect-management-doctrine.md` |
 | Approval of the automation plan before code | `agentic-qa-core/references/stage-gates.md` (Automation) |
 

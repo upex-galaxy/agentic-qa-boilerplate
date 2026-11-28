@@ -83,7 +83,8 @@ Activation rule, as the site states it:
 What is never collapsed (site): the ATR with Test Environment (the site calls it a hard gate of the
 boilerplate: without a declared environment the result says nothing); the explicit human agreement
 before filing each bug; the approval of the automation plan before writing code; the human approval
-of the merge.
+of the merge (in this repo only where `git_strategy.policy.merge_mode` gives it to a person: the approval
+under `human-approves`, the merge itself under `manual`; `edd/references/human-gates.md`).
 
 Repo posture: the repo has no light mode. The four never-collapsed items are hard gates in the
 Planning DoD, the Execution contract and the Automation contract of
