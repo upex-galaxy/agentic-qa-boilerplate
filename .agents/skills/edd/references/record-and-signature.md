@@ -7,7 +7,7 @@ Two artifacts carry a delivery's evidence. The **record** is the gate's full acc
 | Property | Value |
 |---|---|
 | File | `<primary-root>/.session/evidence/<head-sha>.json`. The primary root is the parent of `git rev-parse --path-format=absolute --git-common-dir`, so a worktree session writes where durable state lives |
-| Artifacts | `<primary-root>/.session/evidence/artifacts/<subject-sha>/`: traces, screenshots, transcripts |
+| Artifacts | `<primary-root>/.session/evidence/artifacts/<subject-sha>/<check-id>/<env>/`: traces, screenshots, transcripts, plus one `verdict.json` per folder |
 | In git | never; `.session/` is ignored |
 | Writer | `bun run edd gate` (pre-push hook) and `bun run edd verify --ci` (CI). The agent never writes it |
 | When | every push the hook sees and every CI run of the verifier; the CI copy goes to the job summary and an Actions artifact |
@@ -30,7 +30,9 @@ How a person sees it: in a PR, the body's evidence section is rendered from the 
 
 ## The evidence commit
 
-After the agentic run, the author or tester session runs `bun run edd attest`. The script, not the agent, hashes every artifact, checks that each required agentic check left at least one artifact of its `kind`, that traces and screenshots are newer than the code commit and that traces hit the host of the declared environment. Then it creates an empty, signed commit on top of the code:
+After the agentic run, the author or tester session runs `bun run edd attest`. The script, not the agent, hashes every artifact, checks that each required agentic check left at least one artifact of its `kind`, that traces and screenshots are newer than the code commit and that traces hit the host of the declared environment. Then it creates an empty, signed commit on top of the code.
+
+The layout `attest` reads: one folder per required check and environment, `.session/evidence/artifacts/<subject-sha>/<check-id>/<env>/`, holding the artifact files and a `verdict.json` with `verdict` (`pass` to deliver), an optional `verdict_by` and an optional `claim`. At depth `deep` every environment of the check needs its folder; below it, one is enough. The tester passes its own label with `bun run edd attest --tester <label>` (or `EDD_TESTER`): it becomes the `verdict_by` of every folder whose `verdict.json` names none, a different `verdict_by` in the file is refused, and at depth `standard` or deeper it must differ from the `Session:` trailer of every code commit. A subagent tester uses `<author label>/tester`:
 
 ```
 test(evidence): attest 1a2b3c4 standard
@@ -50,7 +52,7 @@ Normal hooks run on it. The forensic trailers stay last.
 
 ## What CI verifies
 
-The check `edd/evidence` runs the verifier from the **base** branch's code (`pull_request_target`), reading the PR's commits as data and never running them, so a PR cannot edit the verifier that judges it. The ruleset requires that check from the GitHub Actions app, so a status posted with a personal token does not count. A PR can still add a workflow of its own with a job of the same name: it comes from the same Actions app, and GitHub accepts its green check. See the table below. When the real verifier runs, it enforces:
+The check `edd/evidence` runs the verifier from the **default** branch's code (`pull_request_target`), which also supplies the contract and the allowed signers, reading the PR's commits as data and never running them, so a PR cannot edit the verifier that judges it. The ruleset requires that check from the GitHub Actions app, so a status posted with a personal token does not count. A PR can still add a workflow of its own with a job of the same name: it comes from the same Actions app, and GitHub accepts its green check. See the table below. When the real verifier runs, it enforces:
 
 | Rule | Why |
 |---|---|
