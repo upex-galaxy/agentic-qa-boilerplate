@@ -336,19 +336,51 @@ describe('verify --ci on a push', () => {
     r.git('update-ref', 'refs/remotes/origin/main', head);
     const res = ciPush(r, 'd'.repeat(40), head);
     expect(res.code).toBe(1);
-    expect(res.out).toContain('a force push was seen');
+    expect(res.out).toContain('a force push rewrote the default branch');
     expect(ciPush(r, 'd'.repeat(40), head, 'refs/heads/feat').code).toBe(0);
   });
 
-  test('an empty range is verified against the first parent of the pushed tip', () => {
+  test('a created default branch has no previous tip and no base contract: refused', () => {
     const r = makeRepo();
     repos.push(r);
-    r.commit('chore: base', { '.agents/project.yaml': projectYaml(gated) });
+    r.commit('chore: base', { '.agents/project.yaml': projectYaml(gated, 'allowed') });
     const head = r.commit('feat: gate', { 'gate/x.ts': '1\n' });
     r.git('update-ref', 'refs/remotes/origin/main', head);
     const res = ciPush(r, '0'.repeat(40), head);
     expect(res.code).toBe(1);
-    expect(res.out).toContain('requires agentic evidence');
+    expect(res.out).toContain('was created by this push');
+  });
+
+  test('a force push to the default branch is refused even when the pushed parent says allowed', () => {
+    const r = makeRepo();
+    repos.push(r);
+    r.commit('chore: switch off', { '.agents/project.yaml': projectYaml(gated, 'allowed') });
+    const head = r.commit('feat: gate', { 'gate/x.ts': '1\n' });
+    r.git('update-ref', 'refs/remotes/origin/main', head);
+    const res = ciPush(r, 'd'.repeat(40), head);
+    expect(res.code).toBe(1);
+    expect(res.out).toContain('a force push rewrote the default branch');
+  });
+
+  test('another branch is judged against origin/<default>, even an orphan whose own tree unprotects it', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const main = r.commit('chore: base', { '.agents/project.yaml': projectYaml(gated).replace('protected: [main]', 'protected: [main, staging]') });
+    r.git('update-ref', 'refs/remotes/origin/main', main);
+    r.git('checkout', '-q', '--orphan', 'staging');
+    const head = r.commit('feat: orphan', { '.agents/project.yaml': projectYaml(gated), 'gate/x.ts': '1\n' });
+    const res = ciPush(r, '0'.repeat(40), head, 'refs/heads/staging');
+    expect(res.code).toBe(1);
+    expect(res.out).not.toContain('nothing to verify');
+  });
+
+  test('the pre-push gate refuses to delete a protected branch, and lets a feature branch go', () => {
+    const { r, base } = fixture('evidence');
+    const zero = '0'.repeat(40);
+    const del = run(r.dir, ['gate'], `(delete) ${zero} refs/heads/main ${base}\n`);
+    expect(del.code).toBe(1);
+    expect(del.out).toContain('never deletes a protected branch');
+    expect(run(r.dir, ['gate'], `(delete) ${zero} refs/heads/feat ${base}\n`).code).toBe(0);
   });
 });
 

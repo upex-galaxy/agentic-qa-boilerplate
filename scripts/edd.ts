@@ -10,7 +10,7 @@ import { basename, join } from 'node:path';
 import { AGENTIC_SCHEMA, collectChecks, evidenceMessage } from './lib/edd/attest.ts';
 import { ContractError, DEPTHS, loadContract, refReader, sha256, treeReader } from './lib/edd/contract.ts';
 import { gatePathsTouched, requiredAgentic } from './lib/edd/depth.ts';
-import { changedFiles, cleanEnv, commitTime, EMPTY_TREE, git, isCommit, isZeroOid, mergeBase, parentsOf, primaryRoot, repoRoot, resolveCommit, treeOf } from './lib/edd/git.ts';
+import { changedFiles, cleanEnv, commitTime, EMPTY_TREE, git, isCommit, isZeroOid, mergeBase, primaryRoot, repoRoot, resolveCommit, treeOf } from './lib/edd/git.ts';
 import { DiffTooLarge, patchId } from './lib/edd/patch-id.ts';
 import { artifactsRoot, pruneArtifacts, readRecord, RECORD_SCHEMA, RENDER_MARKER, renderMarkdown, scrubLine, writeRecord } from './lib/edd/record.ts';
 import { seedAllowedSigners, signersAt } from './lib/edd/signers.ts';
@@ -216,7 +216,18 @@ async function gate(): Promise<number> {
   else { refs = parseRefs(await Bun.stdin.text()); }
   let failed = false;
   for (const r of refs) {
-    if (isZeroOid(r.localSha) || !r.remoteRef.startsWith('refs/heads/')) { continue; }
+    if (!r.remoteRef.startsWith('refs/heads/')) { continue; }
+    if (isZeroOid(r.localSha)) {
+      const name = r.remoteRef.slice('refs/heads/'.length);
+      const tip = productionTip(wt.facts.production);
+      const judged = tip ? tryLoad(refReader(CWD, tip), tip) : wt;
+      const c = typeof judged === 'string' ? wt : judged;
+      if ((c.facts.policy === 'evidence' || wt.facts.policy === 'evidence') && c.facts.protected.includes(name)) {
+        say(`edd gate: FAIL deleting ${r.remoteRef}: ${name} is protected in the contract read from ${c.source}, and the evidence gate never deletes a protected branch.`);
+        failed = true;
+      }
+      continue;
+    }
     const base = baseFor(r.localSha, r.remoteSha, wt.facts.production);
     let source = base === EMPTY_TREE ? 'working tree' : base;
     const problems: string[] = [];
@@ -387,6 +398,7 @@ function verifyCi(): number {
   let branch: string | null;
   let flow: EvidenceRecord['push']['flow'];
   let pr: PullRequestEvent | null = null;
+  let pushContract: string | null = null;
   if (eventName === 'pull_request_target' && ev.pull_request) {
     pr = ev.pull_request;
     base = pr.base.sha;
@@ -402,14 +414,21 @@ function verifyCi(): number {
     const before = ev.before ?? '';
     const prod = ev.repository?.default_branch ?? 'main';
     const absent = before === '' || isZeroOid(before);
-    base = !absent && isCommit(CWD, before) ? before : ((resolveCommit(CWD, `refs/remotes/origin/${prod}`) && mergeBase(CWD, head, `refs/remotes/origin/${prod}`)) ?? EMPTY_TREE);
-    if (!absent && !isCommit(CWD, before)) { problems.push(`the previous tip ${before.slice(0, 12)} of ${ev.ref} is not in the checkout: a force push was seen, so the pushed range cannot be verified; verification refused`); }
-    if (problems.length > 0 || base === head) { base = isCommit(CWD, head) ? (parentsOf(CWD, head)[0] ?? EMPTY_TREE) : EMPTY_TREE; }
+    const known = !absent && isCommit(CWD, before);
+    if (branch === prod && !known) {
+      say(absent
+        ? `edd verify: ${ev.ref} was created by this push (the repository's first push, or a delete and recreate of the default branch), so there is no previous tip to verify against and no base contract to read; verification refused. The next push is verified against this one.`
+        : `edd verify: the previous tip ${before.slice(0, 12)} of ${ev.ref} is not in the checkout: a force push rewrote the default branch, so neither the range nor its base contract can be read; verification refused.`);
+      return 1;
+    }
+    const prodTip = branch === prod ? null : resolveCommit(CWD, `refs/remotes/origin/${prod}`);
+    base = known ? before : ((prodTip && mergeBase(CWD, head, prodTip)) ?? EMPTY_TREE);
+    pushContract = prodTip;
     flow = 'direct';
   }
   else { return die(`verify --ci handles pull_request_target and push, not ${eventName || 'no event'}`); }
   const trusted = pr ? (resolveCommit(CWD, process.env.GITHUB_SHA ?? 'HEAD') ?? resolveCommit(CWD, 'HEAD')) : null;
-  const source = pr ? trusted : (base === EMPTY_TREE ? head : base);
+  const source = pr ? trusted : (pushContract ?? (base === EMPTY_TREE ? head : base));
   if (!source) { return die('the default branch commit of the checkout cannot be resolved'); }
   const read = refReader(CWD, source);
   const loaded = load(read, pr ? `default branch ${source}` : source);
