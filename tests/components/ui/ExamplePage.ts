@@ -44,7 +44,7 @@ export class ExamplePage extends UiBase {
     await this.goto();
 
     await this.emailInput().fill(data.email);
-    await this.passwordInput().fill(data.password);
+    await this.fillSecret(this.passwordInput(), data.password);
     await this.submitButton().click();
 
     await this.page.waitForURL('**/dashboard', { timeout: 10000 });
@@ -56,7 +56,7 @@ export class ExamplePage extends UiBase {
     await this.goto();
 
     await this.emailInput().fill(email);
-    await this.passwordInput().fill(password);
+    await this.fillSecret(this.passwordInput(), password);
     await this.submitButton().click();
 
     const errorMessage = this.page

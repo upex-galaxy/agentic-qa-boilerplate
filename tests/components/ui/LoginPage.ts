@@ -16,7 +16,7 @@ export class LoginPage extends UiBase {
 
   private async fillAndSubmitLoginForm(credentials: LoginCredentials): Promise<void> {
     await this.page.locator('[data-testid="login-email-input"]').fill(credentials.email);
-    await this.page.locator('[data-testid="login-password-input"]').fill(credentials.password);
+    await this.fillSecret(this.page.locator('[data-testid="login-password-input"]'), credentials.password);
     await this.page.locator('[data-testid="login-submit-button"]').click();
   }
 

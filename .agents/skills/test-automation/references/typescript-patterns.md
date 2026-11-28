@@ -42,7 +42,7 @@ A helper in the wrong place creates coupling and fragile tests, so its location 
 | Location | When to put code here | Example |
 |----------|-----------------------|---------|
 | `tests/utils/` | Agnostic utility (works for API AND UI, no Playwright deps) | `allure.ts` (Allure attachment helpers), string formatters |
-| `UiBase` | Requires `PageContext` (Playwright `page`) | `interceptResponse()`, `waitForApiResponse()` |
+| `UiBase` | Requires `PageContext` (Playwright `page`) | `interceptResponse()`, `waitForApiResponse()`, `fillSecret()` |
 | `ApiBase` | Requires `APIRequestContext` | `apiGET()`, `apiPOST()` |
 | `TestContext` | Shared across API + UI, no external Playwright deps | `faker`, `config` accessors, environment selection |
 | Layer 3 component | Domain-specific logic for one resource/page | `generateOrderPayload()` inside `OrdersApi` |

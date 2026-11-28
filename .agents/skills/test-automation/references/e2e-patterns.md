@@ -229,7 +229,18 @@ await Promise.all([
 
 ## 5. UiBase helpers: interception
 
-UiBase wraps Playwright's response APIs twice. Use the wrappers when a UI action fires a network call whose payload or status code is part of the assertion.
+UiBase wraps Playwright's response APIs twice. Use the wrappers when a UI action fires a network call whose payload or status code is part of the assertion. It also fills credentials.
+
+### `fillSecret`: fill a password or token
+
+Every password, token, one-time code or card field goes through `this.fillSecret(locator, value)`, never through `fill()` or `pressSequentially()`. Those two write the value into the step title and into the error log, and both reach the published report.
+
+```typescript
+await this.emailInput().fill(credentials.email);
+await this.fillSecret(this.passwordInput(), credentials.password);
+```
+
+The helper waits for a visible, editable `input` or `textarea`, sets the value and fires `input` and `change`. It fires no keyboard events. It does not cover a trace or the page snapshot Playwright attaches to a failure: `playwright.config.ts` decides whether those are recorded.
 
 ### `interceptResponse`: capture the response of an action
 
@@ -238,7 +249,7 @@ UiBase wraps Playwright's response APIs twice. Use the wrappers when a UI action
 async loginAndCaptureToken(credentials: LoginCredentials) {
   await this.goto();
   await this.emailInput().fill(credentials.email);
-  await this.passwordInput().fill(credentials.password);
+  await this.fillSecret(this.passwordInput(), credentials.password);
 
   const { responseBody, status } = await this.interceptResponse<LoginPayload, TokenResponse>({
     urlPattern: /\/auth\/login/,

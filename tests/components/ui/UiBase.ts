@@ -1,6 +1,7 @@
-import type { Page, Request, Response } from '@playwright/test';
+import type { Locator, Page, Request, Response } from '@playwright/test';
 import type { TestContextOptions } from '@TestContext';
 
+import { expect } from '@playwright/test';
 import { TestContext } from '@TestContext';
 import { attachRequestResponseToAllure } from '@utils/allure';
 
@@ -49,6 +50,23 @@ export class UiBase extends TestContext {
     const base = this.baseUrl.replace(/\/$/, '');
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
     return `${base}${cleanPath}`;
+  }
+
+  // fill() writes the value into its step title and error log, which reach the published report; evaluate() writes neither.
+  async fillSecret(field: Locator, value: string): Promise<void> {
+    await expect(field).toBeVisible();
+    await expect(field).toBeEditable();
+    await field.evaluate((element, secret) => {
+      if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) {
+        throw new TypeError('fillSecret() needs an input or a textarea');
+      }
+      const prototype = element instanceof HTMLInputElement ? HTMLInputElement.prototype : HTMLTextAreaElement.prototype;
+      element.focus();
+      // The native setter is what lets a framework-controlled input see the change.
+      Object.getOwnPropertyDescriptor(prototype, 'value')?.set?.call(element, secret);
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+      element.dispatchEvent(new Event('change', { bubbles: true }));
+    }, value);
   }
 
   async interceptResponse<TRequest = unknown, TResponse = unknown>(

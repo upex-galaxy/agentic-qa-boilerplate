@@ -23,6 +23,7 @@ export interface AtcOptions {
   softFail?: boolean
   description?: string
   severity?: 'blocker' | 'critical' | 'normal' | 'minor' | 'trivial'
+  sensitive?: boolean
 }
 
 export function atc(testId: string, options: AtcOptions = {}) {
@@ -81,7 +82,7 @@ export function atc(testId: string, options: AtcOptions = {}) {
       }
 
       try {
-        const stepTitle = `ATC [${testId}]: ${methodName}${formatArgs(args)}`;
+        const stepTitle = `ATC [${testId}]: ${methodName}${formatArgs(originalMethod, methodName, args, options.sensitive)}`;
         const returnValue = await test.step(stepTitle, async () => {
           return originalMethod.apply(this, args);
         });
@@ -141,7 +142,7 @@ export function step<T extends (...args: any[]) => Promise<any>>(
 
   // eslint-disable-next-line ts/no-explicit-any -- Matches generic T signature
   async function replacement(this: unknown, ...args: any[]) {
-    const stepTitle = `${methodName}${formatArgs(args)}`;
+    const stepTitle = `${methodName}${formatArgs(originalMethod, methodName, args)}`;
     return test.step(stepTitle, async () => {
       return originalMethod.apply(this, args);
     });
@@ -151,13 +152,52 @@ export function step<T extends (...args: any[]) => Promise<any>>(
 }
 
 const SENSITIVE_KEYS = new Set(['password', 'token', 'secret', 'authorization', 'access_token']);
+const SENSITIVE_STEM = /passw|passcode|passphrase|pwd|secret|token|authorization|cookie|api[_-]?key|access[_-]?key|private[_-]?key|session[_-]?id|signature/i;
+const SENSITIVE_WORDS = new Set(['pass', 'pw', 'auth', 'bearer', 'otp', 'pin', 'cvv']);
+const SENSITIVE_METHOD = /log_?in|sign_?(?:in|up)|authenticat|authoriz|register|passw|credential|token|secret|api_?key|otp/i;
+const IDENTITY_NAMES = new Set(['email', 'mail', 'useremail', 'emailaddress', 'user', 'username', 'userid', 'login']);
+const SECRET_SHAPES = [
+  /eyJ[\w-]{5,}\.[\w-]{2,}\./,
+  /(?<![A-Za-z0-9])(?:(?:sk|rk)[-_][\w-]{16,}|sbp_\w{16,}|gh[opsru]_[A-Za-z0-9]{16,}|github_pat_\w{16,}|glpat-[\w-]{16,}|xox[abeoprs]-[A-Za-z0-9-]{8,}|npm_[A-Za-z0-9]{16,}|AKIA[0-9A-Z]{16}|AIza[\w-]{30,}|ATATT3[\w=-]{16,}|whsec_[A-Za-z0-9]{16,})/,
+  /\b(?:Bearer|Basic)\s+[\w.~+/=-]{8,}/,
+  /:\/\/[^/\s:@]+:[^/\s@]+@/,
+  /(?:passw(?:or)?d|pwd|secret|token|api_?key|signature)=[^&\s]+/i,
+];
+const PLAIN_ADDRESS = /^(?:https?:\/\/\S+|[^@\s]+@[^@\s]+\.[a-z]{2,})$/i;
+const PASSWORD_CLASSES = [/[a-z]/, /[A-Z]/, /\d/, /[!#$%^&*()+=[\]{}|;:'",<>?~`@\\]/];
+const MASKED = '"***"';
 const MAX_STRING_LEN = 80;
 const MAX_OBJECT_LEN = 120;
 
-function formatValue(value: unknown, key?: string): string {
-  if (key && SENSITIVE_KEYS.has(key.toLowerCase())) {
-    return '"***"';
+function isSensitiveName(name: string): boolean {
+  const words = name.replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase().split(/[^a-z0-9]+/);
+  return SENSITIVE_KEYS.has(name.toLowerCase())
+    || SENSITIVE_STEM.test(name)
+    || words.some(word => SENSITIVE_WORDS.has(word));
+}
+
+function isIdentityName(name: string): boolean {
+  return IDENTITY_NAMES.has(name.replace(/[^a-z0-9]/gi, '').toLowerCase());
+}
+
+function looksSecret(value: string): boolean {
+  if (SECRET_SHAPES.some(shape => shape.test(value))) {
+    return true;
   }
+  if (/\s/.test(value) || value.length < 8 || PLAIN_ADDRESS.test(value)) {
+    return false;
+  }
+  const opaque = /^[a-f0-9]{32,}$/i.test(value)
+    || (value.length >= 20 && /^[\w+/=-]+$/.test(value) && PASSWORD_CLASSES.slice(0, 3).every(c => c.test(value)));
+  return opaque || PASSWORD_CLASSES.every(c => c.test(value));
+}
+
+// `credential` is true inside a credential-taking call or object, where only identity fields stay readable.
+function formatValue(value: unknown, name: string, credential: boolean): string {
+  if (isSensitiveName(name)) {
+    return MASKED;
+  }
+  const guarded = credential || /credential/i.test(name);
   if (value === null) {
     return 'null';
   }
@@ -169,12 +209,18 @@ function formatValue(value: unknown, key?: string): string {
   }
 
   if (typeof value === 'string') {
+    if ((guarded && !isIdentityName(name)) || looksSecret(value)) {
+      return MASKED;
+    }
     return value.length > MAX_STRING_LEN
       ? `"${value.slice(0, MAX_STRING_LEN)}..."`
       : `"${value}"`;
   }
 
-  if (typeof value === 'number' || typeof value === 'boolean') {
+  if (typeof value === 'number') {
+    return guarded && !isIdentityName(name) ? MASKED : String(value);
+  }
+  if (typeof value === 'boolean') {
     return String(value);
   }
   if (Array.isArray(value)) {
@@ -182,10 +228,12 @@ function formatValue(value: unknown, key?: string): string {
   }
 
   if (typeof value === 'object') {
-    const entries = Object.entries(value as Record<string, unknown>);
+    const record = value as Record<string, unknown>;
+    const entries = Object.entries(record);
+    const secretPair = typeof record.name === 'string' && isSensitiveName(record.name);
     const formatted = entries
       .slice(0, 5)
-      .map(([k, v]) => `${k}: ${formatValue(v, k)}`)
+      .map(([k, v]) => `${k}: ${secretPair && k === 'value' ? MASKED : formatValue(v, k, guarded)}`)
       .join(', ');
     const suffix = entries.length > 5 ? ', ...' : '';
     const result = `{ ${formatted}${suffix} }`;
@@ -206,11 +254,81 @@ function isSkipping(): boolean {
   }
 }
 
-function formatArgs(args: unknown[]): string {
+// A decorated method can reach us as `async[(decorators, "name")](a, b)`, so a "(" inside brackets is skipped.
+function parameterStart(source: string): number {
+  let brackets = 0;
+  for (let i = 0; i < source.length; i++) {
+    if (source[i] === '[') {
+      brackets++;
+    }
+    else if (source[i] === ']') {
+      brackets--;
+    }
+    else if (source[i] === '(' && brackets === 0) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+// A rest or destructured slot has no name.
+function parameterNames(source: string): (string | undefined)[] {
+  const slots: string[] = [''];
+  let depth = 0;
+  let quote = '';
+  for (let i = parameterStart(source); i >= 0 && i < source.length; i++) {
+    const char = source[i];
+    if (quote !== '') {
+      if (char === '\\') {
+        i++;
+      }
+      else if (char === quote) {
+        quote = '';
+      }
+      continue;
+    }
+    if (char === '"' || char === '\'' || char === '`') {
+      quote = char;
+    }
+    else if (char === '(' || char === '{' || char === '[') {
+      depth++;
+      if (depth === 1) {
+        continue;
+      }
+    }
+    else if (char === ')' || char === '}' || char === ']') {
+      depth--;
+      if (depth === 0) {
+        break;
+      }
+    }
+    else if (char === ',' && depth === 1) {
+      slots.push('');
+      continue;
+    }
+    slots[slots.length - 1] += char;
+  }
+  return slots.map(slot => /^\s*([A-Z_$][\w$]*)/i.exec(slot)?.[1]);
+}
+
+function formatArgs(method: { toString: () => string }, methodName: string, args: unknown[], sensitive = false): string {
   if (args.length === 0) {
     return '()';
   }
-  return `(${args.map(a => formatValue(a)).join(', ')})`;
+  const names = parameterNames(method.toString());
+  const credential = SENSITIVE_METHOD.test(methodName);
+  const formatted = args.map((arg, index) => {
+    const name = names[index];
+    if (sensitive) {
+      return MASKED;
+    }
+    // A text argument nobody can name is masked: it may be the password.
+    if (name === undefined && (typeof arg === 'string' || typeof arg === 'number')) {
+      return MASKED;
+    }
+    return formatValue(arg, name ?? '', credential);
+  });
+  return `(${formatted.join(', ')})`;
 }
 
 export const ATC_PARTIAL_PATH = resolve('reports/.atc_partial.ndjson');
