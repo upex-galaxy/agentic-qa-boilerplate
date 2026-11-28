@@ -16,6 +16,11 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Fixed (what still read as a clean pass after the deferral work)
+- **The evidence page stamps Not fully tested** over a `PASSED` pack with a current DEFERRED case and no owner OK behind it, a round 0 bug pack included. The pack still builds, keeps its verdict, and the warning names what clears the stamp.
+- **The OK pointer is checked the same way on the Sprint Board and in the evidence pack**: the ticket id in the URL path (never only in its query or fragment) and the exact dated in-session form. With no tracker link to compare against, the board accepts the URL and says the host was not verified. The board orders events by instant and reads the `Bug` work type in any letter case.
+- **`report:scrub` fails on a symlinked results directory** instead of exiting clean with nothing scrubbed.
+
 ### Added (a deferred case is visible on the board and the evidence page)
 - **The Sprint Board marks a ticket with a DEFERRED case as not fully tested** (the label comes from `qa.deferral.label`) and holds it as "waiting for owner OK" until `bun run board deferral-ok` records an observed OK that covers every deferred case. The verb takes a pointer (the Story comment, a board answer written by the owner, or the in-session words with their timestamp), sets the lane only (a Story recorded as waiting also needs `unhold` and the `PASSED WITH DEFERRALS` verdict), refuses a URL that does not name the ticket on its tracker host, an in-session pointer that is not the exact dated form, and a `board:` answer for a case the board never dated, and never replaces opening the pointer at Stage 3 and at round close. A Bug with a deferred case never reads Passed. Imported or closed sprints with deferrals and no recorded OK now read Held.
 - **The evidence pack carries the deferral label and the owner OK** (`ticket.deferral`), the page shows both or the waiting state, and a story whose deferred cases are all covered can read `PASSED WITH DEFERRALS`, a deferrals-only one included. A pack carrying `ticket.deferral` beside a current DEFERRED case is refused as plain `PASSED`.
