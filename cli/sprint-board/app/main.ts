@@ -8,7 +8,7 @@ import type { Ctx, View } from './views.ts';
  *   snapshot  embedded in the page (archive, share copy or sprint report), no server needed
  *   demo      the tour's invented sprint, folded in the browser
  */
-import { localHhmm, slackBugSummary, slackTableHtml, slackTablePlain, trackerName, WATCH_STALE_MIN, watchLiveness } from '../model.ts';
+import { localHhmm, slackBugSummary, slackTableHtml, slackTablePlain, trackerName, WATCH_STALE_MIN, watchersDown, watchLiveness } from '../model.ts';
 import { makeDemo } from './demo.ts';
 import { getLang, setLang, tr } from './i18n.ts';
 import { mergeNeeds, prDrawer, viewMerge } from './merge-view.ts';
@@ -264,8 +264,24 @@ function tickWatch(): void {
       : `${w.ageMin} min ${tr('ago', 'atrás')}`;
 }
 
+function tickWatchers(): void {
+  const chip = $('#watchers-chip')!;
+  const state = live() && !demoState && real && !real.sprint.closedAt ? real : null;
+  const down = state ? watchersDown(state.watchers, new Date()) : [];
+  chip.hidden = !down.length;
+  const label = (name: string) => (name === 'sentinel' ? tr('Sentinel not running', 'Sentinel detenido') : tr(`${name} not running`, `${name} detenido`));
+  const text = down.map(w => label(w.name)).join(' · ');
+  // A live region: rewriting the same text every second would announce it again.
+  if (chip.textContent !== text) { chip.textContent = text; }
+  chip.title = down.map((w) => {
+    const how = w.exitedAt ? `${tr('exited', 'terminó')} ${localHhmm(w.exitedAt)}` : tr('stopped without a clean exit', 'se detuvo sin cierre limpio');
+    return `${w.name} (pid ${w.pid}): ${how}. ${tr('Start it again, or forget a retired one with', 'Vuelve a arrancarlo, o si lo retiraste olvídalo con')} bun run board watcher clear ${w.name} --sprint-slug ${state!.sprint.slug}`;
+  }).join('\n');
+}
+
 function tickLive(): void {
   tickWatch();
+  tickWatchers();
   const dot = $('#live-dot')!; const text = $('#live-text')!; const stale = $('#stale')!;
   if (demoState) { dot.className = 'live-dot'; text.textContent = 'Demo'; stale.hidden = true; return; }
   if (!live()) {

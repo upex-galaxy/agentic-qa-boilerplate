@@ -22,6 +22,7 @@ import {
   wakeLines,
 } from './sentinel.ts';
 import { appendEvent, BOARD_DIR, readEvents, readSprint, readTracker, REPO_ROOT, writeAtomic } from './store.ts';
+import { markWatcherExit, registerWatcher } from './watchers.ts';
 
 export interface SentinelFlags {
   every?: string
@@ -177,11 +178,17 @@ export async function runSentinel(slug: string, f: SentinelFlags): Promise<void>
     writeAtomic(baselinePath, `${JSON.stringify(file, null, 2)}\n`);
   };
   persist();
+  if (!cfg.dryRun) { registerWatcher(slug, { name: 'sentinel', pid: process.pid, match: 'sentinel' }); }
 
   for (;;) {
     const w = await cycle(cfg, deps, st);
     persist();
     if (w) {
+      if (!cfg.dryRun) {
+        // The wake below must reach the conductor even when the exit mark cannot be written.
+        try { markWatcherExit(slug, 'sentinel', process.pid); }
+        catch (err) { log(`could not record the clean exit: ${(err as Error).message}`); }
+      }
       // Written and flushed before exiting: this text IS the wake the harness hands the conductor.
       await Bun.write(Bun.stdout, `${wakeLines(w, { at: new Date(), slug, rearm }).join('\n')}\n`);
       process.exit(0);

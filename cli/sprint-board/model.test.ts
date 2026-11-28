@@ -1,4 +1,4 @@
-import type { BoardEvent, Need, Sprint, TrackerSnapshot } from './model.ts';
+import type { BoardEvent, Need, Sprint, TrackerSnapshot, WatcherView } from './model.ts';
 import { describe, expect, test } from 'bun:test';
 import {
   arrivals as arrivalsRaw,
@@ -30,6 +30,8 @@ import {
   toReportState,
   toShareState,
   untrackedInTest as untrackedRaw,
+  WATCHER_GRACE_MIN,
+  watchersDown,
   watchLiveness,
 } from './model.ts';
 import { bucketed, ticketBucketOf } from './test-fixtures.ts';
@@ -338,6 +340,46 @@ describe('watch liveness', () => {
     expect(s.timeline.map(x => x.kind)).toEqual(['note']);
     expect(fold({ sprint, now: NOW, events: [] }).watch).toBeUndefined();
     expect(toShareState(s).watch).toBeUndefined();
+  });
+});
+
+describe('watchers down', () => {
+  const exitedAt = '2026-10-17T23:00:00.000Z';
+  const after = (ms: number) => new Date(Date.parse(exitedAt) + ms);
+  const grace = WATCHER_GRACE_MIN * 60_000;
+  const watcher = (over: Partial<WatcherView> = {}): WatcherView => ({ name: 'sentinel', pid: 4242, startedAt: '2026-10-17T22:00:00Z', alive: true, ...over });
+  const names = (list: WatcherView[], now: Date) => watchersDown(list, now).map(w => w.name);
+
+  test('a running watcher is never flagged', () => {
+    expect(names([watcher(), watcher({ exitedAt })], after(grace * 10))).toEqual([]);
+  });
+
+  test('a death without an exit mark is flagged at once, a weekend night included', () => {
+    expect(names([watcher({ alive: false }), watcher({ name: 'inbox', alive: false })], after(0))).toEqual(['sentinel', 'inbox']);
+  });
+
+  test('a clean exit is quiet for the grace period, then flagged', () => {
+    const exited = [watcher({ alive: false, exitedAt })];
+    expect(names(exited, after(grace))).toEqual([]);
+    expect(names(exited, after(grace + 1))).toEqual(['sentinel']);
+  });
+
+  test('an unreadable or future exit time does not excuse a dead watcher', () => {
+    expect(names([watcher({ alive: false, exitedAt: 'soon' })], after(0))).toEqual(['sentinel']);
+    expect(names([watcher({ alive: false, exitedAt })], after(-1))).toEqual(['sentinel']);
+    expect(names([watcher({ alive: false, exitedAt: '2999-01-01T00:00:00Z' })], after(0))).toEqual(['sentinel']);
+  });
+
+  test('nothing registered is quiet', () => {
+    expect(watchersDown([], after(0))).toEqual([]);
+    expect(watchersDown(undefined, after(0))).toEqual([]);
+  });
+
+  test('share state and report state carry no watchers', () => {
+    const live = { ...fold({ sprint, now: NOW, events: [] }), watchers: [watcher({ alive: false })] };
+    expect(fold({ sprint, now: NOW, events: [] }).watchers).toBeUndefined();
+    expect(toShareState(live).watchers).toBeUndefined();
+    expect(toReportState(live).watchers).toBeUndefined();
   });
 });
 

@@ -152,6 +152,8 @@ browser session, because a browser call without the named session falls back to 
    background (the sentinel would at its next tick; doing it now lets the resume read the page).
 3. Sentinel: re-arm it with the SAME `--baseline` file (`sprint-board.md` §7). On a harness without
    background tasks, list the scheduled passes first: present, leave it; missing, arm it, and never add a duplicate.
+   Then `bun run board watcher list`: start again and re-register every other process it shows as not
+   running, and clear each one this run no longer uses (`sprint-board.md` §7).
 4. Owner actions missed while down: `bun run board inbox` plus the bounded
    `bun run board listen --since <last pass or last id seen>` replay (`sprint-board.md` §3).
 5. Mailbox: read it per §3 step 3.

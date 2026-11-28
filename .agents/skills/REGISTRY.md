@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-11-21T21:04:38.416Z`
+> Generated: `2026-11-28T02:38:50.522Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -586,6 +586,7 @@ Skills indexed: 29
 - The conductor does not test and does not investigate a ticket. The line is fixture versus finding: seeding data, verifying with ONE query that a fixture exists and belongs to whom the brief says, and creating an owner-approved fixture user are conductor work; what a case asserts, the code behind it and any id the test needs are the worker's.
 - Conductor-owned pre-flight, before EVERY launch (a watch-pass launch included): the conductor alone mints tokens and browser states and refreshes them when stale; a credential is proven with the cheap API login before any browser login, stopping after 3 failed attempts; the sibling-repo fetch is a gate (a non-zero exit stops and escalates, it never falls through to the counts) and its two drift counts go into every brief; the schema sync runs from a current checkout or is skipped with the skip written into every brief. Full: `references/boot-and-resume.md` §2.
 - The sentinel is armed at boot and re-armed after EVERY wake, as a background task, one per board, with the same `--baseline` file. No homemade monitor, no scheduled pass when background tasks exist, no mailbox polling.
+- Any other long-running process the conductor starts is registered with `bun run board watcher register <name> --pid <n> --match=<text>`; one retired on purpose, the sentinel included, is cleared with `bun run board watcher clear <name>`, or the board keeps flagging it. Full: `sprint-testing/references/sprint-board.md` §7.
 - Every watch pass records each decision with `bun run board arrival <KEY> launched|held|skipped "<why>"`, so a missed pass costs nothing. The deploy check always runs: a tracker status is a hint, the deployed build is the truth. Fixture gaps are asked at triage. The cap counts every live worker, an ad-hoc retest included, and collisions are checked against the LIVE workers, not the round plan.
 - The CONDUCTOR reads back a finished worker's final ticket status itself, with a bounded poll for the expected value; a worker's or a subagent's "verified" is not proof (Critical Rule #16). The round close is ONE subagent per finished worker that verifies the artifacts, not the report; closes whose workers touched the same Epic run one after another, so only one of them publishes that Epic's `## Module Context (QA)` section at a time.
 - A redeploy while workers are live: fetch only (do not fast-forward a sibling repo while a worker is live), then tell EVERY live worker once, with the repo, the old and new build and whether its own change's files moved.

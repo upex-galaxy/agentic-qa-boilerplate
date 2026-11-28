@@ -9,6 +9,7 @@ import type { BoardEvent, EventKind, Sprint, TrackerSnapshot } from './model.ts'
  *     sprints/<slug>/sprint.json    meta (written by `new` / `sprint`)
  *     sprints/<slug>/events.ndjson  THE log: every fact, appended, never rewritten
  *     sprints/<slug>/source.json    what the tracker said at the last `sync` (single writer)
+ *     sprints/<slug>/watchers/      one <name>.json per registered background process (watchers.ts)
  *     archive/<slug>.html           frozen snapshot of a closed sprint
  *     archive/<slug>.state.json     the state it was rendered from
  *

@@ -43,6 +43,7 @@ open question.
 | 4 round close | `verdict` reconciled with the tracker, `worker <KEY> --state done`, `snapshot --mode share` when the team should see it (allowlist copy: no drafts, waits, questions, inbox or evidence); the full close of a worker and a round: `sprint-conductor/references/round-close.md` | conductor |
 | sprint close | `snapshot --mode report --fragment --stp-url <test plan url>` (the sprint QA report: allowlist state, counted by bucket); publish the fragment as a private claude.ai artifact and link it from the sprint test plan; then `archive` (freezes the board) | conductor |
 | any | `sentinel --baseline .session/sprint-board/sprints/<slug>/sentinel-baseline.json` as a background task, armed at session start and after every wake (§7) | conductor |
+| any | `watcher register <name> --pid <n> [--match=<text>]` for a long-running process the conductor starts besides the sentinel; `watcher clear <name>` for one it retires on purpose; `watcher list` (§7) | conductor |
 | any | `arrivals [--sync] [--json]`: tickets in the `in_test` bucket still needing a conductor decision, with denominators, plus `UNTRACKED` sprint tickets in test that are not on the board; `--sync` waits for the server's sync lock; `watch-pass ["note"]` for a pass that did not sync | conductor |
 
 The board never blocks a worker or a pass. A board command that fails is logged and ignored, and the
@@ -248,6 +249,21 @@ In both modes, every `arrivals --sync` and every quiet sentinel cycle record a
 `watch.pass` event, and a pass that does not sync records one with `watch-pass "<note>"`.
 `bun run board status` and the page topbar show "Last watch pass HH:MM", red when none ran in the
 last 25 minutes of working hours.
+
+### Watchers: a dead process shows on the board
+
+The sentinel registers its process on the board and marks its exit before the wake. The live page names
+every registered process that stopped, and `bun run board status` prints it as
+`! <name> not running` with `no clean exit` or the time it exited cleanly: at once after a crash or a
+kill, after a short grace period following a clean exit, so a pass that runs long shows the sentinel
+flagged until the re-arm. How the check works: `cli/sprint-board/README.md` §Watchers.
+
+- A flagged sentinel: re-arm it. Any other flagged process: start it again and register the new pid.
+- Another long-running process the conductor starts (a mailbox or inbox waiter, say) is registered
+  with `watcher register <name> --pid <n> --match=<text of its command line>` (the `=` form, so a text
+  that starts with `--` is accepted). It marks no exit of its own, so it is flagged as soon as it ends.
+- A process retired on purpose, the sentinel included (a boot or resume without the watch, the end of
+  the conductor's run), is cleared with `watcher clear <name>`. Without that the board keeps flagging it.
 
 ---
 

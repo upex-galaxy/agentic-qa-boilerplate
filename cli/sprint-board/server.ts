@@ -25,12 +25,15 @@ import { readMergeLine } from './merge-read.ts';
 import { ASK_STATES, needTarget, oneOf } from './model.ts';
 import { buildState, watchedFiles } from './sources.ts';
 import { appendEvent, archiveDir, BOARD_DIR, currentSlug, listArchives, listSprints, readSprint, REPO_ROOT, serverFile, sprintDir, writeAtomic } from './store.ts';
+import { watcherViews } from './watchers.ts';
 
 const APP_DIR = join(import.meta.dir, 'app');
 /** Merge Line's data, shared by every worktree through the .session symlink. */
 const MERGE_DIR = process.env.MERGE_STATE_DIR ?? join(REPO_ROOT, '.session', 'gitflow-master');
 const COLLECT = join(import.meta.dir, 'merge-collect.ts');
 const mergeWatched = () => [join(MERGE_DIR, 'docs', 'meta'), join(MERGE_DIR, 'docs', 'prs'), join(MERGE_DIR, 'notes'), join(MERGE_DIR, 'collector.json')];
+const WATCHER_RECHECK_MS = 5000;
+const deadWatchers = (slugs: string[]) => slugs.flatMap(slug => watcherViews(slug).filter(w => !w.alive).map(w => `${slug}/${w.name}:${w.pid}`)).join(',');
 const EVIDENCE_ROOTS = ['.session', '.context/PBI'].map(r => join(REPO_ROOT, r));
 const IMAGE_TYPES: Record<string, string> = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp' };
 
@@ -137,6 +140,8 @@ export async function serve(opts: { port: number, open: boolean, syncMinutes: nu
       catch { clients.delete(c); }
     }
   };
+  let deadAt = 0;
+  let dead = '';
   const check = () => {
     let slug = '';
     try { slug = currentSlug(); }
@@ -144,7 +149,14 @@ export async function serve(opts: { port: number, open: boolean, syncMinutes: nu
     const dir = slug ? sprintDir(slug) : BOARD_DIR;
     const dirs = listSprints().map(x => sprintDir(x));
     const ids = [...new Set([...idsBySlug.values()].flat())];
-    const sig = `${slug}#${fingerprint([join(BOARD_DIR, 'CURRENT'), dir, ...dirs, ...watchedFiles(ids), ...mergeWatched()])}`;
+    // A dying process touches no file, and checking it spawns `ps`: joined to the signature, re-read less often than the tick.
+    if (Date.now() - deadAt >= WATCHER_RECHECK_MS) {
+      deadAt = Date.now();
+      // Thrown out of this timer, a read error would take the whole server down.
+      try { dead = deadWatchers([...new Set([slug, ...idsBySlug.keys()])].filter(Boolean)); }
+      catch (err) { console.warn(`watcher check failed: ${(err as Error).message}`); }
+    }
+    const sig = `${slug}#${dead}#${fingerprint([join(BOARD_DIR, 'CURRENT'), dir, ...dirs, ...watchedFiles(ids), ...mergeWatched()])}`;
     if (sig !== lastSig) {
       lastSig = sig;
       push(`event: changed\ndata: ${JSON.stringify({ slug, at: new Date().toISOString() })}\n\n`);
@@ -250,7 +262,11 @@ export async function serve(opts: { port: number, open: boolean, syncMinutes: nu
           const slug = url.searchParams.get('sprint') ?? currentSlug();
           if (!/^sprint-\d+$/.test(slug)) { return json({ error: 'bad sprint' }, 400); }
           const state = buildState(slug);
-          if (!state.sprint.closedAt) { idsBySlug.set(slug, state.tickets.map(t => t.id)); }
+          if (!state.sprint.closedAt) {
+            idsBySlug.set(slug, state.tickets.map(t => t.id));
+            try { state.watchers = watcherViews(slug); }
+            catch (err) { state.warnings.push(`watchers could not be read: ${(err as Error).message}`); }
+          }
           return json(state);
         }
         catch (err) {

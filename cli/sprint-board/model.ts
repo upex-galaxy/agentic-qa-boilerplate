@@ -395,6 +395,8 @@ export interface BoardState {
   tracker?: { source?: SourceKind, syncedAt: string, searched: TrackerSnapshot['searched'] }
   /** The conductor's test-environment watch: newest `watch.pass` and how many ran. Absent when none ever ran. */
   watch?: { lastPassAt: string, passes: number }
+  // Pid state is only true while someone is checking it: the live server attaches this, a snapshot never does.
+  watchers?: WatcherView[]
   warnings: string[]
   generatedAt: string
   mode: 'live' | 'snapshot' | 'share' | 'report' | 'demo'
@@ -1857,6 +1859,26 @@ export const localHhmm = (iso: string): string => {
   const d = new Date(iso);
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 };
+
+export interface WatcherView {
+  name: string
+  pid: number
+  startedAt: string
+  // Written on a clean exit only (the sentinel exits on every wake): a crash or a kill leaves it absent.
+  exitedAt?: string
+  alive: boolean
+}
+
+export const WATCHER_GRACE_MIN = 2;
+
+export function watchersDown(watchers: WatcherView[] | undefined, now: Date): WatcherView[] {
+  const inGrace = (exitedAt: string) => {
+    // An unreadable time gives NaN and a future one a negative age: neither excuses a dead watcher.
+    const age = now.getTime() - Date.parse(exitedAt);
+    return age >= 0 && age <= WATCHER_GRACE_MIN * 60_000;
+  };
+  return (watchers ?? []).filter(w => !w.alive && !(w.exitedAt && inGrace(w.exitedAt)));
+}
 
 // ---------------------------------------------------------------------------
 // listen --since: replay owner actions a stopped listener missed

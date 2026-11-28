@@ -37,6 +37,7 @@ import {
   untrackedInTest,
   VERDICTS,
   WATCH_STALE_MIN,
+  watchersDown,
   watchLiveness,
   WORKER_STAGES,
   WORKER_STATES,
@@ -58,6 +59,7 @@ import {
   writeSprint,
 } from './store.ts';
 import { boardConfig } from './sync.ts';
+import { checkWatcherName, clearWatcher, registerWatcher, watcherViews } from './watchers.ts';
 
 interface Args { _: string[], flags: Record<string, string[]> }
 
@@ -72,7 +74,9 @@ function parse(argv: string[]): Args {
       const eq = a.indexOf('=');
       const k = eq > 0 ? a.slice(2, eq) : a.slice(2);
       const next = argv[i + 1];
-      const v = eq > 0 ? a.slice(eq + 1) : !BOOLEAN_FLAGS.has(k) && next !== undefined && !next.startsWith('--') ? (i++, next) : 'true';
+      // `--match` is searched in a command line: left bare it must read as empty, never as the text "true".
+      const bare = k === 'match' ? '' : 'true';
+      const v = eq > 0 ? a.slice(eq + 1) : !BOOLEAN_FLAGS.has(k) && next !== undefined && !next.startsWith('--') ? (i++, next) : bare;
       (out.flags[k] ??= []).push(v);
     }
     else { out._.push(a); }
@@ -638,7 +642,8 @@ const commands: Record<string, (a: Args) => void | Promise<void>> = {
   },
 
   status(a) {
-    const s = buildState(slugOf(a));
+    const slug = slugOf(a);
+    const s = buildState(slug);
     const lanes = new Map<string, string[]>();
     for (const t of s.tickets.filter(x => x.inScope)) { lanes.set(t.lane, [...(lanes.get(t.lane) ?? []), `${t.id}  ${t.title}${t.atRisk ? '  [shipped at risk]' : ''}`]); }
     console.log(`${s.sprint.name}: ${s.tickets.filter(t => t.inScope).length} tickets in scope`);
@@ -652,6 +657,31 @@ const commands: Record<string, (a: Args) => void | Promise<void>> = {
     else {
       console.log('\nNo watch pass recorded on this board');
     }
+    if (!s.sprint.closedAt) {
+      for (const w of watchersDown(watcherViews(slug), new Date())) { console.log(`! ${w.name} not running (pid ${w.pid}, ${w.exitedAt ? `exited cleanly ${localHhmm(w.exitedAt)}` : 'no clean exit'})`); }
+    }
+  },
+
+  watcher(a) {
+    const slug = slugOf(a);
+    const action = oneOf(['register', 'clear', 'list'] as const, need(a._[0], 'action (register|clear|list)'), 'action');
+    const { closedAt } = readSprint(slug);
+    if (action === 'list') {
+      const all = watcherViews(slug);
+      for (const w of all) { console.log(`${w.name}  pid ${w.pid}  ${w.alive ? 'running' : 'NOT running'}${w.exitedAt ? `  (exited ${localHhmm(w.exitedAt)})` : ''}`); }
+      console.log(`${all.length} watcher(s) registered on ${slug}`);
+      return;
+    }
+    const name = checkWatcherName(need(a._[1], 'watcher name'));
+    if (action === 'clear') {
+      console.log(clearWatcher(slug, name) ? `watcher ${name} cleared on ${slug}` : `no watcher named ${name} on ${slug}`);
+      return;
+    }
+    if (closedAt) { throw new Error(`${slug} is closed (${closedAt}); the board checks watchers on an open board only`); }
+    const match = flag(a, 'match');
+    if (match === '') { throw new Error('--match needs a text; write --match=<text> when the text starts with "--"'); }
+    registerWatcher(slug, { name, pid: Number(need(flag(a, 'pid'), '--pid <n>')), match });
+    console.log(`watcher ${name} registered on ${slug}`);
   },
 
   async serve(a) {

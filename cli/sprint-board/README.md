@@ -125,6 +125,8 @@ $B arrivals [--sync] [--lock-wait <s>] [--json]   tickets that reached the test 
                                             are not on the board
 $B arrival PROJ-1 launched|held|skipped "why"   record that decision (held comes back as RECHECK every pass)
 $B watch-pass ["note"]                      record a pass that did not run arrivals --sync
+$B watcher register <name> --pid <n> [--match=<text>]   a background process the board flags when it stops running
+$B watcher clear <name> | list              forget a retired one | each registration, running or NOT running
 ```
 
 Every value from a closed set is checked (`--state`, `--stage`, statuses,
@@ -421,6 +423,42 @@ It does not poll the orchestration mailbox (the orchestrator already pushes new 
 conductor), never writes the tracker and never launches a worker. The board server's sync must run
 with `--discover` (as `board:up` does) for the UNTRACKED part to move between passes.
 
+## Watchers (a background process that died)
+
+The "Last watch pass" chip needs a quiet stretch before it turns red. A registered process is checked
+directly: the live page's topbar shows "<name> not running" in red, and `status` prints
+`! <name> not running (pid <n>, exited cleanly HH:MM)`, or `no clean exit` in place of the time after a
+crash or a kill.
+
+A registration is `sprints/<slug>/watchers/<name>.json`: name, pid, start time, the optional match
+text and, after a clean exit, `exitedAt`. `sentinel` registers itself as `sentinel` and marks its exit
+before it prints the wake; `--once` and `--dry-run` register nothing. Any other long-running process
+is registered with `watcher register <name> --pid <n>`, for instance a waiter on an inbox. A name is
+lower case: a letter first, then letters, digits or hyphens, 31 characters at most. Registering a
+name again replaces the record, and only the process on record can mark its own exit. A file whose
+fields have other types than these is not a registration and is ignored.
+
+Write the match text as `--match=<text>` when it starts with `--`. A bare `--match`, or one followed by
+another `--` word, is refused.
+
+A process counts as running when its pid answers, `ps` does not report it as a zombie and, with
+`--match`, its command line contains that text, so a recycled pid is not taken for the watcher. Where
+`ps` cannot be used, the pid answering is the whole check.
+
+| State | Flagged |
+|---|---|
+| running | no |
+| stopped with no exit mark (crash, kill) | at once |
+| clean exit | after `WATCHER_GRACE_MIN` minutes (`model.ts`), the time to start it again |
+| stopped, with an exit time that cannot be read or lies in the future | at once |
+| cleared, or never registered | no |
+
+There is no working-hours condition: a watcher retired on purpose is removed with
+`watcher clear <name>`. The server rechecks the processes every few seconds and refreshes the page; a
+watchers folder it cannot read becomes a warning on the page.
+Only the live page of an open board carries watchers; snapshots (full, share, report) and archives
+do not.
+
 ## Bug evidence reminder
 
 `bug <ticket> <bug>` records the link, then looks in the evidence folder of both tickets (their PBI
@@ -502,6 +540,7 @@ listed without an expectation.
 
 `model.ts` pure fold, lanes, metrics, share and report allowlists, Slack table ·
 `sentinel.ts` the sentinel's pure decisions · `sentinel-run.ts` its loop, port probe and server lifecycle ·
+`watchers.ts` registered background processes and their pid check ·
 `store.ts` files and the event log · `sources.ts` Live Progress + evidence + the automated outcomes file ·
 `sync.ts` the tracker read through `cli/lib/sprint-source/` · `server.ts` local server + SSE ·
 `build.ts` page bundle · `brand.ts` the header's brand slot · `snapshot.ts` frozen HTML ·

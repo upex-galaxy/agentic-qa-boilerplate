@@ -24,9 +24,12 @@ costs nothing, and the ticket shows up on the next one. After §6, re-arm the se
   not wake then.
 - First pass of the day: check what died overnight and report it in one line instead of restarting it
   on your own: the board page answers, the orchestration runtime is reachable, the mailbox read returns
-  `ok`, and `bun run board status` shows a recent "Last watch pass". The restart path is
-  `/sprint-conductor --resume` (`references/boot-and-resume.md` §4). The one exception is the board server,
-  whose working-hours lifecycle the sentinel owns.
+  `ok`, and `bun run board status` shows a recent "Last watch pass" and no unexpected
+  `! <name> not running` line. One is expected: `! sentinel not running (pid <n>, exited cleanly HH:MM)`
+  at the time of the wake that started this pass, because the sentinel exited to send it and §6 re-arms
+  it. A line saying `no clean exit`, a sentinel exit older than that wake, or any other name did die. The
+  restart path is `/sprint-conductor --resume` (`references/boot-and-resume.md` §4). The one exception is
+  the board server, whose working-hours lifecycle the sentinel owns.
 
 ## 2. Detect
 
