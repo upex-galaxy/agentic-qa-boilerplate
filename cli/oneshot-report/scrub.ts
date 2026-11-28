@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import type { Stats } from 'node:fs';
 import type { Redactor } from './redact.ts';
 
 import { spawnSync } from 'node:child_process';
@@ -104,9 +105,9 @@ export function parseScrubArgs(argv: string[], fallback: string): ScrubArgs {
   return args;
 }
 
-function isDirectory(path: string): boolean {
-  try { return lstatSync(path).isDirectory(); }
-  catch { return false; }
+function statOf(path: string): Stats | null {
+  try { return lstatSync(path); }
+  catch { return null; }
 }
 
 export function runScrub(argv: string[], context: ScrubContext): number {
@@ -123,7 +124,13 @@ export function runScrub(argv: string[], context: ScrubContext): number {
 
   const code = args.command.length > 0 ? context.spawn(args.command) : 0;
   const dir = resolve(context.cwd, args.results);
-  if (!isDirectory(dir)) {
+  const info = statOf(dir);
+  // A publisher follows the link, so passing here would upload results nothing scrubbed.
+  if (info?.isSymbolicLink()) {
+    context.error(`[scrub] failed, do not publish these results: ${dir} is a symbolic link, so nothing was scrubbed. Point --results at the real directory.`);
+    return code || 1;
+  }
+  if (!info?.isDirectory()) {
     context.log(`[scrub] no results directory at ${dir}: nothing to scrub`);
     return code;
   }

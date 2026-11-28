@@ -73,6 +73,21 @@ describe('report:scrub', () => {
     expect(read(dir, 'b-attachment.txt')).not.toContain(HELD);
   });
 
+  test('a symlinked results directory fails, scrubs nothing and generates nothing', () => {
+    const { root, dir } = fixture();
+    symlinkSync(dir, join(root, 'linked'), 'dir');
+    symlinkSync(join(root, 'gone'), join(root, 'dangling'));
+    for (const results of ['linked', 'linked/', 'dangling']) {
+      const spawned: string[][] = [];
+      const ctx = context(root, spawned);
+      expect(runScrub(['--results', results, '--then-generate'], ctx)).toBe(1);
+      expect(spawned).toEqual([]);
+      expect(ctx.lines.join('\n')).toContain('is a symbolic link, so nothing was scrubbed');
+    }
+    expect(read(dir, 'b-attachment.txt')).toContain(HELD);
+    expect(runScrub(['--results', 'linked', '--', 'run'], context(root, [], [3]))).toBe(3);
+  });
+
   test('a missing directory is not an error, a bad argument is', () => {
     const { root } = fixture();
     expect(runScrub(['--results', 'nowhere'], context(root))).toBe(0);
