@@ -138,6 +138,18 @@ jobs:
       - name: Install Dependencies
         run: bun install
 
+      - name: Workstation Alias
+        if: matrix.id == 'repo-gates'
+        run: |
+          if [ -d .agents/skills ] && [ ! -e .claude/skills ]; then
+            mkdir -p .claude
+            ln -s ../.agents/skills .claude/skills
+          fi
+        # repo:check runs agents:compat:check, which expects the .claude/skills
+        # symlink a workstation generates (gitignored). Only the link is made
+        # here; `bun run agents:compat` would also repair what the check exists
+        # to catch.
+
       - name: Contract Check
         env:
           CHECK_ID: ${{ matrix.id }}
