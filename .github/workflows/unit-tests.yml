@@ -114,18 +114,52 @@ jobs:
         run: bun run skills:test
         # The bare `bun test` above skips dot directories, so .agents/skills runs by path.
 
+  ContractIds:
+    name: contract ids
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      ids: ${{ steps.ids.outputs.ids }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Contract Ids
+        id: ids
+        env:
+          EDD_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -f scripts/edd.ts ]; then
+            echo "ids=$(bun scripts/edd.ts check --list)" >> "$GITHUB_OUTPUT"
+          else
+            echo 'ids=[]' >> "$GITHUB_OUTPUT"
+          fi
+
   ContractChecks:
     # One check per ci id of the evidence contract (evidence.static in
     # .agents/project.yaml), named by the id so a ruleset can require it. The
-    # command comes from the contract at the base commit, not from this file.
-    # No job-level skip: a skipped job reports success to a required check.
+    # ids and each command come from the contract at the base commit, not from
+    # this file. The only job-level skip is a contract with no ci id: a skipped
+    # job reports success to a required check, and then none is required.
+    needs: ContractIds
+    if: needs.ContractIds.outputs.ids != '[]'
     name: ${{ matrix.id }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        id: [format, lint, types, unit, repo-gates]
+        id: ${{ fromJSON(needs.ContractIds.outputs.ids) }}
 
     steps:
       - name: Checkout Repo

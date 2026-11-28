@@ -36,6 +36,8 @@ const USAGE = `Usage: bun run edd <command>
            Delete artifact folders past the retention; records are never deleted.
   check <id>
            Run one static check of the contract whose where includes ci.
+  check --list
+           Print the ids of the contract's ci checks as a JSON array.
 `;
 
 const argv = process.argv.slice(2);
@@ -459,11 +461,15 @@ function prune(): number {
 }
 
 function check(): number {
-  const id = positional()[0];
-  if (!id) { return die('check needs a static check id'); }
   const baseRef = flag('--base') ?? process.env.EDD_BASE ?? '';
   const base = baseRef && !isZeroOid(baseRef) ? resolveCommit(CWD, baseRef) : null;
   const wt = base ? load(refReader(CWD, base), base) : load(treeReader(CWD), 'working tree');
+  if (has('--list')) {
+    say(JSON.stringify(wt.contract.static.filter(c => c.where.includes('ci')).map(c => c.id)));
+    return 0;
+  }
+  const id = positional()[0];
+  if (!id) { return die('check needs a static check id'); }
   const s = wt.contract.static.find(c => c.id === id && c.where.includes('ci'));
   if (!s) {
     say(`edd check: ${id} is not a ci check of the evidence contract; nothing to run.`);

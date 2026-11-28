@@ -259,6 +259,13 @@ describe('edd check, render, prune', () => {
     expect(run(r.dir, ['check', 'never']).out).toContain('not a ci check');
   });
 
+  test('check --list prints the ci ids of the contract read from the base', () => {
+    const { r, base } = fixture('allowed');
+    r.commit('chore: more', { '.agents/project.yaml': projectYaml(contract('true').replace('  depth:', '    - { id: extra, cmd: \'true\', where: [ci] }\n  depth:'), 'allowed') });
+    expect(JSON.parse(run(r.dir, ['check', '--list']).out)).toEqual(['lint', 'never', 'extra']);
+    expect(JSON.parse(run(r.dir, ['check', '--list', '--base', base]).out)).toEqual(['lint', 'never']);
+  });
+
   test('render prints the record of a pushed commit; render --pr always verifies afresh', () => {
     const { r, base } = fixture('evidence');
     const head = r.commit('feat: x', { 'ok.txt': '1\n' });
