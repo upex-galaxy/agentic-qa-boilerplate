@@ -322,6 +322,8 @@ describe('assessPreflight: what can stop an apply before any write', () => {
     const first = assessPreflight(AUTO_FORBIDDEN(), ['edd/evidence', 'lint'], hostState({ checkRuns: tip, prCheckRuns: { check_runs: [] } }));
     expect(first.blockers.join(' ')).toContain('the first one has to be a pull request into main');
     expect(first.integrationId).toBe(15368);
+    const unread = assessPreflight(AUTO_FORBIDDEN(), ['edd/evidence', 'lint'], hostState({ checkRuns: tip, prCheckRuns: null }));
+    expect(unread.blockers.join(' ')).toContain('could not be read');
   });
 
   test('no Actions run at all blocks: no integration_id to pin the check to', () => {

@@ -483,11 +483,16 @@ export function prHeadCheckRuns(read: (path: string) => unknown | null, slug: st
   return { check_runs: [] };
 }
 
-export function missingRequiredChecks(contexts: string[], tipCheckRuns: unknown, prCheckRuns: unknown): { tip: string[], pr: string[] } {
+export function missingRequiredChecks(contexts: string[], tipCheckRuns: unknown, prCheckRuns: unknown): { tip: string[], pr: string[], prUnread: boolean } {
   const wanted = [...new Set(contexts)];
   const tip = missingCheckRuns(wanted.filter(c => c !== EDD_CHECK), tipCheckRuns);
   const eddSeen = missingCheckRuns([EDD_CHECK], tipCheckRuns).length === 0 || missingCheckRuns([EDD_CHECK], prCheckRuns).length === 0;
-  return { tip, pr: wanted.includes(EDD_CHECK) && !eddSeen ? [EDD_CHECK] : [] };
+  const pr = wanted.includes(EDD_CHECK) && !eddSeen ? [EDD_CHECK] : [];
+  return { tip, pr, prUnread: pr.length > 0 && prCheckRuns === null };
+}
+
+export function prChecksUnread(production: string): string {
+  return `the pull requests into ${production} could not be read (network, token scope or rate limit), so whether ${EDD_CHECK} has reported on one is unknown; re-run when gh api can read them`;
 }
 
 export function evidenceWorkflowWarning(root: string): string | null {
@@ -1332,7 +1337,7 @@ function apply(gs: GitStrategy, slug: string, write: boolean, allowLoosening: bo
       return 1;
     }
     if (missing.pr.length > 0) {
-      log.err(firstPullRequestNeeded(ref));
+      log.err(missing.prUnread ? prChecksUnread(ref) : firstPullRequestNeeded(ref));
       return 1;
     }
   }

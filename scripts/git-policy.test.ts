@@ -999,13 +999,16 @@ describe('the edd/evidence guard reads pull request heads, never the production 
   const onPr = { check_runs: [{ name: EDD_CHECK, ...ACTIONS }] };
 
   test('edd/evidence reported on a PR head is enough, the static ids still need the tip', () => {
-    expect(missingRequiredChecks([EDD_CHECK, 'lint'], tip, onPr)).toEqual({ tip: [], pr: [] });
-    expect(missingRequiredChecks([EDD_CHECK, 'lint', 'types'], tip, onPr)).toEqual({ tip: ['types'], pr: [] });
+    expect(missingRequiredChecks([EDD_CHECK, 'lint'], tip, onPr)).toEqual({ tip: [], pr: [], prUnread: false });
+    expect(missingRequiredChecks([EDD_CHECK, 'lint', 'types'], tip, onPr)).toEqual({ tip: ['types'], pr: [], prUnread: false });
   });
 
   test('no PR has reported it yet: the first pull request is what is missing', () => {
-    expect(missingRequiredChecks([EDD_CHECK, 'lint'], tip, { check_runs: [] })).toEqual({ tip: [], pr: [EDD_CHECK] });
-    expect(missingRequiredChecks([EDD_CHECK, 'lint'], tip, null)).toEqual({ tip: [], pr: [EDD_CHECK] });
+    expect(missingRequiredChecks([EDD_CHECK, 'lint'], tip, { check_runs: [] })).toEqual({ tip: [], pr: [EDD_CHECK], prUnread: false });
+  });
+
+  test('an unreadable PR list is reported as unknown, not as a missing first pull request', () => {
+    expect(missingRequiredChecks([EDD_CHECK, 'lint'], tip, null)).toEqual({ tip: [], pr: [EDD_CHECK], prUnread: true });
   });
 
   test('prHeadCheckRuns walks the latest PRs into the base until one head carries the check', () => {

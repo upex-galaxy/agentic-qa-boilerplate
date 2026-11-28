@@ -22,6 +22,7 @@ import {
   mergesOnChecks,
   missingCheckRuns,
   missingRequiredChecks,
+  prChecksUnread,
   prHeadCheckRuns,
   protectedBranches,
   repoSettingsPatch,
@@ -349,14 +350,14 @@ export function assessPreflight(gs: GitStrategy, contexts: string[], host: HostS
   if (statusChecksManaged(gs)) {
     integrationId = resolveIntegrationId(host.checkRuns);
     if (integrationId === null) {
-      blockers.push(`no GitHub Actions check run exists on ${prod} yet, so the GitHub Actions app id (integration_id) cannot be read; run the ${EDD_CHECK} workflow once on ${prod}`);
+      blockers.push(`no GitHub Actions check run exists on ${prod} yet, so the GitHub Actions app id (integration_id) cannot be read; run any GitHub Actions workflow on ${prod} once`);
     }
     const missing = missingRequiredChecks(contexts, host.checkRuns, host.prCheckRuns ?? null);
     if (missing.tip.length > 0) {
       blockers.push(`these required checks have never reported on ${prod}: ${missing.tip.join(', ')}; a required check that never reports blocks every merge, so run those CI jobs on ${prod} first`);
     }
     if (missing.pr.length > 0) {
-      blockers.push(firstPullRequestNeeded(prod));
+      blockers.push(missing.prUnread ? prChecksUnread(prod) : firstPullRequestNeeded(prod));
     }
     if (host.repo.owner?.type === 'User' && directPushOpen(gs.policy?.direct_push_to_protected ?? 'evidence')) {
       blockers.push('a user-owned repository has no ruleset bypass list, so a required check on a branch that takes direct pushes would refuse every direct push; move the repository to an organization, or choose forbidden or manual');
