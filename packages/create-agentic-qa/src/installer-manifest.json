@@ -610,7 +610,7 @@
     },
     {
       "name": "jq",
-      "reason": "Must be installed manually using your OS package manager.",
+      "reason": "Must be installed manually. Run: brew install jq   # or: apt install jq · winget install jqlang.jq",
       "installHint": "https://jqlang.org/"
     },
     {
