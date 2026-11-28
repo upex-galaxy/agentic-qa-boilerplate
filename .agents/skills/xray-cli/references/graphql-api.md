@@ -497,10 +497,9 @@ does not define. Measured on a live instance that accepts `TODO`, `EXECUTING`,
 | `ABORTED` | Test aborted | Xray default; may be absent |
 | `BLOCKED` | Test blocked by dependency | Xray default; may be absent |
 
-When the status you need is absent, record the run in one the project defines
-and say why in the run comment (`run comment --id <runId> --comment ...`). Move
-the run off `TODO`, because `TODO` reads as "never executed", which is a different
-fact from "executed and blocked".
+When the status you need is absent, do not retry variants: leave an unexecuted
+run `TODO`, never `FAILED`, and write its `BLOCKED` or `DEFERRED (execution)`
+reason line in the results (`sprint-testing/references/reporting-templates.md` §2.4).
 
 ## GraphQL Schema Explorer
 

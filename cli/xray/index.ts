@@ -191,9 +191,10 @@ ${colors.bold}TEST RUNS${colors.reset}
                                         ABORTED|BLOCKED. The vocabulary is
                                         PER-INSTANCE: a project may accept only
                                         TODO|EXECUTING|PASSED|FAILED and reject the
-                                        rest at mutation time. Record a blocked case
-                                        in a status the project defines and explain
-                                        it with 'run comment'; never leave it TODO.
+                                        rest at mutation time. With no status that
+                                        fits a blocked case, leave the unexecuted
+                                        run TODO, never FAILED, and write its reason
+                                        line in the results.
 
   run step-status    Update a specific step status
                      --run <id>         Test run ID
