@@ -170,7 +170,7 @@ The `## Git Strategy` section of `.agents/instructions/agent-git.md` is a shippe
 
 The questionnaire has just captured the branch policy, and the same answers describe a GitHub ruleset. Setup can close the gap between intent and enforcement in the same run, so a `declared` block does not drift until the first refused merge.
 
-Start read-only, because an existing repo usually already has protection:
+Start read-only, because an existing repo usually already has protection. A person at a terminal can run `bun run git:policy setup` instead: it asks the strategy, push and merge questions, writes those keys, prints the plan and the admin preflight, and applies only on an explicit yes (or prints a hand-off for an admin).
 
 ```bash
 bun run git:policy verify   # what the host enforces today vs what was just captured

@@ -17,6 +17,7 @@
 | `bun run git:policy apply --yes` | yes | yes | no | 0, or 1 on the same refusals or a failed write |
 | `bun run git:policy migrate` | no | no | no (dry run) | 1 on the `setup` verdict or when the splice fails; 0 otherwise, `blocked` included (§2d) |
 | `bun run git:policy migrate --yes` | no | no | `git_strategy.policy` only (§2d) | 1 on `setup`, `blocked`, a failed splice or a failed read-back; 0 otherwise |
+| `bun run git:policy setup` | yes (GET only, for the plan and the admin preflight) | only through `apply --yes`, after an admin's explicit yes at a terminal; never with `--plan-only`, never non-interactive | `git_strategy` strategy, branches, `protected`, push and merge policy, `meta.strategy_source: chosen`, after a confirm (or `--write-policy`) | 0 when it finished, including the non-admin hand-off; 1 on a bad flag, a failed write or read-back, or a failed apply |
 
 `apply` is a dry run by default. `--yes` is what writes. `--allow-loosening` is additionally required for any change that removes a guard or lowers the bar (see §4).
 
