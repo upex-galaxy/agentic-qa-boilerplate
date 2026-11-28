@@ -10,7 +10,7 @@ import { ALLOWED_SIGNERS, ALWAYS_GATE_KEYS, canonical, DEPTHS, gateKeysTouched, 
 import { changeDepth, depthRank, raiseForGateKeys, requiredAgentic } from './depth.ts';
 import { changedFiles, commitMessage, EMPTY_TREE, git, mergeBase, parentsOf, rangeCount, rangeLog, showFile, treeOf } from './git.ts';
 import { DiffTooLarge, MAX_DIFF_BYTES, patchId } from './patch-id.ts';
-import { listsASigner } from './signers.ts';
+import { listsASigner, signersAt, signersEntry, SYMLINK_REFUSED } from './signers.ts';
 
 export const MAX_COMMITS = 2000;
 
@@ -171,7 +171,7 @@ export function verifyAgentic(input: VerifyInput): AgenticVerdict {
     throw e;
   }
   const baseHasSigner = input.allowedSigners !== null && listsASigner(input.allowedSigners);
-  const headSigners = baseHasSigner ? null : showFile(cwd, head, ALLOWED_SIGNERS);
+  const headSigners = baseHasSigner ? null : signersAt(cwd, head);
   const firstSigner = headSigners !== null && listsASigner(headSigners);
   const files = changedFiles(cwd, base, head).filter(f => !(firstSigner && f === ALLOWED_SIGNERS));
   const keyed = changeDepthWithKeys(cwd, base, files, head, loaded);
@@ -179,8 +179,10 @@ export function verifyAgentic(input: VerifyInput): AgenticVerdict {
   const reasons = firstSigner ? [...keyed.reasons, `${ALLOWED_SIGNERS} gets its first signer while the base lists none: the file itself needs no signed evidence (trusted on first use)`] : keyed.reasons;
   const required = requiredAgentic(loaded.contract.agentic, depth, files);
   const verdict: AgenticVerdict = { ok: true, required: required.map(r => r.id), depth, depthReasons: reasons, patchId: pid, evidenceCommit: null, signature: 'absent', signer: null, checks: [], problems: [] };
+  if (files.includes(ALLOWED_SIGNERS) && signersEntry(cwd, head) === 'symlink') { verdict.problems.push(SYMLINK_REFUSED); verdict.ok = false; }
   const evidence = findEvidenceCommit(cwd, base, head);
   if (required.length === 0 && evidence === null) { return verdict; }
+  if (!verdict.ok) { return verdict; }
   const problems = verdict.problems;
   if (evidence === null) {
     problems.push(`depth ${depth} requires agentic evidence (${verdict.required.join(', ')}) and no evidence commit is in the range: run bun run edd attest`);
@@ -205,7 +207,7 @@ export function verifyAgentic(input: VerifyInput): AgenticVerdict {
   const sig = input.signatureOf ? input.signatureOf(evidence) : checkSignature(cwd, evidence, input.allowedSigners);
   verdict.signature = sig.signature;
   verdict.signer = sig.signer;
-  if (sig.signature !== 'valid') { problems.push(`evidence commit signature is ${sig.signature} against the allowed signers read from the base`); }
+  if (sig.signature !== 'valid') { problems.push(`evidence commit signature is ${sig.signature} against the allowed signers read from the base${baseHasSigner ? '' : `; the base lists no valid signer line, so seat one first: run bun run edd signers and push ${ALLOWED_SIGNERS} in a change of its own`}`); }
   if (payload.contract_digest !== loaded.digest) { problems.push(`the evidence was attested against contract ${payload.contract_digest}; the base contract is ${loaded.digest}: re-attest`); }
   if (!(DEPTHS as readonly string[]).includes(payload.depth) || depthRank(payload.depth) < depthRank(depth)) { problems.push(`attested depth ${payload.depth} is below the change's depth ${depth}`); }
   problems.push(...coverageProblems(required, payload.checks, depth));

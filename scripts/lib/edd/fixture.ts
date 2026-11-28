@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -27,6 +28,13 @@ export function makeRepo(prefix = 'edd-repo-'): Repo {
     return run('rev-parse', 'HEAD');
   };
   return { dir, git: run, write, commit, cleanup: () => rmSync(root, { recursive: true, force: true }) };
+}
+
+export function fakeKey(seed: string): string {
+  const type = Buffer.from('ssh-ed25519');
+  const len = (n: number): Buffer => { const b = Buffer.alloc(4); b.writeUInt32BE(n); return b; };
+  const point = createHash('sha256').update(seed).digest();
+  return `ssh-ed25519 ${Buffer.concat([len(type.length), type, len(point.length), point]).toString('base64')}`;
 }
 
 export function projectYaml(evidence: string, policy = 'evidence'): string {

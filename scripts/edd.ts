@@ -8,12 +8,12 @@ import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 
 import { AGENTIC_SCHEMA, collectChecks, evidenceMessage } from './lib/edd/attest.ts';
-import { ALLOWED_SIGNERS, ContractError, DEPTHS, loadContract, refReader, sha256, treeReader } from './lib/edd/contract.ts';
+import { ContractError, DEPTHS, loadContract, refReader, sha256, treeReader } from './lib/edd/contract.ts';
 import { gatePathsTouched, requiredAgentic } from './lib/edd/depth.ts';
 import { changedFiles, cleanEnv, commitTime, EMPTY_TREE, git, isCommit, isZeroOid, mergeBase, parentsOf, primaryRoot, repoRoot, resolveCommit, treeOf } from './lib/edd/git.ts';
 import { DiffTooLarge, patchId } from './lib/edd/patch-id.ts';
 import { artifactsRoot, pruneArtifacts, readRecord, RECORD_SCHEMA, RENDER_MARKER, renderMarkdown, scrubLine, writeRecord } from './lib/edd/record.ts';
-import { seedAllowedSigners } from './lib/edd/signers.ts';
+import { seedAllowedSigners, signersAt } from './lib/edd/signers.ts';
 import { authorSessions, changeDepthWithKeys, coverageProblems, gateKeysChanged, isEvidenceCommit, testerProblems, verifyAgentic } from './lib/edd/verify.ts';
 
 const USAGE = `Usage: bun run edd <command>
@@ -242,7 +242,7 @@ async function gate(): Promise<number> {
       : loaded.contract.static.filter(s => s.where.includes('pre-push')).map(s => ({ id: s.id, cmd: s.cmd, exit: null, ms: 0, output_sha256: null, ran_at: null, skipped: 'the pushed commit is not the checked-out tree' }));
     const files = changedFiles(CWD, base, r.localSha);
     const agentic = isProtected
-      ? verifyAgentic({ cwd: CWD, base, head: r.localSha, loaded, allowedSigners: base === EMPTY_TREE ? null : refReader(CWD, base)(ALLOWED_SIGNERS) })
+      ? verifyAgentic({ cwd: CWD, base, head: r.localSha, loaded, allowedSigners: base === EMPTY_TREE ? null : signersAt(CWD, base) })
       : (() => {
           const d = changeDepthWithKeys(CWD, base, files, r.localSha, loaded);
           try { return emptyAgentic(d.depth, d.reasons, patchId(CWD, base, r.localSha)); }
@@ -314,7 +314,7 @@ function verifyLocal(): number {
   const head = resolveCommit(CWD, positional()[0] ?? 'HEAD');
   if (!base || !head) { return die('base or head is not a commit'); }
   const read = refReader(CWD, base);
-  const v = verifyAgentic({ cwd: CWD, base, head, loaded: load(read, baseRef), allowedSigners: read(ALLOWED_SIGNERS) });
+  const v = verifyAgentic({ cwd: CWD, base, head, loaded: load(read, baseRef), allowedSigners: signersAt(CWD, base) });
   say(`edd verify: ${v.ok ? 'PASS' : 'FAIL'} depth ${v.depth}, required [${v.required.join(', ')}], evidence ${v.evidenceCommit?.slice(0, 12) ?? 'none'}, signature ${v.signature}`);
   for (const p of v.problems) { say(`  - ${p}`); }
   return v.ok ? 0 : 1;
@@ -422,7 +422,7 @@ function verifyCi(): number {
     say(`edd verify: direct_push_to_protected is ${loaded.facts.policy} at the base, not evidence; a direct push carries no evidence to verify.`);
     return 0;
   }
-  const agentic = verifyAgentic({ cwd: CWD, base, head, loaded, allowedSigners: !pr && base === EMPTY_TREE ? null : read(ALLOWED_SIGNERS) });
+  const agentic = verifyAgentic({ cwd: CWD, base, head, loaded, allowedSigners: !pr && base === EMPTY_TREE ? null : signersAt(CWD, source) });
   const ready = pr && repo ? readyState(pr, repo, loaded) : null;
   const rec = record({ sha: head, base, branch, repo, remoteRef: pr ? `refs/heads/${pr.base.ref}` : (ev.ref ?? null), flow, where: 'ci', loaded, read, agentic, statics: [], ready, touches: touches(changedFiles(CWD, base, head), loaded, base, head), problems });
   const path = writeRecord(PRIMARY, rec);
@@ -450,7 +450,7 @@ function render(): number {
   const base = baseTip ? (mergeBase(CWD, sha, baseTip) ?? EMPTY_TREE) : EMPTY_TREE;
   const read = baseTip ? refReader(CWD, baseTip) : treeReader(CWD);
   const loaded = load(read, baseTip ? baseRef : 'working tree');
-  const agentic = verifyAgentic({ cwd: CWD, base, head: sha, loaded, allowedSigners: baseTip ? read(ALLOWED_SIGNERS) : null });
+  const agentic = verifyAgentic({ cwd: CWD, base, head: sha, loaded, allowedSigners: baseTip ? signersAt(CWD, baseTip) : null });
   const fresh = record({ sha, base, branch: null, repo: originSlug(), remoteRef: null, flow: 'pr', where: 'pre-push', loaded, read, agentic, statics: [], ready: null, touches: touches(changedFiles(CWD, base, sha), loaded, base, sha), problems: [] });
   console.log(renderMarkdown(fresh));
   say(`<!-- ${has('--pr') ? 'the local record is ignored' : `no record for ${sha.slice(0, 12)}`}: rendered from a fresh verification of ${baseRef}...${sha.slice(0, 12)}; static checks were not run, the pre-push gate or CI runs them -->`);
@@ -500,7 +500,7 @@ async function main(): Promise<number> {
     case 'signers': {
       const seed = seedAllowedSigners(CWD, { replace: has('--replace') });
       say(seed.message);
-      return seed.status === 'no-key' ? 1 : 0;
+      return seed.status === 'no-key' || seed.status === 'refused' ? 1 : 0;
     }
     case undefined:
     case '--help':

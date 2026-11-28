@@ -1,15 +1,16 @@
 import type { Repo } from './fixture.ts';
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 
 import { join, resolve } from 'node:path';
 
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { makeRepo, projectYaml } from './fixture.ts';
+import { fakeKey, makeRepo, projectYaml } from './fixture.ts';
 
 const EDD = resolve(import.meta.dir, '..', '..', 'edd.ts');
 const GATES = resolve(import.meta.dir, '..', '..', '..', '.husky', 'framework-gates.sh');
 
+const ME = fakeKey('me');
 const repos: Repo[] = [];
 afterEach(() => {
   while (repos.length > 0) { repos.pop()?.cleanup(); }
@@ -357,7 +358,7 @@ describe('the first signer is trusted on first use', () => {
     repos.push(r);
     const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml(gated) });
     r.git('update-ref', 'refs/remotes/origin/main', base);
-    const head = r.commit('chore(edd): first signer', { '.agents/edd/allowed_signers': 'me namespaces="git" ssh-ed25519 AAAAme\n' });
+    const head = r.commit('chore(edd): first signer', { '.agents/edd/allowed_signers': `me namespaces="git" ${ME}\n` });
     const res = run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${base}\n`);
     expect(res.code).toBe(0);
     const rec = JSON.parse(readFileSync(join(r.dir, '.session', 'evidence', `${head}.json`), 'utf8'));
@@ -369,16 +370,45 @@ describe('the first signer is trusted on first use', () => {
     repos.push(r);
     const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml(gated), '.agents/edd/allowed_signers': '# Public SSH keys only\n' });
     r.git('update-ref', 'refs/remotes/origin/main', base);
-    const head = r.commit('chore(edd): first signer', { '.agents/edd/allowed_signers': '# Public SSH keys only\nme namespaces="git" ssh-ed25519 AAAAme\n' });
+    const head = r.commit('chore(edd): first signer', { '.agents/edd/allowed_signers': `# Public SSH keys only\nme namespaces="git" ${ME}\n` });
     expect(run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${base}\n`).code).toBe(0);
+  });
+
+  test('a malformed base file counts as no signer, so the first signer can still be seated', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml(gated), '.agents/edd/allowed_signers': 'garbage\n' });
+    r.git('update-ref', 'refs/remotes/origin/main', base);
+    const head = r.commit('chore(edd): first signer', { '.agents/edd/allowed_signers': `me namespaces="git" ${ME}\n` });
+    const res = run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${base}\n`);
+    expect(res.code).toBe(0);
+    expect(res.out).not.toContain('symlink');
+  });
+
+  test('a symlinked allowed_signers is never followed: at the head it is refused, at the base it lists no signer', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml(gated) });
+    r.git('update-ref', 'refs/remotes/origin/main', base);
+    r.write('docs/keys.txt', `me namespaces="git" ${ME}\n`);
+    mkdirSync(join(r.dir, '.agents', 'edd'), { recursive: true });
+    symlinkSync('../../docs/keys.txt', join(r.dir, '.agents', 'edd', 'allowed_signers'));
+    const linked = r.commit('chore(edd): linked signers');
+    const res = run(r.dir, ['gate'], `refs/heads/main ${linked} refs/heads/main ${base}\n`);
+    expect(res.code).toBe(1);
+    expect(res.out).toContain('is a symlink. The verifier never follows one');
+    r.git('update-ref', 'refs/remotes/origin/main', linked);
+    r.git('rm', '-q', '.agents/edd/allowed_signers');
+    const head = r.commit('chore(edd): first signer', { '.agents/edd/allowed_signers': `me namespaces="git" ${ME}\n` });
+    expect(run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${linked}\n`).code).toBe(0);
   });
 
   test('once the base lists a signer, changing the file needs signed evidence as before', () => {
     const r = makeRepo();
     repos.push(r);
-    const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml(gated), '.agents/edd/allowed_signers': 'me namespaces="git" ssh-ed25519 AAAAme\n' });
+    const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml(gated), '.agents/edd/allowed_signers': `me namespaces="git" ${ME}\n` });
     r.git('update-ref', 'refs/remotes/origin/main', base);
-    const head = r.commit('chore(edd): another signer', { '.agents/edd/allowed_signers': 'me namespaces="git" ssh-ed25519 AAAAme\nyou namespaces="git" ssh-ed25519 AAAAyou\n' });
+    const head = r.commit('chore(edd): another signer', { '.agents/edd/allowed_signers': `me namespaces="git" ${ME}\nyou namespaces="git" ${fakeKey('you')}\n` });
     const res = run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${base}\n`);
     expect(res.code).toBe(1);
     expect(res.out).toContain('requires agentic evidence');
