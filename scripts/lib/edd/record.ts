@@ -75,7 +75,9 @@ export function renderMarkdown(rec: EvidenceRecord): string {
     '',
     `**Result: ${rec.result.toUpperCase()}** for ${short(rec.subject.sha)} (${rec.push.where}, ${rec.push.flow}), depth \`${rec.contract.depth}\`, contract \`${rec.contract.digest.slice(0, 19)}\` read from ${cell(rec.contract.read_from)}.`,
     '',
-    'What this proves: the declared checks ran and the agentic evidence is bound to this exact diff and signed by an allowed key. It catches mistakes and drift; it does not stop an agent that deliberately forges a check or its artifacts.',
+    rec.agentic.signature === 'valid'
+      ? 'What this proves: the declared checks ran and the agentic evidence is bound to this exact diff and signed by an allowed key. It catches mistakes and drift; it does not stop an agent that deliberately forges a check or its artifacts.'
+      : 'What this proves: only the rows below. No evidence commit with a valid signature is bound to this diff, so nothing here shows that an agentic check ran.',
     '',
     `Touches gate files: ${rec.touches_gate.touched ? `yes (${cell([...rec.touches_gate.paths, ...rec.touches_gate.keys.map(k => `key ${k}`)].join(', '))})` : 'no'}. Informational only: it changes no verdict.`,
     '',

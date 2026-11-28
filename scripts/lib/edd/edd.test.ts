@@ -468,6 +468,14 @@ describe('record', () => {
     expect(md).toContain('## Evidence');
     expect(md).toContain('Touches gate files: yes (.husky/pre-push). Informational only');
     expect(md).toContain('a &#124; b');
+    expect(md).not.toContain('signed by an allowed key');
+    expect(md).toContain('No evidence commit with a valid signature is bound to this diff');
+  });
+
+  test('the proof sentence appears only over a valid signature', () => {
+    const signed = { ...rec('abc'), agentic: { required: ['screens'], evidence_commit: 'e', signature: 'valid' as const, signer: 'SHA256:x', checks: [] } };
+    const md = renderMarkdown(signed);
+    expect(md).toContain('signed by an allowed key');
     expect(md).toContain('it does not stop an agent that deliberately forges a check');
   });
 });

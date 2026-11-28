@@ -427,7 +427,7 @@ function render(): number {
   const ref = positional()[0] ?? 'HEAD';
   const sha = resolveCommit(CWD, ref);
   if (!sha) { return die(`${ref} is not a commit`); }
-  const rec = readRecord(PRIMARY, sha);
+  const rec = has('--pr') ? null : readRecord(PRIMARY, sha);
   if (rec) {
     console.log(renderMarkdown(rec));
     say(`<!-- rendered from the record ${sha.slice(0, 12)}.json -->`);

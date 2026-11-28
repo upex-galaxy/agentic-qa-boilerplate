@@ -259,17 +259,39 @@ describe('edd check, render, prune', () => {
     expect(run(r.dir, ['check', 'never']).out).toContain('not a ci check');
   });
 
-  test('render prints the record of a pushed commit', () => {
+  test('render prints the record of a pushed commit; render --pr always verifies afresh', () => {
     const { r, base } = fixture('evidence');
     const head = r.commit('feat: x', { 'ok.txt': '1\n' });
     run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${base}\n`);
-    const res = run(r.dir, ['render', '--pr']);
+    const res = run(r.dir, ['render', head]);
     expect(res.code).toBe(0);
     expect(res.out).toContain('**Result: PASS**');
-    const fresh = run(r.dir, ['render', base]);
-    expect(fresh.code).toBe(0);
-    expect(fresh.out).toContain('rendered from a fresh verification');
     expect(res.out).toContain('rendered from the record');
+    const pr = run(r.dir, ['render', '--pr']);
+    expect(pr.code).toBe(0);
+    expect(pr.out).toContain('rendered from a fresh verification');
+  });
+
+  test('render --pr ignores a pre-push record and never claims evidence that is not there', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml(`evidence:
+  agentic:
+    - { id: screens, kind: screenshots, envs: [local], min_depth: light }
+  depth:
+    default: light
+`) });
+    r.git('update-ref', 'refs/remotes/origin/main', base);
+    r.git('checkout', '-q', '-b', 'feat');
+    const head = r.commit('feat: x', { 'app/a.ts': '1\n' });
+    run(r.dir, ['gate'], `refs/heads/feat ${head} refs/heads/feat ${'0'.repeat(40)}\n`);
+    const rec = join(r.dir, '.session', 'evidence', `${head}.json`);
+    const tampered = JSON.parse(readFileSync(rec, 'utf8'));
+    writeFileSync(rec, JSON.stringify({ ...tampered, result: 'pass', problems: [] }));
+    const pr = run(r.dir, ['render', '--pr']);
+    expect(pr.out).toContain('**Result: FAIL**');
+    expect(pr.out).not.toContain('signed by an allowed key');
+    expect(pr.out).toContain('no evidence commit is in the range');
   });
 
   test('prune never deletes a record', () => {
