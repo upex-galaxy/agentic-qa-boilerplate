@@ -45,10 +45,24 @@ function docAt(cwd: string, ref: string): Record<string, unknown> | null {
 }
 
 export const RESOLVED_CONTRACT_KEY = 'evidence (resolved contract)';
-const BUN_RUN = /\bbun\s+run\s+([^\s;&|()<>'"`]+)/g;
+const BUN_SCRIPT = /\bbun\s+(?:run\s+)?(?:-{1,2}\S+\s+)*([^\s;&|()<>'"`-][^\s;&|()<>'"`]*)/g;
+const MAX_SCRIPTS = 200;
 
 export function staticScriptNames(cmds: string[]): string[] {
-  return [...new Set(cmds.flatMap(c => [...c.matchAll(BUN_RUN)].map(m => m[1])))];
+  return [...new Set(cmds.flatMap(c => [...c.matchAll(BUN_SCRIPT)].map(m => m[1]).filter(n => n !== 'run')))];
+}
+
+export function reachedScripts(cmds: string[], ...scripts: (Record<string, unknown> | null)[]): string[] {
+  const seen = new Set<string>();
+  const queue = staticScriptNames(cmds);
+  while (queue.length > 0 && seen.size < MAX_SCRIPTS) {
+    const name = queue.shift()!;
+    if (seen.has(name)) { continue; }
+    seen.add(name);
+    const bodies = scripts.map(s => s?.[name]).filter((v): v is string => typeof v === 'string');
+    queue.push(...staticScriptNames(bodies));
+  }
+  return [...seen];
 }
 
 function scriptsAt(cwd: string, ref: string): Record<string, unknown> | null {
@@ -80,7 +94,7 @@ export function gateKeysChanged(cwd: string, base: string, head: string, loaded:
   }
   const before = scriptsAt(cwd, fork);
   const after = scriptsAt(cwd, head);
-  for (const name of staticScriptNames(loaded.contract.static.map(s => s.cmd))) {
+  for (const name of reachedScripts(loaded.contract.static.map(s => s.cmd), before, after)) {
     if (scriptValue(before, name) !== scriptValue(after, name)) { keys.push(`package.json scripts.${name}`); }
   }
   return keys;

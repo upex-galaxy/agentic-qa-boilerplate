@@ -266,6 +266,17 @@ describe('gate keys and branch contracts', () => {
     expect(rec.touches_gate.keys).toEqual(['package.json scripts.lint:check']);
   });
 
+  test('a script reached through bun <name> or a nested bun run is a gate key too', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml(screens('bun run types:check')), 'package.json': JSON.stringify({ scripts: { 'types:check': 'bun check', 'all': 'bun run inner', 'inner': 'exit 0' } }) });
+    r.git('update-ref', 'refs/remotes/origin/main', base);
+    r.commit('chore: shadow check', { 'package.json': JSON.stringify({ scripts: { 'types:check': 'bun check', 'check': 'true', 'all': 'bun run inner', 'inner': 'exit 0' } }) });
+    const res = run(r.dir, ['verify', '--base', base]);
+    expect(res.code).toBe(1);
+    expect(res.out).toContain('depth standard');
+  });
+
   test('a changed include fragment changes the resolved contract and is a gate change', () => {
     const r = makeRepo();
     repos.push(r);
