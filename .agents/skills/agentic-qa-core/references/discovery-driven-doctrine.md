@@ -227,13 +227,15 @@ with nobody assigned to unblock it).
 
 - An open `BLOCKED` gates the sign-off only: the Story stays at `in_test` until no case is `BLOCKED`. A
   confirmed `FAILED` is reported at once, with the `BLOCKED` cases listed beside it.
-- `qa_sign_off` is allowed when every case is `PASSED` or `DEFERRED (execution)` with its record, and none
+- `qa_sign_off` (`test_finished` for a Tech Story or Tech Debt, here and below) is allowed when every case is `PASSED` or `DEFERRED (execution)` with its record, and none
   is `FAILED` (a FAIL recalibrated to GO-with-debt per `sprint-testing/references/reporting-templates.md`
   §5.0 counts as not FAILED). The QA comment lists every deferral. The person who signs the transition sees
   that list: the deferral is QA's call, the signature is still the person's (`./stage-gates.md` §"Contract table").
-- A Story with any deferral needs three things before `qa_sign_off`: the notice comment on the Story, the
-  owner's explicit OK on the deferral list, cited in the results, and the `qa.deferral.label` label applied
-  and read back. Without the OK it stays at `in_test` (`sprint-testing/references/shift-right-deferral.md`).
+- A Story, Tech Story or Tech Debt with any deferral needs three things before the sign-off: the notice
+  comment on it, the owner's explicit OK on the deferral list, cited in the results with a pointer that was
+  opened and checked, and the `qa.deferral.label` label applied and read back. Without the OK it stays in
+  test. A refused OK returns the listed cases to `BLOCKED`
+  (`sprint-testing/references/shift-right-deferral.md`).
 - The acceptance Test Execution closes once every non-terminal run carries its `DEFERRED (execution)` line.
   On a Story with deferrals it closes only after the owner's OK; cases dropped as out of scope have left the
   run set.
