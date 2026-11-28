@@ -14,7 +14,8 @@
  *   inside it is lost;
  * - an installed path that is a symlink (a development link into a skills
  *   repo) is REPLACED by a real folder: the link is gone, the linked repo is
- *   untouched. Hence the skip rule in `isDevLink`;
+ *   untouched. Hence the skip rules in `isDevLink` and `devLinkedDestinations`
+ *   (the latter also stands in front of the installer's `skills add`);
  * - the exit code is 0 even when a source fails to fetch: failure is read from
  *   the `✗` lines of its output;
  * - a name that is not installed prints "No installed skills found matching"
@@ -32,9 +33,9 @@
  */
 
 import { spawn } from 'node:child_process';
-import { cpSync, lstatSync, mkdirSync, readlinkSync } from 'node:fs';
+import { cpSync, lstatSync, mkdirSync, readdirSync, readlinkSync, realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 
 /** Env var that turns the step off, for a run that cannot pass the flag. */
 export const SKILLS_UPDATE_OPT_OUT_ENV = 'UPEX_SKIP_SKILLS_UPDATE';
@@ -120,12 +121,80 @@ export function isDevLink(installedPath: string, store: string, depth = 0): bool
   return true;
 }
 
+function realPath(path: string): string {
+  try { return realpathSync(path); }
+  catch { return resolve(path); }
+}
+
+function entryNames(dir: string): string[] {
+  try { return readdirSync(dir); }
+  catch { return []; }
+}
+
+export function skillsDirs(scope: SkillScope, base: string, env: Record<string, string | undefined> = process.env): { store: string, claude: string } {
+  const configDir = scope === 'global' ? env.CLAUDE_CONFIG_DIR?.trim() : undefined;
+  return { store: join(base, '.agents', 'skills'), claude: join(configDir || join(base, '.claude'), 'skills') };
+}
+
+const OFF_PATTERN_DIRS: Record<SkillScope, string[]> = { project: ['skills', 'data/skills', 'agent/skills'], global: ['.config/kimchi/harness/skills'] };
+const AGENT_HOME_VARS = ['VIBE_HOME', 'HERMES_HOME', 'AUTOHAND_HOME', 'GROK_HOME', 'REASONIX_HOME'];
+
+function isPresent(path: string): boolean {
+  try { return lstatSync(path) !== undefined; }
+  catch { return false; }
+}
+
+function childPaths(dir: string): string[] {
+  return entryNames(dir).map(name => join(dir, name));
+}
+
+// Without `--agent` the skills CLI writes into other agents' folders; the explicit entries are what its 1.9.1 agent table keeps outside `.<x>/skills` and `.<x>/<y>/skills`.
+function agentSkillsDirs(scope: SkillScope, base: string, env: Record<string, string | undefined>): string[] {
+  const hidden = childPaths(base).filter(path => basename(path).startsWith('.'));
+  const parents = [...hidden, ...hidden.flatMap(childPaths)];
+  if (scope === 'project') { parents.push(...childPaths(join(base, 'agent', 'subagents'))); }
+  else {
+    if (env.XDG_CONFIG_HOME) { parents.push(...childPaths(env.XDG_CONFIG_HOME)); }
+    parents.push(...AGENT_HOME_VARS.flatMap(name => env[name]?.trim() || []));
+    const appData = env.APPDATA?.trim();
+    if (appData) { parents.push(join(appData, 'reasonix')); }
+  }
+  return [...parents.map(parent => join(parent, 'skills')), ...OFF_PATTERN_DIRS[scope].map(dir => join(base, dir))];
+}
+
+export function devLinkedDestinations(
+  skill: string | undefined,
+  scope: SkillScope,
+  base: string,
+  env: Record<string, string | undefined> = process.env,
+): string[] {
+  const { store, claude } = skillsDirs(scope, base, env);
+  const unlinked = (dir: string): string => {
+    const root = dir.startsWith(`${base}${sep}`) ? base : dirname(dirname(dir));
+    return join(realPath(root), relative(root, dir));
+  };
+  const canonical = [store, claude].map(unlinked);
+  const found: string[] = [];
+  for (const dir of new Set([store, claude, ...agentSkillsDirs(scope, base, env)])) {
+    for (const name of !skill || skill === '*' ? entryNames(dir) : [skill]) {
+      const entry = join(dir, name);
+      if (!isPresent(entry)) { continue; }
+      // A fan-out or alias onto the store entry: that entry is judged on its own.
+      if (dir !== store && realPath(entry) === realPath(join(store, name))) { continue; }
+      const real = realPath(dir);
+      const rerouted = real !== unlinked(dir) && !canonical.includes(real);
+      if (rerouted || isDevLink(entry, store)) { found.push(entry); }
+    }
+  }
+  return found;
+}
+
 /** Pure planner: what to update, and why every other declared skill is skipped. */
 export function planSkillsUpdate(
   scope: SkillScope,
   declared: ReadonlyArray<DeclaredSkill>,
   listed: ReadonlyArray<ListedSkill>,
-  devLink: (path: string) => boolean,
+  devLink: (path: string, name: string) => boolean,
 ): SkillsUpdatePlan {
   const plan: SkillsUpdatePlan = { scope, update: [], devLinks: [], otherSource: [], untracked: [], notInstalled: [] };
   const seen = new Set<string>();
@@ -144,7 +213,7 @@ export function planSkillsUpdate(
       seen.add(row.name);
       // A development link first: an untracked one must not be told to reinstall,
       // which would replace the link exactly as an update does.
-      if (devLink(row.path)) { plan.devLinks.push(row.name); }
+      if (devLink(row.path, row.name)) { plan.devLinks.push(row.name); }
       else if (row.status !== 'tracked' || row.source === null) { plan.untracked.push(row.name); }
       else if (normalizeSource(row.source) !== pkg) { plan.otherSource.push(row.name); }
       else { plan.update.push(row.name); }
@@ -183,6 +252,7 @@ export interface SkillsUpdateOptions {
   warn: (message: string) => void
   run?: BunxRunner
   home?: string
+  env?: Record<string, string | undefined>
   /** Backup folder suffix; tests pass a fixed one. */
   stamp?: string
   /** Skills the user declined (`state.skills['community:global:<slug>'] === 'declined'`); never reported as missing. */
@@ -218,9 +288,9 @@ export async function runSkillsUpdate(opts: SkillsUpdateOptions): Promise<Skills
   const t = (es: string, en: string): string => (opts.lang === 'en' ? en : es);
   const home = opts.home ?? homedir();
   const result: SkillsUpdateResult = { plans: [], updated: [], failed: [], backupDir: null };
-  const scopes: Array<{ scope: SkillScope, declared: ReadonlyArray<DeclaredSkill>, flag: string, store: string }> = [
-    { scope: 'global', declared: opts.global, flag: '-g', store: join(home, '.agents', 'skills') },
-    { scope: 'project', declared: opts.project, flag: '-p', store: join(opts.cwd, '.agents', 'skills') },
+  const scopes: Array<{ scope: SkillScope, declared: ReadonlyArray<DeclaredSkill>, flag: string, base: string }> = [
+    { scope: 'global', declared: opts.global, flag: '-g', base: home },
+    { scope: 'project', declared: opts.project, flag: '-p', base: opts.cwd },
   ];
   for (const s of scopes) {
     if (s.declared.length === 0) { continue; }
@@ -228,7 +298,9 @@ export async function runSkillsUpdate(opts: SkillsUpdateOptions): Promise<Skills
       const listArgs = ['skills', 'ls', ...(s.scope === 'global' ? ['-g'] : []), '--json'];
       const ls = await run(listArgs, opts.cwd, LIST_TIMEOUT_MS);
       if (ls.code !== 0) { throw new Error(`\`bunx ${listArgs.join(' ')}\` exited ${ls.code}`); }
-      const plan = planSkillsUpdate(s.scope, s.declared, parseListJson(ls.stdout), p => isDevLink(p, s.store));
+      const { store } = skillsDirs(s.scope, s.base, opts.env);
+      const plan = planSkillsUpdate(s.scope, s.declared, parseListJson(ls.stdout), (path, name) =>
+        isDevLink(path, store) || devLinkedDestinations(name, s.scope, s.base, opts.env).length > 0);
       result.plans.push(plan);
       for (const line of describeSkips(plan, t, opts.declined)) { opts.info(line); }
       if (plan.update.length === 0) { continue; }
@@ -239,7 +311,7 @@ export async function runSkillsUpdate(opts: SkillsUpdateOptions): Promise<Skills
         result.backupDir = join(opts.cwd, '.backups', `skills-update-${stamp}`);
         mkdirSync(result.backupDir, { recursive: true });
         for (const name of plan.update) {
-          cpSync(join(s.store, name), join(result.backupDir, name), { recursive: true });
+          cpSync(join(store, name), join(result.backupDir, name), { recursive: true });
         }
       }
       opts.info(`bunx ${updateArgs.join(' ')}`);

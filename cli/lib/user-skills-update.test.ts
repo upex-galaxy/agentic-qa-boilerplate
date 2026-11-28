@@ -4,10 +4,10 @@
 import type { BunxRunner, ListedSkill } from './user-skills-update.ts';
 import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { afterEach, describe, expect, it } from 'bun:test';
 import { parseArgs } from '../update-boilerplate.ts';
-import { isDevLink, normalizeSource, parseListJson, parseUpdateOutput, planSkillsUpdate, runSkillsUpdate, SKILLS_UPDATE_OPT_OUT_FLAG } from './user-skills-update.ts';
+import { devLinkedDestinations, isDevLink, normalizeSource, parseListJson, parseUpdateOutput, planSkillsUpdate, runSkillsUpdate, SKILLS_UPDATE_OPT_OUT_FLAG } from './user-skills-update.ts';
 
 const OURS = 'https://github.com/upex-galaxy/agentic-user-skills';
 const row = (name: string, extra: Partial<ListedSkill> = {}): ListedSkill => ({
@@ -116,6 +116,147 @@ describe('isDevLink', () => {
   });
 });
 
+describe('devLinkedDestinations', () => {
+  function layout(): { base: string, store: string, claude: string, checkout: string, folder: (path: string) => string, link: (target: string, path: string) => void } {
+    const base = tmp();
+    const folder = (path: string): string => { mkdirSync(path, { recursive: true }); return path; };
+    const link = (target: string, path: string): void => { folder(dirname(path)); symlinkSync(target, path); };
+    const checkout = join(tmp(), 'repo', 'skills');
+    folder(join(checkout, 'mkd'));
+    return { base, store: join(base, '.agents', 'skills'), claude: join(base, '.claude', 'skills'), checkout, folder, link };
+  }
+
+  it('finds nothing in real folders and the CLI fan-out', () => {
+    const { base, store, claude, folder, link } = layout();
+    folder(join(store, 'mkd'));
+    link('../../.agents/skills/mkd', join(claude, 'mkd'));
+    expect(devLinkedDestinations('mkd', 'global', base, {})).toEqual([]);
+    expect(devLinkedDestinations('absent', 'global', base, {})).toEqual([]);
+  });
+
+  it('accepts a harness directory aliased to the store, and reports only a linked store entry through it', () => {
+    const { base, store, claude, checkout, folder, link } = layout();
+    folder(join(store, 'retro'));
+    link(join(checkout, 'mkd'), join(store, 'mkd'));
+    link('../.agents/skills', claude);
+    expect(devLinkedDestinations('retro', 'project', base, {})).toEqual([]);
+    expect(devLinkedDestinations('mkd', 'project', base, {})).toEqual([join(store, 'mkd')]);
+  });
+
+  it('reports a harness entry linked to a checkout while the store entry is a real folder', () => {
+    const { base, store, claude, checkout, folder, link } = layout();
+    folder(join(store, 'mkd'));
+    link(join(checkout, 'mkd'), join(claude, 'mkd'));
+    expect(devLinkedDestinations('mkd', 'global', base, {})).toEqual([join(claude, 'mkd')]);
+  });
+
+  for (const scope of ['global', 'project'] as const) {
+    it(`reports an entry inside a harness directory that is a link into a checkout (${scope})`, () => {
+      const { base, claude, checkout, link } = layout();
+      link(checkout, claude);
+      expect(devLinkedDestinations('mkd', scope, base, {})).toEqual([join(claude, 'mkd')]);
+      expect(devLinkedDestinations('retro', scope, base, {})).toEqual([]);
+    });
+
+    it(`reports an entry inside a store that is a link into a checkout, not its fan-out (${scope})`, () => {
+      const { base, store, claude, checkout, link } = layout();
+      link(checkout, store);
+      link('../../.agents/skills/mkd', join(claude, 'mkd'));
+      expect(devLinkedDestinations('mkd', scope, base, {})).toEqual([join(store, 'mkd')]);
+    });
+  }
+
+  it('reports an entry below a linked parent of the store', () => {
+    const { base, store, folder, link } = layout();
+    const dotfiles = tmp();
+    folder(join(dotfiles, 'skills', 'mkd'));
+    link(dotfiles, join(base, '.agents'));
+    expect(devLinkedDestinations('mkd', 'global', base, {})).toEqual([join(store, 'mkd')]);
+  });
+
+  it('does not count a link above the home directory', () => {
+    const { base, store, folder, link } = layout();
+    folder(join(store, 'mkd'));
+    const alias = join(tmp(), 'home');
+    link(base, alias);
+    expect(devLinkedDestinations('mkd', 'global', alias, {})).toEqual([]);
+  });
+
+  it('reads the user-level Claude directory from CLAUDE_CONFIG_DIR', () => {
+    const { base, checkout, link } = layout();
+    const config = tmp();
+    link(join(checkout, 'mkd'), join(config, 'skills', 'mkd'));
+    expect(devLinkedDestinations('mkd', 'global', base, { CLAUDE_CONFIG_DIR: config })).toEqual([join(config, 'skills', 'mkd')]);
+    expect(devLinkedDestinations('mkd', 'project', base, { CLAUDE_CONFIG_DIR: config })).toEqual([]);
+  });
+
+  it('reports a windsurf entry linked to a checkout, at both scopes', () => {
+    const { base, store, checkout, folder, link } = layout();
+    folder(join(store, 'mkd'));
+    const global = join(base, '.codeium', 'windsurf', 'skills', 'mkd');
+    const project = join(base, '.windsurf', 'skills', 'mkd');
+    for (const entry of [global, project]) { link(join(checkout, 'mkd'), entry); }
+    for (const scope of ['global', 'project'] as const) {
+      expect(devLinkedDestinations('mkd', scope, base, {}).sort()).toEqual([global, project]);
+    }
+  });
+
+  it('finds nothing in a multi-agent fan-out of links and copies', () => {
+    const { base, store, folder, link } = layout();
+    folder(join(store, 'mkd'));
+    for (const dir of ['.claude', '.windsurf', '.codeium/windsurf', '.config/goose', '.pi/agent']) {
+      const entry = join(base, dir, 'skills', 'mkd');
+      link(relative(dirname(entry), join(store, 'mkd')), entry);
+    }
+    folder(join(base, '.continue', 'skills', 'mkd'));
+    link('../.agents/skills', join(base, '.roo', 'skills'));
+    writeFileSync(join(base, '.profile'), '');
+    for (const scope of ['global', 'project'] as const) {
+      expect(devLinkedDestinations('mkd', scope, base, {})).toEqual([]);
+    }
+  });
+
+  it('treats either canonical folder resolving to the other as the store', () => {
+    for (const [real, alias] of [['.claude', '.agents'], ['.agents', '.claude']]) {
+      const { base, folder, link } = layout();
+      folder(join(base, real, 'skills', 'mkd'));
+      link(`../${real}/skills`, join(base, alias, 'skills'));
+      for (const scope of ['global', 'project'] as const) {
+        expect(devLinkedDestinations('mkd', scope, base, {})).toEqual([]);
+      }
+    }
+  });
+
+  it('checks the agent folders that are not a hidden skills folder', () => {
+    for (const [scope, dir] of [['project', 'skills'], ['project', 'data/skills'], ['project', 'agent/skills'], ['project', 'agent/subagents/helper/skills'], ['global', '.config/kimchi/harness/skills']] as const) {
+      const { base, checkout, link } = layout();
+      const entry = join(base, dir, 'mkd');
+      link(join(checkout, 'mkd'), entry);
+      expect(devLinkedDestinations('mkd', scope, base, {})).toEqual([entry]);
+    }
+  });
+
+  it('follows the variables that move an agent folder, at user level only', () => {
+    for (const [name, dir] of [['XDG_CONFIG_HOME', 'goose/skills'], ['VIBE_HOME', 'skills'], ['HERMES_HOME', 'skills'], ['AUTOHAND_HOME', 'skills'], ['GROK_HOME', 'skills'], ['REASONIX_HOME', 'skills'], ['APPDATA', 'reasonix/skills']]) {
+      const { base, checkout, link } = layout();
+      const moved = tmp();
+      const entry = join(moved, dir, 'mkd');
+      link(join(checkout, 'mkd'), entry);
+      expect(devLinkedDestinations('mkd', 'global', base, { [name]: moved })).toEqual([entry]);
+      expect(devLinkedDestinations('mkd', 'project', base, { [name]: moved })).toEqual([]);
+    }
+  });
+
+  it('judges every entry for a package declared without a skill name', () => {
+    const { base, store, checkout, folder, link } = layout();
+    folder(join(store, 'retro'));
+    link(join(checkout, 'mkd'), join(store, 'mkd'));
+    for (const name of [undefined, '*']) {
+      expect(devLinkedDestinations(name, 'global', base, {})).toEqual([join(store, 'mkd')]);
+    }
+  });
+});
+
 describe('parseUpdateOutput', () => {
   it('reads updated names and failed sources, ignoring ANSI noise', () => {
     const out = '\u001B[?25hUpdating retro…\n  ✓ Updated retro\nUpdating humanizer…\n  ✓ Updated humanizer\n\n✓ Updated 2 skill(s)\n  ✗ Failed to check skills from upex-galaxy/no-such-repo\n';
@@ -143,7 +284,18 @@ describe('runSkillsUpdate', () => {
     };
     return { run, calls };
   }
-  const quiet = { info: () => {}, warn: () => {} };
+  const quiet = { info: () => {}, warn: () => {}, env: {} };
+
+  it('skips a skill whose only development link is in a harness directory', async () => {
+    const home = tmp();
+    mkdirSync(join(home, '.agents', 'skills', 'retro'), { recursive: true });
+    mkdirSync(join(home, '.claude', 'skills'), { recursive: true });
+    symlinkSync(tmp(), join(home, '.claude', 'skills', 'retro'));
+    const { run, calls } = fake([row('retro', { path: join(home, '.agents', 'skills', 'retro') })], []);
+    const res = await runSkillsUpdate({ cwd: tmp(), home, global: [{ package: OURS, skill: 'retro' }], project: [], dryRun: false, run, ...quiet });
+    expect(res.plans[0].devLinks).toEqual(['retro']);
+    expect(calls.some(c => c[1] === 'update')).toBe(false);
+  });
 
   it('never calls update with an empty name list', async () => {
     const { run, calls } = fake([], []);
@@ -175,7 +327,7 @@ describe('runSkillsUpdate', () => {
     const home = tmp();
     const { run, calls } = fake([row('retro', { path: join(home, '.agents', 'skills', 'retro') })], []);
     const infos: string[] = [];
-    await runSkillsUpdate({ cwd: tmp(), home, global: [{ package: OURS, skill: 'retro' }], project: [], dryRun: true, run, info: m => infos.push(m), warn: () => {} });
+    await runSkillsUpdate({ cwd: tmp(), home, global: [{ package: OURS, skill: 'retro' }], project: [], dryRun: true, run, info: m => infos.push(m), warn: () => {}, env: {} });
     expect(calls.some(c => c[1] === 'update')).toBe(false);
     expect(infos.join('\n')).toContain('bunx skills update retro -g -y');
   });
@@ -200,7 +352,7 @@ describe('runSkillsUpdate', () => {
       if (args[1] === 'ls') { return { code: 1, stdout: '', stderr: 'offline' }; }
       return { code: 0, stdout: '  ✗ Failed to check skills from upex-galaxy/agentic-user-skills\n', stderr: '' };
     };
-    const res = await runSkillsUpdate({ cwd: tmp(), home, global: [{ package: OURS, skill: 'retro' }], project: [{ package: OURS, skill: 'x' }], dryRun: false, run, info: () => {}, warn: m => warns.push(m) });
+    const res = await runSkillsUpdate({ cwd: tmp(), home, global: [{ package: OURS, skill: 'retro' }], project: [{ package: OURS, skill: 'x' }], dryRun: false, run, info: () => {}, warn: m => warns.push(m), env: {} });
     expect(res.failed.length).toBe(2);
     expect(warns.length).toBe(2);
   });
