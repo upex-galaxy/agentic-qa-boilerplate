@@ -153,7 +153,7 @@ Nothing NEW or RECHECK: go straight to §5.
    on its own.
 
 Owner decisions go to the board and the chat (`sprint-board.md` §3). Setting `DEFERRED` is the worker's
-QA call once a case cannot be recreated in the environment, not the pass's
+QA call once the unblock preflight (`sprint-testing/references/preflight-gate.md`) says `DEFER`, not the pass's
 (`agentic-qa-core/references/discovery-driven-doctrine.md` §5).
 
 ## 6. What a pass reports
