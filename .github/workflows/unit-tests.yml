@@ -2,8 +2,9 @@
 # KATA Architecture - Unit Test Pipeline
 # ============================================
 # Purpose: Run the boilerplate's own unit tests (`bun test`: cli/, scripts/,
-# tests/utils/, packages/, .agents/skills/) and the repo:check gates that
-# build.yml does not run, on every push. Before this workflow those tests gated
+# tests/utils/, packages/; `bun run skills:test`: .agents/skills/, which a bare
+# `bun test` skips) and the repo:check gates that build.yml does not run, on
+# every push. Before this workflow those tests gated
 # only on a laptop. Job ConsumerMatrix syncs one throwaway downstream project
 # per harness shape from the pushed commit and runs a project's gates there. The Playwright suites are not here: bunfig.toml keeps
 # `bun test` off tests/e2e/ and tests/integration/.

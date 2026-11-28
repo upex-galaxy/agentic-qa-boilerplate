@@ -60,9 +60,9 @@ export const BASE_ESLINT_OPTIONS = {
     '.agents/skills/*/templates/**',
     // Skills (committed QA-specific + community installed via `bunx skills add`
     // + gentle-ai loader output) are out of scope for repo-level lint rules.
-    // Mixing upstream skill code with our ESLint config causes false positives;
-    // QA-specific skills under .agents/skills/ are markdown + JSON only, no
-    // TypeScript that needs linting.
+    // Mixing upstream skill code with our ESLint config causes false positives.
+    // QA-specific skills may ship scripts and tests; those are gated by
+    // `bun run skills:test`, not by lint.
     '.agents/skills/**',
     // MCP reference templates — syntax-sensitive opt-in configs. Linting them
     // (e.g. toml/array-bracket-newline) corrupts the layout users copy from.

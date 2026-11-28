@@ -1426,7 +1426,7 @@ const PROTECTED_WATCHLIST: ProtectedWatchEntry[] = [
   // The reporter and the two helpers that carry project wiring. Their pure
   // neighbours sync through `tests-utils`; these get a drift row with the hunks.
   { path: 'tests/KataReporter.ts', reason: 'the project\'s reporter: merge upstream\'s outcome records (reports/test-outcomes.json, the run id shared with atc_results.json), without which the board never shows an automated result' },
-  { path: 'tests/utils/decorators.ts', reason: 'the @atc decorator adapted per project: merge upstream\'s AtcResult.playwrightTestId and the runtime test.skip() as SKIP' },
+  { path: 'tests/utils/decorators.ts', reason: 'the @atc decorator adapted per project: merge upstream\'s credential masking of step arguments, AtcResult.playwrightTestId and the runtime test.skip() as SKIP' },
   { path: 'tests/utils/jiraSync.ts', reason: 'the project\'s TMS write-back: merge upstream\'s Xray body built through the synced tests/utils/xrayResults.ts and its key check before authenticating' },
   // Since the api-login split the generic CLI lives in `scripts/lib/api-login-core.ts`
   // (plainly synced) and the project's auth flow in `scripts/api-login.project.ts`
