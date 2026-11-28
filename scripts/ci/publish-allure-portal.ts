@@ -37,6 +37,9 @@ import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+import { collectSecretValues, createRedactor } from '../../cli/oneshot-report/redact.ts';
+import { scrubResults } from '../../cli/oneshot-report/scrub.ts';
+
 interface Args {
   env: string
   suite: string
@@ -117,6 +120,10 @@ async function main(): Promise<void> {
   if (!fs.existsSync(resultsDir) || fs.readdirSync(resultsDir).length === 0) {
     throw new Error(`No Allure results at ${resultsDir} — nothing to publish.`);
   }
+
+  // A publish by hand skips the workflow's scrub step, so it runs here too, before anything reads the results.
+  const scrub = scrubResults(resultsDir, createRedactor(collectSecretValues(repoRoot, process.env)));
+  console.log(`Scrubbed ${scrub.changed} of ${scrub.scanned} text attachments.`);
 
   // 1. Restore trend history from the portal (404 on the stream's first run).
   fs.mkdirSync(path.dirname(localHistory), { recursive: true });

@@ -16,6 +16,17 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Security (a publish by hand scrubs the results first)
+- **`publish-allure-pages.ts` and `publish-allure-portal.ts` scrub the results directory before they generate.** Both reuse the `report:scrub` redaction, in place, so a publisher run by hand no longer skips the step the suite workflows run. A scrub that fails stops the publish before a report is generated or anything is sent. It cleans the text attachments only and finds secrets by shape, by name and by the values that machine holds. It leaves `*-result.json` files, traces, images and videos as they are. A second scrub of the same directory changes nothing.
+- **The `test-automation` skill describes `allure:run` as it runs**: tests, attachment scrub, `allure generate`.
+- **Upgrade step for existing projects**: run `bun sync` with no component list. It brings `cli/` (with `cli/oneshot-report/`) and `scripts/`, and appends the `report:scrub` and `report:oneshot` keys to `package.json`. `bun sync scripts` alone delivers publishers whose import is missing. The rest is yours to merge from upstream:
+  - `package.json`: take upstream's `allure:generate` and `allure:run`, which scrub before they generate. `bun sync` replaces a value you have not changed since the sync recorded it; otherwise `--auto` keeps yours, an interactive run asks and `--force` takes upstream's.
+  - `.github/workflows/regression.yml`, `smoke.yml` and `sanity.yml` (never overwritten): in every job that runs a suite, add upstream's `Scrub Secrets From Allure Attachments` step (`id: scrub`, `if: always()`) before the results upload, and condition that upload on `always() && steps.scrub.outcome == 'success'`.
+  - `playwright.config.ts`: add `use: { trace: 'off' }` to the `ui-setup` and `api-setup` projects.
+  - `tests/components/ui/UiBase.ts`: port `fillSecret()` with the guard that refuses to type while a trace records (it throws in CI and warns locally), and type every password and token in your page components through it.
+  - Your specs. Declare `test.use({ trace: 'off' })` at the top of every spec file that types or sends a credential. No guard catches a login sent only through the API.
+  - `tests/utils/decorators.ts` and `tests/utils/allure.ts`: merge upstream's masking of step arguments and attachments. `bun sync` writes neither, and `allure.ts` gets no parity row.
+
 ### Fixed (CI on `main` runs green again)
 - **The Oxlint config test reads the same output everywhere.** Oxlint drops its summary line and switches formatter when it detects an AI agent session (`CLAUDECODE`, `AI_AGENT` and about a dozen more markers), so "a clean spec is silent" passed in an agent session and failed in CI on `Found 0 warnings and 0 errors.`. `scripts/oxlint-config.test.ts` now runs Oxlint with `--format=json` and asserts on the diagnostic codes: a clean file has none and exits 0. Shared fix with the Dev boilerplate.
 - **A synced dependency lands in sorted order.** `bun sync` appended a new upstream dependency at the end of `devDependencies`, so a sorted section failed `jsonc/sort-keys` right after the sync (the `legacy-updater` consumer leg caught it on `oxlint` and `eslint-plugin-playwright`). A dependency section already in ascending order now gets each new key at its sorted position; a hand-ordered one, `scripts` and `lint-staged` keep the append at the end, and existing keys never move. Same fix in the Dev boilerplate.

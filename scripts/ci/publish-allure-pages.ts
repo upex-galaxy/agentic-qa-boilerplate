@@ -30,6 +30,9 @@ import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+import { collectSecretValues, createRedactor } from '../../cli/oneshot-report/redact.ts';
+import { scrubResults } from '../../cli/oneshot-report/scrub.ts';
+
 interface Args {
   env: string
   suite: string
@@ -124,6 +127,10 @@ function main(): void {
   if (!fs.existsSync(resultsDir) || fs.readdirSync(resultsDir).length === 0) {
     throw new Error(`No Allure results at ${resultsDir} — nothing to publish.`);
   }
+
+  // A publish by hand skips the workflow's scrub step, so it runs here too, before anything reads the results.
+  const scrub = scrubResults(resultsDir, createRedactor(collectSecretValues(repoRoot, process.env)));
+  console.log(`Scrubbed ${scrub.changed} of ${scrub.scanned} text attachments.`);
 
   // gh-pages checkout may be absent on a fresh repo (checkout step is
   // continue-on-error). When the ref does not exist, actions/checkout still

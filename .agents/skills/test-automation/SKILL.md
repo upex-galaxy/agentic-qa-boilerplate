@@ -278,7 +278,7 @@ bun allure:agent           # `bunx allure agent -- bunx --bun playwright test`, 
 Allure is a devDep, so no global install is needed. Use it to confirm the test exercised the expected ATC (the summary lists each `@atc('TICKET-ID')` block with its status), for a scope check before Phase 3, or to read a fixture or locator mismatch as structure instead of a raw stack. For human review of the same run:
 
 ```bash
-bun allure:run             # `bunx allure run -- bunx --bun playwright test`, through the env launcher (full HTML report)
+bun allure:run             # tests through the env launcher, then the attachment scrub, then `allure generate` (full HTML report)
 bun allure:open            # serve the last generated report locally
 ```
 
