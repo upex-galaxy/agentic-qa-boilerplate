@@ -1,0 +1,151 @@
+import type { Repo } from './fixture.ts';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+
+import { join, resolve } from 'node:path';
+
+import { afterEach, describe, expect, test } from 'bun:test';
+
+import { makeRepo, projectYaml } from './fixture.ts';
+
+const EDD = resolve(import.meta.dir, '..', '..', 'edd.ts');
+const GATES = resolve(import.meta.dir, '..', '..', '..', '.husky', 'framework-gates.sh');
+
+const repos: Repo[] = [];
+afterEach(() => {
+  while (repos.length > 0) { repos.pop()?.cleanup(); }
+});
+
+function contract(cmd: string): string {
+  return `evidence:
+  static:
+    - { id: lint, cmd: '${cmd}', where: [pre-push, ci] }
+    - { id: never, cmd: 'exit 3', where: [ci] }
+  depth:
+    default: none
+`;
+}
+
+function fixture(policy: string): { r: Repo, base: string } {
+  const r = makeRepo();
+  repos.push(r);
+  const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml(contract('test -f ok.txt'), policy) });
+  r.git('update-ref', 'refs/remotes/origin/main', base);
+  return { r, base };
+}
+
+function run(cwd: string, args: string[], stdin = ''): { code: number, out: string } {
+  const p = Bun.spawnSync(['bun', EDD, ...args], { cwd, stdin: Buffer.from(stdin), stdout: 'pipe', stderr: 'pipe' });
+  return { code: p.exitCode ?? 1, out: `${p.stdout.toString()}${p.stderr.toString()}` };
+}
+
+function records(dir: string): string[] {
+  const ev = join(dir, '.session', 'evidence');
+  return existsSync(ev) ? readdirSync(ev).filter(f => f.endsWith('.json')) : [];
+}
+
+describe('edd gate', () => {
+  test('policy evidence: a failing check refuses the push and writes a fail record', () => {
+    const { r, base } = fixture('evidence');
+    const head = r.commit('feat: x', { 'app/a.ts': '1\n' });
+    const res = run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${base}\n`);
+    expect(res.code).toBe(1);
+    const rec = JSON.parse(readFileSync(join(r.dir, '.session', 'evidence', `${head}.json`), 'utf8'));
+    expect(rec).toMatchObject({ schema: 'edd-evidence/1', result: 'fail', push: { where: 'pre-push', flow: 'direct' }, contract: { read_from: base } });
+    expect(rec.static.map((s: { id: string, exit: number }) => [s.id, s.exit])).toEqual([['lint', 1]]);
+  });
+
+  test('policy evidence: a passing run writes a pass record', () => {
+    const { r, base } = fixture('evidence');
+    const head = r.commit('feat: x', { 'ok.txt': '1\n' });
+    const res = run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${base}\n`);
+    expect(res.out).toContain('edd gate: PASS');
+    expect(res.code).toBe(0);
+    expect(JSON.parse(readFileSync(join(r.dir, '.session', 'evidence', `${head}.json`), 'utf8')).result).toBe('pass');
+  });
+
+  test('the checks come from the base contract: a push that weakens its own contract still runs the base one', () => {
+    const { r, base } = fixture('evidence');
+    const head = r.commit('chore: weaken', { '.agents/project.yaml': projectYaml(contract('true')) });
+    const res = run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${base}\n`);
+    expect(res.code).toBe(1);
+    const rec = JSON.parse(readFileSync(join(r.dir, '.session', 'evidence', `${head}.json`), 'utf8'));
+    expect(rec.touches_gate).toEqual({ touched: true, paths: [], keys: ['evidence'] });
+  });
+
+  test('a push of a commit that is not checked out fails closed', () => {
+    const { r, base } = fixture('evidence');
+    const head = r.commit('feat: x', { 'ok.txt': '1\n' });
+    r.git('checkout', '-q', base);
+    const res = run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${base}\n`);
+    expect(res.code).toBe(1);
+    expect(res.out).toContain('check out the commit you push');
+  });
+
+  test('policy allowed: the gate does nothing and writes nothing', () => {
+    const { r, base } = fixture('allowed');
+    const head = r.commit('feat: x', { 'app/a.ts': '1\n' });
+    const res = run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${base}\n`);
+    expect(res).toEqual({ code: 0, out: '' });
+    expect(records(r.dir)).toEqual([]);
+  });
+});
+
+describe('edd check, render, prune', () => {
+  test('check runs a ci check by id and skips an id the contract lacks', () => {
+    const { r } = fixture('allowed');
+    expect(run(r.dir, ['check', 'never']).code).toBe(3);
+    expect(run(r.dir, ['check', 'format'])).toMatchObject({ code: 0 });
+    r.commit('chore: drop block', { '.agents/project.yaml': projectYaml('') });
+    expect(run(r.dir, ['check', 'never']).out).toContain('declares no evidence: block');
+  });
+
+  test('render prints the record of a pushed commit', () => {
+    const { r, base } = fixture('evidence');
+    const head = r.commit('feat: x', { 'ok.txt': '1\n' });
+    run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${base}\n`);
+    const res = run(r.dir, ['render', '--pr']);
+    expect(res.code).toBe(0);
+    expect(res.out).toContain('**Result: PASS**');
+    expect(run(r.dir, ['render', base]).code).toBe(1);
+  });
+
+  test('prune never deletes a record', () => {
+    const { r, base } = fixture('evidence');
+    const head = r.commit('feat: x', { 'ok.txt': '1\n' });
+    run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${base}\n`);
+    expect(run(r.dir, ['prune', '--days', '0']).code).toBe(0);
+    expect(records(r.dir)).toEqual([`${head}.json`]);
+  });
+});
+
+describe('framework_gate_evidence (.husky/framework-gates.sh)', () => {
+  function hook(r: Repo, yaml: string): { code: number, called: string | null, after: string } {
+    r.write('.agents/project.yaml', yaml);
+    r.write('scripts/edd.ts', 'await Bun.write(\'called.txt\', await Bun.stdin.text());\n');
+    const script = join(r.dir, '..', 'hook.sh');
+    writeFileSync(script, `. '${GATES}'\nframework_gate_evidence || exit $?\ncat > after.txt\n`);
+    const p = Bun.spawnSync(['sh', script], { cwd: r.dir, stdin: Buffer.from('refs/heads/main a refs/heads/main b\n'), stdout: 'pipe', stderr: 'pipe' });
+    const called = join(r.dir, 'called.txt');
+    return { code: p.exitCode ?? 1, called: existsSync(called) ? readFileSync(called, 'utf8') : null, after: readFileSync(join(r.dir, 'after.txt'), 'utf8') };
+  }
+
+  test('inert under allowed, confirm, forbidden, a missing value and a commented-out evidence', () => {
+    const r = makeRepo();
+    repos.push(r);
+    for (const policy of ['allowed', 'confirm', 'forbidden', 'null', 'allowed # was evidence']) {
+      const res = hook(r, projectYaml('', policy));
+      expect(res).toEqual({ code: 0, called: null, after: 'refs/heads/main a refs/heads/main b\n' });
+    }
+    const commented = hook(r, projectYaml('', 'allowed').replace('  policy:', '  policy:\n    # direct_push_to_protected: evidence'));
+    expect(commented.called).toBeNull();
+  });
+
+  test('under evidence it hands the refs to the gate and back to the next gates, block or flow style', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const block = hook(r, projectYaml('', 'evidence'));
+    expect(block).toEqual({ code: 0, called: 'refs/heads/main a refs/heads/main b\n', after: 'refs/heads/main a refs/heads/main b\n' });
+    const flow = hook(r, projectYaml('', 'evidence').replace('  policy:\n    direct_push_to_protected: evidence', '  policy: { direct_push_to_protected: \'evidence\' }'));
+    expect(flow.called).toBe('refs/heads/main a refs/heads/main b\n');
+  });
+});

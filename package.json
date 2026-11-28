@@ -62,6 +62,7 @@
     "docs:build": "bun scripts/docs-manifest.ts",
     "docs:check": "bun scripts/lint-docs.ts",
     "env:set": "bun --no-env-file scripts/env-set.ts",
+    "edd": "bun scripts/edd.ts",
     "evidence": "bun cli/evidence-page/index.ts",
     "format:check": "prettier --check '**/*.{json,yml,yaml,css,scss,html}' --ignore-path .prettierignore",
     "format:fix": "prettier --write '**/*.{json,yml,yaml,css,scss,html}' --ignore-path .prettierignore",
