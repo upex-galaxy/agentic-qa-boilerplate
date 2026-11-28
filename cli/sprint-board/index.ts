@@ -23,6 +23,13 @@ import {
   decisionOptions,
   DEFAULT_EVIDENCE_HOSTS,
   defaultTwoWay,
+  DEFERRAL_NOTES,
+  DEFERRAL_OK_ACTORS,
+  DEFERRAL_OK_RULE,
+  deferralHold,
+  deferralMark,
+  deferralNote,
+  deferralOkRecord,
   EVIDENCE_ARTIFACT_BY,
   EVIDENCE_OUTCOMES,
   evidenceArtifactUrl,
@@ -30,6 +37,7 @@ import {
   listenLine,
   listFixtures,
   localHhmm,
+  metrics,
   needTarget,
   oneOf,
   ownerActionsSince,
@@ -223,6 +231,13 @@ function dockOptions(a: Args): { options: SweepOption[], recommend: string[], mu
   }))];
   if (!multi && recommend.length > 1) { throw new Error('a single-choice item recommends one option; add --multi to recommend several'); }
   return { options, recommend, multi, freeText };
+}
+
+function deferralHint(slug: string, id: string): void {
+  const t = buildState(slug).tickets.find(x => x.id === id);
+  if (!t || deferralHold(t) !== 'owner-ok' || (t.lane !== 'Held' && t.lane !== 'Needs you')) { return; }
+  const waiting = t.deferral!.waiting.join(',');
+  print(`${id} is waiting for owner OK on ${waiting}: once you observe it, record it with deferral-ok ${id} --cases ${waiting} --pointer "<p>" --by ${DEFERRAL_OK_ACTORS.join('|')}`);
 }
 
 const stamp = (iso: string) => `${iso.slice(0, 16).replace('T', ' ')}Z`;
@@ -449,18 +464,42 @@ const commands: Record<string, (a: Args) => void | Promise<void>> = {
     const who = status === 'DEFERRED' || approval !== undefined ? writer(a) : by(a);
     appendEvent(slug, { kind: 'tc', ticket: id, text: `${tc} ${status}${flag(a, 'name') ? `: ${flag(a, 'name')}` : ''}`, by: who, at: flag(a, 'at'), data: { tc, status, name: flag(a, 'name'), approval, reason } });
     print(`${id} ${tc} -> ${status}`);
+    deferralHint(slug, id);
+  },
+
+  'deferral-ok': function (a) {
+    const slug = slugOf(a);
+    const id = knownTicket(slug, a._[0]);
+    const given = need(by(a), `--by ${DEFERRAL_OK_ACTORS.join('|')}: the session that observed the owner OK. See ${DEFERRAL_OK_RULE}`);
+    const who = DEFERRAL_OK_ACTORS.find(x => x === given);
+    if (!who) { throw new Error(`--by must be one of: ${DEFERRAL_OK_ACTORS.join(', ')}, the session that observed the owner OK (got "${given}"). See ${DEFERRAL_OK_RULE}`); }
+    const cases = flags(a, 'cases');
+    const pointer = need(flag(a, 'pointer')?.trim(), `--pointer "<p>": where the owner OK was observed. See ${DEFERRAL_OK_RULE}`);
+    const refused = futureRefusal(flag(a, 'at'));
+    if (refused) { throw new Error(`${refused}. See ${DEFERRAL_OK_RULE}`); }
+    const at = isoAt(flag(a, 'at')) ?? new Date().toISOString();
+    const ticket = buildState(slug).tickets.find(x => x.id === id)!;
+    const record = deferralOkRecord(ticket, { cases, pointer, at });
+    appendEvent(slug, { kind: 'deferral.ok', ticket: id, text: `${id}: ${who} observed an owner OK for ${record.cases.join(', ')}: ${record.pointer}`, by: who, at, data: record });
+    print(`${id}: ${who} observed an owner OK for ${record.cases.join(', ')} (${record.pointer})`);
+    print(`The record sets the lane only: the pointer is still opened at Stage 3 and at round close (${DEFERRAL_OK_RULE}).`);
+    if (record.pointer.startsWith('board:')) { print('A page answer proves it did not come through the CLI, not who typed it: the Story comment is the preferred pointer when both exist.'); }
+    const after = buildState(slug).tickets.find(x => x.id === id)!;
+    if (after.deferral?.bug) { print(`${id}: ${DEFERRAL_NOTES.bug.en}, so it never reads Passed`); }
+    else { deferralHint(slug, id); }
   },
 
   verdict(a) {
     const slug = slugOf(a);
     const id = knownTicket(slug, a._[0]);
-    const v = oneOf(VERDICTS, need(a._[1], 'verdict'), 'verdict');
+    const v = oneOf(VERDICTS, need(rest(a, 1) || undefined, 'verdict'), 'verdict');
     // PENDING is the board's own "no verdict yet" state; recording it reads as a worker that
     // stopped without a verdict (measured on the source board). An owner or developer wait is BLOCKED + hold.
     if (v === 'PENDING') { throw new Error(`verdict PENDING means "no verdict yet". For a ticket waiting on an owner or developer decision record \`verdict ${id} BLOCKED --note "<why>" --by ${AGENT_ACTORS.join('|')}\` and \`hold ${id} --reason no-data|other --on <who> "<what>"\`.`); }
     const note = flag(a, 'note');
     appendEvent(slug, { kind: 'verdict', ticket: id, text: `${id} ${v}${note ? `. ${note}` : ''}`, by: writer(a), at: flag(a, 'at'), data: { verdict: v, note } });
     print(`${id} verdict ${v}`);
+    deferralHint(slug, id);
   },
 
   ask(a) {
@@ -873,11 +912,16 @@ const commands: Record<string, (a: Args) => void | Promise<void>> = {
     const slug = slugOf(a);
     const s = buildState(slug);
     const lanes = new Map<string, string[]>();
-    for (const t of s.tickets.filter(x => x.inScope)) { lanes.set(t.lane, [...(lanes.get(t.lane) ?? []), `${t.id}  ${t.title}${t.atRisk ? '  [shipped at risk]' : ''}`]); }
+    for (const t of s.tickets.filter(x => x.inScope)) {
+      const note = deferralNote(t);
+      const deferral = t.deferral ? `  [${deferralMark(t.deferral)}]${note ? `  (${DEFERRAL_NOTES[note].en})` : ''}` : '';
+      lanes.set(t.lane, [...(lanes.get(t.lane) ?? []), `${t.id}  ${t.title}${t.atRisk ? '  [shipped at risk]' : ''}${deferral}`]);
+    }
     print(`${s.sprint.name}: ${s.tickets.filter(t => t.inScope).length} tickets in scope`);
     for (const [lane, list] of lanes) {
       print();
-      print(`${lane} (${list.length})`);
+      const marked = lane === 'Passed' ? metrics(s).notFullyTested : 0;
+      print(`${lane} (${list.length}${marked ? `, ${marked} not fully tested` : ''})`);
       for (const line of list) { print(`  ${line}`); }
     }
     for (const w of s.warnings) {

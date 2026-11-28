@@ -124,6 +124,14 @@ Order, so every link exists before the text that carries it is written:
 7. Hand-off to the owner (chat, or the mailbox in worker mode): the URL(s), plus the line:
    "Published private: share it from the page's Share menu so the team can open the links."
 
+A story with deferred cases. Until the owner's OK covers every current deferred case, the pack's
+verdict is `PENDING` and the published page reads waiting for owner OK (a current FAILED case makes it
+`FAILED`). Once the OK is verified and the label read back
+(`sprint-testing/references/shift-right-deferral.md` §3 and §4), write `ticket.deferral`
+(`pack-schema.md` §Shift-right deferral), set the verdict to `PASSED WITH DEFERRALS`, then build and
+publish again to the same URL (steps 2 to 4). With nobody at the keyboard and no pointer to the owner's
+OK, leave the pack `PENDING` and report it.
+
 Conductor check. At wave close the conductor checks that each tested ticket and each bug has an
 `evidence-artifact` link on the board. When one is missing, it builds from the worker's pack, publishes
 itself, and records the link with `--by conductor`.

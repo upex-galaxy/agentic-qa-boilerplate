@@ -1,7 +1,7 @@
 {
   "_comment": "The ONE status enum of the evidence page (ADR-0021, ADR-0022), read by statuses.ts and by the evidence-artifact skill's scripts/build.py. ADD-ONLY: the Sprint Board maps every status.",
   "caseStatuses": ["PASSED", "FAILED", "NOT RUN", "BLOCKED", "DEFERRED"],
-  "verdicts": ["PASSED", "FAILED", "PENDING"],
+  "verdicts": ["PASSED", "FAILED", "PENDING", "PASSED WITH DEFERRALS"],
   "bugStatuses": ["OPEN", "FIXED", "RETEST PASSED", "RETEST FAILED", "DEFECT"],
   "tones": {
     "PASSED": "ok",
@@ -10,6 +10,7 @@
     "BLOCKED": "pending",
     "DEFERRED": "pending",
     "PENDING": "pending",
+    "PASSED WITH DEFERRALS": "pending",
     "OPEN": "defect",
     "FIXED": "pending",
     "RETEST PASSED": "ok",

@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-11-28T06:20:33.734Z`
+> Generated: `2026-11-28T06:55:14.923Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -220,6 +220,7 @@ Skills indexed: 30
 **Compact Rules**:
 - Load this skill in any dispatch whose stage captures evidence (sprint-testing Stage 2) or reports it (Stage 3, filing a bug). Append every proof to `<PBI>/evidence/evidence-pack.json` as you test, because a pack rebuilt from memory at the end loses what the screen showed.
 - A `DEFERRED` or `BLOCKED` entry in a pack comes from a preflight verdict (`sprint-testing/references/preflight-gate.md`); never write one without it.
+- A story pack with a deferred case records it under `ticket.deferral` (`references/pack-schema.md` §Shift-right deferral): the Story label once read back, and the owner's own OK as `sprint-testing/references/shift-right-deferral.md` §3 verifies it. Write `PENDING` until that OK covers every current deferred case, and `PASSED WITH DEFERRALS` once it does and the label is on the Story; a current FAILED case still reads `FAILED`. Copy only an OK the owner gave. A bug pack carries no deferral.
 - Take marks from the element's box via `playwright-cli eval` (`coords: "px"`). Read a screenshot back to place a mark only when no element reaches it.
 - A mark does not mask anything, since viewers can toggle marks off. Personal data on screen goes in the image's `redact` boxes, which the build burns into the pixels.
 - Keep a trace, a HAR, a token, a cookie and an `.auth` file out of every pack. Write credentials in API/SQL text as `<redacted>`; the build refuses the rest and names the field.

@@ -156,6 +156,7 @@ the first time, arm `listen` with a starting point:
   The Story's move on a deferral still needs the owner's OK (`shift-right-deferral.md` §3). When the answer is to defer and the case's preflight record says
   `DEFER`, record it with `tc <KEY> <TC> DEFERRED --approval "<who>, <where>" --by conductor`; a deferral QA took on its
   own is recorded with `--reason "QA decision <date>: <external cause>"` and `--by` instead. Neither is the Story's deferral OK.
+  An OK you observed is recorded with `deferral-ok <KEY> --cases <ids> --pointer "<pointer>" --by conductor|worker`, which only moves the lane: the pointer is still opened at Stage 3 and at round close.
 
 ---
 

@@ -1,9 +1,10 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'bun:test';
 
-import { DEMO_REDACT, writeDemo } from './demo.ts';
+import { DEMO_REDACT, demoStoryPack, writeDemo } from './demo.ts';
 import { BUILD_PY, buildError, buildWarnings, PILLOW_INSTALL, pillowInstall, pythonCandidates, pythonPreflight, resolvePython, runBuildPy } from './python.ts';
 
 const missing = pythonPreflight();
@@ -68,6 +69,51 @@ describe.skipIf(missing !== null)('build.py (Python 3.9+ and Pillow present)', (
       const review = runBuildPy(['--pack', story, bug, '--out', join(dir, 'review.html'), ...common]);
       expect(review.code).toBe(0);
       expect(DEMO_REDACT).toHaveLength(4);
+    }
+    finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it('the built page shows the label and the owner OK, or the waiting state, escaped', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'evidence-deferral-'));
+    try {
+      const pack = demoStoryPack({ ok: 'a.png', error: 'b.png' });
+      pack.images = {};
+      pack.bugs = [];
+      pack.tcs = [{ id: 'DEMO-7101-TC3', title: 'Saved cards are listed', status: 'DEFERRED', note: 'flag off; deferred to DEMO-7130' }];
+      pack.ticket.verdict = 'PASSED WITH DEFERRALS';
+      pack.ticket.deferral = { label: '<img src=x>', ok: { by: '<b>Owner</b>', at: '2026-10-24T15:00:00Z', pointer: 'https://tracker.example.test/c?id=1&x="y', cases: ['DEMO-7101-TC3'] } };
+      const path = join(dir, 'pack.json');
+      const page = join(dir, 'page.html');
+      writeFileSync(path, JSON.stringify(pack));
+      const result = runBuildPy(['--pack', path, '--out', page, '--repo', dir]);
+      expect(result.stderr).toBe('');
+      expect(result.code).toBe(0);
+      const html = readFileSync(page, 'utf8');
+      expect(html).toContain('.stamp.PASSEDWITHDEFERRALS');
+      expect(html).toMatch(/class="stamp \$\{esc\(stKey\(t\.verdict\)\)\}"/);
+
+      const source = html.slice(html.indexOf('function deferralOf('), html.indexOf('/* ---------- board ----------'));
+      const escLine = /const esc = .*;/.exec(html)![0];
+      const box = { hidden: true, innerHTML: '' };
+      const fns = runInNewContext(`${escLine}\n${source}\n;({ deferralOf, drawDeferral })`, { $: () => box }) as { deferralOf: (p: unknown) => unknown, drawDeferral: (v: unknown) => void };
+
+      fns.drawDeferral(fns.deferralOf(pack));
+      expect(box.hidden).toBe(false);
+      expect(box.innerHTML).toContain('&lt;img src=x&gt;');
+      expect(box.innerHTML).toContain('&lt;b&gt;Owner&lt;/b&gt; · 2026-10-24T15:00:00Z');
+      expect(box.innerHTML).toContain('href="https://tracker.example.test/c?id=1&amp;x=&quot;y"');
+      expect(box.innerHTML).toContain('<b>Cases covered:</b> DEMO-7101-TC3');
+      expect(box.innerHTML).not.toContain('Waiting for owner OK');
+
+      fns.drawDeferral(fns.deferralOf({ ...pack, ticket: { ...pack.ticket, verdict: 'PENDING', deferral: undefined } }));
+      expect(box.innerHTML).toContain('<b>Waiting for owner OK:</b> DEMO-7101-TC3');
+      expect(box.innerHTML).toContain('not recorded');
+
+      fns.drawDeferral(fns.deferralOf({ ...pack, ticket: { ...pack.ticket, verdict: 'FAILED', deferral: undefined } }));
+      expect(box.hidden).toBe(true);
+      expect(fns.deferralOf({ ...pack, kind: 'bug' })).toBeNull();
     }
     finally {
       rmSync(dir, { recursive: true, force: true });

@@ -5,7 +5,7 @@
  */
 import type { BoardConfig, Catalogs, Source, SourceSnapshot, Transport } from '../lib/sprint-source/index.ts';
 import type { BoardEvent, TrackerSnapshot } from './model.ts';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeEach, describe, expect, test } from 'bun:test';
@@ -125,6 +125,28 @@ suite('sync through the none source (the demo tickets.yaml)', () => {
     await quiet(async () => syncFromSource(slug, { now: NOW }));
     const sprint = JSON.parse(readFileSync(join(DIR, 'sprints', slug, 'sprint.json'), 'utf8'));
     expect(sprint.evidenceHosts).toEqual(['claude.ai']);
+  });
+});
+
+suite('an owner OK on deferred cases', () => {
+  test('lapses when sync sees the case leave DEFERRED, and only then', async () => {
+    appendEvent(slug, { kind: 'scope.add', ticket: 'DEMO-7105', text: 'added' });
+    await quiet(async () => syncFromSource(slug, { now: NOW }));
+    appendEvent(slug, { kind: 'deferral.ok', ticket: 'DEMO-7105', by: 'worker', text: 'ok', data: { cases: ['DEMO-7105-T3'], pointer: 'https://example.atlassian.net/browse/DEMO-7105' } });
+    const state = () => fold({ sprint: readSprint(slug), events: events(), tracker: readTracker(slug), now: NOW.toISOString() }).tickets[0];
+
+    await quiet(async () => syncFromSource(slug, { now: NOW }));
+    expect(events().some(e => e.kind === 'deferral.lapse')).toBe(false);
+    expect(state().lane).toBe('Passed');
+
+    const moved = join(DIR, `moved-${slug}.yaml`);
+    const rows = readFileSync(join(import.meta.dir, 'demo', 'tickets.yaml'), 'utf8');
+    writeFileSync(moved, rows.replace(/(DEMO-7105-T3\n.*\n\s+status: )DEFERRED/, '$1NOT RUN'));
+    await quiet(async () => syncFromSource(slug, { now: NOW, ticketsFile: moved }));
+    expect(events().at(-1)).toMatchObject({ kind: 'deferral.lapse', ticket: 'DEMO-7105', data: { cases: ['DEMO-7105-T3'] } });
+
+    await quiet(async () => syncFromSource(slug, { now: NOW }));
+    expect(state()).toMatchObject({ lane: 'Held', deferral: { waiting: ['DEMO-7105-T3'] } });
   });
 });
 

@@ -6,7 +6,7 @@ import { BUG_BUCKET_OF, BUG_STATUSES, CASE_STATUSES, EVIDENCE_STATUSES, TONE_OF,
 
 // Every member of each union, once: a status added to a type but not to the JSON (or the reverse) fails below
 const BUG: Record<BugStatus, true> = { 'OPEN': true, 'FIXED': true, 'RETEST PASSED': true, 'RETEST FAILED': true, 'DEFECT': true };
-const VERDICT: Record<Verdict, true> = { PASSED: true, FAILED: true, PENDING: true };
+const VERDICT: Record<Verdict, true> = { 'PASSED': true, 'FAILED': true, 'PENDING': true, 'PASSED WITH DEFERRALS': true };
 const TONES: Record<Tone, true> = { ok: true, defect: true, pending: true, neutral: true };
 
 describe('statuses.json, the shared status enum', () => {
@@ -31,6 +31,11 @@ describe('statuses.json, the shared status enum', () => {
     for (const status of BUG_STATUSES) {
       expect(BUG_BUCKETS as readonly string[]).toContain(BUG_BUCKET_OF[status]);
     }
+  });
+
+  it('names a signed-off deferral as the doctrine does, never in the pass colour', () => {
+    expect(VERDICTS).toContain('PASSED WITH DEFERRALS');
+    expect(TONE_OF['PASSED WITH DEFERRALS']).toBe('pending');
   });
 
   it('keeps the values the Sprint Board already maps (add-only)', () => {

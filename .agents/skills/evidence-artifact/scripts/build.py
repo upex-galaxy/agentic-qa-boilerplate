@@ -72,7 +72,13 @@ HARD_MAX_MB = 16                   # the hosted artifact limit; --max-mb cannot 
 # Unknown fields are refused: a typo such as `evidance` would otherwise drop evidence silently.
 # The builder's own fields (hist, histRound, short, src, w, h, bytes) are accepted so an --extract-ed pack builds again.
 TOP_FIELDS = {"schema", "kind", "ticket", "env", "summary", "repro", "images", "tcs", "bugs", "artifact", "currentRound", "rounds"}
-TICKET_FIELDS = {"id", "title", "module", "verdict", "verdictNote", "severity", "priority", "bugs", "parent", "parentTitle", "case", "assignee", "qa", "date", "atp", "atr"}
+TICKET_FIELDS = {"id", "title", "module", "verdict", "verdictNote", "severity", "priority", "bugs", "parent", "parentTitle", "case", "assignee", "qa", "date", "atp", "atr", "deferral"}
+DEFERRAL_FIELDS = {"label", "ok"}
+OK_FIELDS = {"by", "at", "pointer", "record", "cases"}
+DEFERRED_PASS = "PASSED WITH DEFERRALS"
+IN_SESSION = "owner OK given in session"      # the words shift-right-deferral.md §3 prescribes for an in-session record
+OK_POINTER = re.compile(r"(?:https?://[^\s/]+\S*|board:\S+)", re.I)
+OK_TIME = re.compile(r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?")
 CASE_FIELDS = {"id", "title", "note", "status", "kind", "round", "date", "severity", "priority", "from", "url", "evidence", "compare", "hist", "histRound"}
 ITEM_COMMON = {"type", "label", "caption", "result", "round", "flags", "note", "alt", "hist", "histRound"}
 ITEM_FIELDS = {"image": {"ref", "annotations", "coords"}, "api": {"method", "url", "status", "ms", "request", "response", "curl"},
@@ -264,8 +270,9 @@ def validate(p, where, key_rx):
     unknown(t, TICKET_FIELDS, f"{where}: ticket")
     if not key_rx.fullmatch(str(t.get("id", ""))): fail(f"{where}: ticket.id {t.get('id')!r} must match the ticket key pattern {key_rx.pattern} (board.ticket_key_pattern)")
     check_str(t, "title", f"{where}: ticket", required=True)
-    if t.get("verdict") not in VERDICTS: fail(f"{where}: ticket.verdict must be PASSED, FAILED or PENDING")
-    for k in TICKET_FIELDS - {"id", "title", "verdict", "bugs"}: check_str(t, k, f"{where}: ticket")
+    if t.get("verdict") not in VERDICTS: fail(f"{where}: ticket.verdict must be one of {', '.join(_ST['verdicts'])}")
+    for k in TICKET_FIELDS - {"id", "title", "verdict", "bugs", "deferral"}: check_str(t, k, f"{where}: ticket")
+    check_deferral(t.get("deferral"), p["kind"], where)
     if not isinstance(t.get("bugs", []), list) or not all(isinstance(b, str) for b in t.get("bugs", [])): fail(f"{where}: ticket.bugs must be a list of strings")
     env = p.get("env")
     if not isinstance(env, dict) or not all(isinstance(v, str) for v in env.values()): fail(f"{where}: env is required: an ordered map of label -> string (the build strip)")
@@ -318,6 +325,26 @@ def validate(p, where, key_rx):
         unknown(p["artifact"], {"url", "path", "published"}, f"{where}: artifact")
     cross_check(p, where, key_rx)
     scan_text(p, where)
+
+
+def check_deferral(d, kind, where):
+    if d is None: return
+    if kind == "bug": fail(f"{where}: ticket.deferral belongs to a story pack: a bug never passes on a deferral")
+    unknown(d, DEFERRAL_FIELDS, f"{where}: ticket.deferral")
+    check_str(d, "label", f"{where}: ticket.deferral")
+    ok = d.get("ok")
+    if ok is None or ok == {}: return
+    at = f"{where}: ticket.deferral.ok"
+    unknown(ok, OK_FIELDS, at)
+    check_str(ok, "by", at, required=True)
+    if not OK_TIME.fullmatch(check_str(ok, "at", at, required=True)): fail(f"{at}.at must be a timestamp with date and time, such as 2026-11-05T14:30:00Z")
+    forms = [k for k in ("pointer", "record") if (check_str(ok, k, at) or "").strip()]
+    if len(forms) != 1: fail(f"{at} needs exactly one of pointer (a URL or board:<need-id>) or record (an OK given in session)")
+    if forms == ["pointer"] and not OK_POINTER.fullmatch(ok["pointer"]): fail(f"{at}.pointer must be an absolute http(s) URL or board:<need-id> (got {ok['pointer']!r})")
+    if forms == ["record"] and not ok["record"].startswith(IN_SESSION): fail(f"{at}.record must start with \"{IN_SESSION}\"")
+    cases = ok.get("cases")
+    if not (isinstance(cases, list) and cases and all(isinstance(c, str) for c in cases) and len(set(cases)) == len(cases)):
+        fail(f"{at}.cases must list the covered case ids, at least one and each once")
 
 
 def check_image(v, where):
@@ -383,12 +410,27 @@ def current_round(p):
     return max(seen, default=0)
 
 
-def verdict_of(cases):
-    """The verdict the current cases allow. History never counts."""
+def deferral_gap(kind, cases, deferral):
+    deferred = [c["id"] for c in cases if c["status"] == "DEFERRED"]
+    if kind == "bug": return "a bug never passes on a deferral"
+    if not deferred: return "no current case is DEFERRED"
+    covered = (deferral.get("ok") or {}).get("cases", [])
+    uncovered = [i for i in deferred if i not in covered]
+    if uncovered: return f"waiting for owner OK on {', '.join(uncovered)} (ticket.deferral.ok.cases)"
+    if not (deferral.get("label") or "").strip(): return "ticket.deferral.label is missing"
+    return None
+
+
+def allowed_verdicts(kind, cases, deferral):
+    """The verdicts the current cases allow. History never counts."""
     st = [c["status"] for c in cases]
-    if "FAILED" in st: return "FAILED"
-    if not st or "BLOCKED" in st or "NOT RUN" in st: return "PENDING"
-    return "PASSED" if "PASSED" in st else "PENDING"
+    if "FAILED" in st: return ["FAILED"]
+    if not st or "BLOCKED" in st or "NOT RUN" in st: return ["PENDING"]
+    passed = ["PASSED"] if "PASSED" in st else []
+    if kind == "bug" or "DEFERRED" not in st: return passed or ["PENDING"]
+    if deferral_gap(kind, cases, deferral) is None: return [DEFERRED_PASS] + passed
+    # PASSED stays allowed beside an uncovered deferral so a pack with no ticket.deferral still builds, with a warning
+    return passed + ["PENDING"]
 
 
 def cross_check(p, where, key_rx):
@@ -407,14 +449,22 @@ def cross_check(p, where, key_rx):
             if not reasons: fail(f"{where} {c['id']}: a {c['status']} case needs the reason it was not run (its note, or a note item)")
             if c["status"] == "DEFERRED" and not any(key_in.search(r) for r in reasons):
                 fail(f"{where} {c['id']}: a DEFERRED reason names the follow-up ticket that records the deferral (a key matching {key_rx.pattern})")
-    allowed, verdict = verdict_of(live), p["ticket"]["verdict"]
-    if verdict != allowed:
-        culprit = next((c for c in live if c["status"] in ("FAILED", "BLOCKED", "NOT RUN")), None)
-        why = f"{culprit['id']} is {culprit['status']}" if culprit else "no current case was observed PASSED"
-        fail(f"{where}: ticket.verdict {verdict} contradicts the current cases (they allow {allowed}: {why}); earlier rounds never count")
+    deferral, verdict = p["ticket"].get("deferral") or {}, p["ticket"]["verdict"]
     deferred = next((c for c in live if c["status"] == "DEFERRED"), None)
-    if allowed == "PASSED" and deferred:
-        if p["kind"] == "bug" and cur > 0: fail(f"{where}: a retest cannot pass on a deferral ({deferred['id']} is DEFERRED in round {cur})")
+    deferred_ids = {c["id"] for c in live if c["status"] == "DEFERRED"}
+    stray = next((i for i in (deferral.get("ok") or {}).get("cases", []) if i not in deferred_ids), None)
+    if stray: fail(f"{where}: ticket.deferral.ok.cases lists {stray}, which is not a current DEFERRED case")
+    if p["kind"] == "bug" and cur > 0 and deferred and verdict in ("PASSED", DEFERRED_PASS):
+        fail(f"{where}: a retest cannot pass on a deferral ({deferred['id']} is DEFERRED in round {cur})")
+    allowed = allowed_verdicts(p["kind"], live, deferral)
+    if verdict not in allowed:
+        culprit = next((c for c in live if c["status"] in ("FAILED", "BLOCKED", "NOT RUN")), None)
+        if culprit: why = f"{culprit['id']} is {culprit['status']}"
+        elif verdict == DEFERRED_PASS: why = deferral_gap(p["kind"], live, deferral)
+        elif allowed[0] == DEFERRED_PASS: why = "the owner OK covers every deferred case"
+        else: why = "no current case was observed PASSED"
+        fail(f"{where}: ticket.verdict {verdict} contradicts the current cases (they allow {' or '.join(allowed)}: {why}); earlier rounds never count")
+    if verdict == "PASSED" and deferred:
         print(f"warning: {where}: {deferred['id']} is DEFERRED, outside this PASSED verdict; list it in the report.", file=sys.stderr)
 
 

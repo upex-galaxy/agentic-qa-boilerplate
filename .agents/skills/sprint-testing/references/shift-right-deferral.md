@@ -75,7 +75,7 @@ In order:
 
 1. Add the label named by `qa.deferral.label` in `.agents/project.yaml` to the Story, keeping its other labels. With the key absent or `null`, ask once, together with the OK; never invent a label.
 2. Read the Story back and confirm the label.
-3. Set the result to `PASSED WITH DEFERRALS`, write the OK citation into the ATR, complete the ATR and post the QA comment.
+3. Set the result to `PASSED WITH DEFERRALS`, write the OK citation into the ATR, complete the ATR and post the QA comment. On a Sprint Board, also record the OK you observed with `bun run board deferral-ok <KEY> --cases <ids> --pointer "<pointer>" --by conductor|worker`, which only moves the lane and never stands in for opening the pointer here and at round close (§3).
 4. Fire the sign-off: `{{jira.transition.story.qa_sign_off}}`, or the tech type's `test_finished`.
 
 QA moves the Story no further than `{{jira.status.story.qa_approved}}` (a tech item: `automated`) and deploys nothing.

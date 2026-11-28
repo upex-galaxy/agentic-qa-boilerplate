@@ -20,7 +20,7 @@ import data from './statuses.json' with { type: 'json' };
 export const CASE_STATUSES = data.caseStatuses as readonly TestStatus[];
 export type CaseStatus = TestStatus;
 
-export type Verdict = 'PASSED' | 'FAILED' | 'PENDING';
+export type Verdict = 'PASSED' | 'FAILED' | 'PENDING' | 'PASSED WITH DEFERRALS';
 export const VERDICTS = data.verdicts as readonly Verdict[];
 
 export type BugStatus = 'OPEN' | 'FIXED' | 'RETEST PASSED' | 'RETEST FAILED' | 'DEFECT';

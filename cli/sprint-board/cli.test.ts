@@ -270,6 +270,7 @@ describe('who spoke', () => {
     ['sweep', ['add', '--question', 'defer?']],
     ['sweep', ['consume', 'swb-x']],
     ['sweep', ['close', 'sw-x', '--why', 'x']],
+    ['deferral-ok', [TK, '--cases', 'TC-1', '--pointer', 'https://example.atlassian.net/browse/DEMO-1']],
   ];
   const EVERY_COMMAND: [string, string[]][] = [
     ['sweep', ['list']],
@@ -718,6 +719,136 @@ describe('tc DEFERRED', () => {
   test('--approval alone still works for an owner decision', () => {
     ok('tc', TK, 'TC-1', 'DEFERRED', '--approval', 'Rowan, chat 2026-10-16', '--by', 'conductor');
     expect(events().at(-1)?.data).toMatchObject({ status: 'DEFERRED', approval: 'Rowan, chat 2026-10-16' });
+  });
+});
+
+describe('deferral-ok', () => {
+  const REASON = 'QA decision 2026-10-16: only the payment provider produces this data';
+  const COMMENT = 'https://example.atlassian.net/browse/DEMO-999991?focusedCommentId=10001';
+  const RULE = 'sprint-testing/references/shift-right-deferral.md §3';
+  const defer = (tc: string, ticket = TK) => ok('tc', ticket, tc, 'DEFERRED', '--reason', REASON, '--by', 'worker');
+  const record = (...extra: string[]) => run('deferral-ok', TK, ...extra);
+  const oks = () => events().filter(e => e.kind === 'deferral.ok');
+  const refusedWith = (args: string[], ...parts: string[]) => {
+    const r = record(...args);
+    expect([args, r.code]).toEqual([args, 1]);
+    for (const part of parts) { expect(r.out).toContain(part); }
+    expect(oks()).toEqual([]);
+  };
+  const needId = () => String(events().filter(e => e.kind === 'need.open').at(-1)!.data!.id);
+  const ownerAnswers = (ticket: string, id: string) => appendFileSync(join(dir, 'sprints', 'sprint-1', 'events.ndjson'), `${JSON.stringify({ v: 1, id: 'o1', at: new Date().toISOString(), kind: 'need.answer', ticket, by: 'owner', text: 'ok', data: { id, text: 'ok, TC-1' } })}\n`);
+
+  test('tc and verdict name the verb while the ticket waits, and recording it moves the ticket to Passed with the mark', () => {
+    ok('tc', TK, 'TC-2', 'PASSED');
+    expect(defer('TC-1')).not.toContain('record it with deferral-ok');
+    const verdict = ok('verdict', TK, 'PASSED', '--by', 'worker');
+    expect(verdict).toContain(`${TK} is waiting for owner OK on TC-1`);
+    expect(verdict).toContain(`deferral-ok ${TK} --cases TC-1 --pointer "<p>" --by conductor|worker`);
+    expect(ok('status')).toContain('[Not fully tested]  (waiting for owner OK)');
+    expect(defer('TC-1')).toContain('record it with deferral-ok');
+
+    const out = ok('deferral-ok', TK, '--cases', 'tc-1', '--pointer', COMMENT, '--by', 'worker');
+    expect(out).toContain(`${TK}: worker observed an owner OK for TC-1 (${COMMENT})`);
+    expect(out).toContain('the pointer is still opened at Stage 3 and at round close');
+    expect(oks()).toEqual([expect.objectContaining({ ticket: TK, by: 'worker', data: { cases: ['TC-1'], pointer: COMMENT } })]);
+    const status = ok('status');
+    expect(status).toContain('Passed (1, 1 not fully tested)');
+    expect(status).toContain('[Not fully tested]');
+    expect(status).not.toContain('waiting for owner OK');
+  });
+
+  test('a partly covered ticket still names the cases that wait', () => {
+    defer('TC-1');
+    defer('TC-2');
+    ok('verdict', TK, 'PASSED', '--by', 'worker');
+    const out = ok('deferral-ok', TK, '--cases', 'TC-1', '--pointer', COMMENT, '--by', 'conductor');
+    expect(out).toContain(`${TK} is waiting for owner OK on TC-2`);
+  });
+
+  test('PASSED WITH DEFERRALS is one quoted verdict', () => {
+    defer('TC-1');
+    expect(ok('verdict', TK, 'PASSED WITH DEFERRALS', '--by', 'worker')).toContain('verdict PASSED WITH DEFERRALS');
+    expect(events().at(-1)?.data).toMatchObject({ verdict: 'PASSED WITH DEFERRALS' });
+  });
+
+  test('--by is conductor or worker: owner, sentinel and a missing value are refused', () => {
+    defer('TC-1');
+    const args = ['--cases', 'TC-1', '--pointer', COMMENT];
+    refusedWith([...args, '--by', 'owner'], '--by owner is refused');
+    refusedWith([...args, '--by', 'sentinel'], '--by must be one of: conductor, worker', RULE);
+    refusedWith(args, 'missing --by', RULE);
+  });
+
+  test('--pointer and --cases are required, and a case must be DEFERRED on that ticket', () => {
+    defer('TC-1');
+    ok('tc', TK, 'TC-2', 'PASSED');
+    refusedWith(['--cases', 'TC-1', '--by', 'worker'], 'missing --pointer', RULE);
+    refusedWith(['--pointer', COMMENT, '--by', 'worker'], '--cases needs at least one', RULE);
+    refusedWith(['--cases', 'TC-1,TC-2', '--pointer', COMMENT, '--by', 'worker'], `TC-2 not DEFERRED on ${TK} (deferred now: TC-1)`, RULE);
+    refusedWith(['--cases', 'TC-9', '--pointer', COMMENT, '--by', 'worker'], 'TC-9 not DEFERRED', RULE);
+  });
+
+  test('anything but the three pointers is refused', () => {
+    defer('TC-1');
+    const args = (pointer: string) => ['--cases', 'TC-1', '--pointer', pointer, '--by', 'worker'];
+    for (const pointer of ['approved in chat', 'javascript:alert(1)', 'ftp://example.com/x', 'https://', 'see https://example.com/x']) {
+      refusedWith(args(pointer), 'is not accepted', RULE);
+    }
+    refusedWith(args('owner OK given in session'), 'carries no timestamp', RULE);
+    refusedWith(args('owner OK given in session, yesterday'), 'carries no timestamp', RULE);
+    refusedWith(args('board:need-nope'), 'no question need-nope', RULE);
+    expect(record(...args('owner OK given in session, 2026-10-16 14:32Z')).code).toBe(0);
+  });
+
+  test('--at is neither in the future nor earlier than the deferral', () => {
+    defer('TC-1');
+    const args = ['--cases', 'TC-1', '--pointer', COMMENT, '--by', 'worker', '--at'];
+    refusedWith([...args, '2999-01-01T00:00:00Z'], 'is in the future', RULE);
+    refusedWith([...args, '2026-10-02T00:00:00Z'], 'a case deferred afterwards needs its own OK', RULE);
+  });
+
+  test('board:<need-id> counts only for the owner\'s own answer to a question of that ticket', () => {
+    const OTHER = 'DEMO-999992';
+    ok('add', OTHER);
+    defer('TC-1');
+    const args = (id: string) => ['--cases', 'TC-1', '--pointer', `board:${id}`, '--by', 'conductor'];
+
+    ok('needs-you', OTHER, 'defer TC-1?', '--by', 'worker');
+    const elsewhere = needId();
+    ownerAnswers(OTHER, elsewhere);
+    refusedWith(args(elsewhere), `no question ${elsewhere} on ${TK}`, 'not who typed it', RULE);
+
+    ok('needs-you', TK, 'defer TC-1?', '--by', 'worker');
+    const id = needId();
+    refusedWith(args(id), `${id} has no answer yet`, RULE);
+    ok('answer', TK, 'yes', '--id', id, '--by', 'conductor');
+    refusedWith(args(id), 'answered by conductor, not by owner', 'prefer', RULE);
+
+    ownerAnswers(TK, id);
+    const out = ok('deferral-ok', TK, ...args(id));
+    expect(out).toContain('proves it did not come through the CLI, not who typed it');
+    expect(oks()[0].data).toEqual({ cases: ['TC-1'], pointer: `board:${id}` });
+  });
+
+  test('a board answer given before the case was deferred does not cover it', () => {
+    ok('needs-you', TK, 'defer TC-1?', '--by', 'worker');
+    const id = needId();
+    ownerAnswers(TK, id);
+    Bun.sleepSync(5);
+    defer('TC-1');
+    refusedWith(['--cases', 'TC-1', '--pointer', `board:${id}`, '--by', 'conductor'], 'recorded DEFERRED after that answer', RULE);
+  });
+
+  test('the mark is the label of qa.deferral.label, generic when the key is null', () => {
+    defer('TC-1');
+    const status = (label: string) => {
+      const config = join(dir, 'project.yaml');
+      writeFileSync(config, `${readFileSync(DEMO_CONFIG, 'utf8')}\nqa:\n  deferral:\n    label: ${label}\n`);
+      return Bun.spawnSync(['bun', CLI, 'status'], { env: { ...process.env, SPRINT_BOARD_DIR: dir, SPRINT_BOARD_PROJECT_YAML: config } }).stdout.toString();
+    };
+    expect(status('qa-partial')).toContain('[qa-partial]');
+    expect(status('qa-partial')).not.toContain('Not fully tested');
+    expect(status('null')).toContain('[Not fully tested]');
   });
 });
 

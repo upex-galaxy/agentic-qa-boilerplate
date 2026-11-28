@@ -42,7 +42,7 @@ export function makeDemo(now = Date.now()): Demo {
     v: SCHEMA,
     source: 'jira-xray',
     syncedAt: new Date(now - 0.2 * H).toISOString(),
-    searched: { tickets: 9, tcs: 34, bugs: 2 },
+    searched: { tickets: 10, tcs: 36, bugs: 2 },
     tickets: {
       'DEMO-7901': { title: 'Export orders to CSV with the discount line', dev: 'Ana Ruiz (demo)', priority: 'High', type: 'Feature', status: 'QA Approved', bucket: 'tested', tcs: [tc('TC-7001', 'CSV has one row per order', 'PASSED'), tc('TC-7002', 'Discount line is negative', 'PASSED'), tc('TC-7003', 'Totals match the order page', 'PASSED')] },
       'DEMO-7902': { title: 'Newsletter preview shows the featured products first', dev: 'Marco Diaz (demo)', priority: 'Medium', type: 'Feature', status: 'Ready for QA', bucket: 'in_test', tcs: [tc('TC-7010', 'Featured products on top', 'PASSED', 2), tc('TC-7011', 'Order kept after refresh', 'NOT RUN'), tc('TC-7012', 'Empty state', 'NOT RUN')] },
@@ -52,7 +52,8 @@ export function makeDemo(now = Date.now()): Demo {
       'DEMO-7906': { title: 'Sales trend chart, 90-day window', dev: 'Marco Diaz (demo)', priority: 'Low', type: 'Feature', status: 'Ready for QA', bucket: 'in_test', tcs: [tc('TC-7050', 'Window selector', 'NOT RUN'), tc('TC-7051', 'Trend matches snapshot', 'NOT RUN')] },
       'DEMO-7907': { title: 'Product search keeps typed text on reload', dev: 'Marco Diaz (demo)', priority: 'High', type: 'Bug', status: 'Ready for QA', bucket: 'in_test', tcs: [] },
       'DEMO-7908': { title: 'Price list import skips blank rows', dev: 'Ana Ruiz (demo)', priority: 'Medium', type: 'Feature', status: 'QA Approved', bucket: 'tested', tcs: [tc('TC-7060', 'Blank rows skipped', 'PASSED'), tc('TC-7061', 'Count shown in toast', 'FAILED'), tc('TC-7062', 'Duplicates flagged', 'NOT RUN')] },
-      'DEMO-7909': { title: 'Discount cap on multi-store orders', dev: 'Tom Reyes (demo)', priority: 'High', type: 'Feature', status: 'Ready for QA', bucket: 'in_test', tcs: [tc('TC-7070', 'Cap applied per group', 'PASSED'), tc('TC-7071', 'Cap line label', 'PASSED')] },
+      'DEMO-7909': { title: 'Discount cap on multi-store orders', dev: 'Tom Reyes (demo)', priority: 'High', type: 'Feature', status: 'Ready for QA', bucket: 'in_test', tcs: [tc('TC-7070', 'Cap applied per group', 'PASSED'), tc('TC-7071', 'Cap line label', 'DEFERRED')] },
+      'DEMO-7910': { title: 'Gift card balance shows at checkout', dev: 'Lena Park (demo)', priority: 'Medium', type: 'Feature', status: 'Ready for QA', bucket: 'in_test', tcs: [tc('TC-7080', 'Balance is listed', 'PASSED'), tc('TC-7081', 'Expired card is refused', 'DEFERRED')] },
     },
     bugs: { 'DEMO-7990': { title: 'Toast count off by one on import', status: 'Open', bucket: 'open' }, 'DEMO-7991': { title: 'Direct API update ignores the lock', status: 'Open', bucket: 'open' } },
   };
@@ -66,7 +67,12 @@ export function makeDemo(now = Date.now()): Demo {
     ev(start + 20 * H, 'bug.link', 'DEMO-7908', 'DEMO-7990 filed against DEMO-7908: Toast count off by one on import', { bug: 'DEMO-7990', title: 'Toast count off by one on import', severity: 'Low' }),
     ev(start + 21 * H, 'verdict', 'DEMO-7908', 'DEMO-7908 FAILED. 1 of 3 failed, bug DEMO-7990', { verdict: 'FAILED', note: '1 of 3 failed, bug DEMO-7990' }),
     ev(start + 26 * H, 'worker', 'DEMO-7909', 'DEMO-7909 worker started', { state: 'running', stage: 'plan' }),
-    ev(start + 30 * H, 'verdict', 'DEMO-7909', 'DEMO-7909 PASSED', { verdict: 'PASSED' }),
+    ev(start + 28 * H, 'tc', 'DEMO-7909', 'TC-7071 DEFERRED', { tc: 'TC-7071', status: 'DEFERRED', reason: 'QA decision (demo): only a second store produces this line' }),
+    { ...ev(start + 29 * H, 'deferral.ok', 'DEMO-7909', 'DEMO-7909: worker observed an owner OK for TC-7071', { cases: ['TC-7071'], pointer: 'https://example.atlassian.net/browse/DEMO-7909?focusedCommentId=10001' }), by: 'worker' },
+    ev(start + 30 * H, 'verdict', 'DEMO-7909', 'DEMO-7909 PASSED WITH DEFERRALS', { verdict: 'PASSED WITH DEFERRALS' }),
+    ev(now - 12 * H, 'tc', 'DEMO-7910', 'TC-7081 DEFERRED', { tc: 'TC-7081', status: 'DEFERRED', reason: 'QA decision (demo): only the payment provider issues an expired card' }),
+    ev(now - 11 * H, 'verdict', 'DEMO-7910', 'DEMO-7910 BLOCKED. Waiting for owner OK', { verdict: 'BLOCKED', note: 'waiting for owner OK on TC-7081' }),
+    ev(now - 11 * H, 'hold.set', 'DEMO-7910', 'DEMO-7910 held: owner OK on TC-7081', { reason: 'other', note: 'owner OK on TC-7081', on: 'You' }),
     ev(now - 40 * H, 'worker', 'DEMO-7904', 'DEMO-7904 worker started', { state: 'running', stage: 'execute' }),
     ev(now - 7 * H, 'need.open', 'DEMO-7904', 'DEMO-7904 needs you: Loyalty bonus on returning customers: pay it or not?', {
       id: 'need-demo1',
@@ -119,7 +125,7 @@ export function makeDemo(now = Date.now()): Demo {
       context: 'Both cases are NOT RUN. Tom can redeploy the worker tomorrow.',
       options: [
         { key: 'a', label: 'Hold the ticket until the deploy', desc: 'It stays in Held and every watch pass rechecks it.' },
-        { key: 'b', label: 'Defer both cases with a reason', desc: 'The ticket can close as Passed with two DEFERRED cases.' },
+        { key: 'b', label: 'Defer both cases with a reason', desc: 'The ticket stays Held until your OK is recorded, then reads Passed, not fully tested.' },
       ],
       recommend: ['a'],
       multi: false,

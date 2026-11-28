@@ -113,6 +113,16 @@ export interface Case {
   histRound?: number
 }
 
+export interface OwnerOk {
+  by: string
+  at: string
+  cases: string[]
+  pointer?: string
+  record?: string
+}
+
+export interface Deferral { label?: string, ok?: OwnerOk }
+
 export interface Ticket {
   id: string
   title: string
@@ -130,6 +140,7 @@ export interface Ticket {
   date?: string
   atp?: string
   atr?: string
+  deferral?: Deferral
 }
 
 export interface ImageDecl {

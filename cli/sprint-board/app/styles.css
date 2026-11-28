@@ -801,6 +801,10 @@ textarea:focus-visible {
   background: var(--run-t);
   color: var(--run);
 }
+.flag.defer {
+  background: var(--needs-t);
+  color: var(--needs);
+}
 .bar {
   display: flex;
   height: 6px;
@@ -864,6 +868,7 @@ textarea:focus-visible {
   color: var(--fail);
 }
 .pill.BLOCKED,
+.pill.PASSED-WITH-DEFERRALS,
 .pill.Held {
   background: var(--needs-t);
   color: var(--needs);

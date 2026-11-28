@@ -88,7 +88,7 @@ temporary directory.
 `bun run board verdict <KEY> <PASSED|FAILED|BLOCKED> --note "<one line>" --by conductor` reconciled with
 the tracker, and `bun run board worker <KEY> --state done --by conductor`. Waiting for owner OK: verdict
 `BLOCKED` plus `bun run board hold <KEY> --reason other "waiting for owner OK" --on <owner> --by conductor`,
-never `PASSED`. A refused OK takes the same verdict, with the hold on whoever owes the precondition.
+never `PASSED`. A refused OK takes the same verdict, with the hold on whoever owes the precondition. After Step 1 has opened a covering OK, record that you observed it with `bun run board deferral-ok <KEY> --cases <ids> --pointer "<pointer>" --by conductor`: the record sets the lane only and never passes the OK row of Step 1.
 
 ### What it returns
 

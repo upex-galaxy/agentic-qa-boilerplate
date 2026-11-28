@@ -6,8 +6,8 @@ owner sends to each developer, the timeline and the evidence. The tracker stays 
 record; the board is a faster read of it.
 
 Configured by the `board:` block of `.agents/project.yaml` (ADR-0019, checked by `bun run
-board:check`); the store, the Merge Line collector and the snapshot allowlists are ADR-0023. The
-conductor's side lives in `.agents/skills/sprint-testing/references/sprint-board.md`.
+board:check`); the store, the Merge Line collector and the snapshot allowlists are ADR-0023, amended
+by ADR-0030. The conductor's side lives in `.agents/skills/sprint-testing/references/sprint-board.md`.
 
 ## How it gets its data
 
@@ -15,7 +15,7 @@ conductor's side lives in `.agents/skills/sprint-testing/references/sprint-board
 the tracker (read-only `sync`)      -> source.json      statuses and buckets, titles, devs, TCs, linked bugs
 each worker's own files             -> read in place    ## Live Progress, evidence/ images
 this CLI (conductor, sentinel, worker),
-the page (owner)                    -> events.ndjson    verdicts, questions, holds, waits, drafts
+the page (owner)                    -> events.ndjson    verdicts, questions, holds, waits, asks, dock items
                      fold() -> lanes, metrics, next steps -> the page
 ```
 
@@ -44,6 +44,13 @@ export SPRINT_BOARD_DIR="$PWD/.session/sprint-board-demo" SPRINT_BOARD_PROJECT_Y
 bun run board new --sprint 7 --started 2026-01-12T09:00:00Z
 bun run board sync --discover          # the demo QA's tickets join the board
 bun run board serve --open             # http://127.0.0.1:4477
+```
+
+`DEMO-7105` has a DEFERRED case, so it starts in Held, waiting for owner OK. Recording one moves it to
+Passed with the mark (§Deferred cases):
+
+```bash
+bun run board deferral-ok DEMO-7105 --cases DEMO-7105-T3 --pointer "owner OK given in session, 2026-01-14 16:00Z" --by worker
 ```
 
 The page's Tour button runs a scripted demo sprint in the browser with no data at all.
@@ -95,6 +102,14 @@ $B evidence-artifact PROJ-7340 https://claude.ai/artifact/<id> --by worker|condu
                                             ticket or bug wins, history kept
 $B fixture PROJ-7340 "store 42 has no orders in 7 days" [--module checkout]   reusable test data found
 $B verdict PROJ-7340 FAILED --note "5/7, bug PROJ-7410" --by worker
+                                            PASSED WITH DEFERRALS is one quoted verdict, ruled like PASSED
+$B deferral-ok <KEY> --cases TC-1,TC-2 --pointer "<p>" --by conductor|worker [--at <iso>]
+                                            records that this writer OBSERVED an owner OK on DEFERRED cases of the
+                                            ticket; it sets the lane only. <p>: the Story comment's URL read back from
+                                            the tracker (preferred), board:<need-id> of a question on that ticket the
+                                            owner answered on the page (that proves the answer did not come through the
+                                            CLI, not who typed it), or "owner OK given in session, <YYYY-MM-DD HH:MM>"
+                                            (see Deferred cases)
 $B hold PROJ-7330 --reason deploy "sync worker not on staging" [--on Tom]   / unhold
 $B needs-you PROJ-7340 "Defer case b or fix AC5?" --option "a: ..." --option "b: ..." --by worker
 $B needs-you PROJ-7340 "Defer TC-3?" --blocked "TC-3 cannot run" --why "the worker is not on staging"
@@ -176,6 +191,7 @@ stopped.
 | `sweep add`, `sweep close` | required: `conductor` or `sentinel`; a worker raises a `needs-you` card, which reaches the same dock, and cannot retire a question the owner may be answering |
 | `sweep consume` | required: `conductor`, since what is marked read is never handed to it again |
 | `evidence-artifact` (`evidence-page`) | required: `worker` or `conductor` |
+| `deferral-ok`: the writer states it observed an owner OK | required: `conductor` or `worker` |
 | `accept-risk` | required: the person and where they said it |
 | `add`, `remove`, `meta`, `start`, `worker`, any other `tc`, `bug`, `evidence`, `fixture`, `hold`, `unhold`, `wait`, `log`: scope, progress or an observation, and nothing reads their author | optional |
 
@@ -199,6 +215,40 @@ The board block a worker receives lives in `.agents/skills/sprint-testing/refere
 
 If a worker never calls it, the board still moves from the tracker sync and the worker's Live
 Progress file; it is just less precise in between syncs.
+
+## Deferred cases
+
+The doctrine is `.agents/skills/sprint-testing/references/shift-right-deferral.md`; the board only shows
+where a ticket stands on it.
+
+**The mark.** A ticket with at least one DEFERRED case carries it on cards, tray chips, the drawer, the
+tables, the Sprint QA report, the share copy, Copy for Slack and `status`, with or without an OK. Its
+text is the label named by `qa.deferral.label` in `.agents/project.yaml` (read each time the board is
+built), or "Not fully tested" when that key is absent or null.
+
+**The record.** `deferral-ok` appends a `deferral.ok` event: the cases, the pointer, who recorded it and
+when. It means "an owner OK was observed by that writer", never that the owner spoke. It is display
+state for the lane only: it **never stands in for opening the pointer** at Stage 3 and at round close
+(`shift-right-deferral.md` section 3). The drawer shows the pointer and the recorder; the share and report
+copies carry neither.
+
+| Accepted `--pointer` | What the CLI checks |
+|---|---|
+| an `http(s)` URL: the Story comment read back from the tracker (preferred when it exists) | the shape of the URL, nothing behind it |
+| `board:<need-id>` | a question on that ticket, still on the board, answered by `owner` on the page, after the cases were deferred |
+| `owner OK given in session, <YYYY-MM-DD HH:MM>` | the opening words and a date with a time |
+
+Anything else is refused, and so are a case that is not DEFERRED on that ticket, an `--at` in the future
+or earlier than the deferral, and any `--by` but `conductor` or `worker`.
+
+**When a record stops covering a case.** Any later `tc` record of that case, a repeated DEFERRED included,
+drops it. So does a `sync` that sees the case leave DEFERRED in the tracker, or move to another status
+after the OK (a `deferral.lapse` event). A case deferred after the OK needs its own.
+
+**Limits.** The board records the citation: it cannot prove who typed it, does not open the URL, does not
+read what an answer says (a refusal is not an OK), and cannot check the in-session form at all. A board
+answer proves it did not come through the CLI, not who typed it. A tracker change made and undone between
+two syncs is not seen.
 
 ## Decision cards
 
@@ -244,7 +294,7 @@ share snapshot still carries no evidence.
 
 **The Evidence view** is one accordion per ticket, closed by default, and inside it one accordion
 per test case (TC order) plus "Not tied to a TC" last. Each header carries the counts: the ticket's
-lane, images per outcome, how many TCs and images, and the ticket's evidence page link; a TC header
+lane (with the not fully tested mark), images per outcome, how many TCs and images, and the ticket's evidence page link; a TC header
 carries its tracker status. Thumbnails render only once a case is opened, so the page stays short and
 loads no image the owner did not ask for. The toolbar filters by ticket, by what the image shows
 (passed, failed, blocked, no outcome) and to tickets with a defect (a linked bug, a failed image or
@@ -329,7 +379,8 @@ backlog), the deferred cases, what was not tested, and a footer with the generat
 link.
 
 `toReportState` builds the state by **allowlist**, like `toShareState`: sprint meta, the report
-tickets with their TCs, the report bugs, the counted numbers (`report`), tracker links, the
+tickets with their TCs and their deferral state (case ids, the ones with no OK, the Bug flag and the mark;
+never an OK record, its pointer or its writer), the report bugs, the counted numbers (`report`), tracker links, the
 already-validated evidence page URLs, the verdict / bug / release / tracker timeline lines of
 report tickets and `generatedAt`. Never: asks, the inbox, answers, waits, holds, needs, the
 Decision dock, worker names, fixtures, local paths, screenshots or captions. The write is refused when the state still
@@ -343,8 +394,9 @@ Counting rules:
 - **Report ticket**: on the board, in QA scope, and its tracker Sprint is this board's sprint (a ticket
   with no tracker Sprint counts while in scope). A ticket filed under another sprint is named under the
   Tickets table, never counted.
-- **Tested**: a report ticket with at least one TC or a PASSED/FAILED verdict. **Signed off**: tested and
-  in the `tested` bucket.
+- **Tested**: a report ticket with at least one TC or a passing or FAILED verdict. **Signed off**: tested,
+  in the `tested` bucket, and not a ticket with a DEFERRED case no OK covers or a Bug with a DEFERRED case
+  (§Deferred cases). The tile and the verdict sentence say how many of the signed off are not fully tested.
 - **Not tested** (0 TCs and no verdict): *Never reached the test environment* (bucket `not_ready`,
   `dropped` or not synced) or *Not counted* (it got to `in_test`, `blocked` or `tested` and has nothing
   on record).
@@ -435,7 +487,7 @@ for the Monitor tool. Inbox messages never reach the share snapshot.
 `listen` starts at the end of the log, so an answer the owner gave while no listener ran (Monitor
 expired, session resumed) would never print. Re-arm it with `listen --since <point>` and it first
 replays every owner action after that point, then streams live as usual. The point is an ISO time
-(local unless it carries `Z` or an offset) or an id: a message (`msg-...`), a need, a draft or an
+(local unless it carries `Z` or an offset) or an id: a message (`msg-...`), a need, an ask or an
 event id, which resolves to that event's time. The replay ends with one line saying how many
 actions it found and how many events it searched; an id that matches nothing on any open board
 stops the command (measured on the source board: an owner answer given one minute before `listen`
@@ -730,9 +782,14 @@ Computed, never written (`laneOf` in `model.ts`, tests in `model.test.ts`):
 | 1 | Needs you | a question the owner has not answered and nobody resolved, a DEFERRED with no recorded reason, or a worker that stopped without a verdict |
 | 2 | Running | the worker is running (a retest outranks old failures) |
 | 3 | Failed | verdict FAILED or any TC FAILED |
-| 4 | Passed | verdict PASSED, or the tracker in the `tested` bucket with every case PASSED/DEFERRED |
-| tray | Held | waiting on a deploy, data or access, or a TC BLOCKED |
+| 4 | Passed | verdict PASSED or PASSED WITH DEFERRALS, or the tracker in the `tested` bucket; with cases on record, every one PASSED or DEFERRED, and every DEFERRED one covered by a recorded owner OK on a ticket that is not a Bug. A PASSED WITH DEFERRALS verdict with no case on record does not pass |
+| tray | Held | waiting on a deploy, data or access, or a TC BLOCKED; a passing verdict with a case still open |
+| tray | Held, "waiting for owner OK" | every case PASSED or DEFERRED and a DEFERRED one with no recorded OK: a passing verdict or the `tested` bucket would otherwise pass it. A ticket already held (the BLOCKED verdict of `shift-right-deferral.md` section 3) reads the same |
+| tray | Held, "a retest never passes on a deferral" | a Bug with a DEFERRED case, where it would otherwise pass, OK recorded or not; its card says so in whatever lane it is |
 | tray | Up next | not started |
+
+A ticket that is Passed with an OK carries the mark, and the counts say how many of the passed are not
+fully tested (§Deferred cases).
 
 "Shipped at risk": the tracker has the ticket in the `tested` bucket while a case is FAILED, NOT
 RUN or BLOCKED, and nobody ran `accept-risk`.

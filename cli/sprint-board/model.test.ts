@@ -13,6 +13,8 @@ import {
   bugEvidenceReminder,
   bugStatusClass,
   decisionOptions,
+  deferralNote,
+  deferralOkRecord,
   EVIDENCE_OUTCOMES,
   evidenceArtifactUrl,
   foldAsks,
@@ -20,6 +22,7 @@ import {
   groupEvidence,
   isAskActor,
   isDecisionCard,
+  lapsedDeferrals,
   listenLine,
   listFixtures,
   metrics,
@@ -32,6 +35,7 @@ import {
   shortBugTitle,
   sinceCutoff,
   slackBugSummary,
+  slackStatus,
   slackTableHtml,
   slackTablePlain,
   stpUrl,
@@ -123,9 +127,10 @@ describe('laneOf through fold', () => {
     const a = one([ev('2026-10-02T00:00:00Z', 'tc', 'DEMO-8', { tc: 'TC-1', status: 'DEFERRED' }), ev('2026-10-02T00:00:01Z', 'verdict', 'DEMO-8', { verdict: 'PASSED' })]);
     expect(a.lane).toBe('Needs you');
     const b = one([ev('2026-10-02T00:00:00Z', 'tc', 'DEMO-8', { tc: 'TC-1', status: 'DEFERRED', approval: 'Kim' }), ev('2026-10-02T00:00:01Z', 'verdict', 'DEMO-8', { verdict: 'PASSED' })]);
-    expect(b.lane).toBe('Passed');
+    // A case approval is not the owner's OK for the ticket: it waits, without asking a question.
+    expect([b.lane, b.needs]).toEqual(['Held', []]);
     const c = one([ev('2026-10-02T00:00:00Z', 'tc', 'DEMO-8', { tc: 'TC-1', status: 'DEFERRED', reason: 'QA decision 2026-10-16: data only the payment provider produces' }), ev('2026-10-02T00:00:01Z', 'verdict', 'DEMO-8', { verdict: 'PASSED' })]);
-    expect(c.lane).toBe('Passed');
+    expect([c.lane, c.needs]).toEqual(['Held', []]);
     expect(c.tcs[0].reason).toBe('QA decision 2026-10-16: data only the payment provider produces');
   });
 
@@ -147,8 +152,8 @@ describe('laneOf through fold', () => {
     expect(t.tcs[0].status).toBe('FAILED');
   });
 
-  test('closed sprint imported from tracker only: all PASSED/DEFERRED at QA Approved is Passed', () => {
-    const t = one([], tracker({ 'DEMO-7012': { status: 'Done', tcs: [{ id: 'TC-1', status: 'PASSED' }, { id: 'TC-2', status: 'DEFERRED' }] } }));
+  test('closed sprint imported from tracker only: all PASSED at QA Approved is Passed', () => {
+    const t = one([], tracker({ 'DEMO-7012': { status: 'Done', tcs: [{ id: 'TC-1', status: 'PASSED' }, { id: 'TC-2', status: 'PASSED' }] } }));
     expect(t.lane).toBe('Passed');
   });
 });
@@ -1057,6 +1062,7 @@ describe('report snapshot', () => {
     ev('2026-10-02T00:00:00Z', 'msg', undefined, { id: 'm1', from: 'owner', text: 'private inbox words' }),
     ev('2026-10-03T00:00:00Z', 'evidence.artifact', 'DEMO-1', { url: 'https://claude.ai/artifact/tk1' }),
     ev('2026-10-03T00:00:00Z', 'tracker', 'DEMO-1', {}),
+    { ...ev('2026-10-03T00:00:00Z', 'deferral.ok', 'DEMO-1', { cases: ['TC-3'], pointer: 'owner OK given in session, 2026-10-03 00:00Z' }), by: 'worker' },
   ] });
   const HOSTS = ['example.atlassian.net'];
   const rs = toReportState(full, { stpUrl: 'https://example.atlassian.net/d/_dX#stp', stpHosts: HOSTS });
@@ -1074,7 +1080,7 @@ describe('report snapshot', () => {
   test('tickets: only this sprint counts; tested needs a TC; signed off needs tracker past the gate', () => {
     expect(rs.tickets.map(t => t.id).sort()).toEqual(['DEMO-1', 'DEMO-2', 'DEMO-3', 'DEMO-4', 'DEMO-6']);
     expect(r.excluded).toEqual([{ id: 'DEMO-5', sprint: 'Sprint 2' }]);
-    expect(r.tickets).toEqual({ total: 5, tested: 3, signedOff: 2, notSignedOff: ['DEMO-2'] });
+    expect(r.tickets).toEqual({ total: 5, tested: 3, signedOff: 2, notFullyTested: 1, notSignedOff: ['DEMO-2'] });
     expect(r.notTested.neverReached.map(x => x.id)).toEqual(['DEMO-3']);
     // One `tested` bucket: the source's split between a done status and the QA gate status is not kept.
     expect(r.notTested.notCounted).toEqual([{ id: 'DEMO-4', title: 'DEMO-4', status: 'Done', note: 'past the QA gate with no test case on record' }]);
@@ -1117,5 +1123,126 @@ describe('report snapshot', () => {
     expect(r.notTested.notCounted.map(x => x.id)).not.toContain('DEMO-4');
     // Coverage by priority counts tested tickets with the same rule as the headline.
     expect(r.byPriority.reduce((n, x) => n + x.tested, 0)).toBe(r.tickets.tested);
+  });
+});
+
+describe('shift-right deferral: DEFERRED never reads plain Passed without a recorded owner OK', () => {
+  const K = 'DEMO-1';
+  const day = (d: number) => `2026-10-0${d}T10:00:00Z`;
+  const tc = (d: number, id: string, status: string) => ev(day(d), 'tc', K, { tc: id, status, reason: 'QA decision: external' });
+  const verdict = (d: number, v = 'PASSED') => ev(day(d), 'verdict', K, { verdict: v });
+  const okFor = (d: number, cases: string[], by = 'worker') => ({ ...ev(day(d), 'deferral.ok', K, { cases, pointer: 'https://example.atlassian.net/browse/DEMO-1' }), by });
+  const base = [tc(1, 'TC-1', 'PASSED'), tc(1, 'TC-2', 'DEFERRED'), tc(1, 'TC-3', 'DEFERRED')];
+  const state = (events: BoardEvent[], extra: { type?: string, status?: string, label?: string, tcs?: { id: string, status: 'PASSED' | 'DEFERRED' }[] } = {}) => fold({
+    sprint,
+    now: NOW,
+    events,
+    deferralLabel: extra.label,
+    tracker: extra.type || extra.status || extra.tcs ? tracker({ [K]: { type: extra.type, status: extra.status ?? 'Ready for QA', tcs: extra.tcs ?? [] } }) : undefined,
+  });
+  const seen = (...args: Parameters<typeof state>) => {
+    const t = state(...args).tickets[0];
+    return { lane: t.lane, waiting: t.deferral?.waiting, note: deferralNote(t) };
+  };
+
+  test('verdict path: uncovered and partly covered are Held, covered is Passed and keeps the mark', () => {
+    for (const v of ['PASSED', 'PASSED WITH DEFERRALS']) {
+      expect(seen([...base, verdict(2, v)])).toEqual({ lane: 'Held', waiting: ['TC-2', 'TC-3'], note: 'owner-ok' });
+      expect(seen([...base, verdict(2, v), okFor(3, ['TC-2'])])).toEqual({ lane: 'Held', waiting: ['TC-3'], note: 'owner-ok' });
+      expect(seen([...base, verdict(2, v), okFor(3, ['TC-2', 'TC-3'])])).toEqual({ lane: 'Passed', waiting: [], note: null });
+    }
+    const t = state([...base, verdict(2), okFor(3, ['TC-2']), okFor(4, ['TC-3'], 'conductor')]).tickets[0];
+    expect(t.deferral!.oks!.map(o => [o.by, o.cases, o.at])).toEqual([['worker', ['TC-2'], day(3)], ['conductor', ['TC-3'], day(4)]]);
+  });
+
+  test('tracker path: the tested bucket does not pass an uncovered deferral', () => {
+    const extra = { status: 'QA Approved', tcs: [{ id: 'TC-1', status: 'PASSED' as const }, { id: 'TC-2', status: 'DEFERRED' as const }] };
+    expect(seen([], extra)).toEqual({ lane: 'Held', waiting: ['TC-2'], note: 'owner-ok' });
+    expect(seen([okFor(3, ['TC-2'])], extra)).toEqual({ lane: 'Passed', waiting: [], note: null });
+  });
+
+  test('a case deferred after the OK, recorded again, or deferred again after leaving is not covered', () => {
+    const ok = [...base, verdict(2), okFor(3, ['TC-2', 'TC-3'])];
+    expect(seen([...ok, tc(4, 'TC-4', 'DEFERRED')]).waiting).toEqual(['TC-4']);
+    expect(seen([...ok, tc(4, 'TC-2', 'DEFERRED')]).waiting).toEqual(['TC-2']);
+    expect(seen([...ok, tc(4, 'TC-2', 'PASSED'), tc(5, 'TC-2', 'DEFERRED')]).waiting).toEqual(['TC-2']);
+    expect(seen([...ok, ev(day(4), 'deferral.lapse', K, { cases: ['TC-3'] })])).toEqual({ lane: 'Held', waiting: ['TC-3'], note: 'owner-ok' });
+  });
+
+  test('an OK written by anyone but the conductor or a worker, or with no pointer, covers nothing', () => {
+    for (const by of ['owner', 'sentinel', 'claude']) { expect(seen([...base, verdict(2), okFor(3, ['TC-2', 'TC-3'], by)]).lane).toBe('Held'); }
+    const blank = { ...ev(day(3), 'deferral.ok', K, { cases: ['TC-2', 'TC-3'], pointer: ' ' }), by: 'worker' };
+    expect(seen([...base, verdict(2), blank]).lane).toBe('Held');
+  });
+
+  test('a Bug with a DEFERRED case never reads Passed, OK or not', () => {
+    const extra = { type: 'Bug', status: 'QA Approved' };
+    for (const events of [[...base, verdict(2)], [...base, verdict(2), okFor(3, ['TC-2', 'TC-3'])], base, [...base, okFor(3, ['TC-2', 'TC-3'])]]) {
+      expect([seen(events, extra).lane, seen(events, extra).note]).toEqual(['Held', 'bug']);
+    }
+  });
+
+  test('Needs you, Running and Failed keep precedence; a case still open is not a wait for the OK', () => {
+    expect(seen([...base, verdict(2), ev(day(3), 'need.open', K, { id: 'n1', question: 'defer?' })]).lane).toBe('Needs you');
+    expect(seen([...base, ev(day(3), 'worker', K, { state: 'running' })]).lane).toBe('Running');
+    expect(seen([...base, tc(2, 'TC-4', 'FAILED'), verdict(3)]).lane).toBe('Failed');
+    expect(seen([...base, tc(2, 'TC-4', 'NOT RUN'), verdict(3)])).toMatchObject({ lane: 'Held', note: null });
+  });
+
+  test('the BLOCKED verdict of the waiting state reads as waiting; PASSED WITH DEFERRALS with no case does not pass', () => {
+    expect(seen([...base, verdict(2, 'BLOCKED')])).toMatchObject({ lane: 'Held', note: 'owner-ok' });
+    expect(seen([verdict(2, 'PASSED WITH DEFERRALS')]).lane).toBe('Held');
+  });
+
+  test('no count calls a waiting ticket passed; a covered one is counted and named as not fully tested', () => {
+    const waiting = state([...base, verdict(2)], { status: 'QA Approved' });
+    const m = metrics(waiting);
+    expect([m.byLane.Passed, m.byLane.Held, m.verdicts.done, m.firstPass.of, m.notFullyTested, m.burnup.at(-1)!.done]).toEqual([0, 1, 0, 0, 0, 0]);
+    const r = toReportState(waiting).report!;
+    expect([r.tickets.signedOff, r.tickets.notFullyTested, r.tickets.notSignedOff, r.burnup.at(-1)!.done]).toEqual([0, 0, [K], 0]);
+
+    const covered = state([...base, verdict(2), okFor(3, ['TC-2', 'TC-3'])], { status: 'QA Approved' });
+    const c = metrics(covered);
+    expect([c.byLane.Passed, c.verdicts.done, c.firstPass.clean, c.notFullyTested]).toEqual([1, 1, 1, 1]);
+    expect(toReportState(covered).report!.tickets).toMatchObject({ signedOff: 1, notFullyTested: 1, notSignedOff: [] });
+  });
+
+  test('a bug filed against a waiting ticket still blocks it', () => {
+    const s = state([...base, verdict(2), ev(day(2), 'bug.link', K, { bug: 'DEMO-7090' })]);
+    expect(s.bugs![0].blocks[0].stillBlocked).toBe(true);
+  });
+
+  test('Copy for Slack carries the mark, the label when there is one, and never a plain Passed', () => {
+    const status = (events: BoardEvent[], extra: Parameters<typeof state>[1] = {}) => slackStatus(state(events, extra).tickets[0]);
+    expect(status([...base, verdict(2)])).toBe('🟡 Standby, waiting for owner OK, Not fully tested');
+    expect(status([...base, verdict(2), okFor(3, ['TC-2', 'TC-3'])])).toBe('⚠️ Passed 1 of 3, not synced, Not fully tested');
+    expect(status([...base, verdict(2)], { label: 'qa-partial' })).toBe('🟡 Standby, waiting for owner OK, qa-partial');
+    expect(status([...base, verdict(2)], { type: 'Bug' })).toBe('🟡 Standby, a retest never passes on a deferral, Not fully tested');
+    expect(slackTablePlain(state([...base, verdict(2)], { label: 'qa-partial' }))).toContain('qa-partial');
+  });
+
+  test('share and report copies carry the mark and the waiting cases, never an OK record', () => {
+    const full = state([...base, verdict(2), okFor(3, ['TC-2'])], { label: 'qa-partial' });
+    for (const copy of [toShareState(full), toReportState(full)]) {
+      expect(copy.tickets[0].deferral).toEqual({ cases: ['TC-2', 'TC-3'], waiting: ['TC-3'], bug: false, label: 'qa-partial' });
+      expect(JSON.stringify(copy)).not.toContain('browse/DEMO-1');
+    }
+  });
+
+  test('deferralOkRecord returns the ids as the ticket spells them', () => {
+    const t = state(base).tickets[0];
+    expect(deferralOkRecord(t, { cases: ['tc-2', 'TC-2'], pointer: ' http://tracker.example/c/1 ', at: NOW })).toEqual({ cases: ['TC-2'], pointer: 'http://tracker.example/c/1' });
+    expect(() => deferralOkRecord(t, { cases: ['TC-1'], pointer: 'https://x.example', at: NOW })).toThrow('shift-right-deferral.md §3');
+  });
+
+  test('lapsedDeferrals: a covered case that left DEFERRED in the tracker, or moved after the OK', () => {
+    const events = [okFor(3, ['TC-2'])];
+    const row = (status: 'PASSED' | 'DEFERRED' | 'NOT RUN', updatedAt: string, id = 'TC-2') => [{ id, status, updatedAt }];
+    expect(lapsedDeferrals(events, K, row('DEFERRED', day(2)), row('NOT RUN', day(2)))).toEqual(['TC-2']);
+    expect(lapsedDeferrals(events, K, row('NOT RUN', day(2)), row('PASSED', day(4)))).toEqual(['TC-2']);
+    expect(lapsedDeferrals(events, K, row('NOT RUN', day(1)), row('DEFERRED', day(2)))).toEqual([]);
+    expect(lapsedDeferrals(events, K, row('NOT RUN', day(1)), row('PASSED', day(2)))).toEqual([]);
+    expect(lapsedDeferrals(events, K, row('DEFERRED', day(2)), row('DEFERRED', day(4)))).toEqual([]);
+    expect(lapsedDeferrals(events, K, row('DEFERRED', day(2), 'TC-9'), row('PASSED', day(4), 'TC-9'))).toEqual([]);
   });
 });

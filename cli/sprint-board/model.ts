@@ -20,7 +20,7 @@ export const SCHEMA = 1;
 export const WORKER_STATES = ['queued', 'running', 'done', 'stopped'] as const;
 export const WORKER_STAGES = ['plan', 'execute', 'report', 'close'] as const;
 /** The board's ticket verdicts: every evidence-page verdict plus BLOCKED (checked below). */
-export const VERDICTS = ['PENDING', 'PASSED', 'FAILED', 'BLOCKED'] as const;
+export const VERDICTS = ['PENDING', 'PASSED', 'FAILED', 'BLOCKED', 'PASSED WITH DEFERRALS'] as const;
 /** One enum with the evidence page and the sprint source (`cli/lib/evidence-page/statuses.ts`). */
 export const TC_STATUSES = CASE_STATUSES as readonly ['PASSED', 'FAILED', 'NOT RUN', 'BLOCKED', 'DEFERRED'];
 /** Closed Blocker vocabulary (sprint-testing standby-report-contract.md) plus `decision`. */
@@ -77,6 +77,8 @@ export const EVENT_KINDS = [
   'sweep.batch',
   'sweep.consume',
   'sweep.close',
+  'deferral.ok',
+  'deferral.lapse',
 ] as const;
 /** What the conductor did with a ticket that reached the test environment (`arrival`). */
 export const ARRIVAL_ACTIONS = ['launched', 'held', 'skipped'] as const;
@@ -88,6 +90,14 @@ export const EVIDENCE_ARTIFACT_BY = ['worker', 'conductor'] as const;
 export const BUG_STATUS_CLASSES = ['open', 'resolved', 'closed'] as const;
 /** The Bugs view's groups: an open bug blocking a ticket, an open bug that blocks nothing, resolved or closed. */
 export const BUG_GROUPS = ['blocking', 'not-blocking', 'resolved'] as const;
+export const DEFERRAL_OK_ACTORS = ['conductor', 'worker'] as const;
+export const DEFERRAL_OK_RULE = 'sprint-testing/references/shift-right-deferral.md §3';
+export const SESSION_OK = 'owner OK given in session';
+export const NOT_FULLY_TESTED = { en: 'Not fully tested', es: 'Sin probar del todo' } as const;
+export const DEFERRAL_NOTES = {
+  'owner-ok': { en: 'waiting for owner OK', es: 'esperando el OK del owner' },
+  'bug': { en: 'a retest never passes on a deferral', es: 'un retest nunca pasa con un caso diferido' },
+} as const;
 /** Who writes in the owner <-> Claude inbox. */
 export const MSG_FROM = ['owner', 'claude'] as const;
 
@@ -335,6 +345,10 @@ export interface SprintBug {
 /** `unclassified`: the sprint's own bug rows the source left out (status in no bucket): named, never counted. */
 export interface BugSearch { linked: number, sprintRows: number | null, bugRows: number | null, createdInSprint: number | null, discoveredAt?: string, missing?: string[], unclassified?: { id: string, status: string }[] }
 
+// What a writer says it observed: it sets the lane and never stands in for opening the pointer.
+export interface DeferralOk { cases: string[], pointer: string, by: string, at: string }
+export interface Deferral { cases: string[], waiting: string[], bug: boolean, label?: string, oks?: DeferralOk[] }
+
 export interface TicketView {
   id: string
   title: string
@@ -362,6 +376,7 @@ export interface TicketView {
   /** The newest evidence artifact recorded for this ticket (`evidence-artifact KEY-n <url>`). */
   evidenceArtifact?: EvidenceArtifact
   acceptedRisk?: { by: string, note?: string, at: string }
+  deferral?: Deferral
   next?: string
   lane: Lane
   laneSince: string
@@ -648,16 +663,107 @@ export function listFixtures(all: Fixture[], module?: string): Fixture[] {
 // Lane rules: the one place a column is decided
 // ---------------------------------------------------------------------------
 
+export const isPassVerdict = (v: Verdict): boolean => v === 'PASSED' || v === 'PASSED WITH DEFERRALS';
+
+export const deferralMark = (d: Deferral): string => d.label ?? NOT_FULLY_TESTED.en;
+
+export const deferralBlocks = (t: Pick<TicketView, 'deferral'>): boolean => Boolean(t.deferral && (t.deferral.bug || t.deferral.waiting.length));
+
+// Names the deferral only when nothing else is open: a case still NOT RUN holds the ticket under its own reason.
+export function deferralHold(t: Pick<TicketView, 'deferral' | 'tcs'>): keyof typeof DEFERRAL_NOTES | null {
+  if (!t.deferral) { return null; }
+  if (t.deferral.bug) { return 'bug'; }
+  const c = tcCounts(t.tcs);
+  return t.deferral.waiting.length && c.PASSED + c.DEFERRED === c.total ? 'owner-ok' : null;
+}
+
+export function deferralNote(t: Pick<TicketView, 'deferral' | 'tcs' | 'lane'>): keyof typeof DEFERRAL_NOTES | null {
+  const hold = deferralHold(t);
+  return hold === 'bug' || t.lane === 'Held' ? hold : null;
+}
+
+function deferralOf(tcs: TcView[], type: string | undefined, oks: Map<string, Omit<DeferralOk, 'cases'>>, label?: string): Deferral | undefined {
+  const cases = tcs.filter(x => x.status === 'DEFERRED').map(x => x.id);
+  if (!cases.length) { return undefined; }
+  const records = new Map<string, DeferralOk>();
+  const waiting: string[] = [];
+  for (const id of cases) {
+    const ok = oks.get(id);
+    if (!ok) { waiting.push(id); continue; }
+    const key = JSON.stringify([ok.at, ok.by, ok.pointer]);
+    const record = records.get(key) ?? { ...ok, cases: [] };
+    record.cases.push(id);
+    records.set(key, record);
+  }
+  return { cases, waiting, bug: type === 'Bug', label, oks: records.size ? [...records.values()] : undefined };
+}
+
+const SESSION_OK_AT = /\d{4}-\d{2}-\d{2}[T ,]+\d{1,2}:\d{2}/;
+const BOARD_OK_LIMIT = 'A page answer proves it did not come through the CLI, not who typed it; the Story comment URL is preferred when both exist';
+
+export function deferralOkRecord(t: Pick<TicketView, 'id' | 'tcs' | 'needs'>, ok: { cases: string[], pointer: string, at: string }): { cases: string[], pointer: string } {
+  const refuse = (why: string): never => { throw new Error(`${why}. See ${DEFERRAL_OK_RULE}`); };
+  const deferred = new Map(t.tcs.filter(x => x.status === 'DEFERRED').map(x => [x.id.toUpperCase(), x]));
+  const wanted = [...new Set(ok.cases.map(x => x.toUpperCase()))];
+  if (!wanted.length) { refuse('--cases needs at least one DEFERRED case id'); }
+  const stray = wanted.filter(x => !deferred.has(x));
+  if (stray.length) { refuse(`${stray.join(', ')} not DEFERRED on ${t.id} (deferred now: ${[...deferred.values()].map(x => x.id).join(', ') || 'none'})`); }
+  const cases = wanted.map(x => deferred.get(x)!);
+  // Only the board's own record dates a deferral: a tracker row's time moves on any edit.
+  const newerThan = (at: string) => cases.find(x => x.source === 'board' && Date.parse(x.at ?? '') > Date.parse(at));
+  const late = newerThan(ok.at);
+  if (late) { refuse(`${late.id} was recorded DEFERRED at ${late.at}, after this OK (${ok.at}): a case deferred afterwards needs its own OK`); }
+
+  const pointer = ok.pointer.trim();
+  const accepted = { cases: cases.map(x => x.id), pointer };
+  if (/^https?:\/\/[^\s/]\S*$/i.test(pointer)) { return accepted; }
+  if (pointer.startsWith(SESSION_OK)) {
+    if (!SESSION_OK_AT.test(pointer)) { refuse(`--pointer "${pointer}" carries no timestamp: write "${SESSION_OK}, <YYYY-MM-DD HH:MM>"`); }
+    return accepted;
+  }
+  if (pointer.startsWith('board:')) {
+    const id = pointer.slice('board:'.length).trim();
+    const own = t.needs.filter(n => !n.synthetic);
+    const need = own.find(n => n.id === id) ?? refuse(`--pointer ${pointer}: no question ${id || '(empty)'} on ${t.id} (${own.length} searched; cite it before it is resolved). ${BOARD_OK_LIMIT}`);
+    if (!need.answer) { refuse(`--pointer ${pointer}: ${id} has no answer yet. ${BOARD_OK_LIMIT}`); }
+    if (need.answeredBy !== 'owner') { refuse(`--pointer ${pointer}: ${id} was answered by ${need.answeredBy ?? '?'}, not by owner from the page. ${BOARD_OK_LIMIT}`); }
+    const after = newerThan(need.answeredAt ?? '');
+    if (after) { refuse(`--pointer ${pointer}: ${after.id} was recorded DEFERRED after that answer (${need.answeredAt}): a case deferred afterwards needs its own OK`); }
+    return accepted;
+  }
+  return refuse(`--pointer "${pointer}" is not accepted: give the Story comment's URL read back from the tracker (preferred), board:<need-id> of a question the owner answered on the page, or "${SESSION_OK}, <YYYY-MM-DD HH:MM>"`);
+}
+
+// source.json keeps only a case's latest status, so a case that moved after an OK is caught while sync still holds both reads.
+export function lapsedDeferrals(events: BoardEvent[], ticket: string, before: TrackerTc[], after: TrackerTc[]): string[] {
+  const okAt = new Map<string, number>();
+  for (const e of events) {
+    if (e.ticket !== ticket || e.kind !== 'deferral.ok') { continue; }
+    for (const id of strs(e.data?.cases)) { okAt.set(id, Math.max(okAt.get(id) ?? 0, Date.parse(e.at))); }
+  }
+  return after.filter((now) => {
+    const ok = okAt.get(now.id);
+    const was = before.find(x => x.id === now.id);
+    if (ok === undefined || !was || was.status === now.status) { return false; }
+    return was.status === 'DEFERRED' || (now.status !== 'DEFERRED' && Date.parse(now.updatedAt ?? '') > ok);
+  }).map(x => x.id);
+}
+
 export function laneOf(t: Omit<TicketView, 'lane' | 'laneSince' | 'atRisk' | 'drift'>): Lane {
   const c = tcCounts(t.tcs);
   if (t.needs.some(awaitsOwner)) { return 'Needs you'; }
   if (t.worker.state === 'running') { return 'Running'; }
   if (t.verdict === 'FAILED' || c.FAILED > 0) { return 'Failed'; }
-  // A PASSED verdict with a case still NOT RUN or BLOCKED is not Passed: it is Held.
-  if (t.verdict === 'PASSED') { return c.total === 0 || c.PASSED + c.DEFERRED === c.total ? 'Passed' : 'Held'; }
+  // A PASSED verdict with a case still NOT RUN or BLOCKED, or a deferral nothing covers, is not Passed: it is Held.
+  const settled = c.PASSED + c.DEFERRED === c.total;
+  const passed = deferralBlocks(t) ? 'Held' : 'Passed';
+  if (isPassVerdict(t.verdict)) {
+    if (c.total === 0) { return t.verdict === 'PASSED' ? 'Passed' : 'Held'; }
+    return settled ? passed : 'Held';
+  }
   if (t.hold || t.verdict === 'BLOCKED' || c.BLOCKED > 0) { return 'Held'; }
   // A closed sprint imported without verdict events: the tracker past the gate and every case settled.
-  if (isTestedBucket(t.bucket) && (c.total === 0 ? t.type === 'Bug' : c.PASSED + c.DEFERRED === c.total)) { return 'Passed'; }
+  if (isTestedBucket(t.bucket) && (c.total === 0 ? t.type === 'Bug' : settled)) { return passed; }
   return 'Up next';
 }
 
@@ -692,6 +798,7 @@ interface Draft {
   waits: Map<string, Wait>
   evidence: Map<string, Omit<EvidenceView, 'path' | 'source'>>
   acceptedRisk?: TicketView['acceptedRisk']
+  deferralOks: Map<string, Omit<DeferralOk, 'cases'>>
   startedAt?: string
   /** When the current attempt began (first start, or the latest retest). */
   attemptAt?: string
@@ -759,6 +866,7 @@ export function fold(input: {
   live?: Record<string, LiveTicket>
   now: string
   mode?: BoardState['mode']
+  deferralLabel?: string
 }): BoardState {
   const { sprint, tracker, now } = input;
   const live = input.live ?? {};
@@ -793,6 +901,7 @@ export function fold(input: {
         hold: null,
         waits: new Map(),
         evidence: new Map(),
+        deferralOks: new Map(),
         lastAt: sprint.startedAt,
       };
       drafts.set(id, d);
@@ -859,6 +968,8 @@ export function fold(input: {
         if (str(x.approval)) { tc.approval = str(x.approval); }
         if (str(x.reason)) { tc.reason = str(x.reason); }
         d.tcs.set(id, tc);
+        // An OK covers the deferral it was given on, never a later record of the case.
+        d.deferralOks.delete(id);
         break;
       }
       case 'verdict':
@@ -939,6 +1050,13 @@ export function fold(input: {
       case 'fixture':
         fixtures.push({ id: str(x.id) ?? e.id, ticket: d.id, module: str(x.module), text: str(x.text) ?? e.text, at: e.at, by: e.by });
         break;
+      case 'deferral.ok': {
+        const pointer = said(x.pointer);
+        const by = DEFERRAL_OK_ACTORS.find(a => a === e.by);
+        if (pointer && by) { for (const id of strs(x.cases)) { d.deferralOks.set(id, { pointer, by, at: e.at }); } }
+        break;
+      }
+      case 'deferral.lapse': for (const id of strs(x.cases)) { d.deferralOks.delete(id); } break;
       case 'accept-risk': d.acceptedRisk = { by: str(x.by) ?? e.by ?? '?', note: str(x.note), at: e.at }; break;
       default: break;
     }
@@ -1031,10 +1149,12 @@ export function fold(input: {
     const evidence: EvidenceView[] = [...d.evidence].map(([path, e]) => ({ path, ...e, outcome: e.outcome ?? outcomeOfTc(e.tc), source: 'board' as const }));
     for (const p of l?.evidence ?? []) { if (!d.evidence.has(p)) { evidence.push({ path: p, source: 'disk' }); } }
 
+    const cases = [...tcs.values()].sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+    const type = c?.type ?? d.type;
     const base = {
       id: d.id,
       title: c?.title ?? d.title ?? d.id,
-      type: c?.type ?? d.type,
+      type,
       dev: c?.dev ?? d.dev,
       priority: c?.priority ?? d.priority,
       module: c?.module ?? d.module,
@@ -1047,7 +1167,7 @@ export function fold(input: {
       worker,
       verdict: d.verdict,
       verdictNote: d.verdictNote,
-      tcs: [...tcs.values()].sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true })),
+      tcs: cases,
       bugs,
       needs,
       hold: d.hold,
@@ -1055,6 +1175,7 @@ export function fold(input: {
       evidence,
       evidenceArtifact: ticketPages.get(d.id),
       acceptedRisk: d.acceptedRisk,
+      deferral: deferralOf(cases, type, d.deferralOks, input.deferralLabel),
       next: d.next,
       startedAt: d.startedAt,
       finishedAt: d.finishedAt,
@@ -1350,6 +1471,7 @@ export interface Metrics {
   burnup: { day: string, done: number, scope: number }[]
   bugs: { total: number, open: number, bySeverity: Record<string, { open: number, closed: number }>, byDev: Record<string, number>, byModule: Record<string, number>, byStatus: Record<BugStatusClass, number> }
   firstPass: { clean: number, of: number }
+  notFullyTested: number
   owner: { medianHours: number | null, answered: number, open: { ticket: string, hours: number }[] }
   waits: { person: string, open: number, oldestHours: number, items: { ticket: string, what: string, hours: number }[] }[]
   atRisk: string[]
@@ -1392,7 +1514,7 @@ export function metrics(s: BoardState): Metrics {
   }
   tc.executed = tc.PASSED + tc.FAILED;
 
-  const done = scope.filter(t => t.lane === 'Passed' || t.lane === 'Failed' || t.verdict !== 'PENDING');
+  const done = scope.filter(t => t.lane === 'Passed' || t.lane === 'Failed' || (t.verdict !== 'PENDING' && !(isPassVerdict(t.verdict) && deferralBlocks(t))));
   const doneDay = (t: TicketView) => (t.finishedAt ?? t.laneSince).slice(0, 10);
   const burnup: Metrics['burnup'] = [];
   const end = now.slice(0, 10);
@@ -1453,6 +1575,7 @@ export function metrics(s: BoardState): Metrics {
     burnup,
     bugs: { total: seen.size, open, bySeverity, byDev, byModule, byStatus },
     firstPass: { clean, of: withVerdict.length },
+    notFullyTested: scope.filter(t => t.lane === 'Passed' && t.deferral).length,
     owner: { medianHours: answered.length ? round1(median(answered)!) : null, answered: answered.length, open: openQ.sort((a, b) => b.hours - a.hours) },
     waits: [...waits.values()].sort((a, b) => b.oldestHours - a.oldestHours),
     atRisk: scope.filter(t => t.atRisk).map(t => t.id),
@@ -1465,6 +1588,9 @@ export function metrics(s: BoardState): Metrics {
 // ---------------------------------------------------------------------------
 
 const SHARE_KINDS = new Set<TimelineItem['kind']>(['verdict', 'bug.link', 'release', 'tracker']);
+
+// The OK records stay out: a pointer and its writer are the owner's side of the board.
+const publicDeferral = (d?: Deferral): Deferral | undefined => d && { cases: [...d.cases], waiting: [...d.waiting], bug: d.bug, label: d.label };
 
 // ---------------------------------------------------------------------------
 // Automated outcomes (ADR-0020; ADR-0023 amendment)
@@ -1551,6 +1677,7 @@ export function toShareState(s: BoardState): BoardState {
       lane: t.lane === 'Needs you' ? 'Held' : t.lane,
       laneSince: t.laneSince,
       atRisk: t.atRisk,
+      deferral: publicDeferral(t.deferral),
       progress: [],
     })),
     asks: [],
@@ -1577,7 +1704,8 @@ export interface PriorityCoverage { priority: string, tickets: number, tested: n
  *   report ticket  on the board, in QA scope, and the tracker's Sprint is this board's sprint (a ticket
  *                  with no tracker Sprint counts while in scope); a ticket filed under another sprint is listed
  *                  in `excluded`, never counted
- *   tested         a report ticket with at least one TC or a PASSED/FAILED verdict; signed off = tested and in the tracker's `tested` bucket
+ *   tested         a report ticket with at least one TC or a passing or FAILED verdict; signed off = tested, in the tracker's
+ *                  `tested` bucket and with no deferral that blocks it (`deferralBlocks`)
  *   not tested     0 TCs and no verdict: `neverReached` (never got to the test environment) or `notCounted` (reached it, nothing on record)
  *   tc             totals over tested tickets; passRate = PASSED / (PASSED + FAILED), coverage = PASSED / all
  *   bugs           `sprintBugs`, minus a Bug row that is itself a report ticket and was never linked with
@@ -1588,7 +1716,7 @@ export interface SprintReport {
   /** The tracker Sprint value report tickets carry (the board's sprint name). */
   sprintLabel: string
   stpUrl?: string
-  tickets: { total: number, tested: number, signedOff: number, notSignedOff: string[] }
+  tickets: { total: number, tested: number, signedOff: number, notFullyTested: number, notSignedOff: string[] }
   notTested: { neverReached: NotTestedRow[], notCounted: NotTestedRow[] }
   excluded: { id: string, sprint?: string }[]
   tc: Record<TcStatus, number> & { total: number }
@@ -1643,8 +1771,8 @@ export function toReportState(s: BoardState, opts: { stpUrl?: string, stpHosts?:
   const mine = scope.filter(t => !t.sprint || sameSprint(t.sprint, label));
   const ids = new Set(mine.map(t => t.id));
   // A worker verdict counts as tested even with 0 TCs (an ATR-only bug retest), so the report never contradicts the board's Passed lane.
-  const tested = mine.filter(t => t.tcs.length > 0 || t.verdict === 'PASSED' || t.verdict === 'FAILED');
-  const signed = tested.filter(t => isTestedBucket(t.bucket));
+  const tested = mine.filter(t => t.tcs.length > 0 || isPassVerdict(t.verdict) || t.verdict === 'FAILED');
+  const signed = tested.filter(t => isTestedBucket(t.bucket) && !deferralBlocks(t));
 
   const tc = { 'PASSED': 0, 'FAILED': 0, 'NOT RUN': 0, 'BLOCKED': 0, 'DEFERRED': 0, 'total': 0 };
   const deferred: SprintReport['deferred'] = [];
@@ -1725,7 +1853,7 @@ export function toReportState(s: BoardState, opts: { stpUrl?: string, stpHosts?:
   const report: SprintReport = {
     sprintLabel: label,
     stpUrl: safeStp(opts.stpUrl, opts.stpHosts ?? []),
-    tickets: { total: mine.length, tested: tested.length, signedOff: signed.length, notSignedOff: tested.filter(t => !isTestedBucket(t.bucket)).map(t => t.id) },
+    tickets: { total: mine.length, tested: tested.length, signedOff: signed.length, notFullyTested: signed.filter(t => t.deferral).length, notSignedOff: tested.filter(t => !signed.includes(t)).map(t => t.id) },
     notTested: { neverReached, notCounted },
     excluded: scope.filter(t => !ids.has(t.id)).map(t => ({ id: t.id, sprint: t.sprint })),
     tc,
@@ -1776,6 +1904,7 @@ export function toReportState(s: BoardState, opts: { stpUrl?: string, stpHosts?:
       lane: t.lane === 'Needs you' ? 'Held' : t.lane,
       laneSince: t.laneSince,
       atRisk: t.atRisk,
+      deferral: publicDeferral(t.deferral),
       progress: [],
     })),
     asks: [],
@@ -1800,6 +1929,10 @@ export function toReportState(s: BoardState, opts: { stpUrl?: string, stpHosts?:
 const PRIORITY_ORDER = ['Critical', 'High', 'Medium', 'Low'];
 
 export function slackStatus(t: TicketView): string {
+  return t.deferral ? `${slackLaneStatus(t)}, ${deferralMark(t.deferral)}` : slackLaneStatus(t);
+}
+
+function slackLaneStatus(t: TicketView): string {
   const c = tcCounts(t.tcs);
   const tracker = t.trackerStatus ?? 'not synced';
   const bug = t.bugs[0]?.id;
@@ -1807,7 +1940,10 @@ export function slackStatus(t: TicketView): string {
   if (t.lane === 'Failed') { return `⚠️ Passed ${c.PASSED} of ${c.total}${bug ? `, Bug ${bug} filed` : ''}`; }
   if (t.lane === 'Running') { return `🔵 Running, ${t.worker.stage ?? 'started'}`; }
   if (t.lane === 'Needs you') { return '🟡 Standby, waiting on a decision'; }
-  if (t.lane === 'Held') { return `🟡 Standby, ${t.hold?.note ?? 'blocked'}`; }
+  if (t.lane === 'Held') {
+    const note = deferralNote(t);
+    return `🟡 Standby, ${note ? DEFERRAL_NOTES[note].en : t.hold?.note ?? 'blocked'}`;
+  }
   return `🟡 Assigned to me, ${tracker}`;
 }
 
@@ -2018,7 +2154,7 @@ export function watchersDown(watchers: WatcherView[] | undefined, now: Date): Wa
 
 /**
  * `--since` takes an ISO time (local unless it carries Z or an offset) or an id: a message id
- * (`msg-...`), a need, a draft or an event id. An id resolves to that event's time on any of
+ * (`msg-...`), a need, an ask or an event id. An id resolves to that event's time on any of
  * the given boards. Returns the ISO cutoff, or null when the input matches nothing (the caller
  * stops and says so, fail loudly).
  */

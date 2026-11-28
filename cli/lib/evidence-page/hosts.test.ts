@@ -40,6 +40,16 @@ describe('describePage', () => {
     // The bug pack: the round-0 reproduction is history, the retest is current
     expect(describePage(demoBugPack({ error: 'b.png', fixed: 'c.png' }))).toBe('DEMO-7120 staging evidence: 1 of 1 cases passed');
   });
+
+  it('says whether a story\'s deferrals have the owner OK', () => {
+    const pack = story();
+    pack.ticket.verdict = 'PENDING';
+    pack.tcs = pack.tcs.filter(c => c.status === 'PASSED' || c.status === 'DEFERRED');
+    pack.bugs = [];
+    expect(describePage(pack)).toBe('DEMO-7101 staging evidence: 1 of 2 TCs passed, 1 deferred, waiting for owner OK');
+    pack.ticket.deferral = { label: 'not-fully-tested', ok: { by: 'Owner (demo)', at: '2026-10-24T15:00:00Z', record: 'owner OK given in session', cases: ['DEMO-7101-TC3'] } };
+    expect(describePage(pack)).toBe('DEMO-7101 staging evidence: 1 of 2 TCs passed, 1 deferred (not-fully-tested), owner OK cited');
+  });
 });
 
 describe('evidenceUrlError', () => {

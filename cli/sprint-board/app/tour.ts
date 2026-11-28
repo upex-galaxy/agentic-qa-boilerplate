@@ -79,8 +79,8 @@ const STEPS: Step[] = [
     view: 'now',
     target: '[data-tour="tray"]',
     move: 'start',
-    en: ['Held and Up next live in a tray, not in lanes', 'Held means waiting on something that is nobody\'s decision: a deploy, data, access. Up next is not started. DEMO-7907 just left the tray because its worker started.', 'A queued card carries no information, and waiting on a deploy is not your call. Keeping both out of the lanes keeps the lanes about action.'],
-    es: ['Held y Up next van en una bandeja, no en carriles', 'Held es esperar algo que no es decisión de nadie: un deploy, datos, accesos. Up next es lo que no empezó. DEMO-7907 acaba de salir de la bandeja porque su worker arrancó.', 'Una tarjeta en cola no dice nada, y esperar un deploy no es decisión tuya. Dejar ambos fuera de los carriles mantiene los carriles enfocados en actuar.'],
+    en: ['Held and Up next live in a tray, not in lanes', 'Held means waiting on a deploy, data, access, or the owner OK on deferred cases. Up next is not started. DEMO-7907 just left the tray because its worker started.', 'A queued card carries no information, and waiting on a deploy is not your call. Keeping both out of the lanes keeps the lanes about action.'],
+    es: ['Held y Up next van en una bandeja, no en carriles', 'Held es esperar un deploy, datos, accesos o el OK del owner sobre casos diferidos. Up next es lo que no empezó. DEMO-7907 acaba de salir de la bandeja porque su worker arrancó.', 'Una tarjeta en cola no dice nada, y esperar un deploy no es decisión tuya. Dejar ambos fuera de los carriles mantiene los carriles enfocados en actuar.'],
   },
   {
     view: 'now',

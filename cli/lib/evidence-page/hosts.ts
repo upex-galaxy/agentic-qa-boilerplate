@@ -59,7 +59,7 @@ function currentRound(pack: Pick<Pack, 'tcs' | 'currentRound'>): number {
   return pack.currentRound ?? Math.max(0, ...pack.tcs.map(own), ...pack.tcs.flatMap(c => (c.evidence ?? []).map(e => e.round ?? 0)));
 }
 
-/** One sentence for the gallery card: `<KEY> <env> evidence: <n> of <m> TCs passed`, current round only. */
+/** One sentence for the gallery card: `<KEY> <env> evidence: <n> of <m> TCs passed`, current round only, with a story's deferrals. */
 export function describePage(pack: Pick<Pack, 'ticket' | 'env' | 'tcs' | 'bugs' | 'kind' | 'currentRound'>): string {
   const cur = currentRound(pack);
   const live = pack.tcs.filter(c => (c.round ?? (c.kind === 'repro' ? 0 : cur)) >= cur);
@@ -67,7 +67,19 @@ export function describePage(pack: Pick<Pack, 'ticket' | 'env' | 'tcs' | 'bugs' 
   const env = Object.values(pack.env ?? {})[0];
   const bugs = (pack.bugs ?? []).length;
   const what = pack.kind === 'bug' ? 'cases' : 'TCs';
-  return `${pack.ticket.id}${env ? ` ${env}` : ''} evidence: ${passed} of ${live.length} ${what} passed${bugs > 0 ? `, ${bugs} bug${bugs > 1 ? 's' : ''} filed` : ''}`;
+  return `${pack.ticket.id}${env ? ` ${env}` : ''} evidence: ${passed} of ${live.length} ${what} passed${deferralNote(pack, live)}${bugs > 0 ? `, ${bugs} bug${bugs > 1 ? 's' : ''} filed` : ''}`;
+}
+
+function deferralNote(pack: Pick<Pack, 'ticket' | 'kind'>, live: Pack['tcs']): string {
+  const deferred = pack.kind === 'bug' ? [] : live.filter(c => c.status === 'DEFERRED');
+  if (deferred.length === 0) { return ''; }
+  const covered = pack.ticket.deferral?.ok?.cases ?? [];
+  const label = pack.ticket.deferral?.label;
+  const ok = deferred.every(c => covered.includes(c.id))
+    ? ', owner OK cited'
+    : pack.ticket.verdict === 'FAILED' ? '' : ', waiting for owner OK';
+  if (ok === '' && !label) { return ''; }
+  return `, ${deferred.length} deferred${label ? ` (${label})` : ''}${ok}`;
 }
 
 export function publishEvidence(

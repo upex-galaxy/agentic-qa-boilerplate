@@ -16,6 +16,10 @@ below names which one it applies to:
 
 ## Unreleased — Boilerplate
 
+### Added (a deferred case is visible on the board and the evidence page)
+- **The Sprint Board marks a ticket with a DEFERRED case as not fully tested** (the label comes from `qa.deferral.label`) and holds it as "waiting for owner OK" until `bun run board deferral-ok` records an observed OK that covers every deferred case. The verb takes a pointer (the Story comment, a board answer written by the owner, or the in-session words with their timestamp), moves the lane only, and never replaces opening the pointer at Stage 3 and at round close. A Bug with a deferred case never reads Passed. Imported or closed sprints with deferrals and no recorded OK now read Held.
+- **The evidence pack carries the deferral label and the owner OK** (`ticket.deferral`), the page shows both or the waiting state, and a story whose deferred cases are all covered can read `PASSED WITH DEFERRALS`, a deferrals-only one included.
+
 ### Fixed (gates that let `main` go red, and the PR watcher on Linux)
 - **`repo:check` runs the installer manifest check and the tests under `.agents/skills/`** (`installer:manifest:check`, `skills:test`), and the unit-test workflow runs the skill tests too: a bare `bun test` skips dot directories. The manifest check does nothing outside the boilerplate's own checkout. **Upgrade step**: a project that kept its own `repo:check` appends `&& bun run skills:test`.
 - **The `edd` PR watcher reads its heartbeat age on Linux.** It tried the BSD form of `stat` first, which GNU `stat` answers with filesystem output before failing. Shared with the Dev boilerplate.

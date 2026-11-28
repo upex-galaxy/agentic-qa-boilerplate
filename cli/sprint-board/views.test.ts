@@ -4,7 +4,7 @@
  */
 import type { BoardEvent, Sprint, TrackerSnapshot } from './model.ts';
 import { describe, expect, test } from 'bun:test';
-import { askUndo, card, ctxOf, drawer, nextSteps, routeView, viewBugs, viewEvidence, viewMetrics, viewPeople, viewReport, viewTickets, viewTimeline } from './app/views.ts';
+import { askUndo, board, card, ctxOf, drawer, nextSteps, routeView, viewBugs, viewEvidence, viewMetrics, viewNow, viewPeople, viewReport, viewTickets, viewTimeline } from './app/views.ts';
 import { fold as foldRaw, SCHEMA, toReportState } from './model.ts';
 import { bucketed } from './test-fixtures.ts';
 
@@ -114,6 +114,7 @@ describe('the sprint report', () => {
   const full = fold({ sprint: { ...sprint, closedAt: '2026-10-05T00:00:00Z' }, tracker: rc, now: '2026-10-05T12:00:00Z', events: [
     ev('2026-10-02T00:00:00Z', 'bug.link', 'DEMO-1', { bug: 'DEMO-7090', severity: 'Low' }),
     ev('2026-10-02T03:00:00Z', 'evidence.artifact', 'DEMO-1', { url: 'https://claude.ai/artifact/tk1' }),
+    { ...ev('2026-10-02T04:00:00Z', 'deferral.ok', 'DEMO-1', { cases: ['TC-2'], pointer: 'owner OK given in session, 2026-10-02 04:00Z' }), by: 'worker' },
   ] });
   const rs = toReportState(full, { stpUrl: 'https://example.atlassian.net/d/_dX#stp', stpHosts: ['example.atlassian.net'] });
   const rctx = ctxOf(rs, { filter: '', canWrite: false, img: () => null, sprints: [], archives: [] });
@@ -124,7 +125,9 @@ describe('the sprint report', () => {
     // The board's start is when QA tracking began, not the tracker sprint start, so a closed report shows only the close date.
     expect(html).toContain('Closed Oct 5, 2026');
     expect(html).not.toContain('Oct 1 to');
-    expect(html).toContain('1 of 1 tested tickets signed off · 1 of 2 test cases passed · 0 failed');
+    expect(html).toContain('1 of 1 tested tickets signed off (1 not fully tested) · 1 of 2 test cases passed · 0 failed');
+    expect(html).toContain('Not fully tested');
+    expect(html).not.toContain('owner OK given in session');
     expect(html.match(/class="rkpi s-/g)).toHaveLength(4);
     expect(html).toContain('Bugs by priority');
     expect(html).toContain('Coverage by priority');
@@ -161,6 +164,56 @@ describe('the sprint report', () => {
     expect(b).not.toContain('data-copy-bugs');
     expect(() => viewTimeline(rctx)).not.toThrow();
     expect(viewReport({ ...rctx, state: { ...rs, report: undefined } })).toContain('snapshot --mode report');
+  });
+});
+
+describe('deferred cases on the page', () => {
+  const REF = 'https://example.atlassian.net/browse/DEMO-1';
+  const page = (opts: { label?: string, covered?: boolean, type?: string } = {}) => {
+    const s = fold({ sprint, now: '2026-10-05T12:00:00Z', deferralLabel: opts.label, events: [
+      ev('2026-10-02T00:00:00Z', 'meta', 'DEMO-1', { type: opts.type ?? 'Story' }),
+      ev('2026-10-02T00:00:00Z', 'tc', 'DEMO-1', { tc: 'TC-1', status: 'PASSED' }),
+      ev('2026-10-02T00:00:00Z', 'tc', 'DEMO-1', { tc: 'TC-2', status: 'DEFERRED', reason: 'QA decision: external' }),
+      ev('2026-10-02T01:00:00Z', 'verdict', 'DEMO-1', { verdict: 'PASSED' }),
+      ev('2026-10-02T01:00:00Z', 'evidence', 'DEMO-1', { path: 'e/pass.png', tc: 'TC-1' }),
+      ev('2026-10-02T01:00:00Z', 'bug.link', 'DEMO-1', { bug: 'DEMO-7090' }),
+      ...(opts.covered ? [{ ...ev('2026-10-02T02:00:00Z', 'deferral.ok', 'DEMO-1', { cases: ['TC-2'], pointer: REF }), by: 'conductor' }] : []),
+    ] });
+    const c = ctxOf(s, { filter: '', canWrite: true, img: p => p, sprints: [], archives: [] });
+    return { c, t: s.tickets[0] };
+  };
+  const surfaces = (p: ReturnType<typeof page>) => [card(p.t, p.c), drawer(p.t, p.c), viewTickets(p.c), viewPeople(p.c), viewEvidence(p.c), viewBugs(p.c), viewTimeline(p.c), viewNow(p.c)];
+
+  test('waiting: every surface carries the mark, the tray chip and the drawer say waiting for owner OK', () => {
+    const p = page();
+    for (const html of surfaces({ ...p, c: { ...p.c, state: { ...p.c.state, tickets: p.c.state.tickets.map(t => ({ ...t, dev: 'Dana Dev' })) } } })) { expect(html).toContain('Not fully tested'); }
+    expect(viewNow(p.c)).toMatch(/class="chip held"[^>]*>.*waiting for owner OK.*Not fully tested/);
+    expect(viewTickets(p.c)).toContain('Held, waiting for owner OK');
+    expect(viewTickets(p.c)).not.toContain('Passed 1/2');
+    expect(drawer(p.t, p.c)).toContain('No owner OK observed for');
+  });
+
+  test('covered: Passed with the mark, the counts say so, and the drawer shows the pointer and the recorder', () => {
+    const p = page({ covered: true, label: 'qa-partial' });
+    for (const html of [card(p.t, p.c, true), drawer(p.t, p.c), viewTickets(p.c), board(p.c)]) {
+      expect(html).toContain('qa-partial');
+      expect(html).not.toContain('Not fully tested');
+    }
+    expect(board(p.c)).toContain('1 passed, not fully tested');
+    expect(viewMetrics(p.c)).toContain('1 passed, not fully tested');
+    expect(viewNow(p.c)).toContain('1 passed, not fully tested');
+    const html = drawer(p.t, p.c);
+    expect(html).toContain('Owner OK observed by conductor');
+    expect(html).toContain(`href="${REF}"`);
+    expect(html).not.toContain('waiting for owner OK');
+  });
+
+  test('a Bug says a retest never passes on a deferral instead of waiting for an OK', () => {
+    const p = page({ type: 'Bug' });
+    for (const html of [card(p.t, p.c), drawer(p.t, p.c), viewNow(p.c)]) {
+      expect(html).toContain('a retest never passes on a deferral');
+      expect(html).not.toContain('waiting for owner OK');
+    }
   });
 });
 

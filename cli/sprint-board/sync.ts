@@ -13,7 +13,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { createSource, loadBoardConfig, resolveBoardConfig, SOURCE_KINDS } from '../lib/sprint-source/index.ts';
-import { boardTicketIds, printable, SCHEMA, trackerName, untrackedInTest } from './model.ts';
+import { boardTicketIds, lapsedDeferrals, printable, SCHEMA, trackerName, untrackedInTest } from './model.ts';
 import { appendEvent, readEvents, readSprint, readTracker, withSourceLock, writeSprint, writeTracker } from './store.ts';
 
 const print = (line: string) => console.log(printable(line));
@@ -56,6 +56,16 @@ export function boardConfig(opts: Pick<SyncOptions, 'config' | 'source' | 'ticke
   }
   if (opts.ticketsFile) { config = { ...config, ticketsFile: resolve(process.cwd(), opts.ticketsFile) }; }
   return config;
+}
+
+export function deferralLabel(): string | undefined {
+  const path = resolve(process.env.SPRINT_BOARD_PROJECT_YAML || resolve(CODE_ROOT, '.agents', 'project.yaml'));
+  try {
+    const label: unknown = parseYaml(readFileSync(path, 'utf8'))?.qa?.deferral?.label;
+    return typeof label === 'string' && label.trim() ? label.trim() : undefined;
+  }
+  // An unreadable config still shows the generic mark; board:check is what reports the file.
+  catch { return undefined; }
 }
 
 const orNone = (v: string | null): string | undefined => v ?? undefined;
@@ -201,6 +211,10 @@ async function syncOpen(slug: string, sprint: Sprint, config: BoardConfig, opts:
     const before = prev?.tickets[id]?.status;
     if (before && t.status && before !== t.status) {
       appendEvent(slug, { kind: 'tracker', ticket: id, text: `${name} status ${before} -> ${t.status}`, data: { from: before, to: t.status, fromBucket: prev?.tickets[id]?.bucket, bucket: t.bucket } });
+    }
+    const lapsed = lapsedDeferrals(readEvents(slug).events, id, prev?.tickets[id]?.tcs ?? [], t.tcs);
+    if (lapsed.length) {
+      appendEvent(slug, { kind: 'deferral.lapse', ticket: id, text: `${id}: the recorded owner OK no longer covers ${lapsed.join(', ')} (changed in ${name})`, data: { cases: lapsed } });
     }
     next.tickets[id] = t;
     print(`sync: ${id} ${t.status ?? '?'} (${t.bucket}), ${t.tcs.length} TCs`);

@@ -4,7 +4,7 @@ Stdlib unittest plus Pillow (the builder's own dependency); skipped with the rea
 missing. Each case runs build.py as a process, the way `bun run evidence build` does. The secret,
 validation and redaction cases carry over the inputs of the TypeScript tests they replace (ADR-0022).
 """
-import base64, io, json, os, re, shutil, subprocess, sys, tempfile, unittest
+import base64, copy, io, json, os, re, shutil, subprocess, sys, tempfile, unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BUILD = os.path.join(HERE, "build.py")
@@ -231,6 +231,114 @@ class TestValidation(BuildCase):
         r, _ = self.run_build(base_pack(), "--check", out=None)
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn("valid evidence-pack/2.0", r.stdout)
+
+
+class TestDeferral(BuildCase):
+    OK = {"by": "Owner (demo)", "at": "2026-11-05T14:30:00Z", "pointer": "https://tracker.example.test/browse/DEMO-7001?focusedCommentId=9", "cases": ["DEMO-7001-TC2"]}
+
+    def story(self, verdict, ok=OK, label="not-fully-tested", passed=False):
+        p = base_pack()
+        p["ticket"]["verdict"] = verdict
+        deferred = {"id": "DEMO-7001-TC2", "title": "Saved cards", "status": "DEFERRED", "note": "flag off in staging; deferred to DEMO-7130"}
+        p["tcs"] = ([p["tcs"][0]] if passed else []) + [deferred]
+        deferral = dict({"label": label} if label is not None else {}, **({"ok": copy.deepcopy(ok)} if ok is not None else {}))
+        if deferral:
+            p["ticket"]["deferral"] = deferral
+        return p
+
+    def passes(self, pack):
+        r, html = self.run_build(pack)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        return r, html
+
+    def test_a_covering_ok_ends_pending_on_a_deferrals_only_story(self):
+        _, html = self.passes(self.story("PASSED WITH DEFERRALS"))
+        self.assertEqual(embedded(html)[0]["ticket"]["deferral"], {"label": "not-fully-tested", "ok": self.OK})
+        self.refused(self.story("PENDING"), "they allow PASSED WITH DEFERRALS: the owner OK covers every deferred case")
+        self.refused(self.story("PASSED"), "ticket.verdict PASSED contradicts the current cases")
+
+    def test_without_an_ok_a_deferrals_only_story_stays_pending(self):
+        for ok in (None, {}):
+            self.passes(self.story("PENDING", ok=ok))
+            self.refused(self.story("PASSED WITH DEFERRALS", ok=ok), "waiting for owner OK on DEMO-7001-TC2")
+        self.passes(self.story("PENDING", ok=None, label=None))
+
+    def test_the_ok_covers_only_the_cases_it_lists(self):
+        p = self.story("PASSED WITH DEFERRALS", passed=True)
+        p["tcs"].append({"id": "DEMO-7001-TC3", "title": "Receipt", "status": "DEFERRED", "note": "mail sink down, DEMO-7131"})
+        self.refused(p, "waiting for owner OK on DEMO-7001-TC3")
+        p["ticket"]["verdict"] = "PENDING"
+        self.passes(p)
+        p["ticket"]["deferral"]["ok"]["cases"].append("DEMO-7001-TC3")
+        p["ticket"]["verdict"] = "PASSED WITH DEFERRALS"
+        self.passes(p)
+
+    def test_the_ok_lists_only_current_deferred_cases(self):
+        for stray in ("DEMO-7001-TC1", "DEMO-7001-TC9"):
+            self.refused(self.story("PASSED WITH DEFERRALS", ok=dict(self.OK, cases=["DEMO-7001-TC2", stray]), passed=True), f"lists {stray}, which is not a current DEFERRED case")
+        p = self.story("PENDING")
+        p["currentRound"] = 1
+        p["tcs"][0]["round"] = 0
+        p["tcs"].append({"id": "DEMO-7001-TC4", "title": "Later round", "status": "BLOCKED", "round": 1, "note": "sink down"})
+        self.refused(p, "lists DEMO-7001-TC2, which is not a current DEFERRED case")
+
+    def test_the_label_is_required_for_the_result(self):
+        for label in (None, "  "):
+            self.refused(self.story("PASSED WITH DEFERRALS", label=label), "ticket.deferral.label is missing")
+            self.passes(self.story("PENDING", label=label))
+
+    def test_an_incomplete_ok_is_refused_by_field(self):
+        without = lambda key: {k: v for k, v in self.OK.items() if k != key}
+        record = dict(without("pointer"), record="owner OK given in session: both cases accepted")
+        self.passes(self.story("PASSED WITH DEFERRALS", ok=record))
+        self.passes(self.story("PASSED WITH DEFERRALS", ok=dict(self.OK, pointer="board:deferral-DEMO-7001-TC2")))
+        for ok, needle in (
+            (without("by"), "ticket.deferral.ok.by is required"),
+            (without("at"), "ticket.deferral.ok.at is required"),
+            (dict(self.OK, at="2026-11-05"), "ok.at must be a timestamp"),
+            (without("pointer"), "exactly one of pointer"),
+            (dict(self.OK, pointer="  "), "exactly one of pointer"),
+            (dict(record, pointer=self.OK["pointer"]), "exactly one of pointer"),
+            (dict(self.OK, pointer="the owner said yes"), "ok.pointer must be an absolute http(s) URL or board:<need-id>"),
+            (dict(self.OK, pointer="board:"), "ok.pointer must be an absolute http(s) URL"),
+            (dict(self.OK, pointer="javascript:alert(1)"), "ok.pointer must be an absolute http(s) URL"),
+            (dict(record, record="the conductor says owner OK given in session"), "ok.record must start with"),
+            (without("cases"), "ok.cases must list the covered case ids"),
+            (dict(self.OK, cases=[]), "ok.cases must list the covered case ids"),
+            (dict(self.OK, aproved=True), "aproved is not a field"),
+            ("yes", "ticket.deferral.ok must be an object"),
+        ):
+            self.refused(self.story("PENDING", ok=ok), needle)
+
+    def test_a_bug_never_passes_on_a_deferral_ok_or_not(self):
+        p = TestValidation.retest_pack(self, "PASSED")
+        p["tcs"] = [{"id": "DEMO-7009-TC2", "round": 1, "title": "Other", "status": "DEFERRED", "note": "later, DEMO-7031"}, p["tcs"][1]]
+        for verdict in ("PASSED", "PASSED WITH DEFERRALS"):
+            p["ticket"]["verdict"] = verdict
+            self.refused(p, "a retest cannot pass on a deferral")
+        p["ticket"]["verdict"] = "PENDING"
+        self.passes(p)
+        p["ticket"]["deferral"] = {"label": "not-fully-tested", "ok": dict(self.OK, cases=["DEMO-7009-TC2"])}
+        self.refused(p, "ticket.deferral belongs to a story pack")
+        found = base_pack(kind="bug")
+        found["ticket"]["verdict"] = "PASSED WITH DEFERRALS"
+        found["tcs"].append({"id": "DEMO-7001-TC2", "title": "Other", "status": "DEFERRED", "note": "later, DEMO-7031"})
+        self.refused(found, "a bug never passes on a deferral")
+
+    def test_a_failed_or_blocked_case_outranks_the_ok(self):
+        for status, verdict in (("FAILED", "FAILED"), ("BLOCKED", "PENDING")):
+            p = self.story("PASSED WITH DEFERRALS")
+            p["tcs"].append({"id": "DEMO-7001-TC3", "title": "Other", "status": status, "note": "sink down", "url": "https://claude.ai/artifact/abc"})
+            self.refused(p, f"they allow {verdict}: DEMO-7001-TC3 is {status}")
+
+    def test_a_passed_pack_with_an_uncovered_deferral_still_builds_with_a_warning(self):
+        r, _ = self.passes(self.story("PASSED", ok=None, label=None, passed=True))
+        self.assertIn("DEFERRED, outside this PASSED verdict", r.stderr)
+
+    def test_the_new_fields_go_through_the_secret_scan(self):
+        record = {"by": "Owner", "at": "2026-11-05T14:30:00Z", "record": f"owner OK given in session, token={KEY}", "cases": ["DEMO-7001-TC2"]}
+        self.refused(self.story("PASSED WITH DEFERRALS", ok=record), "pack.ticket.deferral.ok.record holds")
+        self.refused(self.story("PASSED WITH DEFERRALS", ok=dict(self.OK, pointer=f"https://x.test/c?sig={KEY}")), "pack.ticket.deferral.ok.pointer holds")
 
 
 class TestPage(BuildCase):

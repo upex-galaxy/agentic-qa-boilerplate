@@ -21,8 +21,9 @@ kbd { font: 600 11px var(--font-mono); border: 1px solid var(--line); border-bot
 .stamp { padding: 18px 22px; display: grid; align-content: center; gap: 8px; min-width: 180px; color: #fff; }
 /* stamps sit on saturated fills that read the same in both themes, like the marks on screenshots */
 :root { --stamp-pending: #a35f00; }
-.stamp.FAILED { background: var(--mark-defect); } .stamp.PASSED { background: var(--mark-ok); } .stamp.PENDING { background: var(--stamp-pending); }
+.stamp.FAILED { background: var(--mark-defect); } .stamp.PASSED { background: var(--mark-ok); } .stamp.PENDING, .stamp.PASSEDWITHDEFERRALS { background: var(--stamp-pending); }
 .stamp .word { font: 800 36px/1 var(--font-display); letter-spacing: .03em; }
+.stamp.PASSEDWITHDEFERRALS .word { font-size: 24px; line-height: 1.1; max-width: 12ch; }
 .stamp .vnote { font-size: 12.5px; line-height: 1.35; opacity: .95; max-width: 22ch; }
 .stamp .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .stamp .chip { font: 600 12px var(--font-body); border: 1px solid rgba(255,255,255,.65); border-radius: 999px; padding: 1px 9px; white-space: nowrap; }
@@ -51,6 +52,8 @@ kbd { font: 600 11px var(--font-mono); border: 1px solid var(--line); border-bot
 .ea { display: grid; gap: 10px; align-content: start; }
 .ea .exp { border-left: 4px solid var(--ok); padding-left: 12px; } .ea .act { border-left: 4px solid var(--defect); padding-left: 12px; }
 .ea p, .repro { margin: 2px 0 0; } .repro { color: var(--muted); font-size: 13px; margin-top: 10px; }
+.deferral { border-left: 4px solid var(--warn); display: grid; gap: 6px; }
+.deferral h2 { margin: 0; } .deferral p { margin: 0; font-size: 14px; }
 
 /* ---- board (B) ---- */
 .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -251,6 +254,7 @@ html.v-open { overflow: hidden; }
   <header id="hdr"></header>
   <div class="buildstrip" id="build" aria-label="Environment and build"></div>
   <section class="cov" id="cov" aria-label="Coverage"></section>
+  <div id="deferral" hidden></div>
   <div id="repro"></div>
   <div class="filters" id="filters" role="toolbar" aria-label="Filter cards by status"></div>
   <section class="grid" id="grid" aria-label="Test cases and bugs"></section>
@@ -332,14 +336,35 @@ function findCase(token) {               /* "TC-7005" in the current pack, or "D
   return null;
 }
 
+function deferralOf(pack) {
+  if (pack.kind === "bug") return null;
+  const d = pack.ticket.deferral || {}, ok = d.ok && d.ok.cases ? d.ok : null, live = pack.tcs.filter(c => !c.hist);
+  /* the OK is asked before the sign-off, which a FAILED ticket never reaches */
+  const waiting = pack.ticket.verdict === "FAILED" ? [] : live.filter(c => c.status === "DEFERRED" && !(ok && ok.cases.includes(c.id))).map(c => c.id);
+  return d.label || ok || waiting.length ? { label: d.label, ok, waiting } : null;
+}
+function citationOf(ok) {
+  if (ok.record) return esc(ok.record);
+  return /^https?:\/\//i.test(ok.pointer) ? `<a href="${esc(ok.pointer)}" target="_blank" rel="noopener">${esc(ok.pointer)}</a>` : `<code>${esc(ok.pointer)}</code>`;
+}
+function drawDeferral(dv) {
+  const box = $("deferral"); box.hidden = !dv;
+  box.innerHTML = dv ? `<section class="box deferral" aria-label="Shift-right deferral"><h2>Not fully tested</h2>
+    <p><b>Story label:</b> ${dv.label ? `<code>${esc(dv.label)}</code>` : "not recorded"}</p>
+    ${dv.ok ? `<p><b>Owner OK:</b> ${esc(dv.ok.by)} · ${esc(dv.ok.at)} · ${citationOf(dv.ok)}</p><p><b>Cases covered:</b> ${dv.ok.cases.map(esc).join(", ")}</p>` : ""}
+    ${dv.waiting.length ? `<p><b>Waiting for owner OK:</b> ${dv.waiting.map(esc).join(", ")}</p>` : ""}</section>` : "";
+}
+
 /* ---------- board ---------- */
 function renderBoard(pack) {
   P = pack; ITEMS = itemsOf(pack); filter = "All"; showHist = false;
   const t = pack.ticket, bug = pack.kind === "bug";
   document.title = `${t.id} evidence`;
-  const chips = bug ? [t.severity && `Severity ${t.severity}`, t.priority && `Priority ${t.priority}`].filter(Boolean) : (t.bugs || []).map(b => `Bug ${b}`);
+  const dv = deferralOf(pack);
+  const chips = bug ? [t.severity && `Severity ${t.severity}`, t.priority && `Priority ${t.priority}`].filter(Boolean)
+    : [dv && dv.label, dv && dv.waiting.length && "Waiting for owner OK", ...(t.bugs || []).map(b => `Bug ${b}`)].filter(Boolean);
   $("hdr").className = "verdict";
-  $("hdr").innerHTML = `<div class="stamp ${esc(t.verdict)}"><span class="label" style="color:inherit;opacity:.85">Verdict</span><span class="word">${esc(t.verdict)}</span>
+  $("hdr").innerHTML = `<div class="stamp ${esc(stKey(t.verdict))}"><span class="label" style="color:inherit;opacity:.85">Verdict</span><span class="word">${esc(t.verdict)}</span>
       ${t.verdictNote ? `<span class="vnote">${esc(t.verdictNote)}</span>` : ""}<div class="chips">${chips.map(c => `<span class="chip">${esc(c)}</span>`).join("")}</div></div>
     <div class="vhead"><span class="label">${bug ? "Bug report" : "Story test evidence"} · ${esc(t.module || "")}</span>
       <h1><span class="tid">${esc(t.id)}</span>${esc(t.title)}</h1>
@@ -355,6 +380,7 @@ function renderBoard(pack) {
   $("cov").innerHTML = `<div class="big tabular">${pass}/${total}<small>${bug ? "cases passed" : "TCs passed"}</small></div>
     <div style="min-width:0"><div class="bar" role="img" aria-label="${pass} of ${total} passed">${Object.entries(counts).map(([s, n]) => `<span class="${s}" style="width:${n / (total || 1) * 100}%"></span>`).join("")}</div>
     <div class="pills">${pills}</div><p>${esc(pack.summary)}</p></div>`;
+  drawDeferral(dv);
   const r = pack.repro;
   $("repro").innerHTML = r ? `<div class="two"><section class="box"><h2>Reproduction steps</h2><ol>${(r.steps || []).map(s => `<li>${esc(s)}</li>`).join("")}</ol>${r.frequency ? `<p class="repro"><b>How often:</b> ${esc(r.frequency)}</p>` : ""}</section>
     <section class="box ea"><h2>Expected and actual</h2><div class="exp"><span class="label">Expected</span><p>${esc(r.expected)}</p></div><div class="act"><span class="label">Actual</span><p>${esc(r.actual)}</p></div></section></div>` : "";

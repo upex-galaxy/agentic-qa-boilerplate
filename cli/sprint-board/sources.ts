@@ -10,6 +10,7 @@ import { join, relative } from 'node:path';
 import { applyAutomated, fold, MARKERS } from './model.ts';
 import { readEvents, readSprint, readTracker, REPO_ROOT } from './store.ts';
 import { DOCK_VIA } from './sweep.ts';
+import { deferralLabel } from './sync.ts';
 
 const PBI = join(REPO_ROOT, '.context', 'PBI');
 const SESSIONS = join(REPO_ROOT, '.session', 'sprint-testing');
@@ -148,7 +149,7 @@ export function buildState(slug: string, now = new Date().toISOString(), opts: {
   const live = sprint.closedAt ? {} : readLive(ids);
   if (opts.closingAt && !sprint.closedAt) { sprint.closedAt = opts.closingAt; }
   // The automated chip is live state too: a closed board keeps what its tracker said, not a later run.
-  const state = applyAutomated(fold({ sprint, events, tracker, live, now }), sprint.closedAt ? null : readAutomatedFile());
+  const state = applyAutomated(fold({ sprint, events, tracker, live, now, deferralLabel: deferralLabel() }), sprint.closedAt ? null : readAutomatedFile());
   if (bad) { state.warnings.push(`${bad} unreadable line(s) in events.ndjson were skipped`); }
   return state;
 }
