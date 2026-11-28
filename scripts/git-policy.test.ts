@@ -39,6 +39,7 @@ import {
   acceptedFields,
   actionsApprovalFinding,
   actionsSettingsPatch,
+  approvedFromReviews,
   assessBypass,
   buildRules,
   classifyAccepted,
@@ -52,8 +53,10 @@ import {
   effectiveForApply,
   evidenceWorkflowWarning,
   expectedApprovals,
+  headChecksVerdict,
   MANAGED_RULE_TYPES,
   MERGE_MODES,
+  mergeDecision,
   mergeGuard,
   mergeMethodWidening,
   mergeMode,
@@ -64,6 +67,8 @@ import {
   prHeadCheckRuns,
   protectedBranches,
   pullRequestModeParams,
+  pullRequestTargetFinding,
+  pullRequestTargetVerdict,
   repoSettingsPatch,
   requiredCheckContexts,
   resolveIntegrationId,
@@ -1047,5 +1052,81 @@ describe('verify warns when nothing posts edd/evidence', () => {
   test('a project without .github/workflows/evidence.yml gets the warning, this repo does not', () => {
     expect(evidenceWorkflowWarning(join(import.meta.dir, '..'))).toBeNull();
     expect(evidenceWorkflowWarning(join(import.meta.dir, 'no-such-project'))).toContain('evidence.yml is missing');
+  });
+});
+
+describe('verify --merge under the shipped default: the agent reads the PR head checks', () => {
+  const run = (name: string, conclusion: string | null, started: string): Record<string, unknown> => ({ name, conclusion, status: conclusion === null ? 'in_progress' : 'completed', started_at: started, app: { id: 15368, slug: 'github-actions' } });
+
+  test('every contract check green on the head lets the agent merge', () => {
+    const body = { check_runs: [run(EDD_CHECK, 'success', '2026-11-28T09:22:00Z'), run('lint', 'success', '2026-11-28T09:20:00Z')] };
+    expect(headChecksVerdict([EDD_CHECK, 'lint'], body)).toEqual({ green: [EDD_CHECK, 'lint'], notGreen: [] });
+  });
+
+  test('a red, pending or missing check refuses, and the latest run of a name wins', () => {
+    const body = { check_runs: [run(EDD_CHECK, 'cancelled', '2026-11-28T09:21:00Z'), run(EDD_CHECK, 'success', '2026-11-28T09:22:00Z'), run('lint', null, '2026-11-28T09:20:00Z'), run('types', 'failure', '2026-11-28T09:20:00Z')] };
+    expect(headChecksVerdict([EDD_CHECK, 'lint', 'types', 'unit'], body)).toEqual({ green: [EDD_CHECK], notGreen: ['lint (in_progress)', 'types (failure)', 'unit (never ran)'] });
+  });
+});
+
+describe('the Actions event policy that lets evidence.yml run on pull_request_target', () => {
+  const allow = { name: 'Allow pull_request_target for evidence.yml', enforcement: 'active', conditions: { workflow_path: { include: ['.github/workflows/evidence.yml'], exclude: [] } }, rules: [{ type: 'restrict_action_events', parameters: { allowed_events: ['pull_request_target'] } }] };
+
+  test('a public repository with the allowing policy (the shape of policy 18068) runs it', () => {
+    expect(pullRequestTargetVerdict('public', [allow]).allowed).toBe(true);
+    expect(pullRequestTargetFinding(pullRequestTargetVerdict('public', [allow]))).toBeNull();
+  });
+
+  test('a public repository with no policy, or one that restricts the events without it, is blocked', () => {
+    expect(pullRequestTargetVerdict('public', []).allowed).toBe(false);
+    const narrow = { ...allow, name: 'push only', rules: [{ type: 'restrict_action_events', parameters: { allowed_events: ['push'] } }] };
+    expect(pullRequestTargetVerdict('public', [allow, narrow])).toMatchObject({ allowed: false });
+    expect(pullRequestTargetFinding(pullRequestTargetVerdict('public', []))?.field).toBe('repo.pull_request_target');
+  });
+
+  test('a policy for another workflow or a disabled one does not count; a private repository is not blocked; unreadable is unknown', () => {
+    const other = { ...allow, conditions: { workflow_path: { include: ['.github/workflows/other.yml'], exclude: [] } } };
+    expect(pullRequestTargetVerdict('public', [other, { ...allow, enforcement: 'disabled' }]).allowed).toBe(false);
+    expect(pullRequestTargetVerdict('private', []).allowed).toBe(true);
+    expect(pullRequestTargetVerdict('public', null).allowed).toBeNull();
+  });
+});
+
+describe('mergeDecision: which merge verify --merge allows', () => {
+  const green = { green: [EDD_CHECK, 'lint'], notGreen: [] };
+  const open = { ok: false, reason: 'edd/evidence is not a required status check on the base' };
+  const base = { base: 'main', sha: 'a'.repeat(40), guard: open, mode: 'auto', verdict: green, approved: false };
+
+  test('the host enforces: --auto, pinned to the head it read', () => {
+    expect(mergeDecision({ ...base, guard: { ok: true, reason: 'required' } })).toMatchObject({ code: 0, message: expect.stringContaining(`--auto --match-head-commit ${'a'.repeat(40)}`) });
+  });
+
+  test('nothing required and all green: the agent merges, without --auto', () => {
+    const d = mergeDecision(base);
+    expect(d.code).toBe(0);
+    expect(d.message).toContain('no --auto');
+  });
+
+  test('red, pending or unreadable checks refuse', () => {
+    expect(mergeDecision({ ...base, verdict: { green: [], notGreen: ['lint (failure)'] } }).code).toBe(1);
+    expect(mergeDecision({ ...base, verdict: null }).code).toBe(1);
+  });
+
+  test('human-approves needs a read approval where the host does not require one; manual never lets the agent merge', () => {
+    expect(mergeDecision({ ...base, mode: 'human-approves' }).code).toBe(1);
+    expect(mergeDecision({ ...base, mode: 'human-approves', approved: true }).code).toBe(0);
+    expect(mergeDecision({ ...base, mode: 'manual' }).code).toBe(1);
+  });
+
+  test('a run from another app does not count as the check', () => {
+    const body = { check_runs: [{ name: 'lint', conclusion: 'success', started_at: '2026-11-28T09:30:00Z', app: { id: 9, slug: 'other-app' } }, { name: 'lint', conclusion: 'failure', started_at: '2026-11-28T09:20:00Z', app: { id: 15368, slug: 'github-actions' } }] };
+    expect(headChecksVerdict(['lint'], body)).toEqual({ green: [], notGreen: ['lint (failure)'] });
+  });
+
+  test('approval: the latest review of each person counts, and a change request blocks', () => {
+    expect(approvedFromReviews([{ user: { login: 'ana' }, state: 'APPROVED' }])).toBe(true);
+    expect(approvedFromReviews([{ user: { login: 'ana' }, state: 'APPROVED' }, { user: { login: 'bob' }, state: 'CHANGES_REQUESTED' }])).toBe(false);
+    expect(approvedFromReviews([{ user: { login: 'ana' }, state: 'CHANGES_REQUESTED' }, { user: { login: 'ana' }, state: 'APPROVED' }, { user: { login: 'ana' }, state: 'COMMENTED' }])).toBe(true);
+    expect(approvedFromReviews(null)).toBe(false);
   });
 });

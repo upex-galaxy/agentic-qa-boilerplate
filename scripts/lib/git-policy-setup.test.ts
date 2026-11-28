@@ -13,6 +13,7 @@ import {
   missingCodeownersLines,
   normalizeOwner,
   parseSetupFlags,
+  readHostState,
   renderHandoff,
   runSetup,
   setupDefaults,
@@ -324,6 +325,28 @@ describe('assessPreflight: what can stop an apply before any write', () => {
     expect(first.integrationId).toBe(15368);
     const unread = assessPreflight(AUTO_FORBIDDEN(), ['edd/evidence', 'lint'], hostState({ checkRuns: tip, prCheckRuns: null }));
     expect(unread.blockers.join(' ')).toContain('could not be read');
+  });
+
+  test('a public repository where evidence.yml may not run on pull_request_target blocks a managed check', () => {
+    const blocked = assessPreflight(AUTO_FORBIDDEN(), ['edd/evidence'], hostState({ pullRequestTarget: { allowed: false, reason: 'no policy' } }));
+    expect(blocked.blockers.join(' ')).toContain('edd/evidence would never report: no policy');
+    const unknown = assessPreflight(AUTO_FORBIDDEN(), ['edd/evidence'], hostState({ pullRequestTarget: { allowed: null, reason: 'unreadable' } }));
+    expect(unknown.notes.join(' ')).toContain('pull_request_target for .github/workflows/evidence.yml: unreadable');
+  });
+
+  test('readHostState reads the Actions event policies of a public repository', () => {
+    const policy = { name: 'allow', enforcement: 'active', conditions: { workflow_path: { include: ['.github/workflows/evidence.yml'], exclude: [] } }, rules: [{ type: 'restrict_action_events', parameters: { allowed_events: ['pull_request_target'] } }] };
+    const host = (policies: unknown[]): ReturnType<typeof readHostState> => readHostState(AUTO_FORBIDDEN(), 'o/r', {
+      gh: (path: string) => {
+        if (path === 'repos/o/r') { return { visibility: 'public', permissions: { admin: true }, owner: { login: 'o', type: 'Organization' } }; }
+        if (path.startsWith('repos/o/r/actions/policies?')) { return { total_count: policies.length, policies: policies.map((_, i) => ({ id: i + 1 })) }; }
+        if (path.startsWith('repos/o/r/actions/policies/')) { return policies[Number(path.split('/').pop()) - 1]; }
+        return null;
+      },
+      scopes: () => ['repo'],
+    });
+    expect(host([policy]).pullRequestTarget?.allowed).toBe(true);
+    expect(host([]).pullRequestTarget?.allowed).toBe(false);
   });
 
   test('no Actions run at all blocks: no integration_id to pin the check to', () => {

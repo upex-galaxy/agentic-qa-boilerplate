@@ -25,6 +25,8 @@ import {
   prChecksUnread,
   prHeadCheckRuns,
   protectedBranches,
+  pullRequestTargetVerdict,
+  readActionsPolicies,
   repoSettingsPatch,
   requiredCheckContexts,
   resolveIntegrationId,
@@ -99,8 +101,8 @@ const PUSH_COPY: Record<string, Copy> = {
 
 const MERGE_COPY: Record<string, Copy> = {
   'auto': {
-    en: ['Automatic (auto-merge)', 'The agent opens the pull request and turns on auto-merge. GitHub merges it by itself once the required checks pass, edd/evidence included. Nobody approves; you read the evidence afterwards.'],
-    es: ['Automático (auto-merge)', 'El agente abre el pull request y activa el auto-merge. GitHub lo fusiona solo cuando pasan los checks obligatorios, edd/evidence incluido. Nadie aprueba; tú lees la evidencia después.'],
+    en: ['Automatic (auto-merge)', 'With push forbidden, GitHub requires the checks and merges the pull request by itself once they pass, edd/evidence included. With the default push (evidence) nothing on GitHub requires a check: the agent merges its own pull request once every contract check is green on it, and nobody on GitHub enforces that. Nobody approves; you read the evidence afterwards.'],
+    es: ['Automático (auto-merge)', 'Con push forbidden, GitHub exige los checks y fusiona el pull request solo cuando pasan, edd/evidence incluido. Con el push por defecto (evidence) GitHub no exige ningún check: el agente fusiona su propio pull request cuando todos los checks del contrato están en verde, y nadie en GitHub lo hace cumplir. Nadie aprueba; tú lees la evidencia después.'],
   },
   'human-approves': {
     en: ['A person approves (human-approves)', 'Same as automatic, but GitHub also waits for a person\'s approval. The approver cannot be the pull request\'s author, so a one-person repository needs a second account.'],
@@ -154,7 +156,7 @@ export interface SetupDeps {
   readProject: () => string | null
   writeProject: (text: string) => void
   slug: string | null
-  gh: (path: string) => unknown | null
+  gh: (path: string, args?: string[]) => unknown | null
   scopes: () => string[] | null
   gateReady: boolean
   codeowners: () => string | null
@@ -310,6 +312,7 @@ export interface HostState {
   scopes: string[] | null
   checkRuns: unknown | null
   prCheckRuns?: unknown | null
+  pullRequestTarget?: { allowed: boolean | null, reason: string } | null
   actions: ActionsWorkflowPermissions | null
   orgActionsReadable: boolean | null
   rulesetId: number | null
@@ -359,9 +362,16 @@ export function assessPreflight(gs: GitStrategy, contexts: string[], host: HostS
     if (missing.pr.length > 0) {
       blockers.push(missing.prUnread ? prChecksUnread(prod) : firstPullRequestNeeded(prod));
     }
+    if (host.pullRequestTarget?.allowed === false) {
+      blockers.push(`${EDD_CHECK} would never report: ${host.pullRequestTarget.reason}; a repository admin allows it in Settings > Actions > Policies (an active policy for .github/workflows/evidence.yml that restricts events to pull_request_target)`);
+    }
     if (host.repo.owner?.type === 'User' && directPushOpen(gs.policy?.direct_push_to_protected ?? 'evidence')) {
       blockers.push('a user-owned repository has no ruleset bypass list, so a required check on a branch that takes direct pushes would refuse every direct push; move the repository to an organization, or choose forbidden or manual');
     }
+  }
+
+  if (host.pullRequestTarget && host.pullRequestTarget.allowed !== true && !(statusChecksManaged(gs) && host.pullRequestTarget.allowed === false)) {
+    notes.push(`pull_request_target for .github/workflows/evidence.yml: ${host.pullRequestTarget.reason}`);
   }
 
   if (actionsSettingsPatch(gs)) {
@@ -426,7 +436,7 @@ export function renderPlan(gs: GitStrategy, plan: SetupPlan, host: HostState | n
   out.push(checks && statusChecksManaged(gs)
     ? `  required checks: ${plan.contexts.join(', ')} (from .agents/project.yaml: ${EDD_CHECK} plus every evidence.static entry whose where includes ci), pinned to the GitHub Actions app`
     : mergesOnChecks(gs)
-      ? '  required checks: not managed: the push policy keeps direct pushes open and admin_bypass is false, so a required check would refuse every direct push; auto-merge stays off too'
+      ? '  required checks: not managed: the push policy keeps direct pushes open and admin_bypass is false, so a required check would refuse every direct push; auto-merge stays off too, and the agent merges its own pull request once git:policy verify --merge reads every contract check green on its head'
       : '  required checks: not managed under merge_mode manual (the host rule, if any, is kept)');
   const methods = allowedMergeMethods(gs);
   out.push(methods
@@ -524,6 +534,7 @@ export function readHostState(gs: GitStrategy, slug: string, deps: Pick<SetupDep
     scopes: deps.scopes(),
     checkRuns,
     prCheckRuns: statusChecksManaged(gs) && !eddOnTip ? prHeadCheckRuns(deps.gh, slug, prod) : null,
+    pullRequestTarget: repo === null ? null : pullRequestTargetVerdict(repo.visibility, readActionsPolicies(deps.gh, slug)),
     actions: deps.gh(`repos/${slug}/actions/permissions/workflow`) as ActionsWorkflowPermissions | null,
     orgActionsReadable: org ? deps.gh(`orgs/${org}/actions/permissions/workflow`) !== null : null,
     rulesetId,

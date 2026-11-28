@@ -17,10 +17,12 @@
  * COMMANDS
  *   verify   Read the host, diff against git_strategy, report. Read-only.
  *            `--stamp` writes meta.policy_verified / policy_source when clean.
- *            `--merge <base>` checks only that `edd/evidence` is a required
- *            check carrying an integration_id on <base>; exit 1 otherwise,
- *            including an unreadable host or no GitHub origin, because it
- *            guards `gh pr merge --auto`.
+ *            `--merge <base> [--head <sha>]` exits 0 when `edd/evidence` is a
+ *            required check carrying an integration_id on <base> (the host
+ *            enforces, `gh pr merge --auto` is safe), or else when every
+ *            contract check is green on <sha> (default HEAD), so the agent
+ *            merges without --auto; exit 1 otherwise, including an
+ *            unreadable host or no GitHub origin.
  *            Exit 1 on UNACCEPTED drift; 0 in parity, when every drift is listed
  *            in `policy.accepted_divergences`, when the host is unreachable or
  *            there is no GitHub origin (warned, not verified — absence of data
@@ -545,6 +547,67 @@ export function actionsApprovalFinding(gs: GitStrategy, perms: ActionsWorkflowPe
     declared: 'false (a workflow must never approve a pull request)',
     enforced: 'true ("Allow GitHub Actions to create and approve pull requests" is on)',
     note: 'bun run git:policy apply --yes (or setup) turns it off.',
+  };
+}
+
+export const ACTIONS_POLICY_API = ['-H', 'X-GitHub-Api-Version: 2026-03-10'];
+export const EVIDENCE_WORKFLOW = '.github/workflows/evidence.yml';
+
+export interface ActionsPolicy {
+  name?: string
+  enforcement?: string
+  conditions?: { workflow_path?: { include?: string[], exclude?: string[] } }
+  rules?: { type?: string, parameters?: { allowed_events?: string[] } }[]
+}
+
+function workflowMatches(globs: string[] | undefined, path: string): boolean {
+  return (globs ?? []).some(g => g === path || new Bun.Glob(g).match(path));
+}
+
+export function readActionsPolicies(read: (path: string, args?: string[]) => unknown | null, slug: string): ActionsPolicy[] | null {
+  const list = read(`repos/${slug}/actions/policies?per_page=100`, ACTIONS_POLICY_API) as { policies?: { id?: unknown }[], total_count?: unknown } | null;
+  if (!Array.isArray(list?.policies)) { return null; }
+  if (typeof list.total_count === 'number' && list.total_count > list.policies.length) { return null; }
+  const out: ActionsPolicy[] = [];
+  for (const p of list.policies) {
+    if (typeof p?.id !== 'number') { return null; }
+    const detail = read(`repos/${slug}/actions/policies/${p.id}`, ACTIONS_POLICY_API);
+    if (detail === null) { return null; }
+    out.push(detail as ActionsPolicy);
+  }
+  return out;
+}
+
+export function pullRequestTargetVerdict(visibility: unknown, policies: ActionsPolicy[] | null): { allowed: boolean | null, reason: string } {
+  if (visibility !== 'public') {
+    return { allowed: true, reason: `the repository is ${typeof visibility === 'string' ? visibility : 'not public'}, and GitHub's default block on pull_request_target applies to public repositories only` };
+  }
+  if (policies === null) {
+    return { allowed: null, reason: `the repository Actions policies could not be read, so whether ${EVIDENCE_WORKFLOW} may run on pull_request_target is unknown` };
+  }
+  const restricting = policies.filter(p => p.enforcement === 'active'
+    && (p.conditions?.workflow_path?.include?.length ? workflowMatches(p.conditions.workflow_path.include, EVIDENCE_WORKFLOW) : true)
+    && !workflowMatches(p.conditions?.workflow_path?.exclude, EVIDENCE_WORKFLOW)
+    && (p.rules ?? []).some(r => r.type === 'restrict_action_events'));
+  const events = (p: ActionsPolicy): string[] => (p.rules ?? []).filter(r => r.type === 'restrict_action_events').flatMap(r => r.parameters?.allowed_events ?? []);
+  const blocking = restricting.find(p => !events(p).includes('pull_request_target'));
+  if (blocking) {
+    return { allowed: false, reason: `the active Actions policy "${blocking.name ?? 'unnamed'}" restricts the events of ${EVIDENCE_WORKFLOW} and does not list pull_request_target` };
+  }
+  if (restricting.length > 0) {
+    return { allowed: true, reason: `the active Actions policy "${restricting[0].name ?? 'unnamed'}" allows pull_request_target for ${EVIDENCE_WORKFLOW} (organization policies were not read)` };
+  }
+  return { allowed: false, reason: `no repository Actions policy allows pull_request_target for ${EVIDENCE_WORKFLOW}, and GitHub blocks that event by default in public repositories, so ${EDD_CHECK} would not run (organization policies were not read)` };
+}
+
+export function pullRequestTargetFinding(verdict: { allowed: boolean | null, reason: string }): Finding | null {
+  if (verdict.allowed === true) { return null; }
+  return {
+    severity: 'info',
+    field: 'repo.pull_request_target',
+    declared: `${EVIDENCE_WORKFLOW} may run on pull_request_target`,
+    enforced: verdict.reason,
+    note: `A repository admin allows it in Settings > Actions > Policies: an active policy for ${EVIDENCE_WORKFLOW} that restricts events to pull_request_target.`,
   };
 }
 
@@ -1168,6 +1231,8 @@ function verify(gs: GitStrategy, slug: string, stamp: boolean): number {
   // --- the Actions approval switch, reported from the EDD rollout on (corrections 17) ---
   const actionsFinding = actionsApprovalFinding(gs, gh(`repos/${slug}/actions/permissions/workflow`) as ActionsWorkflowPermissions | null);
   if (actionsFinding) { findings.push(actionsFinding); }
+  const prtFinding = pullRequestTargetFinding(pullRequestTargetVerdict((repo as { visibility?: unknown }).visibility, readActionsPolicies((p, a) => gh(p, a), slug)));
+  if (prtFinding) { findings.push(prtFinding); }
 
   // --- accepted divergences: declared drift the project has formally signed off ---
   const acceptedByField = classifyAccepted(findings, accepted);
@@ -1449,20 +1514,87 @@ function apply(gs: GitStrategy, slug: string, write: boolean, allowLoosening: bo
   return 0;
 }
 
-function verifyMerge(base: string): number {
+export function headChecksVerdict(contexts: string[], checkRunsBody: unknown): { green: string[], notGreen: string[] } {
+  const runs = (checkRunsBody as { check_runs?: unknown } | null)?.check_runs;
+  const list = ((Array.isArray(runs) ? runs : []) as (CheckRun & { conclusion?: string | null, status?: string })[])
+    .filter(r => r?.app?.slug === 'github-actions');
+  const green: string[] = [];
+  const notGreen: string[] = [];
+  for (const c of [...new Set(contexts)]) {
+    const latest = list.filter(r => r?.name === c).sort((a, b) => runStartedAt(b) - runStartedAt(a))[0];
+    if (latest?.conclusion === 'success') { green.push(c); }
+    else { notGreen.push(`${c} (${latest ? latest.conclusion ?? latest.status ?? 'pending' : 'never ran'})`); }
+  }
+  return { green, notGreen };
+}
+
+export function approvedFromReviews(reviews: unknown): boolean {
+  if (!Array.isArray(reviews)) { return false; }
+  const latest = new Map<string, string>();
+  for (const r of reviews as { user?: { login?: unknown }, state?: unknown }[]) {
+    if (typeof r?.user?.login === 'string' && typeof r.state === 'string' && r.state !== 'COMMENTED') { latest.set(r.user.login, r.state); }
+  }
+  const states = [...latest.values()];
+  return states.includes('APPROVED') && !states.includes('CHANGES_REQUESTED');
+}
+
+export interface MergeInputs {
+  base: string
+  sha: string
+  guard: { ok: boolean, reason: string }
+  mode: string
+  verdict: { green: string[], notGreen: string[] } | null
+  approved: boolean
+}
+
+export function mergeDecision(i: MergeInputs): { code: 0 | 1, message: string } {
+  const at = i.sha.slice(0, 12);
+  if (i.guard.ok) {
+    return { code: 0, message: `${i.base}: ${i.guard.reason}. The host enforces the checks: gh pr merge --auto --match-head-commit ${i.sha} is safe.` };
+  }
+  if (i.mode === 'manual') {
+    return { code: 1, message: `${i.base}: merge_mode is manual, so a person merges; the agent stops after opening the pull request.` };
+  }
+  if (i.verdict === null) {
+    return { code: 1, message: `${i.base}: ${i.guard.reason}, and the check runs on ${at} or the base contract could not be read, so nothing shows the checks are green. Do not merge.` };
+  }
+  if (i.verdict.notGreen.length > 0) {
+    return { code: 1, message: `${i.base}: ${i.guard.reason}, and on ${at} these contract checks are not green: ${i.verdict.notGreen.join(', ')}. Wait for them or fix them, then run this again; do not merge.` };
+  }
+  if (i.mode === 'human-approves' && !i.approved) {
+    return { code: 1, message: `${i.base}: merge_mode is human-approves and nothing on the host requires the approval, so the agent merges only after a person approved this pull request; no approval is read for ${at}.` };
+  }
+  return { code: 0, message: `${i.base}: ${i.guard.reason}. Every contract check is green on ${at} (${i.verdict.green.join(', ')}), so the agent merges now with gh pr merge --match-head-commit ${i.sha} and no --auto. Nobody on the host enforces these checks: the agent does.` };
+}
+
+function evidenceAt(ref: string): EvidenceContract | null {
+  const p = Bun.spawnSync(['git', 'show', `${ref}:.agents/project.yaml`], { cwd: REPO_ROOT, stdout: 'pipe', stderr: 'pipe' });
+  if (p.exitCode !== 0) { return null; }
+  try { return ((parseYaml(p.stdout.toString()) as { evidence?: EvidenceContract } | null)?.evidence) ?? {}; }
+  catch { return null; }
+}
+
+function verifyMerge(base: string, head: string | null): number {
   const url = originUrl();
   const slug = url === null ? null : slugFromRemote(url);
   if (slug === null) {
-    log.err(url === null ? 'No `origin` remote: no host to prove the merge guard against.' : `origin is not a GitHub remote (${url}): no host to prove the merge guard against.`);
+    log.err(url === null ? 'No \`origin\` remote: no host to prove the merge guard against.' : `origin is not a GitHub remote (${url}): no host to prove the merge guard against.`);
     return 1;
   }
+  const doc = existsSync(PROJECT_YAML) ? parseYaml(readFileSync(PROJECT_YAML, 'utf8')) : null;
+  const gs = strategyForVerify(doc).gs ?? readStrategy();
+  const sha = head ?? Bun.spawnSync(['git', 'rev-parse', 'HEAD'], { cwd: REPO_ROOT, stdout: 'pipe' }).stdout.toString().trim();
   const guard = mergeGuard(gh(`repos/${slug}/rules/branches/${base}`));
-  if (guard.ok) {
-    log.ok(`${base}: ${guard.reason}`);
-    return 0;
-  }
-  log.err(`${base}: ${guard.reason}`);
-  return 1;
+  const contract = guard.ok ? null : evidenceAt(`origin/${base}`);
+  const runs = guard.ok || contract === null ? null : gh(`repos/${slug}/commits/${sha}/check-runs?per_page=100`);
+  const verdict = runs === null ? null : headChecksVerdict(requiredCheckContexts(contract), runs);
+  const prs = !guard.ok && mergeMode(gs) === 'human-approves' ? gh(`repos/${slug}/commits/${sha}/pulls`) as { number?: unknown }[] | null : null;
+  const pr = Array.isArray(prs) ? prs.find(p => typeof p?.number === 'number') : undefined;
+  const approved = pr ? approvedFromReviews(gh(`repos/${slug}/pulls/${pr.number as number}/reviews?per_page=100`)) : false;
+  const d = mergeDecision({ base, sha, guard, mode: mergeMode(gs), verdict, approved });
+  if (d.code === 0) { log.ok(d.message); }
+  else { log.err(d.message); }
+  return d.code;
 }
 
 export function lineDiff(before: string, after: string): string[] {
@@ -1518,7 +1650,7 @@ function setupDeps(slug: string | null): SetupDeps {
     readProject: () => (existsSync(PROJECT_YAML) ? readFileSync(PROJECT_YAML, 'utf8') : null),
     writeProject: (text) => { writeFileSync(PROJECT_YAML, text); },
     slug,
-    gh: path => gh(path),
+    gh: (path, args) => gh(path, args),
     scopes: ghScopes,
     gateReady: gateHere().ready,
     codeowners: () => (codeownersPath === null ? null : readFileSync(codeownersPath, 'utf8')),
@@ -1598,9 +1730,11 @@ COMMANDS
                       findings are warnings until git_strategy.policy.merge_mode
                       is declared, and direct_push_to_protected findings until
                       that key is declared.
-  verify --merge <b>  Exit 0 only when edd/evidence is a required check with an
-                      integration_id on base <b>. Unreadable host, no origin or a
-                      non-GitHub origin = exit 1 (it guards gh pr merge --auto).
+  verify --merge <b>  Exit 0 when edd/evidence is a required check with an
+                      integration_id on base <b> (gh pr merge --auto is safe), or
+                      when every contract check is green on the PR head (--head
+                      <sha>, default HEAD), and the agent merges without --auto.
+                      Unreadable host, no origin or a non-GitHub origin = exit 1.
   apply               Write the ruleset and repo merge settings git_strategy and
                       the evidence: contract imply. Dry-run unless --yes.
                       An accepted direct_push_to_protected divergence keeps the
@@ -1624,7 +1758,8 @@ COMMANDS
 
 FLAGS
   --stamp             (verify) write meta.policy_verified / policy_source when in parity
-  --merge <base>      (verify) check only the auto-merge guard on <base>
+  --merge <base>      (verify) the merge guard on <base>, then the PR head's checks
+  --head <sha>        (verify --merge) the PR head to read the checks on (default HEAD)
   --yes               (apply, migrate) actually write; without it, a dry run
   --allow-loosening   (apply) permit a change that removes a guard or lowers the review bar
   --strategy <slug>   (setup) answer the strategy question
@@ -1652,8 +1787,11 @@ function main(): void {
   const cmd = argv[0];
   if (cmd === 'verify' && argv.includes('--merge')) {
     const base = argv[argv.indexOf('--merge') + 1];
-    if (!base || base.startsWith('--')) { fail('verify --merge needs a base branch: bun run git:policy verify --merge <base>'); }
-    process.exit(verifyMerge(base));
+    if (!base || base.startsWith('--')) { fail('verify --merge needs a base branch: bun run git:policy verify --merge <base> [--head <sha>]'); }
+    const headArg = argv.includes('--head') ? argv[argv.indexOf('--head') + 1] : null;
+    if (argv.includes('--head') && (!headArg || headArg.startsWith('--'))) { fail('--head needs a commit sha: bun run git:policy verify --merge <base> --head <sha>'); }
+    const head = headArg ?? null;
+    process.exit(verifyMerge(base, head));
   }
   if (cmd === 'migrate') {
     process.exit(migrate(argv.includes('--yes')));

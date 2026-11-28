@@ -13,8 +13,8 @@ Two policy keys decide who lets a change land: `git_strategy.policy.direct_push_
 
 | `merge_mode` | A PR into a protected branch |
 |---|---|
-| `auto` | the agent runs `gh pr merge --auto --<method>` at PR open; GitHub merges when the required checks, `edd/evidence` among them, pass. No approval required |
-| `human-approves` | the same call; the ruleset requires approvals, so GitHub merges after a person approves |
+| `auto` | the agent runs `bun run git:policy verify --merge <base>` at PR open. Where the host requires the checks (the `forbidden` push preset), it runs `gh pr merge --auto --<method>` and GitHub merges when they pass, `edd/evidence` among them. Under the shipped default (push `evidence`, no required check on the host) the agent merges the PR itself, with `--match-head-commit` pinned to the head `verify --merge` read, once every contract check is green there; nobody on the host enforces it. No approval required |
+| `human-approves` | the same call; the ruleset requires approvals, so GitHub merges after a person approves. Where nothing on the host requires the approval, `verify --merge` lets the agent merge only after it reads a person's approval on the PR |
 | `manual` | the agent stops after opening the PR and a person merges |
 
 The method is a merge commit unless `git_strategy.decisions.feature_merge` declares another. A squash folds the evidence commit into a message body: the signature and the binding to the diff are lost.
@@ -48,8 +48,10 @@ The host must allow the direct push: no PR rule on that branch, or a declared by
 
 ```
 branch -> commits -> agentic run -> attest -> push branch -> gh pr create
-  -> bun run git:policy verify --merge <base> --fails--> stop, tell the person (see below)
-  -> gh pr merge --auto --<method>   (auto, human-approves)
+  -> bun run git:policy verify --merge <base>
+       --host requires the checks--> gh pr merge --auto --<method>   (auto, human-approves)
+       --nothing required, all green--> gh pr merge --<method> --match-head-commit <sha>, now
+       --red or pending--> wait (watcher), fix, run it again
   -> arm the PR watcher (waiting.md)
   -> CI: static jobs + edd/evidence --red--> wake: fix, re-attest if the diff changed, push
   -> [human-approves] review --changes requested--> wake: address, push, re-attest
@@ -60,13 +62,13 @@ branch -> commits -> agentic run -> attest -> push branch -> gh pr create
 |---|---|---|---|
 | push the branch | author | the `pre-push` static subset; no agentic requirement on a non-protected branch | push refused |
 | open the PR | author | the body carries the rendered evidence (`bun run edd render --pr`); labels and assignee set before review; a reviewer requested only under `human-approves` | |
-| enable auto-merge | author | `bun run git:policy verify --merge <base>` passes | a protected base: stop and tell the person. A base with no ruleset: see the trap below |
+| merge | author | `bun run git:policy verify --merge <base>` exits 0: auto-merge where the host requires the checks, the agent's own merge where it does not | red or pending: wait and fix. Host unreadable: stop and tell the person (human gate 10) |
 | CI | Actions | required: the static jobs and `edd/evidence` | the watcher wakes the author |
 | review bot, when `evidence.review.bot` is set | author | fix and answer each finding, up to `evidence.review.max_rounds` rounds | after the cap the finding goes to a person |
 | merge | GitHub | the ruleset | |
 | close-out | author | `git fetch`, then `git merge-base --is-ancestor <merge-commit> origin/<base>` | report the discrepancy |
 
-**The auto-merge trap.** `gh pr merge --auto` on a PR that GitHub already considers mergeable merges it at once. On a base that requires no check, "auto-merge" means "merge now, red or not". That is why `verify --merge` comes first. A base with no ruleset (a stacked PR on another feature branch, an unprotected trunk) never gets `--auto`: the author waits for `edd/evidence` to pass through the watcher, then runs `gh pr merge --<method>`.
+**The auto-merge trap.** `gh pr merge --auto` on a PR that GitHub already considers mergeable merges it at once. On a base that requires no check, "auto-merge" means "merge now, red or not". That is why `verify --merge` comes first. A base that requires no check (the shipped default, a stacked PR on another feature branch, an unprotected trunk) never gets `--auto`: the author waits through the watcher until `verify --merge` reads every contract check green on the head, then runs `gh pr merge --<method>`.
 
 ## Flow 3: chained or integration-trunk PRs
 
@@ -82,5 +84,5 @@ branch -> commits -> agentic run -> attest -> push branch -> gh pr create
 |---|---|
 | a required check fails | fix commit; re-attest if the patch-id changed; push |
 | the branch falls behind or conflicts | merge the base in (never rebase a pushed branch); re-attest only if the patch-id changed |
-| auto-merge was disabled | run `verify --merge` again and re-enable it |
+| auto-merge was disabled | run `verify --merge` again and merge the way it says |
 | someone else pushed | read what they pushed before acting; their commit needs its own evidence |

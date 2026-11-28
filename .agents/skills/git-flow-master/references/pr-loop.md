@@ -29,7 +29,7 @@ Read `git_strategy.policy.merge_mode` in `.agents/project.yaml`. A missing or nu
 
 | `merge_mode` | Action |
 |---|---|
-| `auto`, `human-approves` | `bun run git:policy verify --merge <base>`, then on exit 0 `gh pr merge <n> --auto --<method>` |
+| `auto`, `human-approves` | `bun run git:policy verify --merge <base>`, then on exit 0 `gh pr merge <n> --auto --<method> --match-head-commit <sha>` where the host requires the checks, or `gh pr merge <n> --<method> --match-head-commit <sha>` where nothing requires them and it read them green on that sha (under `human-approves`, also a person's approval) |
 | `manual` | no merge call. A person merges (human gate 7). Go to section 3 |
 
 The method:
@@ -44,8 +44,9 @@ An `sdet` PR into its integration trunk always uses `--merge`, whatever `feature
 
 When `verify --merge` fails:
 
-- **Protected base** (listed in `git_strategy.protected`, or carrying a ruleset): stop and tell the person what `verify --merge` reported. No `--auto` (human gate 10). The PR stays open and the watcher still runs.
-- **Base with no ruleset** (a stacked PR on another feature branch, an unprotected trunk): skip `--auto`. Arm the watcher and wait for the `edd/evidence` check from the "EDD Evidence" workflow on the current head (the watcher prints `CHECK EDD Evidence/edd/evidence success on <head>`), then run `gh pr merge <n> --<method>`. This is the auto-merge trap in `.agents/skills/edd/references/flows.md`: on a base that requires no check, `--auto` merges at once, red or not. A green check catches mistakes and drift, not a deliberately forged check (`.agents/skills/edd/SKILL.md` "What the evidence proves").
+- **Checks red or pending**: wait through the watcher, fix what is red, run `verify --merge` again. Not a human stop.
+- **Host unreadable** (no GitHub origin, no auth, no network): stop and tell the person what `verify --merge` reported (human gate 10). The PR stays open and the watcher still runs.
+- **Nothing on the host requires a check** (the shipped `evidence` push default, a stacked PR on another feature branch, an unprotected trunk): skip `--auto`. Arm the watcher and wait for the `edd/evidence` check from the "EDD Evidence" workflow on the current head (the watcher prints `CHECK EDD Evidence/edd/evidence success on <head>`) and the other contract checks; once `verify --merge` reads them all green, run `gh pr merge <n> --<method>`. This is the auto-merge trap in `.agents/skills/edd/references/flows.md`: on a base that requires no check, `--auto` merges at once, red or not. A green check catches mistakes and drift, not a deliberately forged check (`.agents/skills/edd/SKILL.md` "What the evidence proves").
 
 A draft PR gets no merge call until it is marked ready (`gh pr ready <n>`), then this section runs.
 
