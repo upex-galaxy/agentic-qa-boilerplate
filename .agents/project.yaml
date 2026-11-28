@@ -126,6 +126,20 @@ git_strategy:
           directly (standing authorization — see description). `allowed` describes how
           work actually lands here; the host rule keeps protecting everyone else. Both
           sides are correct on purpose.
+      - field: main.merge_mode
+        enforced: allow_auto_merge false
+        accepted: 2026-11-27
+        reason: >
+          Temporary. The host is not configured for merge_mode auto yet: the owner
+          authorizes that host write in the EDD rollout step. Remove this entry when
+          `bun run git:policy verify` reports it STALE.
+      - field: main.required_checks
+        enforced: no required status checks
+        accepted: 2026-11-27
+        reason: >
+          Temporary. The host does not require edd/evidence or the contract's CI checks
+          yet: the owner authorizes that host write in the EDD rollout step. Remove this
+          entry when `bun run git:policy verify` reports it STALE.
   branch_prefixes:
     precedence: [feat, fix, refactor, test, docs, chore]
     naming_with_key: '{prefix}/{ISSUE-KEY}-{kebab-slug}'
