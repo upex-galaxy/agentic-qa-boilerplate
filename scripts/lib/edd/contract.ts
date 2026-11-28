@@ -23,7 +23,7 @@ export interface Contract {
   record: { artifact_retention_days: number }
 }
 export interface ProjectFacts {
-  policy: string | null
+  policy: string
   production: string
   protected: string[]
   environments: Record<string, { web_url: string | null }>
@@ -45,6 +45,7 @@ export const ALLOWED_SIGNERS = '.agents/edd/allowed_signers';
 
 export const DEFAULT_GATE_PATHS = ['.github/workflows/**', '.husky/**', 'scripts/edd.ts', 'scripts/lib/edd/**', 'scripts/git-policy.ts', '.agents/edd/**', 'CODEOWNERS', '.agents/skills/*/evidence.yaml'];
 export const DEFAULT_GATE_KEYS = ['evidence', 'git_strategy.policy'];
+export const OFF_POLICIES = ['forbidden', 'confirm', 'allowed'];
 
 const DEFAULT_STATIC: { id: string, keys: string[] }[] = [
   { id: 'format', keys: ['format:check'] },
@@ -139,17 +140,18 @@ function defaultStatic(read: Reader): StaticCheck[] {
 
 function facts(doc: Record<string, unknown> | null): ProjectFacts {
   const gs = isObject(doc?.git_strategy) ? doc.git_strategy : {};
-  const policy = isObject(gs.policy) && typeof gs.policy.direct_push_to_protected === 'string' ? gs.policy.direct_push_to_protected : null;
+  const declared = isObject(gs.policy) && typeof gs.policy.direct_push_to_protected === 'string' ? gs.policy.direct_push_to_protected : null;
+  const policy = declared !== null && OFF_POLICIES.includes(declared) ? declared : 'evidence';
   const branches = isObject(gs.branches) ? gs.branches : {};
   const production = typeof branches.production === 'string' && branches.production ? branches.production : 'main';
-  const declared = Array.isArray(gs.protected) ? gs.protected.filter((b): b is string => typeof b === 'string' && b.length > 0) : [];
+  const listed = Array.isArray(gs.protected) ? gs.protected.filter((b): b is string => typeof b === 'string' && b.length > 0) : [];
   const environments: Record<string, { web_url: string | null }> = {};
   if (isObject(doc?.environments)) {
     for (const [name, env] of Object.entries(doc.environments)) {
       environments[name] = { web_url: isObject(env) && typeof env.web_url === 'string' ? env.web_url : null };
     }
   }
-  return { policy, production, protected: [...new Set([production, ...declared])], environments };
+  return { policy, production, protected: [...new Set([production, ...listed])], environments };
 }
 
 export function canonical(v: unknown): string {

@@ -1,5 +1,6 @@
 import type { GitStrategy } from './git-policy.ts';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 
 import { join, resolve } from 'node:path';
 import { describe, expect, test } from 'bun:test';
@@ -7,8 +8,21 @@ import { describe, expect, test } from 'bun:test';
 import { parse as parseYaml } from 'yaml';
 
 import { eddGateReady, migrationFor } from './git-policy.ts';
+import { loadContract, treeReader } from './lib/edd/contract.ts';
 
 const ROOT = resolve(import.meta.dir, '..');
+
+describe('this repo keeps pushing exactly as before', () => {
+  test('its explicit allowed reads as allowed in the hook and in the gate', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'edd-probe-'));
+    const script = join(dir, 'probe.sh');
+    writeFileSync(script, `. '${join(ROOT, '.husky', 'framework-gates.sh')}'\n_fg_policy_value < '${join(ROOT, '.agents', 'project.yaml')}'\n`);
+    const p = Bun.spawnSync(['sh', script], { cwd: ROOT, stdout: 'pipe' });
+    rmSync(dir, { recursive: true, force: true });
+    expect(p.stdout.toString().trim()).toBe('allowed');
+    expect(loadContract(treeReader(ROOT), 'wt').facts.policy).toBe('allowed');
+  });
+});
 
 describe('git:policy migrate sees the evidence gate of this repo', () => {
   const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as { scripts: Record<string, string> };

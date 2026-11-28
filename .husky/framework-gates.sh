@@ -408,23 +408,31 @@ framework_gate_doc_contracts() {
   return 0
 }
 
-# Prints `evidence` when the project.yaml on stdin sets `direct_push_to_protected`
-# to it inside the `git_strategy:` block, block or flow style.
+# Prints the effective `direct_push_to_protected` of the project.yaml on stdin:
+# `forbidden`, `confirm` or `allowed` when the `git_strategy:` block says so
+# (block or flow style), and `evidence` for anything else, a missing key, a
+# null value or a missing block included (Critical Rule #5, scripts/git-policy.ts).
 _fg_policy_value() {
   awk '
     { sub(/\r$/, "") }
     /^[^[:space:]#]/ { ings = ($0 ~ /^git_strategy:[[:space:]]*(#.*)?$/); next }
-    ings && !/^[[:space:]]*#/ && /direct_push_to_protected:[[:space:]]*["\047]?evidence["\047]?([[:space:],}#]|$)/ { print "evidence"; exit }
+    ings && !/^[[:space:]]*#/ && match($0, /direct_push_to_protected:[[:space:]]*[^,}#[:space:]]*/) {
+      v = substr($0, RSTART, RLENGTH); sub(/direct_push_to_protected:[[:space:]]*/, "", v); gsub(/["\047]/, "", v)
+      found = 1; exit
+    }
+    END { if (found && (v == "forbidden" || v == "confirm" || v == "allowed")) print v; else print "evidence" }
   '
 }
 
-# The gate is on when the working tree OR the remote's copy says `evidence`,
-# so an uncommitted local edit cannot switch it off; leaving `evidence` is a
-# push the gate itself checks.
+# The gate is on when the working tree OR the remote's copy reads as
+# `evidence`, so an uncommitted local edit cannot switch it off; leaving
+# `evidence` is a push the gate itself checks. A remote ref without the file
+# does not count.
 _fg_evidence_on() {
-  if [ -f .agents/project.yaml ] && [ "$(_fg_policy_value < .agents/project.yaml 2>/dev/null)" = evidence ]; then return 0; fi
+  if [ ! -f .agents/project.yaml ] || [ "$(_fg_policy_value < .agents/project.yaml 2>/dev/null)" = evidence ]; then return 0; fi
   for _fg_ref in refs/remotes/origin/HEAD refs/remotes/origin/main refs/remotes/origin/master; do
-    if [ "$(git show "$_fg_ref:.agents/project.yaml" 2>/dev/null | _fg_policy_value 2>/dev/null)" = evidence ]; then return 0; fi
+    _fg_yaml=$(git show "$_fg_ref:.agents/project.yaml" 2>/dev/null) || continue
+    if [ "$(printf '%s\n' "$_fg_yaml" | _fg_policy_value 2>/dev/null)" = evidence ]; then return 0; fi
   done
   return 1
 }
