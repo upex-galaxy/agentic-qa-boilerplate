@@ -60,7 +60,7 @@ export function buildUpFixture(root: string, opts: { back?: number, selfUpdate?:
   const rolled = ['.agents/skills', 'docs', 'scripts'].filter(p => existsSync(join(consumer, p)));
   git(consumer, 'checkout', base, '--', ...rolled);
   // One synced file edited by the project too: upstream changed it since `base`.
-  const edited = git(upstream, 'diff', '--name-only', base, head, '--', '.agents/skills').split('\n').find(p => p.endsWith('/SKILL.md')) ?? null;
+  const edited = git(upstream, 'diff', '--name-only', '--diff-filter=M', base, head, '--', '.agents/skills').split('\n').find(p => p.endsWith('/SKILL.md')) ?? null;
   if (edited) { appendFileSync(join(consumer, edited), '\n<!-- project note: kept by the team -->\n'); }
 
   mkdirSync(join(consumer, '.template'), { recursive: true });
