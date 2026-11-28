@@ -245,6 +245,21 @@ function readStrategy(): GitStrategy {
   return gs;
 }
 
+export const INHERITED_EVIDENCE_STRATEGY: GitStrategy = {
+  strategy: 'solo-main',
+  branches: { production: 'main', integration: null, ephemeral_pattern: null },
+  protected: ['main'],
+  decisions: { promote_method: 'n/a', feature_merge: 'n/a', hotfix_policy: 'n/a' },
+  policy: { direct_push_to_protected: 'evidence', admin_bypass: false, require_pr_reviews: null },
+  meta: { strategy_source: 'inherited' },
+};
+
+export function strategyForVerify(doc: unknown): { gs: GitStrategy | null, missingBlock: boolean } {
+  const gs = (doc as { git_strategy?: unknown } | null)?.git_strategy;
+  if (gs === undefined || gs === null) { return { gs: INHERITED_EVIDENCE_STRATEGY, missingBlock: true }; }
+  return { gs: null, missingBlock: false };
+}
+
 function readEvidence(): EvidenceContract | null {
   const doc = parseYaml(readFileSync(PROJECT_YAML, 'utf8')) as Record<string, unknown> | null;
   const block = doc?.evidence;
@@ -1640,7 +1655,15 @@ function main(): void {
     void runSetup(setupDeps(url === null ? null : slugFromRemote(url)), flags).then(code => process.exit(code));
     return;
   }
-  const gs = readStrategy();
+  let gs: GitStrategy;
+  if (cmd === 'verify') {
+    const read = strategyForVerify(existsSync(PROJECT_YAML) ? parseYaml(readFileSync(PROJECT_YAML, 'utf8')) : null);
+    if (read.missingBlock) {
+      log.warn('No `git_strategy:` block in .agents/project.yaml: verify reads it as an inherited `evidence` policy on main (Critical Rule #5), so drift only warns. Run the git-flow-master Strategy Setup to declare one.');
+    }
+    gs = read.gs ?? readStrategy();
+  }
+  else { gs = readStrategy(); }
 
   switch (cmd) {
     case 'verify': {

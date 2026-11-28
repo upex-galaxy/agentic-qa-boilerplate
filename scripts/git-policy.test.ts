@@ -72,6 +72,7 @@ import {
   spliceKeys,
   spliceMigration,
   statusChecksManaged,
+  strategyForVerify,
   verifyExitCode,
 } from './git-policy.ts';
 
@@ -1021,5 +1022,19 @@ describe('the edd/evidence guard reads pull request heads, never the production 
   test('prHeadCheckRuns returns an empty reading with no PR, and null when the list cannot be read', () => {
     expect(prHeadCheckRuns(() => [], 'o/r', 'main')).toEqual({ check_runs: [] });
     expect(prHeadCheckRuns(() => null, 'o/r', 'main')).toBeNull();
+  });
+});
+
+describe('verify with no git_strategy block reads an inherited evidence policy', () => {
+  test('a missing block becomes the inherited default, whose drift only warns', () => {
+    const read = strategyForVerify({ project: {} });
+    expect(read.missingBlock).toBe(true);
+    expect(directPushPolicy(read.gs)).toBe('evidence');
+    expect(read.gs?.meta.strategy_source).toBe('inherited');
+    expect(verifyExitCode(1, 'inherited')).toBe(0);
+  });
+
+  test('a declared block is left to readStrategy', () => {
+    expect(strategyForVerify({ git_strategy: { strategy: 'solo-main' } })).toEqual({ gs: null, missingBlock: false });
   });
 });
