@@ -678,6 +678,13 @@ describe('framework_gate_evidence (.husky/framework-gates.sh)', () => {
     expect(p.stdout.toString()).toContain('present on refs/remotes/origin/trunk');
   });
 
+  test('a trailing comment on a flow-style policy line does not steer the policy', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const yaml = projectYaml('', 'evidence').replace('  policy:\n    direct_push_to_protected: evidence', '  policy: {"direct_push_to_protected": evidence} # direct_push_to_protected: allowed');
+    expect(hook(r, yaml).called).toBe('refs/heads/main a refs/heads/main b\n');
+  });
+
   test('the remote copy of the policy turns it on even when the working tree says allowed', () => {
     const r = makeRepo();
     repos.push(r);

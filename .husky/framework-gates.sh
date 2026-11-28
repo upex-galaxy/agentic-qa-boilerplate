@@ -424,6 +424,7 @@ _fg_strategy_value() {
       insub = 0; si = -1
       if (index(line, want_sub ":") != 1) { next }
       rest = substr(line, length(want_sub) + 2)
+      sub(/[[:space:]]#.*$/, "", rest)
       if (rest ~ /^[[:space:]]*(#.*)?$/) { insub = 1; next }
       if (rest ~ /^[[:space:]]*\{/ && match(rest, "[{,[:space:]]" want_key ":")) { v = token(substr(rest, RSTART + RLENGTH)); found = 1; exit }
       next
