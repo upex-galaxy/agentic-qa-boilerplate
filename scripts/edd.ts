@@ -185,7 +185,6 @@ function baseFor(head: string, remoteSha: string, production: string): string {
 async function gate(): Promise<number> {
   const wt = tryLoad(treeReader(CWD), 'working tree');
   if (typeof wt === 'string') { return die(wt); }
-  if (wt.facts.policy !== 'evidence') { return 0; }
   let refs: PushLine[];
   if (process.stdin.isTTY) {
     const head = resolveCommit(CWD, 'HEAD');
@@ -202,6 +201,7 @@ async function gate(): Promise<number> {
     const problems: string[] = [];
     const tried = tryLoad(base === EMPTY_TREE ? treeReader(CWD) : refReader(CWD, base), source);
     const loaded = typeof tried === 'string' ? wt : tried;
+    if (wt.facts.policy !== 'evidence' && loaded.facts.policy !== 'evidence' && typeof tried !== 'string') { continue; }
     if (typeof tried === 'string') { problems.push(tried); }
     const branch = r.remoteRef.startsWith('refs/heads/') ? r.remoteRef.slice('refs/heads/'.length) : null;
     const isProtected = branch !== null && loaded.facts.protected.includes(branch);

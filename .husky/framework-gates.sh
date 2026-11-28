@@ -408,24 +408,35 @@ framework_gate_doc_contracts() {
   return 0
 }
 
-# `direct_push_to_protected` inside the `git_strategy:` block, block or flow style.
+# Prints `evidence` when the project.yaml on stdin sets `direct_push_to_protected`
+# to it inside the `git_strategy:` block, block or flow style.
 _fg_policy_value() {
-  [ -f .agents/project.yaml ] || return 0
   awk '
     { sub(/\r$/, "") }
     /^[^[:space:]#]/ { ings = ($0 ~ /^git_strategy:[[:space:]]*(#.*)?$/); next }
     ings && !/^[[:space:]]*#/ && /direct_push_to_protected:[[:space:]]*["\047]?evidence["\047]?([[:space:],}#]|$)/ { print "evidence"; exit }
-  ' .agents/project.yaml
+  '
+}
+
+# The gate is on when the working tree OR the remote's copy says `evidence`,
+# so an uncommitted local edit cannot switch it off; leaving `evidence` is a
+# push the gate itself checks.
+_fg_evidence_on() {
+  if [ -f .agents/project.yaml ] && [ "$(_fg_policy_value < .agents/project.yaml 2>/dev/null)" = evidence ]; then return 0; fi
+  for _fg_ref in refs/remotes/origin/HEAD refs/remotes/origin/main refs/remotes/origin/master; do
+    if [ "$(git show "$_fg_ref:.agents/project.yaml" 2>/dev/null | _fg_policy_value 2>/dev/null)" = evidence ]; then return 0; fi
+  done
+  return 1
 }
 
 # The evidence gate (spec WP-D): `scripts/edd.ts gate` re-runs the contract's
 # pre-push checks, verifies the evidence commit a protected ref needs and
-# writes the record. Inert unless the policy is `evidence`, so every other
+# writes the record. Inert unless the policy is `evidence` (_fg_evidence_on), so every other
 # policy pushes exactly as before. The refs on stdin are read here and handed
 # back as stdin, so the gates after this one still see them.
 framework_gate_evidence() {
   [ -f scripts/edd.ts ] || return 0
-  [ "$(_fg_policy_value 2>/dev/null)" = evidence ] || return 0
+  _fg_evidence_on || return 0
   if [ -t 0 ]; then
     bun scripts/edd.ts gate
     return

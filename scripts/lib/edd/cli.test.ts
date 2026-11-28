@@ -81,6 +81,15 @@ describe('edd gate', () => {
     expect(res.out).toContain('check out the commit you push');
   });
 
+  test('an uncommitted switch to allowed does not turn the gate off while the base says evidence', () => {
+    const { r, base } = fixture('evidence');
+    const head = r.commit('feat: x', { 'app/a.ts': '1\n' });
+    r.write('.agents/project.yaml', projectYaml(contract('true'), 'allowed'));
+    const res = run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${base}\n`);
+    expect(res.code).toBe(1);
+    expect(records(r.dir)).toEqual([`${head}.json`]);
+  });
+
   test('policy allowed: the gate does nothing and writes nothing', () => {
     const { r, base } = fixture('allowed');
     const head = r.commit('feat: x', { 'app/a.ts': '1\n' });
@@ -147,5 +156,13 @@ describe('framework_gate_evidence (.husky/framework-gates.sh)', () => {
     expect(block).toEqual({ code: 0, called: 'refs/heads/main a refs/heads/main b\n', after: 'refs/heads/main a refs/heads/main b\n' });
     const flow = hook(r, projectYaml('', 'evidence').replace('  policy:\n    direct_push_to_protected: evidence', '  policy: { direct_push_to_protected: \'evidence\' }'));
     expect(flow.called).toBe('refs/heads/main a refs/heads/main b\n');
+  });
+
+  test('the remote copy of the policy turns it on even when the working tree says allowed', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const sha = r.commit('chore: base', { '.agents/project.yaml': projectYaml('', 'evidence') });
+    r.git('update-ref', 'refs/remotes/origin/main', sha);
+    expect(hook(r, projectYaml('', 'allowed')).called).toBe('refs/heads/main a refs/heads/main b\n');
   });
 });
