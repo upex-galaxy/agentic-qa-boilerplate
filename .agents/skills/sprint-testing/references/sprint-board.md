@@ -23,7 +23,9 @@ All commands below are `bun run board <command>`. Every closed-set value is vali
 ticket must already be on the board, or the command stops and says why. Pass `--id <need-id>` to
 `answer` and `resolve` every time: without it `resolve` refuses when the ticket has more than one
 open question. A command that records what someone said or decided requires `--by`, and no command
-signs as `owner`, which only the page does (`cli/sprint-board/README.md` §Authors).
+signs as `owner`, which only the page does (`cli/sprint-board/README.md` §Authors). An answer on the
+board proves it did not come through the CLI, not who typed it: a process on the same machine can
+still call the page's routes or edit the log.
 
 ---
 

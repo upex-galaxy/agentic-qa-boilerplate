@@ -480,7 +480,7 @@ describe('none and dry run', () => {
     const png = thumbnail();
     const tracker = createEvidenceTracker('none', replay([]), DOCS, media);
     expect((await tracker.attachThumbnail('ACME-7101', png.path)).lines[0]).toContain(`the thumbnail stays at ${png.path}`);
-    expect((await tracker.linkEvidence('ACME-7001', { url: PAGE })).lines[0]).toContain('bun run board evidence-artifact ACME-7001');
+    expect((await tracker.linkEvidence('ACME-7001', { url: PAGE })).lines[0]).toContain(`bun run board evidence-artifact ACME-7001 ${PAGE} --by worker`);
   });
 
   it('S1: a dry run never claims a read-back and nothing counts as embedded', async () => {

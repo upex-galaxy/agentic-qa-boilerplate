@@ -409,7 +409,7 @@ function noneTracker(): EvidenceTracker {
       return { ok: true, lines: [`no tracker (board.source none): nothing attached to ${bugKey}; the thumbnail stays at ${pngPath} and the report links it`], embedded: false };
     },
     async linkEvidence(targetKey, page) {
-      return { ok: true, lines: [`no tracker (board.source none): nothing linked on ${targetKey}; the link lives in the pack's artifact.url and on the board (bun run board evidence-artifact ${targetKey} ${page.url})`] };
+      return { ok: true, lines: [`no tracker (board.source none): nothing linked on ${targetKey}; the link lives in the pack's artifact.url and on the board (bun run board evidence-artifact ${targetKey} ${page.url} --by worker)`] };
     },
   };
 }

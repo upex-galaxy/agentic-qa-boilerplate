@@ -165,8 +165,9 @@ A test case id is a tracker key (`PROJ-7320`) or a file's own id (`DEMO-7101-T1`
 Only the page's routes write `owner`, whatever the request body says. On every command the CLI
 refuses a `--by` that reads as `owner` (case, spacing, punctuation, invisible or look-alike letters,
 or a "who, where" text that starts with it) and a `--by` with no value. So `listen` and the sentinel
-report an owner action only when it came through the page. This guards the CLI. A process on the same
-machine that calls the page's routes, or edits the log, is not stopped.
+report an owner action only when it did not come through the CLI. An answer on the board proves that,
+not who typed it: a process on the same machine that calls the page's routes, or edits the log, is not
+stopped.
 
 | Commands | `--by` |
 |---|---|
