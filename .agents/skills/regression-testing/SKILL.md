@@ -625,6 +625,7 @@ On a NO-GO with regressions still being filed as issues, archive waits until iss
 - Making CI reports private (login-protected, no public evidence): read `references/private-hosting-setup.md` (Test Report Portal: Vercel + Supabase + private R2, work-email login, portal-side retention, history round-trip replacing gh-pages). The publish step in all three suite workflows is already dual-mode, so you only wire secrets. GitHub Enterprise orgs have a zero-infra shortcut (Pages visibility set to Private): offer it first.
 - Setting up Allure locally for the first time, or the user asks whether Allure is up to date: run the §Allure version-currency check under §Local reporting.
 - Classifying a borderline failure (REGRESSION vs FLAKY vs ENVIRONMENT): read `references/failure-classification.md`.
+- Handing a run to a person as one small file (attach to a chat, publish as an artifact, "one-shot report"): read `references/oneshot-report.md`.
 - TMS or Xray result import: load `/xray-cli`.
 - Downloading traces or screenshots for a failure: use `[AUTOMATION_TOOL]` per AGENTS.md Tool Resolution, and load `/playwright-cli` for Playwright trace inspection.
 - The session contract (Phase 0 resume, plan.md/progress.md schemas, archive policy, Engram per-phase checkpoint, RUN_ID re-attach mechanism): read `../agentic-qa-core/references/session-management.md`. This skill produces `session/regression-testing/<scope>/...` topic keys.
