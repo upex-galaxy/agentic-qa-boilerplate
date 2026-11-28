@@ -395,7 +395,13 @@ evidence:
       - '.agents/edd/**'
       - 'CODEOWNERS'
       - '.agents/skills/*/evidence.yaml'
-    keys: [evidence, git_strategy.policy] # keys of .agents/project.yaml that are gate keys
+    keys: [
+        evidence,
+        git_strategy.strategy,
+        git_strategy.branches,
+        git_strategy.protected,
+        git_strategy.policy,
+      ] # keys of .agents/project.yaml that are gate keys; these five are gate keys whatever this list says
   review:
     bot: null # login of a review bot whose findings must be resolved before merge, or null
     max_rounds: 2 # cap on review-bot loop rounds

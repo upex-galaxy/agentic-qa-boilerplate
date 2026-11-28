@@ -38,6 +38,13 @@ function run(cwd: string, args: string[], stdin = ''): { code: number, out: stri
   return { code: p.exitCode ?? 1, out: `${p.stdout.toString()}${p.stderr.toString()}` };
 }
 
+function ciPush(r: Repo, before: string, after: string): { code: number, out: string } {
+  const path = join(r.dir, '..', 'push-event.json');
+  writeFileSync(path, JSON.stringify({ before, after, ref: 'refs/heads/main', repository: { full_name: 'o/r', default_branch: 'main' } }));
+  const p = Bun.spawnSync(['bun', EDD, 'verify', '--ci'], { cwd: r.dir, stdout: 'pipe', stderr: 'pipe', env: { ...process.env, GITHUB_EVENT_NAME: 'push', GITHUB_EVENT_PATH: path, GITHUB_STEP_SUMMARY: '', GH_TOKEN: '' } });
+  return { code: p.exitCode ?? 1, out: `${p.stdout.toString()}${p.stderr.toString()}` };
+}
+
 function records(dir: string): string[] {
   const ev = join(dir, '.session', 'evidence');
   return existsSync(ev) ? readdirSync(ev).filter(f => f.endsWith('.json')) : [];
@@ -211,6 +218,34 @@ describe('gate keys and branch contracts', () => {
     const res = run(r.dir, ['attest']);
     expect(res.code).toBe(1);
     expect(res.out).toContain('at depth standard');
+  });
+
+  test('moving the production branch is a gate change on the push path and the CI push check', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml(screens('true')) });
+    r.git('update-ref', 'refs/remotes/origin/main', base);
+    const head = r.commit('chore: move production', { '.agents/project.yaml': projectYaml(screens('true')).replace('production: main', 'production: trunk').replace('protected: [main]', 'protected: [trunk]') });
+    const res = run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${base}\n`);
+    expect(res.code).toBe(1);
+    const rec = JSON.parse(readFileSync(join(r.dir, '.session', 'evidence', `${head}.json`), 'utf8'));
+    expect(rec.contract.depth).toBe('standard');
+    expect(rec.contract.depth_reasons.join(' ')).toContain('git_strategy.branches, git_strategy.protected');
+    const ci = ciPush(r, base, head);
+    expect(ci.code).toBe(1);
+    expect(ci.out).toContain('requires agentic evidence');
+  });
+
+  test('an empty human.keys does not drop the built-in gate keys', () => {
+    const r = makeRepo();
+    repos.push(r);
+    const noKeys = `${screens('true')}  human:\n    keys: []\n`;
+    const base = r.commit('chore: base', { '.agents/project.yaml': projectYaml(noKeys) });
+    r.git('update-ref', 'refs/remotes/origin/main', base);
+    const head = r.commit('chore: unprotect', { '.agents/project.yaml': projectYaml(noKeys).replace('protected: [main]', 'protected: []') });
+    const res = run(r.dir, ['gate'], `refs/heads/main ${head} refs/heads/main ${base}\n`);
+    expect(res.code).toBe(1);
+    expect(res.out).toContain('depth standard');
   });
 
   test('a branch push reads the contract from origin/<production>, not from the branch it updates', () => {

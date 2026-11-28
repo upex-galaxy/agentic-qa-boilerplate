@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { looksLikeEvidence, readEvidenceMessage } from './attest.ts';
-import { ALLOWED_SIGNERS, DEPTHS, gateKeysTouched, readProjectDoc, refReader, sha256 } from './contract.ts';
+import { ALLOWED_SIGNERS, ALWAYS_GATE_KEYS, DEPTHS, gateKeysTouched, readProjectDoc, refReader, sha256 } from './contract.ts';
 import { changeDepth, depthRank, raiseForGateKeys, requiredAgentic } from './depth.ts';
 import { changedFiles, commitMessage, EMPTY_TREE, git, mergeBase, parentsOf, rangeCount, rangeLog, showFile, treeOf } from './git.ts';
 import { DiffTooLarge, MAX_DIFF_BYTES, patchId } from './patch-id.ts';
@@ -46,7 +46,7 @@ function docAt(cwd: string, ref: string): Record<string, unknown> | null {
 
 export function gateKeysChanged(cwd: string, base: string, head: string, loaded: LoadedContract): string[] {
   const fork = base === EMPTY_TREE ? null : mergeBase(cwd, base, head) ?? base;
-  return gateKeysTouched(fork === null ? loaded.doc : docAt(cwd, fork), docAt(cwd, head), loaded.contract.human.keys);
+  return gateKeysTouched(fork === null ? loaded.doc : docAt(cwd, fork), docAt(cwd, head), [...new Set([...ALWAYS_GATE_KEYS, ...loaded.contract.human.keys])]);
 }
 
 export function changeDepthWithKeys(cwd: string, base: string, files: string[], head: string, loaded: LoadedContract, raise: Depth | null = null): { depth: Depth, reasons: string[] } {

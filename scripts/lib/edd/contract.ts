@@ -44,7 +44,8 @@ export const PROJECT_YAML = '.agents/project.yaml';
 export const ALLOWED_SIGNERS = '.agents/edd/allowed_signers';
 
 export const DEFAULT_GATE_PATHS = ['.github/workflows/**', '.husky/**', 'scripts/edd.ts', 'scripts/lib/edd/**', 'scripts/git-policy.ts', '.agents/edd/**', 'CODEOWNERS', '.agents/skills/*/evidence.yaml'];
-export const DEFAULT_GATE_KEYS = ['evidence', 'git_strategy.policy'];
+export const ALWAYS_GATE_KEYS = ['evidence', 'git_strategy.strategy', 'git_strategy.branches', 'git_strategy.protected', 'git_strategy.policy'];
+export const DEFAULT_GATE_KEYS = ALWAYS_GATE_KEYS;
 export const OFF_POLICIES = ['forbidden', 'confirm', 'allowed'];
 
 const DEFAULT_STATIC: { id: string, keys: string[] }[] = [

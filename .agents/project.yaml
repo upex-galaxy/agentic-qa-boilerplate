@@ -228,7 +228,14 @@ evidence:
       - '.agents/edd/**'
       - 'CODEOWNERS'
       - '.agents/skills/*/evidence.yaml'
-    keys: [evidence, git_strategy.policy]
+    keys:
+      [
+        evidence,
+        git_strategy.strategy,
+        git_strategy.branches,
+        git_strategy.protected,
+        git_strategy.policy,
+      ]
   review:
     bot: null
     max_rounds: 2
