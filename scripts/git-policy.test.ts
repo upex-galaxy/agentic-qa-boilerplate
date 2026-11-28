@@ -50,6 +50,7 @@ import {
   EDD_CHECK,
   eddGateReady,
   effectiveForApply,
+  evidenceWorkflowWarning,
   expectedApprovals,
   MANAGED_RULE_TYPES,
   MERGE_MODES,
@@ -1036,5 +1037,12 @@ describe('verify with no git_strategy block reads an inherited evidence policy',
 
   test('a declared block is left to readStrategy', () => {
     expect(strategyForVerify({ git_strategy: { strategy: 'solo-main' } })).toEqual({ gs: null, missingBlock: false });
+  });
+});
+
+describe('verify warns when nothing posts edd/evidence', () => {
+  test('a project without .github/workflows/evidence.yml gets the warning, this repo does not', () => {
+    expect(evidenceWorkflowWarning(join(import.meta.dir, '..'))).toBeNull();
+    expect(evidenceWorkflowWarning(join(import.meta.dir, 'no-such-project'))).toContain('evidence.yml is missing');
   });
 });

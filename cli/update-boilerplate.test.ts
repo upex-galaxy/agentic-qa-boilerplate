@@ -13,7 +13,7 @@ import { unusedHarnessPaths } from './lib/harness-selection.ts';
 import { loadBoardConfig } from './lib/sprint-source/index.ts';
 import { cleanupDeprecated, componentOwnedPaths, isRepoOnlyForRun, isRepoOnlyPath, validateComponentRegistry } from './lib/updater-core.ts';
 import { RETIRED_SECTION_FILES } from './lib/updater-instructions.ts';
-import { backfillProjectYamlFromSchema, BOILERPLATE_TEST_PATHS, BOILERPLATE_TEST_PATTERNS, COMPONENTS, DEPRECATED_FILES, extractIndentedYamlBlock, GATE_SCRIPTS, gatesSummaryLine, parseArgs, resolveProtectedWatchlist, RETIRED_COMMAND_WRAPPERS, RETIRED_ORCHESTRATION_FILES, RETIRED_SKILL_FILES, runGate, summarizeGates, sweepStaleCloneDirs, TEMP_DIR, worktreeRefusal } from './update-boilerplate.ts';
+import { backfillProjectYamlFromSchema, BOILERPLATE_TEST_PATHS, BOILERPLATE_TEST_PATTERNS, COMPONENTS, DEPRECATED_FILES, eddWorkflowsDelivered, extractIndentedYamlBlock, GATE_SCRIPTS, gatesSummaryLine, parseArgs, resolveProtectedWatchlist, RETIRED_COMMAND_WRAPPERS, RETIRED_ORCHESTRATION_FILES, RETIRED_SKILL_FILES, runGate, summarizeGates, sweepStaleCloneDirs, TEMP_DIR, worktreeRefusal } from './update-boilerplate.ts';
 
 /**
  * The boilerplate's own checkout: the package name AND the maintainer sentinel
@@ -78,6 +78,12 @@ describe('component registry', () => {
 
   test('.playwright/cli.config.json ships once (bootstrap-only): a project keeps its tuning, the legacy profile is a parity row', () => {
     expect(COMPONENTS.find(c => c.name === 'playwright-cli-config')).toMatchObject({ type: 'file-list', paths: ['.playwright'], files: ['cli.config.json'], bootstrapOnly: true });
+  });
+
+  test('the two EDD workflows ship once (bootstrap-only): the required edd/evidence gets a poster, a project copy is never overwritten', () => {
+    expect(COMPONENTS.find(c => c.name === 'edd-workflows')).toMatchObject({ type: 'file-list', paths: ['.github/workflows'], files: ['evidence.yml', 'evidence-push.yml'], bootstrapOnly: true });
+    const applied = ['.github/workflows/evidence.yml', '.github/workflows/unit-tests.yml', 'scripts/edd.ts'].map(path => ({ entry: { path } }));
+    expect(eddWorkflowsDelivered({ applied } as unknown as Parameters<typeof eddWorkflowsDelivered>[0])).toEqual(['.github/workflows/evidence.yml']);
   });
 
   // Downstream, the file on disk is the project's own tuning, not upstream's copy.

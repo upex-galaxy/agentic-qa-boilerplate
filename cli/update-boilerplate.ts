@@ -194,6 +194,7 @@ const ENV_SCHEMA_FILES = ['.env.schema', '.env.core.schema'];
 const CODEX_FRAMEWORK_FILES = ['hooks.json'];
 const PI_ADAPTER_FILES = ['agentic-qa.js'];
 const PI_CONFIG_FILES = ['mcp.json'];
+export const EDD_WORKFLOW_FILES = ['evidence.yml', 'evidence-push.yml'];
 const CLAUDE_ROOT_CONFIG_FILES = ['settings.json'];
 // The framework helpers under `tests/utils/`: pure logic every project runs as
 // is (outcome classes, the known-defect marker, the Xray JSON body) plus their
@@ -376,6 +377,7 @@ export const COMPONENTS: Component[] = [
   { name: 'orca-config', type: 'file-list', paths: ['.'], files: ORCA_CONFIG_FILES, bootstrapOnly: true },
   { name: 'oxlint-config', type: 'file-list', paths: ['.'], files: OXLINT_CONFIG_FILES, bootstrapOnly: true },
   { name: 'playwright-cli-config', type: 'file-list', paths: ['.playwright'], files: PLAYWRIGHT_CLI_CONFIG_FILES, bootstrapOnly: true },
+  { name: 'edd-workflows', type: 'file-list', paths: ['.github/workflows'], files: EDD_WORKFLOW_FILES, bootstrapOnly: true },
 ];
 
 // --- BOILERPLATE-ONLY FILES (cli/lib/boilerplate-only.ts) ---
@@ -1314,6 +1316,19 @@ function makeYamlBackfillHook(
 }
 
 // --- HOOK COMPOSITION ---
+
+export function eddWorkflowsDelivered(summary: Pick<RunSummary, 'applied'>): string[] {
+  const wanted = new Set(EDD_WORKFLOW_FILES.map(f => `.github/workflows/${f}`));
+  return summary.applied.map(a => a.entry.path).filter(p => wanted.has(p));
+}
+
+function makeEddWorkflowsHook(sink: ReportSink): (summary: RunSummary) => Promise<void> {
+  return async (summary: RunSummary): Promise<void> => {
+    for (const p of eddWorkflowsDelivered(summary)) {
+      sink.step(`EDD: delivered ${p} because it was missing; bun sync never overwrites it once it exists.`);
+    }
+  };
+}
 
 /** Run several afterApply hooks in sequence (each isolated; one failure warns, never aborts). */
 function composeHooks(
@@ -2477,6 +2492,7 @@ async function main(): Promise<void> {
             // the sync must already resolve skills through `.claude/skills`.
             makeAgentCompatibilityHook(sink),
             makeKataManifestHook(sink),
+            makeEddWorkflowsHook(sink),
             // Before the compat check reads settings.json? No: after. This merge
             // only ADDS allow and deny entries, which no compatibility contract
             // asserts on (the hook groups, which one does, merged first).

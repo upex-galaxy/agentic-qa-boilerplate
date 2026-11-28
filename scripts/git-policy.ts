@@ -490,6 +490,11 @@ export function missingRequiredChecks(contexts: string[], tipCheckRuns: unknown,
   return { tip, pr: wanted.includes(EDD_CHECK) && !eddSeen ? [EDD_CHECK] : [] };
 }
 
+export function evidenceWorkflowWarning(root: string): string | null {
+  if (existsSync(join(root, '.github', 'workflows', 'evidence.yml'))) { return null; }
+  return `.github/workflows/evidence.yml is missing: nothing posts the ${EDD_CHECK} check, so a required ${EDD_CHECK} would hold every pull request. bun sync delivers it once when it is missing.`;
+}
+
 export function firstPullRequestNeeded(production: string): string {
   return `${EDD_CHECK} has not reported on any of the latest pull requests into ${production}. It runs only on pull requests (pull_request_target), never on ${production} itself, so the first one has to be a pull request into ${production} opened after .github/workflows/evidence.yml is on ${production} (a draft is enough, it is never merged for this); its run reports ${EDD_CHECK} on the PR head. Then re-run.`;
 }
@@ -1657,6 +1662,8 @@ function main(): void {
   }
   let gs: GitStrategy;
   if (cmd === 'verify') {
+    const workflowWarning = evidenceWorkflowWarning(REPO_ROOT);
+    if (workflowWarning) { log.warn(workflowWarning); }
     const read = strategyForVerify(existsSync(PROJECT_YAML) ? parseYaml(readFileSync(PROJECT_YAML, 'utf8')) : null);
     if (read.missingBlock) {
       log.warn('No `git_strategy:` block in .agents/project.yaml: verify reads it as an inherited `evidence` policy on main (Critical Rule #5), so drift only warns. Run the git-flow-master Strategy Setup to declare one.');
