@@ -20,16 +20,19 @@
  *   0 if status === "ok"     (full mode) or preflight passes
  *   1 if status === "needs-action"  or preflight blocker hit
  *
- * Side effects: none. This script never edits files or installs anything.
+ * Side effects: this script never edits files or installs anything. One
+ * exception: the skill drift section asks `bunx skills ls`, which may fetch
+ * the skills CLI into Bun's cache.
  */
 
 import type { CompatibilityCheck, CompatibilityErrorGroup } from './lib/agent-compatibility.ts';
 import type { HarnessLevelVerdict } from './lib/harness-level-mcps.ts';
 import type { Harness } from './lib/harness-selection.ts';
 import type { IssueTracker } from './lib/issue-tracker.ts';
+import type { BunxRunner, DeclaredSkill, SkillScope } from './lib/user-skills-update.ts';
 import type { GateContext, VarSpec } from './lib/variables-manifest.ts';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, realpathSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, readlinkSync, realpathSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 
@@ -66,6 +69,7 @@ import { harnessLevelMcpReport } from './lib/harness-level-mcps.ts';
 import { declaredHarnesses, HARNESS_LABEL } from './lib/harness-selection.ts';
 import { ISSUE_TRACKERS, issueTrackerOf } from './lib/issue-tracker.ts';
 import { playwrightBrowsersInstalled } from './lib/playwright-cache.ts';
+import { defaultRunner, devLinkedDestinations, normalizeSource, parseListJson, skillsDirs } from './lib/user-skills-update.ts';
 import { gateIsOn, varsFor } from './lib/variables-manifest.ts';
 import { checkoutRoots } from './lib/worktree.ts';
 
@@ -339,6 +343,7 @@ interface DoctorReport {
    * offering to fix it from here is not.
    */
   community_skills: CommunitySkillRow[]
+  skill_drift: SkillDriftRow[]
   /**
    * Whether a plaintext copy of an MCP credential is still on disk.
    *
@@ -916,18 +921,34 @@ export function orchestratorState(cli: string | null, spawn: typeof spawnSync = 
   catch { return 'unreachable'; }
 }
 
-function tryRunWithTimeout(binary: string, args: string[], timeoutMs: number): { ok: boolean, stdout: string } {
+export type GitRunner = (args: string[]) => { ok: boolean, stdout: string };
+
+export function readOnlyGit(args: string[], env: Record<string, string | undefined> = process.env): { ok: boolean, stdout: string } {
+  const clean: Record<string, string | undefined> = Object.fromEntries(Object.entries(env).filter(([name]) => !name.startsWith('GIT_')));
+  clean.GIT_TERMINAL_PROMPT = '0';
   try {
-    const stdout = execFileSync(binary, args, {
+    const stdout = execFileSync('git', ['--no-optional-locks', ...args], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
-      timeout: timeoutMs,
+      timeout: 5000,
+      env: clean as NodeJS.ProcessEnv,
     });
     return { ok: true, stdout };
   }
   catch {
     return { ok: false, stdout: '' };
   }
+}
+
+export function oneLsRemotePerSource(git: GitRunner): GitRunner {
+  const seen = new Map<string, ReturnType<GitRunner>>();
+  return (args) => {
+    if (args[0] !== 'ls-remote') { return git(args); }
+    const key = args.join(' ');
+    const result = seen.get(key) ?? git(args);
+    seen.set(key, result);
+    return result;
+  };
 }
 
 /**
@@ -951,18 +972,20 @@ export function communitySkillStatus(
  * `--preflight` must keep loading node built-ins only (it runs before
  * `bun install`). `runDoctor` is never reached in preflight mode.
  */
-async function collectCommunitySkills(): Promise<CommunitySkillRow[]> {
-  const { PROJECT_LEVEL_SKILLS, remoteHeadRef } = await import('./install.ts');
-
-  let recorded: Record<string, { ref?: string | null } | undefined> = {};
+async function readInstallRefs(): Promise<InstallRefs> {
   try {
     const raw = await readFile(join(REPO_ROOT, '.template', 'installer.state.json'), 'utf8');
-    recorded = (JSON.parse(raw) as { communitySkillRefs?: typeof recorded }).communitySkillRefs ?? {};
+    return (JSON.parse(raw) as { communitySkillRefs?: InstallRefs }).communitySkillRefs ?? {};
   }
   catch {
     // No installer state (fresh clone, or an install predating the baseline):
     // every row reads `untracked`, which is the truthful answer.
+    return {};
   }
+}
+
+async function collectCommunitySkills(git: GitRunner, recorded: InstallRefs): Promise<CommunitySkillRow[]> {
+  const { PROJECT_LEVEL_SKILLS, remoteHeadRef } = await import('./install.ts');
 
   const rows: CommunitySkillRow[] = [];
   for (const item of PROJECT_LEVEL_SKILLS) {
@@ -970,7 +993,7 @@ async function collectCommunitySkills(): Promise<CommunitySkillRow[]> {
     const installed = existsSync(join(REPO_ROOT, '.agents', 'skills', slug, 'SKILL.md'));
     const recordedRef = recorded[slug]?.ref ?? null;
     const availableRef = installed && recordedRef !== null
-      ? remoteHeadRef(item.package, (binary, args) => tryRunWithTimeout(binary, args, 5000))
+      ? remoteHeadRef(item.package, (_binary, args) => git(args))
       : null;
 
     const status = communitySkillStatus(installed, recordedRef, availableRef);
@@ -980,7 +1003,154 @@ async function collectCommunitySkills(): Promise<CommunitySkillRow[]> {
   return rows;
 }
 
+type InstallRefs = Record<string, { ref?: string | null } | undefined>;
+
+export interface SkillDriftRow {
+  skill: string
+  scope: SkillScope
+  source: string | null
+  state: 'dev-link' | 'matches' | 'source-moved' | 'modified' | 'not-installed' | 'unknown' | 'no-source'
+  detail: string
+}
+
+export interface SkillDriftOptions {
+  root: string
+  home: string
+  env: Record<string, string | undefined>
+  global: ReadonlyArray<DeclaredSkill>
+  project: ReadonlyArray<DeclaredSkill>
+  installRefs: InstallRefs
+  git: GitRunner
+  bunx: BunxRunner
+}
+
+interface SkillsLock {
+  path: string
+  skills: Record<string, { source?: string, commit?: string } | undefined>
+  readable: boolean
+}
+
+function readSkillsLock(path: string): SkillsLock {
+  if (!existsSync(path)) { return { path, skills: {}, readable: true }; }
+  try {
+    const parsed = JSON.parse(readFileSync(path, 'utf8')) as { skills?: SkillsLock['skills'] };
+    return { path, skills: parsed.skills ?? {}, readable: true };
+  }
+  catch { return { path, skills: {}, readable: false }; }
+}
+
+// Mirrors `sanitizeName` of the skills CLI 1.9.1: the folder name it derives from a skill name.
+function sanitizeSkillName(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9._]+/g, '-').replace(/^[.-]+|[.-]+$/g, '').slice(0, 255) || 'unnamed-skill';
+}
+
+function describeDevLink(path: string, git: GitRunner): string {
+  let target: string;
+  try { target = realpathSync(path); }
+  catch { return `${path} -> ${readlinkSync(path)} (target missing)`; }
+  const head = git(['-C', target, 'rev-parse', '--abbrev-ref', 'HEAD']);
+  if (!head.ok) { return `${path} -> ${target} (not a git checkout, or no commit yet)`; }
+  const branch = head.stdout.trim() === 'HEAD' ? 'detached HEAD' : `branch ${head.stdout.trim()}`;
+  const ahead = git(['-C', target, 'rev-list', '--count', '@{upstream}..HEAD']);
+  return `${path} -> ${target} (${branch}, ${ahead.ok ? `${ahead.stdout.trim()} unpushed commit(s)` : 'no upstream, unpushed commits unknown'})`;
+}
+
+async function modifiedProjectSkills(root: string, bunx: BunxRunner): Promise<Set<string> | null> {
+  try {
+    const ls = await bunx(['skills', 'ls', '--json'], root, 30_000);
+    if (ls.code !== 0) { return null; }
+    return new Set(parseListJson(ls.stdout).filter(row => row.status === 'modified').map(row => row.name));
+  }
+  catch { return null; }
+}
+
+export async function skillDrift(o: SkillDriftOptions): Promise<SkillDriftRow[]> {
+  const { remoteHeadRef } = await import('./install.ts');
+  const short = (ref: string): string => ref.slice(0, 8);
+  const globalLock = readSkillsLock(o.env.XDG_STATE_HOME
+    ? join(o.env.XDG_STATE_HOME, 'skills', '.skill-lock.json')
+    : join(o.home, '.agents', '.skill-lock.json'));
+  const scopes = [
+    { scope: 'global' as const, declared: o.global, base: o.home, lock: globalLock },
+    { scope: 'project' as const, declared: o.project, base: o.root, lock: readSkillsLock(join(o.root, 'skills-lock.json')) },
+  ];
+  const rows: SkillDriftRow[] = [];
+  let modified: Set<string> | null | undefined;
+
+  for (const { scope, declared, base, lock } of scopes) {
+    const dirs = Object.values(skillsDirs(scope, base, o.env));
+    for (const item of declared) {
+      const named = item.skill && item.skill !== '*'
+        ? [item.skill]
+        : Object.keys(lock.skills).filter(name => normalizeSource(lock.skills[name]?.source ?? '') === normalizeSource(item.package));
+      if (named.length === 0) { rows.push({ skill: item.package, scope, source: item.package, state: 'unknown', detail: 'whole-package entry with no skill of it in the lock' }); }
+      for (const skill of named) {
+        const row = (state: SkillDriftRow['state'], detail: string): number => rows.push({ skill, scope, source: item.package, state, detail });
+        const links = devLinkedDestinations(skill, scope, base, o.env);
+        if (links.length > 0) { row('dev-link', links.map(path => describeDevLink(path, o.git)).join('; ')); continue; }
+        if (!dirs.some(dir => existsSync(join(dir, skill, 'SKILL.md')))) { row('not-installed', 'declared, no installed copy'); continue; }
+
+        const entry = lock.skills[skill];
+        const recorded = entry?.commit ?? (scope === 'project' ? o.installRefs[skill]?.ref : null) ?? null;
+        const verdict = ((): [SkillDriftRow['state'], string] => {
+          if (!lock.readable) { return ['unknown', `lock file unreadable: ${lock.path}`]; }
+          if (entry?.source && normalizeSource(entry.source) !== normalizeSource(item.package)) { return ['unknown', `installed from ${entry.source}, not the declared source`]; }
+          if (recorded === null) { return ['unknown', entry ? 'the lock entry records no commit' : 'no lock entry, so no commit recorded at install']; }
+          const head = remoteHeadRef(item.package, (_binary, args) => o.git(args));
+          if (head === null) { return ['unknown', `source unreachable, remote HEAD not read (installed ${short(recorded)})`]; }
+          return head === recorded
+            ? ['matches', `installed from the current source HEAD (${short(recorded)})`]
+            : ['source-moved', `the source repo moved since install (${short(recorded)} -> ${short(head)}), not necessarily this skill's folder`];
+        })();
+        if (scope === 'global') { row(...verdict); continue; }
+        if (modified === undefined) { modified = await modifiedProjectSkills(o.root, o.bunx); }
+        if (modified?.has(skill)) { row('modified', `edited since install (skills ls); ${verdict[1]}`); }
+        else { row(verdict[0], modified === null ? `${verdict[1]}; local edits not checked` : verdict[1]); }
+      }
+    }
+  }
+
+  if (!globalLock.readable) {
+    rows.push({ skill: '(undeclared skills)', scope: 'global', source: null, state: 'unknown', detail: `not listed, lock file unreadable: ${globalLock.path}` });
+    return rows;
+  }
+  const seen = new Set([...o.global, ...o.project].flatMap(item => item.skill ?? []).concat(Object.keys(globalLock.skills)).map(sanitizeSkillName));
+  for (const dir of Object.values(skillsDirs('global', o.home, o.env))) {
+    let names: string[] = [];
+    try { names = readdirSync(dir).sort(); }
+    catch { continue; }
+    for (const skill of names) {
+      const key = sanitizeSkillName(skill);
+      if (seen.has(key) || !existsSync(join(dir, skill, 'SKILL.md'))) { continue; }
+      seen.add(key);
+      rows.push({ skill, scope: 'global', source: null, state: 'no-source', detail: join(dir, skill) });
+    }
+  }
+  return rows;
+}
+
+async function collectSkillDrift(git: GitRunner, installRefs: InstallRefs): Promise<SkillDriftRow[]> {
+  try {
+    const { PROJECT_LEVEL_SKILLS, USER_LEVEL_SKILLS } = await import('./install.ts');
+    return await skillDrift({
+      root: REPO_ROOT,
+      home: homedir(),
+      env: process.env,
+      global: USER_LEVEL_SKILLS,
+      project: PROJECT_LEVEL_SKILLS,
+      installRefs,
+      git,
+      bunx: defaultRunner,
+    });
+  }
+  catch (err) {
+    return [{ skill: '(all)', scope: 'global', source: null, state: 'unknown', detail: `drift check failed: ${(err as Error).message}` }];
+  }
+}
+
 export async function runDoctor(): Promise<DoctorReport> {
+  const git = oneLsRemotePerSource(readOnlyGit);
+  const installRefs = await readInstallRefs();
   const agentCompatibility = diagnoseAgentCompatibility(REPO_ROOT);
   const report: DoctorReport = {
     status: 'ok',
@@ -1003,7 +1173,8 @@ export async function runDoctor(): Promise<DoctorReport> {
       return roots?.linked === true ? roots.primaryRoot : null;
     })(),
     playwright_browsers: playwrightBrowsersInstalled(),
-    community_skills: await collectCommunitySkills(),
+    community_skills: await collectCommunitySkills(git, installRefs),
+    skill_drift: await collectSkillDrift(git, installRefs),
     harness_env: harnessEnvDiagnostic(),
     project_schema: projectSchemaDiagnostic(),
     env_schema: envSchemaDiagnostic(),
@@ -1534,6 +1705,17 @@ function printHuman(report: DoctorReport): void {
     ]);
     process.stdout.write(`${tui.table(['Skill', 'Status', 'Installed', 'Available', 'Note'], rows)}\n`);
     process.stdout.write('  Updating one is a manual decision: these live outside git, so an overwrite has no backup.\n\n');
+  }
+
+  if (report.skill_drift.length > 0) {
+    tui.section('Skill drift (installed copy against its declared source, reported only)');
+    for (const row of report.skill_drift.filter(r => r.state !== 'no-source')) {
+      const icon = tui.statusIcon(row.state === 'matches' ? 'ok' : row.state === 'dev-link' ? 'info' : 'warn');
+      process.stdout.write(`  ${icon} ${row.skill} (${row.scope}) ${row.state}: ${row.detail}\n`);
+    }
+    const noSource = report.skill_drift.filter(r => r.state === 'no-source').map(r => r.skill);
+    if (noSource.length > 0) { process.stdout.write(`  ${tui.statusIcon('info')} no source (user level, not declared here and no lock entry): ${noSource.join(', ')}\n`); }
+    process.stdout.write('  Local edits are checked for project copies only.\n\n');
   }
 
   if (compat.errors.length > 0) {

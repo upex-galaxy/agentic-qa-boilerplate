@@ -5,13 +5,15 @@
  * manifest entry reaches it today.
  */
 
+import type { GitRunner, SkillDriftOptions, SkillDriftRow } from './doctor.ts';
 import type { GateContext, VarSpec } from './lib/variables-manifest.ts';
-import { mkdirSync, mkdtempSync, realpathSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, test } from 'bun:test';
 
-import { checkoutSetupActions, codexTrustStatus, envVarVerdict, jqInstalled, jqWarning, orchestratorCli, orchestratorState, piTrustStatus, probeOpenApiSpec, userSkillInstalled } from './doctor.ts';
+import { checkoutSetupActions, codexTrustStatus, envVarVerdict, jqInstalled, jqWarning, oneLsRemotePerSource, orchestratorCli, orchestratorState, piTrustStatus, probeOpenApiSpec, readOnlyGit, skillDrift, userSkillInstalled } from './doctor.ts';
 import { VAR_MANIFEST, varsFor } from './lib/variables-manifest.ts';
 
 function spec(overrides: Partial<VarSpec> & { name: string }): VarSpec {
@@ -257,5 +259,140 @@ describe('jqWarning', () => {
     const fake = (r: object) => (() => r) as unknown as typeof import('node:child_process').spawnSync;
     expect(jqInstalled(fake({ status: 0 }))).toBe(true);
     expect(jqInstalled(fake({ status: null, error: new Error('ENOENT') }))).toBe(false);
+  });
+});
+
+describe('skill drift', () => {
+  const OLD = 'a'.repeat(40);
+  const NEW = 'b'.repeat(40);
+  const PKG = 'https://github.com/owner/repo';
+
+  function setup(): { home: string, root: string, store: string, projectStore: string, skill: (dir: string, name: string) => string, lock: (path: string, skills: Record<string, object>) => void } {
+    const base = realpathSync(mkdtempSync(join(tmpdir(), 'doctor-drift-')));
+    const home = join(base, 'home');
+    const root = join(base, 'project');
+    const skill = (dir: string, name: string): string => {
+      mkdirSync(join(dir, name), { recursive: true });
+      writeFileSync(join(dir, name, 'SKILL.md'), name);
+      return join(dir, name);
+    };
+    const lock = (path: string, skills: Record<string, object>): void => {
+      mkdirSync(join(path, '..'), { recursive: true });
+      writeFileSync(path, JSON.stringify({ version: 3, skills }));
+    };
+    mkdirSync(root, { recursive: true });
+    return { home, root, store: join(home, '.agents', 'skills'), projectStore: join(root, '.agents', 'skills'), skill, lock };
+  }
+
+  const remote = (head: string | null): GitRunner => args => (args[0] === 'ls-remote' && head !== null ? { ok: true, stdout: `${head}\tHEAD\n` } : { ok: false, stdout: '' });
+  const listing = (rows: object[] = []): SkillDriftOptions['bunx'] => async () => ({ code: 0, stdout: JSON.stringify(rows), stderr: '' });
+  const run = async (at: { home: string, root: string }, over: Partial<SkillDriftOptions>): Promise<SkillDriftRow[]> =>
+    skillDrift({ ...at, env: {}, global: [], project: [], installRefs: {}, git: remote(NEW), bunx: listing(), ...over });
+  const declared = (...names: string[]) => names.map(skill => ({ package: PKG, skill }));
+
+  test('compares the lock commit with the source HEAD and never defaults to matches', async () => {
+    const s = setup();
+    for (const name of ['same', 'moved', 'nocommit', 'nolock', 'foreign']) { s.skill(s.store, name); }
+    s.lock(join(s.home, '.agents', '.skill-lock.json'), {
+      same: { source: 'owner/repo', commit: NEW },
+      moved: { source: 'owner/repo', commit: OLD },
+      nocommit: { source: 'owner/repo' },
+      foreign: { source: 'someone/else', commit: NEW },
+    });
+    const rows = await run(s, { global: declared('same', 'moved', 'nocommit', 'nolock', 'foreign', 'absent') });
+    expect(rows.map(r => [r.skill, r.state])).toEqual([
+      ['same', 'matches'],
+      ['moved', 'source-moved'],
+      ['nocommit', 'unknown'],
+      ['nolock', 'unknown'],
+      ['foreign', 'unknown'],
+      ['absent', 'not-installed'],
+    ]);
+    expect(rows[1].detail).toContain('not necessarily this skill\'s folder');
+    expect(rows[4].detail).toContain('someone/else');
+  });
+
+  test('an unreachable source or an unreadable lock is unknown, with the reason', async () => {
+    const s = setup();
+    s.skill(s.store, 'same');
+    const path = join(s.home, '.agents', '.skill-lock.json');
+    s.lock(path, { same: { source: 'owner/repo', commit: NEW } });
+    const offline = await run(s, { global: declared('same'), git: remote(null) });
+    expect(offline[0]).toMatchObject({ state: 'unknown' });
+    expect(offline[0].detail).toContain('source unreachable');
+    writeFileSync(path, '{');
+    const broken = await run(s, { global: declared('same') });
+    expect(broken.map(r => r.state)).toEqual(['unknown', 'unknown']);
+    expect(broken[0].detail).toContain('lock file unreadable');
+  });
+
+  test('reads the user lock below XDG_STATE_HOME when it is set', async () => {
+    const s = setup();
+    s.skill(s.store, 'same');
+    const state = join(s.home, 'state');
+    s.lock(join(state, 'skills', '.skill-lock.json'), { same: { source: 'owner/repo', commit: NEW } });
+    const rows = await run(s, { global: declared('same'), env: { XDG_STATE_HOME: state } });
+    expect(rows[0].state).toBe('matches');
+  });
+
+  test('a project copy falls back to the installer state ref and flags a local edit', async () => {
+    const s = setup();
+    s.skill(s.projectStore, 'kept');
+    s.skill(s.projectStore, 'edited');
+    const installRefs = { kept: { ref: NEW }, edited: { ref: NEW } };
+    const rows = await run(s, { project: declared('kept', 'edited'), installRefs, bunx: listing([{ name: 'edited', path: 'x', status: 'modified' }]) });
+    expect(rows.map(r => r.state)).toEqual(['matches', 'modified']);
+    const unasked = await run(s, { project: declared('kept'), installRefs, bunx: async () => ({ code: 1, stdout: '', stderr: 'offline' }) });
+    expect(unasked[0].detail).toContain('local edits not checked');
+  });
+
+  test('a development link shows its target, branch and unpushed commits', async () => {
+    const s = setup();
+    const checkout = s.skill(join(s.home, 'repo'), 'linked');
+    mkdirSync(s.store, { recursive: true });
+    symlinkSync(checkout, join(s.store, 'linked'), 'dir');
+    const git = (upstream: boolean): GitRunner => (args) => {
+      if (args.includes('--abbrev-ref')) { return { ok: true, stdout: 'feat/x\n' }; }
+      return upstream ? { ok: true, stdout: '2\n' } : { ok: false, stdout: '' };
+    };
+    const [ahead] = await run(s, { global: declared('linked'), git: git(true) });
+    expect(ahead.state).toBe('dev-link');
+    expect(ahead.detail).toBe(`${join(s.store, 'linked')} -> ${checkout} (branch feat/x, 2 unpushed commit(s))`);
+    const [local] = await run(s, { global: declared('linked'), git: git(false) });
+    expect(local.detail).toContain('no upstream');
+    const [plain] = await run(s, { global: declared('linked'), git: remote(null) });
+    expect(plain.detail).toContain('not a git checkout');
+  });
+
+  test('lists user-level skills with no declared source and no lock entry', async () => {
+    const s = setup();
+    for (const name of ['mine', 'locked', 'declared']) { s.skill(s.store, name); }
+    s.skill(join(s.home, '.claude', 'skills'), 'claude-only');
+    s.lock(join(s.home, '.agents', '.skill-lock.json'), { locked: { source: 'owner/repo' } });
+    const rows = await run(s, { global: declared('declared') });
+    expect(rows.filter(r => r.state === 'no-source').map(r => r.skill)).toEqual(['mine', 'claude-only']);
+  });
+
+  test('matches lock keys and declared names against folder names as the skills CLI writes them', async () => {
+    const s = setup();
+    for (const name of ['react-best-practices', 'c-guide', 'mine']) { s.skill(s.store, name); }
+    s.lock(join(s.home, '.agents', '.skill-lock.json'), { 'React Best Practices': { source: 'someone/else' } });
+    const rows = await run(s, { global: declared('.C++ Guide') });
+    expect(rows.filter(r => r.state === 'no-source').map(r => r.skill)).toEqual(['mine']);
+  });
+
+  test('asks each source for its HEAD once', () => {
+    const calls: string[] = [];
+    const git = oneLsRemotePerSource((args) => { calls.push(args.join(' ')); return { ok: true, stdout: '' }; });
+    for (const args of [['ls-remote', PKG, 'HEAD'], ['ls-remote', PKG, 'HEAD'], ['status'], ['status']]) { git(args); }
+    expect(calls).toEqual([`ls-remote ${PKG} HEAD`, 'status', 'status']);
+  });
+
+  test('git calls ignore an inherited GIT_DIR', () => {
+    const clean = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')));
+    const repo = mkdtempSync(join(tmpdir(), 'doctor-git-'));
+    spawnSync('git', ['init', '--quiet', '--initial-branch=probe', repo], { env: clean as NodeJS.ProcessEnv });
+    const result = readOnlyGit(['-C', repo, 'symbolic-ref', '--short', 'HEAD'], { ...clean, GIT_DIR: join(repo, 'nowhere') });
+    expect(result).toEqual({ ok: true, stdout: 'probe\n' });
   });
 });
