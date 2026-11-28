@@ -130,7 +130,9 @@ The vocabulary is `../../agentic-qa-core/references/discovery-driven-doctrine.md
   `not intended` makes it `FAILED` and a proposed defect (§6).
 - Not observed (a precondition that could not be reached, an environment blocker): `NOT RUN` with exactly one
   reason, `BLOCKED — <reason>` or `DEFERRED (execution) <date> by QA decision: <reason>; follow-up <KEY>`, and
-  it climbs the blocking ladder (§5.3 of the doctrine). A code read, a unit test, a green CI run or another
+  it climbs the blocking ladder (§5.3 of the doctrine). Run the unblock preflight
+  (`../../sprint-testing/references/preflight-gate.md`, scope = the charter) before writing either reason:
+  `DEFERRED (execution)` needs an external cause, anything else stays `BLOCKED`. A code read, a unit test, a green CI run or another
   environment never makes it `PASSED`.
 - The follow-up of a `DEFERRED (execution)` lives on the coverable, as the ladder says. A candidate anchored
   to an existing coverable gets it there. A candidate with no anchor yet gets it on its coverage Tech Story

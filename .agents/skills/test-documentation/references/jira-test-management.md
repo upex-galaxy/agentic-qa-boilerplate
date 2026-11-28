@@ -186,7 +186,7 @@ Related names follow the planning-ladder grammar `{ACRONYM}: {scope-id}: {descri
 | Sprint Test Results (STR) | Test Execution | `STR: Sprint#{N}: Regression Testing` | `STR: Sprint#50: Regression Testing` |
 | Acceptance Test Set (ATS, per-Story, **mandatory**) | Test Set | `ATS: {US_ID}: {story title}` | `ATS: PROJ-101: Pay with credit card` |
 | Test Set (TS, feature-level, **optional**) | Test Set | `TS: {EPIC-KEY\|module}: Validate {feature}` | `TS: PROJ-42: Validate credit card payment` |
-| ReTesting (bug fix) | Test Execution | `ReTest: {BUG-KEY}: {summary}` | `ReTest: PROJ-202: Wrong error on invalid password` |
+| ReTesting (bug fix, or a Story's deferred cases run later) | Test Execution | `ReTest: {BUG-KEY\|STORY-KEY}: {summary}` | `ReTest: PROJ-202: Wrong error on invalid password` · `ReTest: PROJ-101: Card payment after the account arrived` |
 | Precondition | Precondition | `{COMPONENT}: {required state}` (no ladder acronym) | `Payment: Authenticated user with a saved card` |
 
 A Precondition's title states the required state; its content holds the setup steps. Keep the two distinct.

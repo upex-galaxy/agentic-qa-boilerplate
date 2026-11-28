@@ -88,7 +88,7 @@ All Plans and Runs follow one unified grammar, the QA planning ladder:
 {ACRONYM}: {scope-id}: {descriptor}
 ```
 
-- `ACRONYM`: `FTP` · `STP` · `ATP` · `RTP` (Plans) · `STR` · `ATR` · `RTR` (Runs; there is no FTR rung, because feature results are read from the per-Story ATRs and reviewed at sprint close next to the STR, and the results side has no aggregation edge) · `ATS` (Acceptance Test Set, per-Story, mandatory) · `TS` (feature-level Test Set, optional grouping) · `ReTest` (bug re-test Run). A reader or a JQL query sees altitude and plan-versus-run in the first token, and each Plan pairs visually with its Run.
+- `ACRONYM`: `FTP` · `STP` · `ATP` · `RTP` (Plans) · `STR` · `ATR` · `RTR` (Runs; there is no FTR rung, because feature results are read from the per-Story ATRs and reviewed at sprint close next to the STR, and the results side has no aggregation edge) · `ATS` (Acceptance Test Set, per-Story, mandatory) · `TS` (feature-level Test Set, optional grouping) · `ReTest` (re-test Run: a bug's fix verification, or a Story's later run of shift-right deferred cases). A reader or a JQL query sees altitude and plan-versus-run in the first token, and each Plan pairs visually with its Run.
 - `scope-id`: the key of the thing under test at that altitude: feature-Epic key, `Sprint#{N}`, Story key, or the project key or module for the product-altitude RTP.
 - `descriptor`: human-readable text that embeds the testing term where required (`Story Testing`, `Feature Testing`, `Regression Testing`).
 
@@ -104,7 +104,7 @@ All Plans and Runs follow one unified grammar, the QA planning ladder:
 | RTR: Regression Test Results (one per verdict) | Test Execution | `RTR: {env}-{YYYY-MM-DD}\|{release-tag}: Regression Testing` | `RTR: staging-2026-09-23: Regression Testing` |
 | ATS: Acceptance Test Set (per-Story, mandatory) | Test Set | `ATS: {US_ID}: {story title}` | `ATS: GX-101: Pay with credit card` |
 | Test Set (TS, feature-level, optional) | Test Set | `TS: {EPIC-KEY\|module}: Validate {feature}` | `TS: GX-42: Validate credit card payment` |
-| ReTesting (RTX) | Test Execution | `ReTest: {BUG-KEY}: {summary}` | `ReTest: GX-202: Does not show error when entering incorrect password` |
+| ReTesting (RTX) | Test Execution | `ReTest: {BUG-KEY\|STORY-KEY}: {summary}` | `ReTest: GX-202: Does not show error when entering incorrect password` (bug) · `ReTest: GX-101: Card payment after the account arrived` (Story, `sprint-testing/references/shift-right-deferral.md` §6) |
 | Precondition | Precondition | `{COMPONENT}: {required state}` (no ladder acronym) | `Payment: Authenticated user with a saved card` |
 
 Notes:

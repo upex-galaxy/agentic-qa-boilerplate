@@ -31,6 +31,7 @@ stage owner: it loads inside the session or subagent already running a testing s
 ## Compact Rules
 
 - Load this skill in any dispatch whose stage captures evidence (sprint-testing Stage 2) or reports it (Stage 3, filing a bug). Append every proof to `<PBI>/evidence/evidence-pack.json` as you test, because a pack rebuilt from memory at the end loses what the screen showed.
+- A `DEFERRED` or `BLOCKED` entry in a pack comes from a preflight verdict (`sprint-testing/references/preflight-gate.md`); never write one without it.
 - Take marks from the element's box via `playwright-cli eval` (`coords: "px"`). Read a screenshot back to place a mark only when no element reaches it.
 - A mark does not mask anything, since viewers can toggle marks off. Personal data on screen goes in the image's `redact` boxes, which the build burns into the pixels.
 - Keep a trace, a HAR, a token, a cookie and an `.auth` file out of every pack. Write credentials in API/SQL text as `<redacted>`; the build refuses the rest and names the field.

@@ -473,7 +473,7 @@ A regression run maps to Jira items (no Story custom field exists at this altitu
 
 - The RTR is born `{{jira.status.test_execution.active}}` in Phase 1 and moves to `{{jira.status.test_execution.close}}` via `{{jira.transition.test_execution.complete}}` after the verdict comment is posted on it: not before, not left open, not reopened (`reactive` stays unused; a later run is a new RTR). The sprint-close STR follows the same rule.
 - The RTP, and any Test Plan this skill only consumed, stays at `{{jira.status.test_plan.ready}}`: a suite execution does not finish the plan it ran from, so do not fire `{{jira.transition.test_plan.complete}}` here.
-- The STP is closed by whoever owns sprint close. When this skill is the sprint close (see the sprint-close DoD in `stage-gates.md`), `{{jira.transition.test_plan.complete}}` moves it to `{{jira.status.test_plan.completed}}` after the STR is closed.
+- The STP is closed by whoever owns sprint close. When this skill is the sprint close (see the sprint-close DoD in `stage-gates.md`), `{{jira.transition.test_plan.complete}}` moves it to `{{jira.status.test_plan.completed}}` after the STR is closed. The sprint close also reads the open rows of every open shift-right test plan, whatever its sprint (`Shift-Right Test Plan: {sprint}`, `sprint-testing/references/shift-right-deferral.md` §5-6): list them with the verdict, hand each row whose precondition arrived to `/sprint-testing` for its later run, and leave a plan open while any row is neither `PASSED` nor `WITHDRAWN`.
 - An unmapped slug follows the `artifact-lifecycle.md` §4 fallback: list the live transitions, propose the closest synonym in one `AskUserQuestion`, fire the live id on yes, and recommend `bun run jira:sync-workflows`. Do not skip it silently or guess an id.
 
 The RTR already exists when Phase 3 starts (created in Phase 1, imported into by CI through `execution_key`), so Phase 3 writes only what CI did not, posts the verdict and closes it. At sprint close, find the STR first: if `/sprint-testing`'s batch close got there first, this skill only completes it.
@@ -576,6 +576,7 @@ Whatever the verdict, close the run record as the lifecycle gate describes, then
 [ ] Verdict comment posted ON the RTR (the durable record, not the local report file)
 [ ] RTR at {{jira.status.test_execution.close}} via complete, AFTER the verdict; never reactive
 [ ] Sprint close only: STR exists by KEY, testPlan -> STP AND -> RTP, closed after the sprint-close verdict
+[ ] Sprint close only: open rows of every open shift-right plan listed, arrived preconditions handed to /sprint-testing (or no plan, stated)
 [ ] RTP untouched at {{jira.status.test_plan.ready}} (a regression run never completes it)
 [ ] Modality jira-native: the RTR line is the stated skip note; per-Test status writes landed; [LOCAL] report written
 [ ] Any unmapped slug went through the §4 fallback (asked), never a silent skip

@@ -39,7 +39,7 @@ Each card carries the web's fuller wording (translated), the phase badges as pri
 | Web wording | Extend quality validation into production, where the system receives real users. Step 11 makes it concrete: deploy the feature to a small percentage of users and monitor behavior, validating it in production with minimal risk |
 | Tab badge | LATE-GAME, Observación, steps 10-15, QA + DevOps |
 | Operational in | Step 11 (Canary Release Monitoring), Observation stage |
-| Repo doctrine | none: the boilerplate does not cover Shift-Right. Observation is declared with no skill and no DoD (`agentic-qa-core/references/stage-gates.md` §"Observation") |
+| Repo doctrine | none: the boilerplate does not cover Shift-Right. Observation is declared with no skill and no DoD (`agentic-qa-core/references/stage-gates.md` §"Observation"). A shift-right deferral (`sprint-testing/references/shift-right-deferral.md`) is not production observation: it is an in-scope Story case blocked from outside, still owed and run when its precondition arrives |
 
 ### Risk-Based Testing
 
