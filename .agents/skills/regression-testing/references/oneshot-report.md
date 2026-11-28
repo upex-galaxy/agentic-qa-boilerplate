@@ -71,6 +71,7 @@ What passes, even so:
 | A secret under a key the rules do not know, nested one level below a secret key, or written as XML, multipart or a `[name, value]` pair | API bodies in attachments |
 | Part of a password that holds a quote followed by punctuation, a space, or an HTML closing tag | `password=...` text |
 | A value shorter than eight characters in free text | anywhere |
+| A value written as `$` followed by capitals, which reads as a variable name | `password=...` text |
 | A value encoded in a way the check does not try, such as compressed, reversed, or base64 inside `user:password` | anywhere |
 | A local value whose `.env` file sits outside the directory the command runs in | anywhere |
 
