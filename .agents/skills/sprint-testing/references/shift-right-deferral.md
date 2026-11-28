@@ -18,22 +18,25 @@ A chat notice is an interface with no provider behind it. Its inputs are a chann
 
 ## 3. The owner's OK
 
-Before the transition, the owner gives an explicit final OK on the list of deferred cases. The **owner** is the person who signs the transition (`stage-gates.md` §"Contract table"): the person who launched the session, or whom the brief names. The OK is evidence the agent cannot mint, and it counts only with a pointer that can be opened: the owner's comment on the Story, or the owner's answer on the Sprint Board, given after the notice and covering those case ids. An OK said in a chat or to a question prompt is recorded by the owner in one of those two before it counts.
+Before the transition, the owner gives an explicit final OK on the list of deferred cases. The **owner** is the person who signs the transition (`stage-gates.md` §"Contract table"): the person who launched the session, or whom the brief names. The OK is evidence the agent cannot mint, given after the notice and covering those case ids. It counts in one of two forms. With the owner at the keyboard of the session that runs the stage: the message they type in that session's chat. With nobody at that keyboard (a fleet worker, a conductor relaying, a routine): a pointer that can be opened, the owner's comment on the Story or their answer on the Sprint Board.
 
 | Who runs | How the OK is obtained |
 |---|---|
-| A person is present | ask the owner, with the case ids listed, to comment on the Story or answer on the board; anyone else only carries the pointer |
-| A supervised worker or a subagent | escalate to the conductor or launcher, which asks the owner and returns the pointer. It never answers the question itself |
+| The owner is at the keyboard of the session running the stage | ask in chat with the case ids listed; record their message in the ATR with its timestamp and the words `owner OK given in session`. A pointer counts here too |
+| Someone else is at that keyboard | they only carry a pointer to the owner's comment or board answer |
+| A supervised worker | escalate to the conductor or launcher, which asks the owner and returns the pointer. It never answers the question itself |
+| A subagent | report to the session that dispatched it, which follows its own row here |
 | A routine with nobody | only an OK it can open through a pointer its brief carries; otherwise stop and report |
 
 - **Not an OK**: a blanket advance approval, anything older than the notice, any wording by the agent, the conductor or the launcher session (a brief included: it never stands in for the owner's own words, a quote of them neither), and a comment an agent session posted, even from the owner's account.
-- The ATR cites the pointer and what was read behind it.
+- The ATR cites the pointer and what was read behind it, or the in-session record.
+- **Limit of the in-session form**: the agent writes the record and no verifier can open it. What guarantees it is the owner's presence, not a pointer.
 - The OK covers the cases listed. A case deferred afterwards needs its own.
 - When every case is deferred and none was observed, the rule of `discovery-driven-doctrine.md` §5.4 holds: the owner decides.
 
 ### Checking the OK and the record
 
-Before the sign-off the Stage 3 session, and in a fleet the round-close verifier again, open the pointer and record what they read:
+An in-session OK is checked by the session that received it: the owner typed it there, after the notice, naming or accepting the listed case ids, and the ATR carries its timestamp and `owner OK given in session`. For a pointer, the Stage 3 session before the sign-off, and in a fleet the round-close verifier again, open it and record what they read:
 
 | Pointer | Read and record |
 |---|---|
@@ -42,7 +45,7 @@ Before the sign-off the Stage 3 session, and in a fleet the round-close verifier
 
 They also open each deferred case's preflight record: it names what was tried, each attempt with an evidence pointer that opens, the external class and who owes it, verdict `DEFER`.
 
-A citation with no pointer that opens, or a record short of that, is the closed value: no `PASSED WITH DEFERRALS` and no sign-off. When the agents write under the owner's own account, the read-back cannot prove who typed: say so beside the record.
+Neither form, a pointer that does not open, or a preflight record short of that, is the closed value: no `PASSED WITH DEFERRALS` and no sign-off. When the agents write under the owner's own account, the read-back cannot prove who typed: say so beside the record.
 
 ### Waiting for the owner OK
 
