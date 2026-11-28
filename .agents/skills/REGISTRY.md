@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-11-28T06:55:14.923Z`
+> Generated: `2026-11-28T06:55:20.363Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-qa-core/references/skill-resolver.md`
 
@@ -220,7 +220,7 @@ Skills indexed: 30
 **Compact Rules**:
 - Load this skill in any dispatch whose stage captures evidence (sprint-testing Stage 2) or reports it (Stage 3, filing a bug). Append every proof to `<PBI>/evidence/evidence-pack.json` as you test, because a pack rebuilt from memory at the end loses what the screen showed.
 - A `DEFERRED` or `BLOCKED` entry in a pack comes from a preflight verdict (`sprint-testing/references/preflight-gate.md`); never write one without it.
-- A story pack with a deferred case records it under `ticket.deferral` (`references/pack-schema.md` §Shift-right deferral): the Story label once read back, and the owner's own OK as `sprint-testing/references/shift-right-deferral.md` §3 verifies it. Write `PENDING` until that OK covers every current deferred case, and `PASSED WITH DEFERRALS` once it does and the label is on the Story; a current FAILED case still reads `FAILED`. Copy only an OK the owner gave. A bug pack carries no deferral.
+- A story pack with a deferred case records it under `ticket.deferral` (`references/pack-schema.md` §Shift-right deferral): the Story label once read back, and the owner's own OK as `sprint-testing/references/shift-right-deferral.md` §3 verifies it. Write `PENDING` until that OK covers every current deferred case, and `PASSED WITH DEFERRALS` once it does and the label is on the Story; a current FAILED case still reads `FAILED`. A pack carrying `ticket.deferral` beside a current DEFERRED case is refused as plain `PASSED`. Copy only an OK the owner gave. A bug pack carries no deferral.
 - Take marks from the element's box via `playwright-cli eval` (`coords: "px"`). Read a screenshot back to place a mark only when no element reaches it.
 - A mark does not mask anything, since viewers can toggle marks off. Personal data on screen goes in the image's `redact` boxes, which the build burns into the pixels.
 - Keep a trace, a HAR, a token, a cookie and an `.auth` file out of every pack. Write credentials in API/SQL text as `<redacted>`; the build refuses the rest and names the field.
@@ -230,7 +230,7 @@ Skills indexed: 30
 - Record the URL with `bun run evidence record --pack <pack> --url <url>` and on the board (`bun run board evidence-artifact <KEY> <url> [--bug <BUG>] --by worker`), add it to the issue with `bun run evidence link --pack <pack>`, then link it from the ATR, the bug description, the QA comment footer and each TC's notes.
 - Embed a bug's ONE thumbnail with `bun run evidence attach --pack <bug pack>` (`--dry-run` first prints every call), after the bug page link is in its Description. Write "(image embedded below)" and pass `bun run board bug ... --evidence-embedded` only once a live run printed `read-back OK`; a dry run never does.
 - Run `bun run evidence attach --replace` only with a person's OK. It deletes the bug's earlier thumbnail attachment, which cannot be undone, and `attach` refuses on its own when an earlier thumbnail (same name, other bytes) is there.
-- On a retest, keep every earlier case and item with its `round`, set `currentRound` and `rounds[]`, append the retest case, and republish to the SAME URL. A retest never passes on a DEFERRED case.
+- On a retest, keep every earlier case and item with its `round`, set `currentRound` and `rounds[]`, append the retest case, and republish to the SAME URL. A bug retest never passes on a DEFERRED case.
 - Report the URLs as published private for the owner to share. When the Artifact tool is unavailable, report the pack path instead and the conductor publishes.
 - Send evidence to no external image service, whatever the chat authorises (`references/privacy.md`).
 

@@ -414,6 +414,7 @@ def deferral_gap(kind, cases, deferral):
     deferred = [c["id"] for c in cases if c["status"] == "DEFERRED"]
     if kind == "bug": return "a bug never passes on a deferral"
     if not deferred: return "no current case is DEFERRED"
+    deferral = deferral or {}
     covered = (deferral.get("ok") or {}).get("cases", [])
     uncovered = [i for i in deferred if i not in covered]
     if uncovered: return f"waiting for owner OK on {', '.join(uncovered)} (ticket.deferral.ok.cases)"
@@ -428,14 +429,14 @@ def allowed_verdicts(kind, cases, deferral):
     if not st or "BLOCKED" in st or "NOT RUN" in st: return ["PENDING"]
     passed = ["PASSED"] if "PASSED" in st else []
     if kind == "bug" or "DEFERRED" not in st: return passed or ["PENDING"]
-    if deferral_gap(kind, cases, deferral) is None: return [DEFERRED_PASS] + passed
-    # PASSED stays allowed beside an uncovered deferral so a pack with no ticket.deferral still builds, with a warning
+    if deferral is not None: return ["PENDING"] if deferral_gap(kind, cases, deferral) else [DEFERRED_PASS]
+    # PASSED stays allowed beside a deferral so a pack with no ticket.deferral still builds, with a warning
     return passed + ["PENDING"]
 
 
 def cross_check(p, where, key_rx):
     """ADR-0021, judged on the current round: PASSED and FAILED only on observation, BLOCKED and DEFERRED need a reason,
-    a DEFERRED reason names its follow-up key, a verdict the current cases contradict is refused, a retest never passes on a deferral."""
+    a DEFERRED reason names its follow-up key, a verdict the current cases contradict is refused, a bug retest never passes on a deferral."""
     cur = current_round(p)
     key_in = re.compile("(?:" + key_rx.pattern.lstrip("^").rstrip("$") + ")")
     live = [c for c in p["tcs"] if case_round(c, cur) >= cur]
@@ -449,10 +450,10 @@ def cross_check(p, where, key_rx):
             if not reasons: fail(f"{where} {c['id']}: a {c['status']} case needs the reason it was not run (its note, or a note item)")
             if c["status"] == "DEFERRED" and not any(key_in.search(r) for r in reasons):
                 fail(f"{where} {c['id']}: a DEFERRED reason names the follow-up ticket that records the deferral (a key matching {key_rx.pattern})")
-    deferral, verdict = p["ticket"].get("deferral") or {}, p["ticket"]["verdict"]
+    deferral, verdict = p["ticket"].get("deferral"), p["ticket"]["verdict"]
     deferred = next((c for c in live if c["status"] == "DEFERRED"), None)
     deferred_ids = {c["id"] for c in live if c["status"] == "DEFERRED"}
-    stray = next((i for i in (deferral.get("ok") or {}).get("cases", []) if i not in deferred_ids), None)
+    stray = next((i for i in ((deferral or {}).get("ok") or {}).get("cases", []) if i not in deferred_ids), None)
     if stray: fail(f"{where}: ticket.deferral.ok.cases lists {stray}, which is not a current DEFERRED case")
     if p["kind"] == "bug" and cur > 0 and deferred and verdict in ("PASSED", DEFERRED_PASS):
         fail(f"{where}: a retest cannot pass on a deferral ({deferred['id']} is DEFERRED in round {cur})")
@@ -462,6 +463,7 @@ def cross_check(p, where, key_rx):
         if culprit: why = f"{culprit['id']} is {culprit['status']}"
         elif verdict == DEFERRED_PASS: why = deferral_gap(p["kind"], live, deferral)
         elif allowed[0] == DEFERRED_PASS: why = "the owner OK covers every deferred case"
+        elif verdict == "PASSED" and deferred and deferral is not None: why = deferral_gap(p["kind"], live, deferral)
         else: why = "no current case was observed PASSED"
         fail(f"{where}: ticket.verdict {verdict} contradicts the current cases (they allow {' or '.join(allowed)}: {why}); earlier rounds never count")
     if verdict == "PASSED" and deferred:

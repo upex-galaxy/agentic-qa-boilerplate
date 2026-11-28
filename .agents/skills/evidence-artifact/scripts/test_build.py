@@ -331,7 +331,27 @@ class TestDeferral(BuildCase):
             p["tcs"].append({"id": "DEMO-7001-TC3", "title": "Other", "status": status, "note": "sink down", "url": "https://claude.ai/artifact/abc"})
             self.refused(p, f"they allow {verdict}: DEMO-7001-TC3 is {status}")
 
-    def test_a_passed_pack_with_an_uncovered_deferral_still_builds_with_a_warning(self):
+    def test_a_pack_with_ticket_deferral_never_reads_plain_passed(self):
+        for ok, label in ((None, "not-fully-tested"), (None, None), (dict(self.OK, cases=["DEMO-7001-TC2"]), None)):
+            p = self.story("PASSED", ok=ok, label=label, passed=True)
+            p["ticket"].setdefault("deferral", {})
+            gap = "ticket.deferral.label is missing" if ok else "waiting for owner OK on DEMO-7001-TC2"
+            self.refused(p, f"they allow PENDING: {gap}")
+            p["ticket"]["verdict"] = "PENDING"
+            self.passes(p)
+        covered = self.story("PASSED", passed=True)
+        self.refused(covered, "they allow PASSED WITH DEFERRALS: the owner OK covers every deferred case")
+        covered["ticket"]["verdict"] = "PENDING"
+        self.refused(covered, "they allow PASSED WITH DEFERRALS")
+        covered["ticket"]["verdict"] = "PASSED WITH DEFERRALS"
+        self.passes(covered)
+
+    def test_ticket_deferral_with_no_current_deferred_case_still_reads_passed(self):
+        p = base_pack()
+        p["ticket"]["deferral"] = {}
+        self.passes(p)
+
+    def test_a_passed_pack_with_no_ticket_deferral_still_builds_with_a_warning(self):
         r, _ = self.passes(self.story("PASSED", ok=None, label=None, passed=True))
         self.assertIn("DEFERRED, outside this PASSED verdict", r.stderr)
 

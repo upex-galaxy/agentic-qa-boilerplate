@@ -56,6 +56,10 @@ An `ok` carries exactly one of `pointer` and `record`. A case deferred after the
 an OK lists it. When a listed case later runs, take its id out of `ok.cases`; delete `deferral` once the
 label is removed from the Story.
 
+A pack that carries `deferral`, an empty `{}` included, never reads plain `PASSED` beside a current
+DEFERRED case: it is `PENDING` until the OK covers every one and the label is written, then
+`PASSED WITH DEFERRALS`.
+
 The builder checks the shape and the coverage. It does not open the pointer or compare it with the
 notice: that check stays with the session that verifies the OK (§3 of the deferral reference).
 
@@ -106,13 +110,14 @@ wins. `caption` overrides the filmstrip caption.
 | A current BLOCKED or DEFERRED case with no reason (its `note`, or a `note` item) | a NOT RUN reason is a recorded decision |
 | A DEFERRED reason that names no follow-up ticket key | the deferral is recorded where someone will pick it up |
 | A `ticket.verdict` the current cases contradict (any FAILED: FAILED; any BLOCKED or NOT RUN: PENDING; only deferrals: PENDING, or `PASSED WITH DEFERRALS` on a covered story) | a verdict is derived, never asserted; earlier rounds never count |
-| `PASSED WITH DEFERRALS` without a current deferred case, a `deferral.label` and an OK covering every current deferred case; `PENDING` on a deferrals-only story that has both | the result follows the owner's OK (`discovery-driven-doctrine.md` §5.4) |
+| `PASSED WITH DEFERRALS` without a current deferred case, a `deferral.label` and an OK covering every current deferred case; `PENDING` on a story that has all three; plain `PASSED` on a pack that carries `deferral` beside a current DEFERRED case | the result follows the owner's OK (`discovery-driven-doctrine.md` §5.4) |
 | An `ok.cases` id that is not a current DEFERRED case; an `ok` missing `by`, `at`, `cases` or its one pointer or record | an OK covers only the cases it lists |
-| `deferral` on a bug pack; `PASSED WITH DEFERRALS` on a bug pack; a retest round (`currentRound > 0`) that reads PASSED with a current DEFERRED case | a retest never passes on a deferral |
+| `deferral` on a bug pack; `PASSED WITH DEFERRALS` on a bug pack; a bug pack retest round (`currentRound > 0`) that reads PASSED with a current DEFERRED case | a bug never passes on a deferral |
 | A story's bug card `RETEST PASSED` / `RETEST FAILED` that disagrees with that bug's own pack, or whose pack cannot be found (built together, beside the story pack, in the bug's PBI folder, or `--bug-pack`) | the pill is what readers see; one truth per bug |
 | A mark or a redaction outside its image | it would point at nothing |
 
-A DEFERRED case under a PASSED verdict (outside a retest) only warns: list it in the report. On a story,
+A DEFERRED case under a PASSED verdict only warns, on a pack with no `ticket.deferral` and outside a bug
+pack's retest round: list it in the report. On a story,
 write `PENDING` or `PASSED WITH DEFERRALS` instead, the results of
 `sprint-testing/references/reporting-templates.md` §2.2.
 
