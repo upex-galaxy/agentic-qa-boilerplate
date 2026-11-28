@@ -13,9 +13,11 @@ import {
   DIRECT_PUSH_VALUES,
   directPushOpen,
   EDD_CHECK,
+  effectiveForApply,
   lineDiff,
   MERGE_MODES,
   mergeMethodWidening,
+  mergesOnChecks,
   missingCheckRuns,
   protectedBranches,
   repoSettingsPatch,
@@ -293,6 +295,7 @@ export interface HostState {
   rulesetId: number | null
   rulesetRules: Rule[]
   branchRules: Record<string, Rule[]>
+  orgRulesets?: number
 }
 
 export interface Preflight {
@@ -300,15 +303,17 @@ export interface Preflight {
   admin: boolean
   permission: string
   blockers: string[]
+  token: string[]
   notes: string[]
   integrationId: number | null
 }
 
 export function assessPreflight(gs: GitStrategy, contexts: string[], host: HostState): Preflight {
   const blockers: string[] = [];
+  const token: string[] = [];
   const notes: string[] = [];
   if (host.repo === null) {
-    return { reachable: false, admin: false, permission: 'unknown', blockers: ['the repository could not be read with gh api (no gh binary, no auth, or no network)'], notes, integrationId: null };
+    return { reachable: false, admin: false, permission: 'unknown', blockers: ['the repository could not be read with gh api (no gh binary, no auth, or no network)'], token, notes, integrationId: null };
   }
   const admin = host.repo.permissions?.admin === true;
   const permission = admin ? 'admin' : host.repo.permissions?.push === true ? 'write' : host.repo.permissions ? 'read' : 'unknown';
@@ -318,7 +323,7 @@ export function assessPreflight(gs: GitStrategy, contexts: string[], host: HostS
     notes.push('token scopes are not readable (a fine-grained or app token): it needs "Administration: write" on this repository to change rulesets and settings');
   }
   else if (!host.scopes.includes('repo') && !(host.repo.visibility === 'public' && host.scopes.includes('public_repo'))) {
-    blockers.push(`the gh token lacks the repo scope (has: ${host.scopes.join(', ') || 'none'}); run: gh auth refresh -s repo`);
+    token.push(`the gh token lacks the repo scope (has: ${host.scopes.join(', ') || 'none'}); run: gh auth refresh -s repo`);
   }
 
   let integrationId: number | null = null;
@@ -347,7 +352,10 @@ export function assessPreflight(gs: GitStrategy, contexts: string[], host: HostS
       notes.push('the organization\'s Actions setting is not readable (needs admin:org); if the organization locks it, turning the switch off fails with 409 and an organization owner must change it');
     }
   }
-  return { reachable: true, admin, permission, blockers, notes, integrationId };
+  if ((host.orgRulesets ?? 0) > 0) {
+    notes.push(`${host.orgRulesets} organization-level ruleset(s) also apply to this repository; they stack on top of this plan and cannot be changed from here`);
+  }
+  return { reachable: true, admin, permission, blockers, token, notes, integrationId };
 }
 
 export interface SetupPlan {
@@ -394,7 +402,9 @@ export function renderPlan(gs: GitStrategy, plan: SetupPlan, host: HostState | n
   const checks = plan.rules.find(r => r.type === 'required_status_checks');
   out.push(checks && statusChecksManaged(gs)
     ? `  required checks: ${plan.contexts.join(', ')} (from .agents/project.yaml: ${EDD_CHECK} plus every evidence.static entry whose where includes ci), pinned to the GitHub Actions app`
-    : '  required checks: not managed for this merge mode');
+    : mergesOnChecks(gs)
+      ? '  required checks: not managed: the push policy keeps direct pushes open and admin_bypass is false, so a required check would refuse every direct push; auto-merge stays off too'
+      : '  required checks: not managed under merge_mode manual (the host rule, if any, is kept)');
   out.push(`  repo settings: ${Object.keys(plan.repoPatch).length === 0 ? 'no change' : JSON.stringify(plan.repoPatch)}`);
   if (plan.actionsPatch) {
     const now = host?.actions?.can_approve_pull_request_reviews;
@@ -432,21 +442,26 @@ export function renderHandoff(slug: string, gs: GitStrategy, plan: SetupPlan, pr
     `1. Confirm you are an admin: \`gh repo view ${slug} --json viewerPermission\` must print ADMIN. If not, stop.`,
     `2. Read the current state first, GET only: \`gh api repos/${slug}\`, \`gh api repos/${slug}/rulesets\`, \`gh api repos/${slug}/actions/permissions/workflow\`. Show me the difference with the commands below.`,
     '3. Run the commands below in order, one at a time, after I say yes to each. Never widen bypass actors and never touch another ruleset.',
-    '4. Read each result back from GitHub and report it. Stop on any 403 or 409 and tell me the exact message.',
+    '4. Read each result back from GitHub and report it. Stop at the first error (any answer that is not 2xx) and tell me the exact message; never turn on auto-merge unless the ruleset with the required checks was written and reads back.',
     `The required checks come from .agents/project.yaml: ${plan.contexts.join(', ')}.`,
     '---',
     '',
-    'B) The same as gh api commands',
+    'B) The same as gh api commands (the writes are chained with &&, so the first failure stops the rest)',
     `gh repo view ${slug} --json viewerPermission,viewerCanAdminister`,
   );
   if (writable) {
     const method = host.rulesetId ? `-X PUT repos/${slug}/rulesets/${host.rulesetId}` : `-X POST repos/${slug}/rulesets`;
-    out.push(`gh api ${method} --input - <<'JSON'`, JSON.stringify(plan.body, null, 2), 'JSON');
-    const flags = Object.entries(plan.repoPatch).map(([k, v]) => ghFlag(k, v));
-    if (flags.length > 0) { out.push(`gh api -X PATCH repos/${slug} ${flags.join(' ')}`); }
-    if (plan.actionsPatch && host.actions?.can_approve_pull_request_reviews !== false) {
-      out.push(`gh api -X PUT repos/${slug}/actions/permissions/workflow ${ghFlag('can_approve_pull_request_reviews', false)}`);
+    const after: string[] = [];
+    if (plan.repoPatch.allow_auto_merge === true) {
+      after.push(`gh api repos/${slug}/rules/branches/${prod} --jq '[.[] | select(.type == "required_status_checks") | .parameters.required_status_checks[].context] | index("${EDD_CHECK}") != null' | grep -qx true`);
     }
+    const flags = Object.entries(plan.repoPatch).map(([k, v]) => ghFlag(k, v));
+    if (flags.length > 0) { after.push(`gh api -X PATCH repos/${slug} ${flags.join(' ')}`); }
+    if (plan.actionsPatch && host.actions?.can_approve_pull_request_reviews !== false) {
+      after.push(`gh api -X PUT repos/${slug}/actions/permissions/workflow ${ghFlag('can_approve_pull_request_reviews', false)}`);
+    }
+    out.push(`gh api ${method} --input - <<'JSON'${after.length > 0 ? ' &&' : ''}`, JSON.stringify(plan.body, null, 2), 'JSON');
+    out.push(...after.map((c, i) => (i < after.length - 1 ? `${c} &&` : c)));
   }
   out.push(
     `gh api repos/${slug} --jq '{allow_auto_merge,allow_merge_commit,allow_squash_merge,allow_rebase_merge}'`,
@@ -465,6 +480,7 @@ export function readHostState(gs: GitStrategy, slug: string, deps: Pick<SetupDep
   const rulesets = deps.gh(`repos/${slug}/rulesets`);
   const existing = Array.isArray(rulesets) ? (rulesets as { id?: unknown, name?: unknown }[]).find(r => r?.name === RULESET_NAME) : undefined;
   const rulesetId = typeof existing?.id === 'number' ? existing.id : null;
+  const orgRulesets = Array.isArray(rulesets) ? (rulesets as { source_type?: unknown }[]).filter(r => r?.source_type === 'Organization').length : 0;
   const detail = rulesetId === null ? null : deps.gh(`repos/${slug}/rulesets/${rulesetId}`) as { rules?: unknown } | null;
   const branchRules: Record<string, Rule[]> = {};
   for (const b of protectedBranches(gs)) {
@@ -483,7 +499,15 @@ export function readHostState(gs: GitStrategy, slug: string, deps: Pick<SetupDep
     rulesetId,
     rulesetRules: Array.isArray(detail?.rules) ? detail.rules as Rule[] : [],
     branchRules,
+    orgRulesets,
   };
+}
+
+export function conflict(a: SetupAnswers): string | null {
+  if (a.merge === 'human-approves' && directPushOpen(a.push)) {
+    return `human-approves needs push forbidden or confirm: with push ${a.push} the branch takes direct pushes, so no pull_request rule exists and no approval would ever be required.`;
+  }
+  return null;
 }
 
 async function answer(deps: SetupDeps, q: SetupQuestion, given: string | undefined): Promise<string> {
@@ -529,6 +553,10 @@ export async function runSetup(deps: SetupDeps, flags: SetupFlags): Promise<numb
     p('--push evidence needs the evidence gate (scripts/edd.ts and the edd package.json script), which this repository does not have.');
     return 1;
   }
+  if (flags.writePolicy && !deps.interactive && (!flags.strategy || !flags.push || !flags.merge)) {
+    p('--write-policy without a terminal needs all three answers: --strategy, --push and --merge. Defaults nobody chose are never written.');
+    return 1;
+  }
 
   const questions = setupQuestions(gs, deps.lang, deps.gateReady);
   const answers: SetupAnswers = {
@@ -536,24 +564,30 @@ export async function runSetup(deps: SetupDeps, flags: SetupFlags): Promise<numb
     push: await answer(deps, questions[1], flags.push),
     merge: await answer(deps, questions[2], flags.merge),
   };
+  while (conflict(answers) !== null) {
+    p(conflict(answers) ?? '');
+    if (!deps.interactive || flags.merge || flags.push) { return 1; }
+    answers.merge = String(await deps.ask({ kind: 'select', id: 'merge', title: questions[2].title, choices: questions[2].choices, default: 'auto' }));
+  }
   const next = withAnswers(gs, answers);
 
-  let codeownerLines: string[] = [];
+  let owner: string | null = null;
   const existingCodeowners = deps.codeowners();
-  if (answers.merge === 'human-approves') {
+  if (answers.merge === 'human-approves' || gs.policy?.merge_mode === 'human-approves') {
     const login = deps.slug ? (deps.gh('user') as { login?: unknown } | null)?.login : null;
     const fallback = typeof login === 'string' ? `@${login}` : '@<owner>';
-    let owner = flags.codeowner ? normalizeOwner(flags.codeowner) : null;
-    while (owner === null && deps.interactive && !flags.codeowner) {
+    owner = flags.codeowner ? normalizeOwner(flags.codeowner) : null;
+    while (owner === null && deps.interactive && !flags.codeowner && answers.merge === 'human-approves') {
       owner = normalizeOwner(String(await deps.ask({ kind: 'text', id: 'codeowner', title: TITLES.codeowner[deps.lang], default: fallback })));
     }
-    codeownerLines = missingCodeownersLines(existingCodeowners, codeownersLines(gatePaths(doc), owner ?? fallback));
+    owner ??= fallback;
   }
 
   p('');
   p(`Answers: strategy ${answers.strategy}, push ${answers.push}, merge ${answers.merge}`);
   const edits = setupEdits(gs, answers);
   let nextText = text;
+  let current = true;
   if (edits.length === 0) {
     p('.agents/project.yaml already holds these answers.');
   }
@@ -585,27 +619,32 @@ export async function runSetup(deps: SetupDeps, flags: SetupFlags): Promise<numb
       return 0;
     }
     else {
-      p('Not written: non-interactive run. Re-run in a terminal, or pass --write-policy with the answers as flags.');
+      current = false;
+      p('Not written: non-interactive run. The plan below is for .agents/project.yaml as it is now. Re-run in a terminal, or pass --write-policy with all three answers.');
     }
   }
 
+  const planned = effectiveForApply(current ? next : gs);
+  const codeownerLines = planned.policy?.merge_mode === 'human-approves' && owner !== null
+    ? missingCodeownersLines(existingCodeowners, codeownersLines(gatePaths(doc), owner))
+    : [];
   const contexts = requiredCheckContexts(doc?.evidence as never);
   const codeownersAfter = existingCodeowners !== null || codeownerLines.length > 0;
   if (deps.slug === null) {
-    for (const l of renderPlan(next, derivePlan(next, null, contexts, codeownersAfter, null, null, codeownerLines), null)) { p(l); }
+    for (const l of renderPlan(planned, derivePlan(planned, null, contexts, codeownersAfter, null, null, codeownerLines), null)) { p(l); }
     p('');
     p('No GitHub origin: there is no repository to configure yet. Nothing was written to GitHub.');
     return stop(0);
   }
 
-  const host = readHostState(next, deps.slug, deps);
-  const pre = assessPreflight(next, contexts, host);
-  const plan = derivePlan(next, deps.slug, contexts, codeownersAfter, host, pre.integrationId, codeownerLines);
-  for (const l of renderPlan(next, plan, host)) { p(l); }
+  const host = readHostState(planned, deps.slug, deps);
+  const pre = assessPreflight(planned, contexts, host);
+  const plan = derivePlan(planned, deps.slug, contexts, codeownersAfter, host, pre.integrationId, codeownerLines);
+  for (const l of renderPlan(planned, plan, host)) { p(l); }
   p('');
   p('Preflight (read-only)');
   p(`  repository: ${deps.slug}; account: ${host.login ?? 'unknown'}; access: ${pre.permission}`);
-  for (const b of pre.blockers) { p(`  BLOCKER: ${b}`); }
+  for (const b of [...pre.blockers, ...pre.token]) { p(`  BLOCKER: ${b}`); }
   for (const n of pre.notes) { p(`  note: ${n}`); }
 
   if (!pre.reachable) {
@@ -614,12 +653,12 @@ export async function runSetup(deps: SetupDeps, flags: SetupFlags): Promise<numb
     return stop(0);
   }
   if (!pre.admin) {
-    for (const l of renderHandoff(deps.slug, next, plan, pre, host)) { p(l); }
+    for (const l of renderHandoff(deps.slug, planned, plan, pre, host)) { p(l); }
     p('');
     p(`Stopped: ${host.login ?? 'this account'} is not an admin of ${deps.slug}. Nothing was written to GitHub.`);
     return stop(0);
   }
-  if (pre.blockers.length > 0) {
+  if (pre.blockers.length + pre.token.length > 0) {
     p('');
     p('Stopped before any GitHub write: clear the blockers above, then re-run bun run git:policy setup.');
     return stop(0);
@@ -638,6 +677,15 @@ export async function runSetup(deps: SetupDeps, flags: SetupFlags): Promise<numb
     if (await deps.ask({ kind: 'confirm', id: 'codeowners', title: TITLES.codeownersFile[deps.lang], default: true }) === true) {
       deps.writeCodeowners(`${codeownerLines.join('\n')}\n`);
       p('Wrote .github/CODEOWNERS: commit and push it so GitHub enforces it.');
+    }
+    else {
+      const without = derivePlan(planned, deps.slug, contexts, false, host, pre.integrationId, []);
+      p('No CODEOWNERS file: require_code_owner_review stays off.');
+      if (without.loosenings.length > 0) {
+        for (const l of without.loosenings) { p(`  - ${l}`); }
+        p('Stopped: without the file this would loosen protection, which setup never does.');
+        return stop(0);
+      }
     }
   }
   else if (codeownerLines.length > 0) {

@@ -278,7 +278,7 @@ describe('assessPreflight: what can stop an apply before any write', () => {
   });
 
   test('a token without the repo scope blocks; an unreadable scope list is only a note', () => {
-    expect(assessPreflight(AUTO_FORBIDDEN(), ['edd/evidence'], hostState({ scopes: ['gist'] })).blockers.join(' ')).toContain('gh auth refresh -s repo');
+    expect(assessPreflight(AUTO_FORBIDDEN(), ['edd/evidence'], hostState({ scopes: ['gist'] })).token.join(' ')).toContain('gh auth refresh -s repo');
     const fine = assessPreflight(AUTO_FORBIDDEN(), ['edd/evidence'], hostState({ scopes: null }));
     expect(fine.blockers).toEqual([]);
     expect(fine.notes.join(' ')).toContain('Administration: write');
@@ -294,6 +294,10 @@ describe('assessPreflight: what can stop an apply before any write', () => {
     const pre = assessPreflight(AUTO_FORBIDDEN(), ['edd/evidence'], hostState({ actions: { can_approve_pull_request_reviews: true }, orgActionsReadable: false }));
     expect(pre.notes.join(' ')).toContain('ON today');
     expect(pre.notes.join(' ')).toContain('409');
+  });
+
+  test('organization rulesets are named: they stack on the plan', () => {
+    expect(assessPreflight(AUTO_FORBIDDEN(), ['edd/evidence'], hostState({ orgRulesets: 2 })).notes.join(' ')).toContain('2 organization-level ruleset(s)');
   });
 
   test('an unreachable host is not a pass', () => {
@@ -316,6 +320,16 @@ describe('renderHandoff: two ready-to-paste forms for an admin', () => {
     expect(text).toContain('-F can_approve_pull_request_reviews=false');
     expect(text.indexOf('rulesets/7')).toBeLessThan(text.indexOf('allow_auto_merge=true'));
     expect(text).not.toContain('bypass_actors');
+    expect(text).toContain(`gh api -X PUT repos/${SLUG}/rulesets/7 --input - <<'JSON' &&`);
+    expect(text.indexOf('index("edd/evidence") != null\' | grep -qx true &&')).toBeLessThan(text.indexOf('-X PATCH'));
+    expect(text).toContain('Stop at the first error');
+  });
+
+  test('the caller\'s own token problem does not withhold the admin\'s commands', () => {
+    const weak = hostState({ repo: { permissions: { admin: false, push: true } }, scopes: ['gist'] });
+    const pre = assessPreflight(gs, ['edd/evidence'], weak);
+    const plan = derivePlan(gs, SLUG, ['edd/evidence'], false, weak, pre.integrationId, []);
+    expect(renderHandoff(SLUG, gs, plan, pre, weak).join('\n')).toContain('-X PUT');
   });
 
   test('with a blocker, only the read commands are printed', () => {
@@ -436,6 +450,37 @@ describe('runSetup: the host is written only on a person\'s explicit yes', () =>
     const quiet = harness();
     await runSetup(quiet.deps, { ...NO_FLAGS, planOnly: true });
     expect(quiet.printed.join('\n')).not.toContain('does not enforce that yet');
+  });
+
+  test('human-approves with an open push policy is refused: it would require no approval', async () => {
+    const h = harness();
+    expect(await runSetup(h.deps, { ...NO_FLAGS, push: 'evidence', merge: 'human-approves', strategy: 'solo-main', writePolicy: true })).toBe(1);
+    expect(h.written).toEqual([]);
+    const i = harness({ interactive: true, answers: ['solo-main', 'evidence', 'human-approves', 'auto', false] });
+    expect(await runSetup(i.deps, NO_FLAGS)).toBe(0);
+    expect(i.asked.map(q => q.id)).toEqual(['strategy', 'push', 'merge', 'merge', 'write']);
+    expect(i.printed.join('\n')).toContain('human-approves needs push forbidden or confirm');
+  });
+
+  test('a non-interactive run plans what the yaml holds, not answers it never wrote', async () => {
+    const h = harness();
+    await runSetup(h.deps, NO_FLAGS);
+    expect(h.printed.join('\n')).toContain('strategy solo-main; push confirm; merge manual');
+  });
+
+  test('--write-policy without a terminal needs all three answers', async () => {
+    const h = harness();
+    expect(await runSetup(h.deps, { ...NO_FLAGS, writePolicy: true, merge: 'auto' })).toBe(1);
+    expect(h.written).toEqual([]);
+  });
+
+  test('declining CODEOWNERS when the host requires code-owner review stops instead of loosening', async () => {
+    const owned: Rule[] = [...HOST_PR_RULES, { type: 'pull_request', parameters: { required_approving_review_count: 1, require_code_owner_review: true, allowed_merge_methods: ['merge'] } }];
+    const bodies = hostBodies({ [`repos/${SLUG}/rules/branches/main`]: owned, [`repos/${SLUG}/rulesets/7`]: { rules: owned } });
+    const h = harness({ interactive: true, answers: ['github-flow', 'forbidden', 'human-approves', 'ana', true, false], bodies });
+    expect(await runSetup(h.deps, NO_FLAGS)).toBe(0);
+    expect(h.printed.join('\n')).toContain('without the file this would loosen protection');
+    expect(h.applied).toEqual([]);
   });
 
   test('--push evidence without the gate is refused', async () => {
