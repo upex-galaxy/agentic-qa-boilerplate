@@ -140,7 +140,8 @@ jobs:
           EDD_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
           if [ -f scripts/edd.ts ]; then
-            echo "ids=$(bun scripts/edd.ts check --list)" >> "$GITHUB_OUTPUT"
+            ids=$(bun scripts/edd.ts check --list)
+            echo "ids=$ids" >> "$GITHUB_OUTPUT"
           else
             echo 'ids=[]' >> "$GITHUB_OUTPUT"
           fi
