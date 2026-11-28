@@ -1859,6 +1859,48 @@ describe('Claude skills alias', () => {
     expect(readlinkSync(join(root, '.claude/skills'))).toBe(POSIX_CLAUDE_SKILLS_TARGET);
   });
 
+  test('keeps a link to a folder holding files and says what to do next', () => {
+    const root = repositoryFixture();
+    write(root, 'checkout/my-skill/SKILL.md', 'mine\n');
+    mkdirSync(join(root, '.claude'), { recursive: true });
+    symlinkSync('../checkout', join(root, '.claude/skills'), 'dir');
+
+    expect(() => repairClaudeSkillsAlias(root, 'linux')).toThrow(/left linked to \.\.\/checkout\..*\.agents\/skills.*`rm \.claude\/skills`.*`bun run agents:compat`/);
+    expect(readlinkSync(join(root, '.claude/skills'))).toBe('../checkout');
+    expect(readFileSync(join(root, 'checkout/my-skill/SKILL.md'), 'utf8')).toBe('mine\n');
+  });
+
+  test('names the junction removal command on Windows', () => {
+    const root = repositoryFixture();
+    write(root, 'checkout/notes.md', 'mine\n');
+    mkdirSync(join(root, '.claude'), { recursive: true });
+    symlinkSync(join(root, 'checkout'), join(root, '.claude/skills'), 'dir');
+
+    expect(() => repairClaudeSkillsAlias(root, 'win32')).toThrow('rmdir .claude\\skills');
+  });
+
+  test('re-points a link to a folder holding only OS metadata, and a broken link', () => {
+    const root = repositoryFixture();
+    write(root, 'elsewhere/.DS_Store', '');
+    mkdirSync(join(root, '.claude'), { recursive: true });
+    symlinkSync('../elsewhere', join(root, '.claude/skills'), 'dir');
+    expect(repairClaudeSkillsAlias(root, 'linux').status).toBe('repaired');
+
+    rmSync(join(root, '.claude/skills'));
+    symlinkSync('../gone', join(root, '.claude/skills'), 'dir');
+    expect(repairClaudeSkillsAlias(root, 'linux').status).toBe('repaired');
+    expect(readlinkSync(join(root, '.claude/skills'))).toBe(POSIX_CLAUDE_SKILLS_TARGET);
+  });
+
+  test('re-points an absolute link to the canonical store, files and all', () => {
+    const root = repositoryFixture();
+    mkdirSync(join(root, '.claude'), { recursive: true });
+    symlinkSync(join(root, '.agents', 'skills'), join(root, '.claude/skills'), 'dir');
+
+    expect(repairClaudeSkillsAlias(root, 'linux').status).toBe('repaired');
+    expect(readlinkSync(join(root, '.claude/skills'))).toBe(POSIX_CLAUDE_SKILLS_TARGET);
+  });
+
   test('refuses to replace a real Claude skills directory', () => {
     const root = repositoryFixture();
     write(root, '.claude/skills/owned.txt', 'preserve me\n');
